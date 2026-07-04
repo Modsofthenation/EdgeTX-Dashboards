@@ -16,6 +16,9 @@ export interface MockTelemetry {
   RPM: number;
   HSpd: number;
   EscT: number;
+  MotT: number;
+  AdjF: string;
+  AdjV: number;
   Ptch: number;
   Roll: number;
   Yaw: number;
@@ -33,12 +36,15 @@ export const BASE_MOCK: MockTelemetry = {
   GSpd: 45,
   Hdg: 182,
   Sats: 14,
-  FM: "ACRO",
+  FM: "Stab",
   RFMD: "250Hz",
   TPWR: 250,
   RPM: 3200,
   HSpd: 1850,
   EscT: 42,
+  MotT: 58,
+  AdjF: "Pitch",
+  AdjV: 12,
   Ptch: 0.05,
   Roll: -0.02,
   Yaw: 1.2,

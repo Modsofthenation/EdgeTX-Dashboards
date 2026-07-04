@@ -6,16 +6,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:preview": "npx --yes tsx --test src/lib/__tests__/luaPreviewEngine.test.ts"
   },
   "dependencies": {
     "@widget-gen/generator": "*",
     "@widget-gen/shared": "*",
+    "better-sqlite3": "^12.11.1",
     "next": "^15.3.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

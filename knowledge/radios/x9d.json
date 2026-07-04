@@ -1,0 +1,12 @@
+{
+  "$schema": "./_schema.json",
+  "id": "x9d",
+  "name": "FrSky Taranis X9D+",
+  "lcdW": 212,
+  "lcdH": 64,
+  "touch": false,
+  "maxOptions": 8,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "taranis212",
+  "notes": "212×64 monochrome. Keep layouts minimal — 2–4 metrics max."
+}

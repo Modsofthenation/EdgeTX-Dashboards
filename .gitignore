@@ -14,6 +14,7 @@ build/
 # Generated widget artifacts (local agent output)
 generated/
 dist-output/
+data/
 
 # Environment & secrets (keep .env.example tracked)
 .env

@@ -2,7 +2,12 @@
 
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { CHAT_MODELS } from "@/lib/chatModels";
+import type { ChatModel } from "@/lib/chatModels";
+import {
+  groupRadiosByLayout,
+  LAYOUT_GROUP_LABELS,
+  type RadioCatalogEntry,
+} from "@/lib/radioCatalog";
 import styles from "./ChatComposer.module.css";
 
 interface ChatComposerProps {
@@ -10,10 +15,15 @@ interface ChatComposerProps {
   canRefine: boolean;
   protocol: TelemetryProtocol;
   modelId: string;
+  models: ChatModel[];
+  modelsLoading?: boolean;
   edgeTxVersion: string;
+  radioId: string;
+  radios: RadioCatalogEntry[];
   onProtocolChange: (protocol: TelemetryProtocol) => void;
   onModelChange: (modelId: string) => void;
   onEdgeTxChange: (version: string) => void;
+  onRadioChange: (radioId: string) => void;
   onSend: (prompt: string) => void;
 }
 
@@ -22,13 +32,21 @@ export function ChatComposer({
   canRefine,
   protocol,
   modelId,
+  models,
+  modelsLoading,
   edgeTxVersion,
+  radioId,
+  radios,
   onProtocolChange,
   onModelChange,
   onEdgeTxChange,
+  onRadioChange,
   onSend,
 }: ChatComposerProps) {
   const [input, setInput] = useState("");
+
+  const selectedRadio = radios.find((r) => r.id === radioId);
+  const radioGroups = groupRadiosByLayout(radios);
 
   const submit = () => {
     const trimmed = input.trim();
@@ -49,23 +67,53 @@ export function ChatComposer({
     }
   };
 
+  const settingsLocked = running || canRefine;
+
+  const modelOptions =
+    !modelsLoading && modelId && !models.some((m) => m.id === modelId)
+      ? [{ id: modelId, label: modelId }, ...models]
+      : models;
+
   return (
     <form className={styles.composer} onSubmit={handleSubmit}>
       <div className={styles.toolbar}>
+        <label className={styles.selectWrap}>
+          <span className={styles.selectLabel}>Radio</span>
+          <select
+            className={styles.select}
+            value={radioId}
+            onChange={(e) => onRadioChange(e.target.value)}
+            disabled={settingsLocked}
+            title={settingsLocked ? "Radio is locked for this chat session" : undefined}
+          >
+            {[...radioGroups.entries()].map(([layoutKey, group]) => (
+              <optgroup key={layoutKey} label={LAYOUT_GROUP_LABELS[layoutKey] ?? layoutKey}>
+                {group.map((radio) => (
+                  <option key={radio.id} value={radio.id}>
+                    {radio.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+
         <label className={styles.selectWrap}>
           <span className={styles.selectLabel}>Model</span>
           <select
             className={styles.select}
             value={modelId}
             onChange={(e) => onModelChange(e.target.value)}
-            disabled={running || canRefine}
-            title={canRefine ? "Model is locked for this chat session" : undefined}
+            disabled={settingsLocked || modelsLoading || models.length === 0}
+            title={settingsLocked ? "Model is locked for this chat session" : undefined}
           >
-            {CHAT_MODELS.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.label}
-              </option>
-            ))}
+            {modelsLoading && <option value={modelId}>Loading models…</option>}
+            {!modelsLoading &&
+              modelOptions.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.label}
+                </option>
+              ))}
           </select>
         </label>
 
@@ -75,7 +123,7 @@ export function ChatComposer({
             className={styles.select}
             value={protocol}
             onChange={(e) => onProtocolChange(e.target.value as TelemetryProtocol)}
-            disabled={running || canRefine}
+            disabled={settingsLocked}
           >
             <option value="betaflight">Betaflight</option>
             <option value="rotorflight">Rotorflight</option>
@@ -89,14 +137,19 @@ export function ChatComposer({
             className={styles.select}
             value={edgeTxVersion}
             onChange={(e) => onEdgeTxChange(e.target.value)}
-            disabled={running || canRefine}
+            disabled={settingsLocked}
           >
             <option value="2.11.0">2.11+</option>
             <option value="2.10.0">2.10</option>
           </select>
         </label>
 
-        <span className={styles.metaChip}>TX15 · 480×320</span>
+        {selectedRadio && (
+          <span className={styles.metaChip}>
+            {selectedRadio.lcdW}×{selectedRadio.lcdH}
+            {selectedRadio.touch ? " · touch" : ""}
+          </span>
+        )}
       </div>
 
       <div className={styles.inputRow}>

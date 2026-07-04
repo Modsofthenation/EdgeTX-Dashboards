@@ -11,6 +11,7 @@
     "touch": { "type": "boolean" },
     "maxOptions": { "type": "integer", "minimum": 1 },
     "edgeTxMin": { "type": "string" },
+    "layoutProfile": { "type": "string" },
     "notes": { "type": "string" }
   }
 }

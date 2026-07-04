@@ -11,10 +11,11 @@ export function buildGenerationPrompt(
   const rules = readRules();
   const designGuide = readDesignGuide(radio.id);
   const starter = readTemplate("dashboard-starter.lua");
-  const example = readFileSync(
-    `${getRepoRoot()}/examples/tx15-minimal-dashboard.lua`,
-    "utf-8"
-  );
+  const exampleFile =
+    catalog.protocol === "rotorflight"
+      ? "tx15-rotorflight-heli.lua"
+      : "tx15-minimal-dashboard.lua";
+  const example = readFileSync(`${getRepoRoot()}/examples/${exampleFile}`, "utf-8");
 
   return `You are generating an EdgeTX Lua full-screen dashboard widget.
 
@@ -46,7 +47,7 @@ ${rules}
 ${starter}
 \`\`\`
 
-## Reference example (match this quality level)
+## Reference example (match this quality — layout, spacing, typography)
 \`\`\`lua
 ${example}
 \`\`\`
@@ -59,17 +60,22 @@ ${example}
    ---@type WidgetScript
    ---@simulate Layout1x1 zone=0
    \`\`\`
-4. Build a **clean UI**: header bar, 2-column metric cards, optional GPS strip, footer for flight mode. Use 12px padding, DARKGREY cards on BLACK, semantic colors (GREEN link, YELLOW battery).
+4. Build a **clean UI** matching the reference example:
+   - Header bar (40px), two-column metric cards (118px tall), full-width section below, footer (28px)
+   - 12px padding everywhere; label at y+8, value at y+22 or y+28 (min 14px gap between label and value)
+   - Separate value and unit on different drawText lines (e.g. \`string.format("%.1f", volts)\` then \`"V"\` on next line)
+   - Cache ALL display strings as locals before drawText — never put fmtNum() or telem() inside drawText args
+   - Use string.format or tostring on cached locals only in lcd.drawText calls
 5. Use LCD_W and LCD_H on ${radio.name} (${radio.lcdW}x${radio.lcdH}). Put all \`lcd.drawText\`, \`lcd.drawFilledRectangle\`, and \`lcd.drawRectangle\` calls **directly in refresh()** (web preview parses these).
 6. Cache telemetry with getSourceIndex() in create().
 7. Call validateWidget with widget name, protocol "${catalog.protocol}", and radioId "${radio.id}". Fix ALL errors AND visual-design warnings until valid: true.
 8. Only after valid: true, call writeInstallGuide (radioId "${radio.id}").
 9. Only after valid: true, call packageWidget (radioId "${radio.id}").
-10. Summarize layout sections and sensors used.`;
+10. Summarize layout sections and sensors used in markdown (headers, bullet list, optional table).`;
 }
 
-export function buildRefinePrompt(userPrompt: string, widgetName?: string): string {
-  const designGuide = readDesignGuide("tx15");
+export function buildRefinePrompt(userPrompt: string, widgetName?: string, radioId = "tx15"): string {
+  const designGuide = readDesignGuide(radioId);
   return `Refine the existing EdgeTX widget${widgetName ? ` "${widgetName}"` : ""}.
 
 ## User refinement request

@@ -1,10 +1,17 @@
 export interface ChatModel {
   id: string;
   label: string;
-  description: string;
+  description?: string;
 }
 
-export const CHAT_MODELS: ChatModel[] = [
+export interface ModelCatalog {
+  defaultId: string;
+  models: ChatModel[];
+  source?: "api" | "fallback";
+}
+
+/** Offline fallback when /api/models is unavailable. */
+export const FALLBACK_CHAT_MODELS: ChatModel[] = [
   {
     id: "composer-2.5",
     label: "Composer 2.5",
@@ -22,7 +29,7 @@ export const CHAT_MODELS: ChatModel[] = [
   },
 ];
 
-export const DEFAULT_CHAT_MODEL = CHAT_MODELS[0].id;
+export const DEFAULT_CHAT_MODEL = FALLBACK_CHAT_MODELS[0].id;
 
 export const SUGGESTED_PROMPTS = [
   "Clean Betaflight dashboard: link bar, battery card, GPS strip, flight mode footer",

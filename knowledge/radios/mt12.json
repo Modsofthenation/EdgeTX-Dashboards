@@ -1,0 +1,12 @@
+{
+  "$schema": "./_schema.json",
+  "id": "mt12",
+  "name": "RadioMaster MT12",
+  "lcdW": 128,
+  "lcdH": 64,
+  "touch": false,
+  "maxOptions": 6,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "compact128",
+  "notes": "Surface radio with 128×64 display."
+}

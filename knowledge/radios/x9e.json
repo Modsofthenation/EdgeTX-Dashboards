@@ -1,0 +1,11 @@
+{
+  "$schema": "./_schema.json",
+  "id": "x9e",
+  "name": "FrSky Taranis X9E",
+  "lcdW": 212,
+  "lcdH": 64,
+  "touch": false,
+  "maxOptions": 8,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "taranis212"
+}

@@ -8,6 +8,32 @@ export interface WidgetSnapshot {
   validationIssues: ValidationIssue[];
 }
 
+export interface ChatSummary {
+  id: string;
+  title: string;
+  protocol: TelemetryProtocol;
+  modelId: string;
+  widgetName: string | null;
+  validated: boolean;
+  updatedAt: number;
+  messageCount: number;
+}
+
+export interface StoredChat {
+  id: string;
+  title: string;
+  sessionId: string | null;
+  protocol: TelemetryProtocol;
+  modelId: string;
+  edgeTxVersion: string;
+  radioId: string;
+  widgetName: string | null;
+  createdAt: number;
+  updatedAt: number;
+  messages: ChatMessage[];
+  artifact: WidgetSnapshot | null;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -22,6 +48,7 @@ export interface ChatSendOptions {
   protocol: TelemetryProtocol;
   edgeTxVersion: string;
   modelId: string;
+  radioId: string;
 }
 
 function newId(): string {

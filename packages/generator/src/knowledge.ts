@@ -1,7 +1,8 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
+import type { RadioProfile, TelemetryCatalog, TelemetryProtocol, SimulateLayoutProfile } from "@widget-gen/shared";
+import { DEFAULT_RADIO_ID, getSimulateLayoutProfile } from "@widget-gen/shared";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +44,29 @@ export function loadRadioProfile(radioId: string): RadioProfile {
   return JSON.parse(readFileSync(path, "utf-8")) as RadioProfile;
 }
 
+/** Layout profile key used for simulate zones and preview (defaults to radio id). */
+export function getLayoutProfileId(radio: RadioProfile): string {
+  return radio.layoutProfile ?? radio.id;
+}
+
+export function getLayoutProfileIdForRadio(radioId: string): string {
+  return getLayoutProfileId(loadRadioProfile(radioId));
+}
+
+/** All supported radio profiles from knowledge/radios/*.json (sorted by name). */
+export function listRadioProfiles(): RadioProfile[] {
+  const dir = join(getRepoRoot(), "knowledge", "radios");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_"));
+
+  return files
+    .map((file) => loadRadioProfile(file.replace(/\.json$/, "")))
+    .sort((a, b) => {
+      if (a.id === DEFAULT_RADIO_ID) return -1;
+      if (b.id === DEFAULT_RADIO_ID) return 1;
+      return a.name.localeCompare(b.name);
+    });
+}
+
 const PROTOCOL_FILES: Record<TelemetryProtocol, string> = {
   betaflight: "betaflight-crsf.json",
   rotorflight: "rotorflight-crsf.json",
@@ -68,12 +92,24 @@ export function readRules(): string {
   return readFileSync(path, "utf-8");
 }
 
-export function readDesignGuide(radioId = "tx15"): string {
-  const path = join(getRepoRoot(), "knowledge", "design", `${radioId}-dashboard-ui.md`);
-  if (!existsSync(path)) {
-    return "";
+export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
+  const radio = loadRadioProfile(radioId);
+  const layoutKey = getLayoutProfileId(radio);
+  const candidates = [
+    join(getRepoRoot(), "knowledge", "design", `${radioId}-dashboard-ui.md`),
+    join(getRepoRoot(), "knowledge", "design", `${layoutKey}-dashboard-ui.md`),
+    join(getRepoRoot(), "knowledge", "design", "tx15-dashboard-ui.md"),
+  ];
+
+  for (const path of candidates) {
+    if (existsSync(path)) {
+      return readFileSync(path, "utf-8");
+    }
   }
-  return readFileSync(path, "utf-8");
+
+  return "";
 }
 
-export { loadSimulateLayoutProfile, type SimulateLayoutProfile } from "./devKit.js";
+export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
+  return getSimulateLayoutProfile(getLayoutProfileId(loadRadioProfile(radioId)));
+}

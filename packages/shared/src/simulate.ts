@@ -1,4 +1,8 @@
 import tx15Profile from "./layouts/tx15.json" with { type: "json" };
+import color272Profile from "./layouts/color272.json" with { type: "json" };
+import taranis212Profile from "./layouts/taranis212.json" with { type: "json" };
+import compact128Profile from "./layouts/compact128.json" with { type: "json" };
+import type { LayoutProfileId } from "./radios.js";
 
 export interface WidgetZoneRect {
   x: number;
@@ -31,17 +35,24 @@ export interface PreviewDimensions {
   zone: number;
 }
 
-const LAYOUT_PROFILES: Record<string, SimulateLayoutProfile> = {
+const LAYOUT_PROFILES: Record<LayoutProfileId, SimulateLayoutProfile> = {
   tx15: tx15Profile as SimulateLayoutProfile,
+  color272: color272Profile as SimulateLayoutProfile,
+  taranis212: taranis212Profile as SimulateLayoutProfile,
+  compact128: compact128Profile as SimulateLayoutProfile,
 };
 
 /** Canonical layout profiles (from packages/shared/src/layouts/*.json). */
-export function getSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
-  const profile = LAYOUT_PROFILES[radioId];
+export function getSimulateLayoutProfile(layoutProfileId: string): SimulateLayoutProfile {
+  const profile = LAYOUT_PROFILES[layoutProfileId as LayoutProfileId];
   if (!profile) {
-    throw new Error(`Simulate layout profile not found: ${radioId}`);
+    throw new Error(`Simulate layout profile not found: ${layoutProfileId}`);
   }
   return profile;
+}
+
+export function tryGetSimulateLayoutProfile(layoutProfileId: string): SimulateLayoutProfile | null {
+  return LAYOUT_PROFILES[layoutProfileId as LayoutProfileId] ?? null;
 }
 
 export const TX15_SIMULATE_PROFILE = LAYOUT_PROFILES.tx15;

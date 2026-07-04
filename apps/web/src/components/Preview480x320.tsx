@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { resolvePreviewDimensions } from "@widget-gen/shared";
+import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { BASE_MOCK, tickMock } from "@/lib/mockTelemetry";
 import { parseLuaToDrawCommands, renderPreviewCommands } from "@/lib/luaPreviewEngine";
 import styles from "./Preview480x320.module.css";
 
-const LCD_W = 480;
-const LCD_H = 320;
+const DEFAULT_LCD_W = 480;
+const DEFAULT_LCD_H = 320;
 
 interface Preview480x320Props {
   luaSource: string | null;
   widgetName: string | null;
+  layoutProfileId?: string;
+  radioName?: string | null;
   live?: boolean;
   variant?: "default" | "compact";
 }
@@ -19,6 +21,8 @@ interface Preview480x320Props {
 export function Preview480x320({
   luaSource,
   widgetName,
+  layoutProfileId = "tx15",
+  radioName,
   live = true,
   variant = "default",
 }: Preview480x320Props) {
@@ -29,9 +33,20 @@ export function Preview480x320({
 
   const mock = useMemo(() => (live ? tickMock(BASE_MOCK, tick) : BASE_MOCK), [live, tick]);
 
+  const layoutProfile = useMemo(() => {
+    try {
+      return getSimulateLayoutProfile(layoutProfileId);
+    } catch {
+      return getSimulateLayoutProfile("tx15");
+    }
+  }, [layoutProfileId]);
+
+  const lcdW = layoutProfile.lcdW;
+  const lcdH = layoutProfile.lcdH;
+
   const previewDims = useMemo(
-    () => (luaSource ? resolvePreviewDimensions(luaSource) : null),
-    [luaSource]
+    () => (luaSource ? resolvePreviewDimensions(luaSource, layoutProfile) : null),
+    [luaSource, layoutProfile]
   );
 
   const commands = useMemo(() => {
@@ -54,21 +69,21 @@ export function Preview480x320({
     const container = containerRef.current;
     if (!canvas || !container || tab !== "preview") return;
 
-    const scale = container.clientWidth / LCD_W;
-    canvas.width = LCD_W * scale;
-    canvas.height = LCD_H * scale;
+    const scale = container.clientWidth / lcdW;
+    canvas.width = lcdW * scale;
+    canvas.height = lcdH * scale;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.imageSmoothingEnabled = false;
-    renderPreviewCommands(ctx, commands, scale, LCD_W, LCD_H);
-  }, [commands, tab]);
+    renderPreviewCommands(ctx, commands, scale, lcdW, lcdH);
+  }, [commands, tab, lcdW, lcdH]);
 
   const showZoneOverlay =
     previewDims &&
-    (previewDims.zoneW < LCD_W ||
-      previewDims.zoneH < LCD_H ||
+    (previewDims.zoneW < lcdW ||
+      previewDims.zoneH < lcdH ||
       previewDims.zoneX > 0 ||
       previewDims.zoneY > 0);
 
@@ -123,7 +138,9 @@ export function Preview480x320({
         <div className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}>
           <div className={styles.frame}>
             <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
-              {variant === "default" && <div className={styles.deviceLabel}>RadioMaster TX15</div>}
+              {variant === "default" && (
+                <div className={styles.deviceLabel}>{radioName ?? "EdgeTX Radio"}</div>
+              )}
               <div className={styles.screen} ref={containerRef}>
                 {!luaSource ? (
                   <div className={styles.placeholder}>
@@ -139,10 +156,10 @@ export function Preview480x320({
                       <div
                         className={styles.region}
                         style={{
-                          left: `${(previewDims.zoneX / LCD_W) * 100}%`,
-                          top: `${(previewDims.zoneY / LCD_H) * 100}%`,
-                          width: `${(previewDims.zoneW / LCD_W) * 100}%`,
-                          height: `${(previewDims.zoneH / LCD_H) * 100}%`,
+                          left: `${(previewDims.zoneX / lcdW) * 100}%`,
+                          top: `${(previewDims.zoneY / lcdH) * 100}%`,
+                          width: `${(previewDims.zoneW / lcdW) * 100}%`,
+                          height: `${(previewDims.zoneH / lcdH) * 100}%`,
                         }}
                         aria-hidden
                       >
@@ -156,7 +173,7 @@ export function Preview480x320({
               </div>
             </div>
             <div className={styles.footer}>
-              <span className={styles.meta}>480 × 320</span>
+              <span className={styles.meta}>{lcdW} × {lcdH}</span>
               {previewDims && (
                 <span className={styles.meta}>
                   {previewDims.layout} · zone {previewDims.zone}

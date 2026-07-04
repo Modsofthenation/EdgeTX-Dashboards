@@ -8,8 +8,8 @@ export {
 } from "./validationPipeline.js";
 export { WidgetWorkspace, defaultWorkspace } from "./workspace.js";
 export { buildReleaseValidationContext } from "./validationContext.js";
-export { streamAgentRun, finalizeWidgetRun } from "./orchestrator.js";export {
-  loadSimulateLayoutProfile,
+export { streamAgentRun, finalizeWidgetRun } from "./orchestrator.js";
+export {
   validateDevKitAnnotations,
   validateStubApiCalls,
   parseSimulateAnnotation,
@@ -24,10 +24,20 @@ export {
   renderInstallMd,
   writeInstallMd,
 } from "./package.js";
-export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot } from "./knowledge.js";
+export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.js";
 export { buildGenerationPrompt, buildRefinePrompt, createCustomTools } from "./tools.js";
 export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS } from "./session.js";
-export { validateGenerateRequest, isTelemetryProtocol, isAllowedModelId, ALLOWED_MODEL_IDS } from "./requestValidate.js";
+export {
+  listAvailableModels,
+  listAvailableModelIds,
+  getDefaultModelId,
+  isAllowedModelId,
+  resetModelCatalogCache,
+  FALLBACK_MODELS,
+  DEFAULT_MODEL_ID,
+  type ModelCatalogEntry,
+} from "./models.js";
+export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.js";
 export { findLatestWidgetName } from "./widgetResolve.js";
 export { WIDGET_NAME_PATTERN } from "./paths.js";
 export { assertNodeVersion } from "./nodeVersion.js";

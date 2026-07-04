@@ -17,6 +17,8 @@ export interface RadioProfile {
   touch: boolean;
   maxOptions: number;
   edgeTxMin: string;
+  /** Simulate/layout profile key when it differs from radio id (e.g. shared 480×272 class). */
+  layoutProfile?: string;
   notes?: string;
 }
 

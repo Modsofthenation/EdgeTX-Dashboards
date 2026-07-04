@@ -12,10 +12,9 @@ import {
 import {
   validateDevKitAnnotations,
   validateStubApiCalls,
-  loadSimulateLayoutProfile,
 } from "../devKit.js";
 import { validateWidgetLua } from "../validate.js";
-import { getRepoRoot } from "../knowledge.js";
+import { getRepoRoot, loadSimulateLayoutProfile } from "../knowledge.js";
 
 const examplePath = join(getRepoRoot(), "examples", "tx15-minimal-dashboard.lua");
 const exampleSource = readFileSync(examplePath, "utf-8");
@@ -59,6 +58,13 @@ describe("dev-kit annotations", () => {
 
   it("loads tx15 layout profile from shared layouts", () => {
     const profile = loadSimulateLayoutProfile("tx15");
+    assert.equal(profile.lcdW, 480);
+    assert.equal(profile.lcdH, 320);
+  });
+
+  it("resolves color272 layout for TX16 radio id", () => {
+    const profile = loadSimulateLayoutProfile("tx16");
+    assert.equal(profile.lcdH, 272);
     assert.equal(profile.lcdW, 480);
     assert.ok(profile.layouts.Layout2x2);
   });

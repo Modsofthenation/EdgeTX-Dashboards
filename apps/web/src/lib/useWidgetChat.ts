@@ -1,8 +1,25 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { DEFAULT_CHAT_MODEL } from "@/lib/chatModels";
+import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
+import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel } from "@/lib/chatModels";
+import {
+  fetchModelCatalog,
+  findModel,
+} from "@/lib/modelCatalog";
+import {
+  createChatRecord,
+  fetchChat,
+  fetchChatList,
+  removeChatRecord,
+  syncChatRecord,
+} from "@/lib/chatHistoryApi";
+import {
+  fetchRadioCatalog,
+  findRadio,
+  type RadioCatalogEntry,
+} from "@/lib/radioCatalog";
 import {
   appendAssistantLine,
   createAssistantPlaceholder,
@@ -11,6 +28,7 @@ import {
   patchAssistant,
   type ChatMessage,
   type ChatSendOptions,
+  type ChatSummary,
   type WidgetSnapshot,
 } from "@/lib/chatTypes";
 import type { StreamLine } from "@/lib/streamLines";
@@ -21,33 +39,104 @@ function shouldRenderStreamEvent(type: string): boolean {
 
 export function useWidgetChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatSummary[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [protocol, setProtocol] = useState<TelemetryProtocol>("betaflight");
+  const [radioId, setRadioId] = useState(DEFAULT_RADIO_ID);
+  const [radios, setRadios] = useState<RadioCatalogEntry[]>([]);
+  const [models, setModels] = useState<ChatModel[]>(FALLBACK_CHAT_MODELS);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [modelId, setModelId] = useState(DEFAULT_CHAT_MODEL);
   const [edgeTxVersion, setEdgeTxVersion] = useState("2.11.0");
   const [running, setRunning] = useState(false);
   const [artifact, setArtifact] = useState<WidgetSnapshot | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
+  const chatIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const widgetNameRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fetchGenerationRef = useRef(0);
-
+  const messagesRef = useRef<ChatMessage[]>([]);
+  const artifactRef = useRef<WidgetSnapshot | null>(null);
   const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadArtifact = useCallback(async (name: string, validated?: boolean, issues?: ValidationIssue[]) => {
-    const generation = ++fetchGenerationRef.current;
-    const fetched = await fetchWidgetSource(null, name);
-    if (!fetched || generation !== fetchGenerationRef.current) return;
-
-    widgetNameRef.current = fetched.name;
-    setArtifact((prev) => ({
-      name: fetched.name,
-      luaSource: fetched.source,
-      validated: validated ?? prev?.validated ?? false,
-      validationIssues: issues ?? prev?.validationIssues ?? [],
-    }));
+  const refreshHistory = useCallback(async () => {
+    const chats = await fetchChatList();
+    setChatHistory(chats);
   }, []);
+
+  useEffect(() => {
+    void refreshHistory().finally(() => setHistoryLoading(false));
+    void fetchRadioCatalog().then((catalog) => setRadios(catalog.radios));
+    void fetchModelCatalog()
+      .then((catalog) => {
+        setModels(catalog.models);
+        setModelId((current) =>
+          catalog.models.some((m) => m.id === current) ? current : catalog.defaultId
+        );
+      })
+      .finally(() => setModelsLoading(false));
+  }, [refreshHistory]);
+
+  const selectedRadio = useMemo(
+    () => findRadio({ defaultId: DEFAULT_RADIO_ID, radios }, radioId),
+    [radioId, radios]
+  );
+
+  const selectedModel = useMemo(
+    () => findModel({ defaultId: DEFAULT_CHAT_MODEL, models }, modelId),
+    [modelId, models]
+  );
+
+  const layoutProfileId = selectedRadio?.layoutProfile ?? DEFAULT_RADIO_ID;
+
+  const persistChat = useCallback(
+    async (id: string) => {
+      await syncChatRecord(id, {
+        sessionId: sessionIdRef.current,
+        widgetName: widgetNameRef.current,
+        messages: messagesRef.current,
+        artifact: artifactRef.current,
+      });
+      await refreshHistory();
+    },
+    [refreshHistory]
+  );
+
+  const setMessagesTracked = useCallback((updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+    setMessages((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      messagesRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const setArtifactTracked = useCallback((updater: WidgetSnapshot | null | ((prev: WidgetSnapshot | null) => WidgetSnapshot | null)) => {
+    setArtifact((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      artifactRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const loadArtifact = useCallback(
+    async (name: string, validated?: boolean, issues?: ValidationIssue[]) => {
+      const generation = ++fetchGenerationRef.current;
+      const fetched = await fetchWidgetSource(null, name);
+      if (!fetched || generation !== fetchGenerationRef.current) return;
+
+      widgetNameRef.current = fetched.name;
+      setArtifactTracked((prev) => ({
+        name: fetched.name,
+        luaSource: fetched.source,
+        validated: validated ?? prev?.validated ?? false,
+        validationIssues: issues ?? prev?.validationIssues ?? [],
+      }));
+    },
+    [setArtifactTracked]
+  );
 
   const scheduleLoadArtifact = useCallback(
     (name: string, validated?: boolean, issues?: ValidationIssue[]) => {
@@ -59,6 +148,27 @@ export function useWidgetChat() {
     [loadArtifact]
   );
 
+  const ensureChat = useCallback(
+    async (title: string, proto: TelemetryProtocol, model: string, edgeTx: string, radio: string) => {
+      if (chatIdRef.current) return chatIdRef.current;
+
+      const chat = await createChatRecord({
+        title,
+        protocol: proto,
+        modelId: model,
+        edgeTxVersion: edgeTx,
+        radioId: radio,
+      });
+      if (!chat) return null;
+
+      chatIdRef.current = chat.id;
+      setChatId(chat.id);
+      await refreshHistory();
+      return chat.id;
+    },
+    [refreshHistory]
+  );
+
   const sendMessage = useCallback(
     async (prompt: string, options?: Partial<ChatSendOptions>) => {
       const trimmed = prompt.trim();
@@ -67,15 +177,17 @@ export function useWidgetChat() {
       const proto = options?.protocol ?? protocol;
       const model = options?.modelId ?? modelId;
       const edgeTx = options?.edgeTxVersion ?? edgeTxVersion;
+      const radio = options?.radioId ?? radioId;
 
       setProtocol(proto);
       setModelId(model);
+      setRadioId(radio);
 
       const userMessage = createUserMessage(trimmed);
       const assistantMessage = createAssistantPlaceholder();
       const assistantId = assistantMessage.id;
 
-      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setMessagesTracked((prev) => [...prev, userMessage, assistantMessage]);
 
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -83,12 +195,16 @@ export function useWidgetChat() {
       setRunning(true);
 
       const isRefine = !!sessionIdRef.current;
+      if (!isRefine) {
+        await ensureChat(trimmed, proto, model, edgeTx, radio);
+      }
+
       const url = isRefine ? "/api/refine" : "/api/generate";
       const body = isRefine
         ? { sessionId: sessionIdRef.current, prompt: trimmed }
         : {
             prompt: trimmed,
-            radioId: "tx15",
+            radioId: radio,
             protocol: proto,
             edgeTxVersion: edgeTx,
             modelId: model,
@@ -107,7 +223,7 @@ export function useWidgetChat() {
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: res.statusText }));
-          setMessages((prev) =>
+          setMessagesTracked((prev) =>
             patchAssistant(prev, assistantId, {
               isStreaming: false,
               error: true,
@@ -161,7 +277,7 @@ export function useWidgetChat() {
                 const lineType =
                   data.type === "done" && data.success === false ? "error" : (data.type as StreamLine["type"]);
                 if (lineType === "text" || lineType === "tool" || lineType === "status" || lineType === "error" || lineType === "done") {
-                  setMessages((prev) =>
+                  setMessagesTracked((prev) =>
                     appendAssistantLine(prev, assistantId, { type: lineType, content: data.content })
                   );
                 }
@@ -173,13 +289,11 @@ export function useWidgetChat() {
                   await loadArtifact(name, validated, validationIssues);
                 }
 
-                setArtifact((prev) =>
-                  prev
-                    ? { ...prev, validated, validationIssues }
-                    : prev
+                setArtifactTracked((prev) =>
+                  prev ? { ...prev, validated, validationIssues } : prev
                 );
 
-                setMessages((prev) =>
+                setMessagesTracked((prev) =>
                   patchAssistant(prev, assistantId, {
                     isStreaming: false,
                     error: data.type === "error" && data.success === false,
@@ -193,7 +307,7 @@ export function useWidgetChat() {
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          setMessages((prev) =>
+          setMessagesTracked((prev) =>
             patchAssistant(prev, assistantId, {
               isStreaming: false,
               error: true,
@@ -206,28 +320,104 @@ export function useWidgetChat() {
         if (widgetNameRef.current) {
           await loadArtifact(widgetNameRef.current, validated, validationIssues);
         }
+        if (chatIdRef.current) {
+          await persistChat(chatIdRef.current);
+        }
       }
     },
-    [running, protocol, modelId, edgeTxVersion, loadArtifact, scheduleLoadArtifact]
+    [
+      running,
+      protocol,
+      modelId,
+      edgeTxVersion,
+      radioId,
+      radios,
+      layoutProfileId,
+      selectedRadio,
+      setRadioId,
+      loadArtifact,
+      scheduleLoadArtifact,
+      ensureChat,
+      persistChat,
+      setMessagesTracked,
+      setArtifactTracked,
+    ]
+  );
+
+  const loadChat = useCallback(
+    async (id: string) => {
+      if (running) return;
+
+      abortRef.current?.abort();
+      const chat = await fetchChat(id);
+      if (!chat) return;
+
+      chatIdRef.current = chat.id;
+      setChatId(chat.id);
+      setSessionId(chat.sessionId);
+      sessionIdRef.current = chat.sessionId;
+      widgetNameRef.current = chat.artifact?.name ?? chat.widgetName;
+      setProtocol(chat.protocol);
+      setModelId(chat.modelId);
+      setRadioId(chat.radioId);
+      setEdgeTxVersion(chat.edgeTxVersion);
+      setMessagesTracked(chat.messages);
+      setArtifactTracked(chat.artifact);
+
+      if (!chat.artifact?.luaSource && chat.widgetName) {
+        await loadArtifact(chat.widgetName, chat.artifact?.validated, chat.artifact?.validationIssues);
+        if (chatIdRef.current) {
+          await persistChat(chatIdRef.current);
+        }
+      }
+    },
+    [running, loadArtifact, persistChat, setMessagesTracked, setArtifactTracked]
   );
 
   const startNewChat = useCallback(() => {
     abortRef.current?.abort();
     if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
     fetchGenerationRef.current += 1;
-    setMessages([]);
+    chatIdRef.current = null;
+    setChatId(null);
+    setMessagesTracked([]);
     setSessionId(null);
     sessionIdRef.current = null;
     widgetNameRef.current = null;
-    setArtifact(null);
+    setArtifactTracked(null);
     setRunning(false);
-  }, []);
+  }, [setMessagesTracked, setArtifactTracked]);
+
+  const deleteChat = useCallback(
+    async (id: string) => {
+      if (running) return;
+      const removed = await removeChatRecord(id);
+      if (!removed) return;
+
+      if (chatIdRef.current === id) {
+        startNewChat();
+      }
+      await refreshHistory();
+    },
+    [running, startNewChat, refreshHistory]
+  );
 
   return {
     messages,
+    chatId,
+    chatHistory,
+    historyLoading,
     sessionId,
     protocol,
     setProtocol,
+    radioId,
+    setRadioId,
+    radios,
+    layoutProfileId,
+    selectedRadio,
+    models,
+    modelsLoading,
+    selectedModel,
     modelId,
     setModelId,
     edgeTxVersion,
@@ -236,6 +426,9 @@ export function useWidgetChat() {
     artifact,
     sendMessage,
     startNewChat,
+    loadChat,
+    deleteChat,
+    refreshHistory,
     canRefine: !!sessionId,
   };
 }

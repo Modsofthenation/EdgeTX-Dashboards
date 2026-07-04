@@ -31,10 +31,6 @@ export {
   getSimulateLayoutProfile,
 };
 
-export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
-  return getSimulateLayoutProfile(radioId);
-}
-
 let cachedApiIndex: Map<string, Set<string>> | null | undefined;
 
 function loadStubApiIndex(): Map<string, Set<string>> | null {

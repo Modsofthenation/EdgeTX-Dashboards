@@ -1,30 +1,43 @@
 "use client";
 
-import { CHAT_MODELS } from "@/lib/chatModels";
 import { useWidgetChat } from "@/lib/useWidgetChat";
 import { ArtifactPanel } from "./ArtifactPanel";
 import { ChatComposer } from "./ChatComposer";
+import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { ChatMessageList } from "./ChatMessageList";
 import styles from "./ChatApp.module.css";
 
 export function ChatApp() {
   const {
     messages,
+    chatId,
+    chatHistory,
+    historyLoading,
     sessionId,
     protocol,
     setProtocol,
+    radioId,
+    setRadioId,
+    radios,
+    layoutProfileId,
+    selectedRadio,
+    selectedModel,
     modelId,
     setModelId,
+    models,
+    modelsLoading,
     edgeTxVersion,
     setEdgeTxVersion,
     running,
     artifact,
     sendMessage,
     startNewChat,
+    loadChat,
+    deleteChat,
     canRefine,
   } = useWidgetChat();
 
-  const activeModel = CHAT_MODELS.find((m) => m.id === modelId);
+  const activeModelLabel = selectedModel?.label ?? modelId;
 
   return (
     <div className={styles.shell}>
@@ -36,7 +49,7 @@ export function ChatApp() {
           <div>
             <h1 className={styles.title}>EdgeTX Widget Generator</h1>
             <p className={styles.subtitle}>
-              {activeModel?.label ?? modelId} · RadioMaster TX15
+              {activeModelLabel} · {selectedRadio?.name ?? "RadioMaster TX15"}
             </p>
           </div>
         </div>
@@ -60,6 +73,16 @@ export function ChatApp() {
       </header>
 
       <div className={styles.body}>
+        <ChatHistorySidebar
+          chats={chatHistory}
+          activeChatId={chatId}
+          loading={historyLoading}
+          running={running}
+          onSelect={(id) => void loadChat(id)}
+          onNewChat={startNewChat}
+          onDelete={(id) => void deleteChat(id)}
+        />
+
         <div className={styles.chatColumn}>
           <ChatMessageList
             messages={messages}
@@ -71,10 +94,15 @@ export function ChatApp() {
             canRefine={canRefine}
             protocol={protocol}
             modelId={modelId}
+            models={models}
+            modelsLoading={modelsLoading}
             edgeTxVersion={edgeTxVersion}
+            radioId={radioId}
+            radios={radios}
             onProtocolChange={setProtocol}
             onModelChange={setModelId}
             onEdgeTxChange={setEdgeTxVersion}
+            onRadioChange={setRadioId}
             onSend={(prompt) => void sendMessage(prompt)}
           />
         </div>
@@ -84,6 +112,8 @@ export function ChatApp() {
           sessionId={sessionId}
           protocol={protocol}
           running={running}
+          layoutProfileId={layoutProfileId}
+          radioName={selectedRadio?.name ?? null}
         />
       </div>
     </div>

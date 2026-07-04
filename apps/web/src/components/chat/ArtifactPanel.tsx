@@ -11,9 +11,18 @@ interface ArtifactPanelProps {
   sessionId: string | null;
   protocol: TelemetryProtocol;
   running: boolean;
+  layoutProfileId?: string;
+  radioName?: string | null;
 }
 
-export function ArtifactPanel({ artifact, sessionId, protocol, running }: ArtifactPanelProps) {
+export function ArtifactPanel({
+  artifact,
+  sessionId,
+  protocol,
+  running,
+  layoutProfileId = "tx15",
+  radioName,
+}: ArtifactPanelProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -26,7 +35,7 @@ export function ArtifactPanel({ artifact, sessionId, protocol, running }: Artifa
           </span>
           <h2 className={styles.emptyTitle}>Widget output</h2>
           <p className={styles.emptyText}>
-            Your generated TX15 widget preview and download will appear here when the agent writes{" "}
+            Your generated widget preview and download will appear here when the agent writes{" "}
             <code>main.lua</code>.
           </p>
         </div>
@@ -96,6 +105,8 @@ export function ArtifactPanel({ artifact, sessionId, protocol, running }: Artifa
       <Preview480x320
         luaSource={artifact.luaSource}
         widgetName={artifact.name}
+        layoutProfileId={layoutProfileId}
+        radioName={radioName}
         live
         variant="compact"
       />

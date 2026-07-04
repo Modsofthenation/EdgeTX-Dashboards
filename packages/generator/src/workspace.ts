@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import type { SimulateLayoutProfile } from "@widget-gen/shared";
-import { ensureDevKitAnnotations, getSimulateLayoutProfile } from "@widget-gen/shared";
+import { ensureDevKitAnnotations } from "@widget-gen/shared";
+import { loadSimulateLayoutProfile } from "./knowledge.js";
 import { getWidgetLuaPath } from "./paths.js";
 
 export interface WidgetSourceResult {
@@ -64,7 +65,7 @@ export class WidgetWorkspace {
   }
 
   prepareForRadio(widgetName: string, radioId: string): ReadWidgetResult {
-    const profile = getSimulateLayoutProfile(radioId);
+    const profile = loadSimulateLayoutProfile(radioId);
     return this.prepareSource(widgetName, profile);
   }
 }

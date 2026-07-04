@@ -8,12 +8,14 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test dist/__tests__/drawSurface.test.js"
   },
   "devDependencies": {
     "typescript": "^5.8.3"

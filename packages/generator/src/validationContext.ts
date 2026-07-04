@@ -1,6 +1,5 @@
 import type { SimulateLayoutProfile, TelemetryProtocol } from "@widget-gen/shared";
-import { getSimulateLayoutProfile } from "@widget-gen/shared";
-import { loadRadioProfile, loadTelemetryCatalog } from "./knowledge.js";
+import { loadRadioProfile, loadTelemetryCatalog, loadSimulateLayoutProfile } from "./knowledge.js";
 import type { ValidateWidgetOptions } from "./validate.js";
 
 export interface ReleaseValidationContext {
@@ -18,7 +17,7 @@ export function buildReleaseValidationContext(
 ): ReleaseValidationContext {
   const radio = loadRadioProfile(radioId);
   const catalog = loadTelemetryCatalog(protocol);
-  const simulateProfile = getSimulateLayoutProfile(radioId);
+  const simulateProfile = loadSimulateLayoutProfile(radioId);
 
   return {
     radioId,

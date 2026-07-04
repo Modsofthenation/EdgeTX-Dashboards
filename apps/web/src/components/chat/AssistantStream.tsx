@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { MarkdownContent } from "./MarkdownContent";
 import { formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
@@ -26,11 +27,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
     <div className={styles.stream}>
       {entries.map((entry, i) => {
         if (entry.kind === "text") {
-          return (
-            <p key={i} className={styles.prose}>
-              {entry.text}
-            </p>
-          );
+          return <MarkdownContent key={i}>{entry.text ?? ""}</MarkdownContent>;
         }
 
         if (entry.kind === "tools") {

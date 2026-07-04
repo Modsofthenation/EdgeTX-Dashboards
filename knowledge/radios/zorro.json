@@ -1,0 +1,11 @@
+{
+  "$schema": "./_schema.json",
+  "id": "zorro",
+  "name": "RadioMaster Zorro",
+  "lcdW": 128,
+  "lcdH": 64,
+  "touch": false,
+  "maxOptions": 6,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "compact128"
+}

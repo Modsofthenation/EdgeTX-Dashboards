@@ -40,7 +40,7 @@ export function extractUsedTelemetrySensors(source: string): Set<string> {
 }
 
 function validateVisualDesign(source: string, issues: ValidationIssue[]): void {
-  const { drawTextCount, hasFilledRectangle, hasSmlSize, stackedTopLeftWithoutPanels } =
+  const { refreshBody, drawTextCount, hasFilledRectangle, hasSmlSize, stackedTopLeftWithoutPanels } =
     analyzeDrawSurface(source);
 
   if (!hasFilledRectangle) {
@@ -70,6 +70,14 @@ function validateVisualDesign(source: string, issues: ValidationIssue[]): void {
       severity: "warning",
       message:
         "Stacked top-left text without panels — use 12px grid and card layout per design guide",
+    });
+  }
+
+  if (/lcd\.drawText\s*\([^)]*\b(?:fmtNum|telem)\s*\(/.test(refreshBody)) {
+    issues.push({
+      severity: "warning",
+      message:
+        "Format telemetry into locals before drawText — inline fmtNum/telem in lcd.drawText breaks web preview",
     });
   }
 }

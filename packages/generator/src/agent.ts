@@ -192,7 +192,7 @@ export class WidgetGenerator {
     validationIssues?: ValidationIssue[];
   }> {
     const agent = await this.ensureAgent();
-    const run = await agent.send(buildRefinePrompt(prompt, widgetName));
+    const run = await agent.send(buildRefinePrompt(prompt, widgetName, radioId));
 
     const streamed = await streamAgentRun(
       run,

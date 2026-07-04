@@ -10,7 +10,7 @@
     "dev": "npm run dev --workspace=@widget-gen/web",
     "generate": "npm run generate --workspace=@widget-gen/generator",
     "sync-stubs": "node scripts/sync-edgetx-stubs.mjs",
-    "test": "npm run test --workspace=@widget-gen/generator",
+    "test": "npm run test --workspace=@widget-gen/shared && npm run test --workspace=@widget-gen/generator && npm run test:preview --workspace=@widget-gen/web",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "engines": {

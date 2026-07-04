@@ -38,8 +38,18 @@ Apply these rules to every generated widget. Goal: **clean, readable, profession
 | Label | `SMLSIZE` | Field names, units, footer |
 
 - **Label above value** — Draw label at `y`, value at `y + 14` (not inline `"Batt 12.6V"` unless space is tight).
-- **Units** — Separate from value: `"12.6"` + SMLSIZE `" V"` beside or below.
+- **Units** — Separate from value: `"12.6"` + SMLSIZE `" V"` on the **next line** (y + 28), not concatenated in one drawText.
+- **Minimum vertical spacing** — Labels at y+8, hero values at y+22 or y+28, secondary at y+44 or y+72. Never stack two MIDSIZE/DBLSIZE lines closer than 18px apart.
 - Avoid more than **2 DBLSIZE** strings on screen.
+
+## Web preview compatibility
+
+The generator web UI renders your widget by parsing `lcd.drawText` in `refresh()`. To preview correctly:
+
+1. **Cache telemetry and formatted strings as locals** before any `lcd.drawText` call.
+2. In `lcd.drawText`, use **variable names or string literals only** — never `fmtNum(...)`, `telem(...)`, or `string.format(...)` inline in drawText args.
+3. Good: `local vStr = string.format("%.1f", volts)` then `lcd.drawText(x, y, vStr, DBLSIZE + YELLOW)`.
+4. Bad: `lcd.drawText(x, y, fmtNum(volts, 1) .. " V", DBLSIZE + YELLOW)`.
 
 ## Color semantics
 
