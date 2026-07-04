@@ -27,7 +27,7 @@ export {
 export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot } from "./knowledge.js";
 export { buildGenerationPrompt, buildRefinePrompt, createCustomTools } from "./tools.js";
 export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS } from "./session.js";
-export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.js";
+export { validateGenerateRequest, isTelemetryProtocol, isAllowedModelId, ALLOWED_MODEL_IDS } from "./requestValidate.js";
 export { findLatestWidgetName } from "./widgetResolve.js";
 export { WIDGET_NAME_PATTERN } from "./paths.js";
 export { assertNodeVersion } from "./nodeVersion.js";

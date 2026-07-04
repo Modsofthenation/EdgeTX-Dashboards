@@ -13,9 +13,15 @@ interface Preview480x320Props {
   luaSource: string | null;
   widgetName: string | null;
   live?: boolean;
+  variant?: "default" | "compact";
 }
 
-export function Preview480x320({ luaSource, widgetName, live = true }: Preview480x320Props) {
+export function Preview480x320({
+  luaSource,
+  widgetName,
+  live = true,
+  variant = "default",
+}: Preview480x320Props) {
   const [tab, setTab] = useState<"preview" | "source">("preview");
   const [tick, setTick] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,10 +73,33 @@ export function Preview480x320({ luaSource, widgetName, live = true }: Preview48
       previewDims.zoneY > 0);
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>{widgetName ?? "TX15 Preview"}</h2>
-        <div className={styles.tabs} role="tablist">
+    <div className={variant === "compact" ? styles.panelCompact : styles.panel}>
+      {variant === "default" && (
+        <div className={styles.header}>
+          <h2 className={styles.title}>{widgetName ?? "TX15 Preview"}</h2>
+          <div className={styles.tabs} role="tablist">
+            <button
+              role="tab"
+              aria-selected={tab === "preview"}
+              className={tab === "preview" ? styles.tabActive : styles.tab}
+              onClick={() => setTab("preview")}
+            >
+              Preview
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === "source"}
+              className={tab === "source" ? styles.tabActive : styles.tab}
+              onClick={() => setTab("source")}
+            >
+              Source
+            </button>
+          </div>
+        </div>
+      )}
+
+      {variant === "compact" && (
+        <div className={styles.compactTabs} role="tablist">
           <button
             role="tab"
             aria-selected={tab === "preview"}
@@ -85,16 +114,16 @@ export function Preview480x320({ luaSource, widgetName, live = true }: Preview48
             className={tab === "source" ? styles.tabActive : styles.tab}
             onClick={() => setTab("source")}
           >
-            Source
+            Lua
           </button>
         </div>
-      </div>
+      )}
 
       {tab === "preview" ? (
-        <div className={styles.frameWrap}>
+        <div className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}>
           <div className={styles.frame}>
-            <div className={styles.device}>
-              <div className={styles.deviceLabel}>RadioMaster TX15</div>
+            <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
+              {variant === "default" && <div className={styles.deviceLabel}>RadioMaster TX15</div>}
               <div className={styles.screen} ref={containerRef}>
                 {!luaSource ? (
                   <div className={styles.placeholder}>
@@ -144,7 +173,7 @@ export function Preview480x320({ luaSource, widgetName, live = true }: Preview48
           </div>
         </div>
       ) : (
-        <pre className={styles.source}>
+        <pre className={variant === "compact" ? styles.sourceCompact : styles.source}>
           {luaSource ?? "// Lua source will appear here after generation"}
         </pre>
       )}

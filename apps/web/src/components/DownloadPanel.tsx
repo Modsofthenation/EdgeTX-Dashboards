@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import styles from "./DownloadPanel.module.css";
 
@@ -18,14 +19,53 @@ export function DownloadPanel({
   validated,
   validationIssues,
 }: DownloadPanelProps) {
-  const downloadUrl =
-    validated && sessionId && widgetName
-      ? `/api/download?sessionId=${encodeURIComponent(sessionId)}&protocol=${encodeURIComponent(protocol)}`
-      : validated && widgetName
-        ? `/api/download?name=${encodeURIComponent(widgetName)}&protocol=${encodeURIComponent(protocol)}`
-        : null;
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  const canDownload = validated && !!widgetName;
   const errors = validationIssues.filter((i) => i.severity === "error");
+
+  const buildDownloadUrl = () => {
+    const params = new URLSearchParams({ protocol });
+    if (sessionId) {
+      params.set("sessionId", sessionId);
+    } else if (widgetName) {
+      params.set("name", widgetName);
+    }
+    return `/api/download?${params}`;
+  };
+
+  const handleDownload = async () => {
+    if (!canDownload || !widgetName) return;
+
+    setDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const res = await fetch(buildDownloadUrl());
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          validation?: { issues?: ValidationIssue[] };
+        };
+        const detail = body.error ?? `Download failed (${res.status})`;
+        setDownloadError(detail);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${widgetName}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className={styles.panel}>
@@ -57,11 +97,15 @@ export function DownloadPanel({
             Widget <strong>{widgetName}</strong> passed validation and is ready for{" "}
             <code>WIDGETS/{widgetName}/main.lua</code>
           </p>
-          {downloadUrl && (
-            <a className={styles.button} href={downloadUrl} download={`${widgetName}.zip`}>
-              Download {widgetName}.zip
-            </a>
-          )}
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => void handleDownload()}
+            disabled={downloading}
+          >
+            {downloading ? "Preparing zip…" : `Download ${widgetName}.zip`}
+          </button>
+          {downloadError && <p className={styles.warn}>{downloadError}</p>}
           <ul className={styles.steps}>
             <li>Extract zip to radio SD card</li>
             <li>Discover telemetry sensors on TELEMETRY page</li>

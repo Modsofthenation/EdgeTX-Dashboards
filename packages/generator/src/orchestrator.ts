@@ -1,4 +1,4 @@
-import type { SDKMessage } from "@cursor/sdk";
+import type { SDKMessage, SDKToolUseMessage } from "@cursor/sdk";
 import type { StreamEvent, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { packageWidget } from "./package.js";
 import { validateWidgetForRelease } from "./validationPipeline.js";
@@ -19,12 +19,32 @@ export function extractTextFromMessage(message: SDKMessage): string | null {
   return parts.length > 0 ? parts.join("") : null;
 }
 
+function formatToolLabel(name: string): string {
+  return name
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
 export function extractToolInfo(message: SDKMessage): string | null {
-  const msgType = message.type as string;
-  if (msgType.includes("tool") || msgType === "task") {
-    const tool = "tool" in message ? (message as { tool?: string }).tool : undefined;
-    return tool ? `[tool] ${tool}` : `[${msgType}]`;
+  if (message.type === "tool_call") {
+    const call = message as SDKToolUseMessage;
+    const label = formatToolLabel(call.name);
+    if (call.status === "running") return label;
+    if (call.status === "error") return `${label} (failed)`;
+    return label;
   }
+
+  if (message.type === "assistant") {
+    const tools = message.message.content
+      .filter((block) => block.type === "tool_use")
+      .map((block) => formatToolLabel(block.name));
+    if (tools.length > 0) return tools.join(", ");
+  }
+
+  if (message.type === "task") {
+    return "Subagent task";
+  }
+
   return null;
 }
 
@@ -41,6 +61,8 @@ export async function streamAgentRun(
   callbacks: RunCallbacks | undefined,
   resolveName: () => string | undefined
 ): Promise<{ runId: string; status: string; result?: string; widgetName?: string }> {
+  let lastReportedName: string | undefined;
+
   for await (const event of run.stream()) {
     const text = extractTextFromMessage(event);
     if (text) {
@@ -51,7 +73,8 @@ export async function streamAgentRun(
       callbacks?.onEvent?.({ type: "tool", content: tool, runId: run.id, agentId });
     }
     const name = resolveName();
-    if (name) {
+    if (name && name !== lastReportedName) {
+      lastReportedName = name;
       callbacks?.onWidgetName?.(name);
     }
   }

@@ -8,6 +8,7 @@ import {
   sanitizeWidgetName,
   validateWidgetForRelease,
   WidgetValidationError,
+  findLatestWidgetName,
 } from "@widget-gen/generator";
 import { checkApiAuth } from "@/lib/apiSecurity";
 
@@ -40,6 +41,12 @@ export async function GET(request: Request): Promise<Response> {
     }
     if (stored.session.widgetName) {
       name = stored.session.widgetName;
+    } else {
+      const latest = findLatestWidgetName();
+      if (latest) {
+        stored.session.widgetName = latest;
+        name = latest;
+      }
     }
     protocol = stored.session.protocol;
     radioId = stored.session.radioId;

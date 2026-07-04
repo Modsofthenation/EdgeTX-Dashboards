@@ -40,6 +40,7 @@ export interface GenerateRequest {
   radioId: string;
   protocol: TelemetryProtocol;
   edgeTxVersion?: string;
+  modelId?: string;
 }
 
 export interface RefineRequest {
@@ -71,6 +72,7 @@ export interface GenerateSession {
   agentId: string;
   radioId: string;
   protocol: TelemetryProtocol;
+  modelId: string;
   createdAt: number;
   lastRunId?: string;
   widgetName?: string;

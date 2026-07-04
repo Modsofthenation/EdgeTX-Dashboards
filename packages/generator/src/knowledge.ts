@@ -1,12 +1,38 @@
 import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const REPO_MARKER = join("knowledge", "radios", "tx15.json");
+
+function isRepoRoot(dir: string): boolean {
+  return existsSync(join(dir, REPO_MARKER));
+}
+
+/** Resolve monorepo root (works from dist/ and when Next.js cwd is apps/web). */
 export function getRepoRoot(): string {
-  return join(__dirname, "..", "..", "..");
+  const envRoot = process.env.WIDGET_GEN_REPO_ROOT;
+  if (envRoot) {
+    const resolved = resolve(envRoot);
+    if (isRepoRoot(resolved)) return resolved;
+  }
+
+  const searchRoots = [resolve(process.cwd()), resolve(__dirname)];
+  for (const start of searchRoots) {
+    let dir = start;
+    for (let depth = 0; depth < 8; depth++) {
+      if (isRepoRoot(dir)) return dir;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+
+  throw new Error(
+    `Could not locate repository root (missing ${REPO_MARKER}). cwd=${process.cwd()}`
+  );
 }
 
 export function loadRadioProfile(radioId: string): RadioProfile {

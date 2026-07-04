@@ -1,15 +1,14 @@
-const MIN_NODE = [22, 13, 0];
+import { hasBuiltinSqlite } from "./localAgentStore.js";
+
+const RECOMMENDED_NODE = [22, 13, 0];
 
 export function assertNodeVersion(): void {
-  const [major, minor, patch] = process.versions.node.split(".").map(Number);
-  const ok =
-    major > MIN_NODE[0] ||
-    (major === MIN_NODE[0] && minor > MIN_NODE[1]) ||
-    (major === MIN_NODE[0] && minor === MIN_NODE[1] && patch >= MIN_NODE[2]);
-
-  if (!ok) {
-    throw new Error(
-      `Node.js ${MIN_NODE.join(".")}+ is required (@cursor/sdk). Current: ${process.versions.node}`
-    );
+  if (hasBuiltinSqlite()) {
+    return;
   }
+
+  console.warn(
+    `Node.js ${RECOMMENDED_NODE.join(".")}+ is recommended for @cursor/sdk (built-in node:sqlite). ` +
+      `Current: ${process.versions.node}. Using JSONL agent store fallback.`
+  );
 }

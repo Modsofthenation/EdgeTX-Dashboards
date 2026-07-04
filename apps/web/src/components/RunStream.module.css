@@ -4,8 +4,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
-  flex: 1;
-  min-height: 220px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-md);
@@ -45,15 +43,15 @@
 }
 
 .log {
-  flex: 1;
+  height: 360px;
   overflow-y: auto;
-  max-height: 420px;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  padding: 0.75rem;
+  padding: 0.875rem;
   background: var(--bg-elevated);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .log::-webkit-scrollbar {
@@ -73,6 +71,7 @@
   gap: 0.5rem;
   padding: 2rem 1rem;
   text-align: center;
+  flex: 1;
 }
 
 .emptyIcon {
@@ -88,21 +87,64 @@
   font-size: 0.875rem;
 }
 
-.line {
-  margin-bottom: 0.625rem;
+.prose {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.toolGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.toolGroupLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.toolChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.toolChip {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: var(--warning);
+}
+
+.event {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   line-height: 1.45;
 }
 
 .badge {
-  display: inline-block;
+  flex-shrink: 0;
   font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
-  margin-right: 0.5rem;
-  vertical-align: middle;
+  margin-top: 0.1rem;
   background: var(--border);
   color: var(--text-secondary);
 }
@@ -117,21 +159,19 @@
   color: var(--warning);
 }
 
-.error .content {
+.error .eventText {
   color: var(--error);
 }
 
-.done .content {
+.done .eventText {
   color: var(--success);
 }
 
-.content {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  display: inline;
-}
-
-.text .content {
+.eventText {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
   color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }

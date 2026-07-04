@@ -129,10 +129,11 @@
 
 .main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 2rem;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+  gap: 1.75rem;
   margin-top: 2rem;
   flex: 1;
+  align-items: start;
 }
 
 .sectionLabel {
@@ -149,6 +150,12 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
+}
+
+.right {
+  position: sticky;
+  top: 1rem;
 }
 
 .left > *:not(.sectionLabel),
@@ -176,6 +183,10 @@
   .main {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+  }
+
+  .right {
+    position: static;
   }
 
   .page {

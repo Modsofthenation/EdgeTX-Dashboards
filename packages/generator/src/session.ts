@@ -18,7 +18,11 @@ export class SessionStore {
     return this.sessions.size;
   }
 
-  createSession(radioId: string, protocol: TelemetryProtocol): GenerateSession {
+  createSession(
+    radioId: string,
+    protocol: TelemetryProtocol,
+    modelId = "composer-2.5"
+  ): GenerateSession {
     this.evictExpired();
     const id = randomUUID();
     const generator = new WidgetGenerator();
@@ -27,6 +31,7 @@ export class SessionStore {
       agentId: "",
       radioId,
       protocol,
+      modelId,
       createdAt: Date.now(),
     };
     this.sessions.set(id, { session, generator, busy: false });
@@ -72,9 +77,19 @@ export class SessionStore {
 
 let globalStore: SessionStore | null = null;
 
+const SESSION_STORE_KEY = Symbol.for("@widget-gen/sessionStore");
+
+function getGlobalStore(): SessionStore {
+  const g = globalThis as typeof globalThis & { [SESSION_STORE_KEY]?: SessionStore };
+  if (!g[SESSION_STORE_KEY]) {
+    g[SESSION_STORE_KEY] = new SessionStore();
+  }
+  return g[SESSION_STORE_KEY];
+}
+
 export function getSessionStore(): SessionStore {
   if (!globalStore) {
-    globalStore = new SessionStore();
+    globalStore = getGlobalStore();
   }
   return globalStore;
 }

@@ -5,6 +5,7 @@ import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge
 import { findLatestWidgetName } from "./widgetResolve.js";
 import { existsSync } from "node:fs";
 import { getWidgetLuaPath } from "./paths.js";
+import { resolveLocalAgentStore } from "./localAgentStore.js";
 import {
   finalizeWidgetRun,
   streamAgentRun,
@@ -31,15 +32,21 @@ export class WidgetGenerator {
     return this.agent?.agentId;
   }
 
-  async createAgent(): Promise<string> {
+  async createAgent(modelId = "composer-2.5"): Promise<string> {
+    const store = resolveLocalAgentStore(this.repoRoot);
+    const sandboxEnabled =
+      process.env.CURSOR_SANDBOX_ENABLED === "1" ||
+      process.env.CURSOR_SANDBOX_ENABLED === "true";
+
     this.agent = await Agent.create({
       apiKey: this.apiKey,
-      model: { id: "composer-2.5" },
+      model: { id: modelId },
       local: {
         cwd: this.repoRoot,
         settingSources: ["project"],
-        sandboxOptions: { enabled: true },
         customTools: createCustomTools(),
+        ...(store ? { store } : {}),
+        ...(sandboxEnabled ? { sandboxOptions: { enabled: true } } : {}),
       },
     });
     return this.agent.agentId;

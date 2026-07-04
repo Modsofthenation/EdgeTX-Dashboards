@@ -1,18 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { PromptForm } from "./PromptForm";
 import { RunStream } from "./RunStream";
 import { Preview480x320 } from "./Preview480x320";
 import { DownloadPanel } from "./DownloadPanel";
 import { InstallGuidePanel } from "./InstallGuidePanel";
+import { appendStreamLine, type StreamLine } from "@/lib/streamLines";
 import styles from "./GeneratorApp.module.css";
-
-interface StreamLine {
-  type: "text" | "tool" | "status" | "error" | "done";
-  content: string;
-}
 
 export function GeneratorApp() {
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -25,9 +21,10 @@ export function GeneratorApp() {
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const widgetNameRef = useRef<string | null>(null);
 
   const appendLine = useCallback((line: StreamLine) => {
-    setLines((prev) => [...prev, line]);
+    setLines((prev) => appendStreamLine(prev, line));
   }, []);
 
   const fetchLuaSource = useCallback(async (session?: string | null, name?: string | null) => {
@@ -35,18 +32,29 @@ export function GeneratorApp() {
       const params = new URLSearchParams();
       if (session) {
         params.set("sessionId", session);
-      } else if (name) {
+      }
+      if (name) {
         params.set("name", name);
-      } else {
+      }
+      if (!session && !name) {
         return;
       }
+
       const res = await fetch(`/api/widget-source?${params}`);
-      if (res.ok) {
-        const text = await res.text();
-        if (text && !text.startsWith("{")) {
-          setLuaSource(text);
-          const headerName = res.headers.get("X-Widget-Name");
-          if (headerName) setWidgetName(headerName);
+      if (res.status === 204) {
+        return;
+      }
+      if (!res.ok) {
+        return;
+      }
+
+      const text = await res.text();
+      if (text && !text.startsWith("{")) {
+        setLuaSource(text);
+        const headerName = res.headers.get("X-Widget-Name");
+        if (headerName) {
+          setWidgetName(headerName);
+          widgetNameRef.current = headerName;
         }
       }
     } catch {
@@ -115,11 +123,17 @@ export function GeneratorApp() {
               }
               if (data.widgetName) {
                 setWidgetName(data.widgetName);
+                widgetNameRef.current = data.widgetName;
+                void fetchLuaSource(data.sessionId ?? sessionIdRef.current, data.widgetName);
               }
               if (data.validated !== undefined) setValidated(data.validated);
               if (data.validationIssues) setValidationIssues(data.validationIssues);
-              if (data.sessionId && (data.widgetName || data.type === "text" || data.type === "tool")) {
-                void fetchLuaSource(data.sessionId, data.widgetName);
+
+              if (data.type === "done" || data.type === "error") {
+                void fetchLuaSource(
+                  data.sessionId ?? sessionIdRef.current,
+                  data.widgetName ?? widgetNameRef.current
+                );
               }
             } catch {
               // skip malformed SSE
@@ -132,25 +146,18 @@ export function GeneratorApp() {
         }
       } finally {
         setRunning(false);
-        void fetchLuaSource(sessionIdRef.current, widgetName);
+        void fetchLuaSource(sessionIdRef.current, widgetNameRef.current);
       }
     },
-    [appendLine, fetchLuaSource, widgetName]
+    [appendLine, fetchLuaSource]
   );
-
-  useEffect(() => {
-    if (!running || !sessionId) return;
-    const id = setInterval(() => {
-      void fetchLuaSource(sessionId, widgetName);
-    }, 3000);
-    return () => clearInterval(id);
-  }, [running, sessionId, widgetName, fetchLuaSource]);
 
   const handleGenerate = useCallback(
     (prompt: string, radioId: string, proto: TelemetryProtocol, edgeTxVersion: string) => {
       setProtocol(proto);
       setSessionId(null);
       sessionIdRef.current = null;
+      widgetNameRef.current = null;
       setWidgetName(null);
       setValidated(false);
       setValidationIssues([]);
@@ -204,7 +211,7 @@ export function GeneratorApp() {
           <RunStream lines={lines} running={running} />
         </section>
 
-        <section className={styles.right} aria-label="Preview and output">
+        <aside className={styles.right} aria-label="Preview and output">
           <div className={styles.sectionLabel}>Preview</div>
           <Preview480x320 luaSource={luaSource} widgetName={widgetName} live={!!luaSource} />
           <div className={styles.sectionLabel}>Deploy</div>
@@ -216,7 +223,7 @@ export function GeneratorApp() {
             validated={validated}
             validationIssues={validationIssues}
           />
-        </section>
+        </aside>
       </main>
 
       <footer className={styles.footer}>

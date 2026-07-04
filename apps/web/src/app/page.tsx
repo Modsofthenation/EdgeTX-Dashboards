@@ -1,5 +1,5 @@
-import { GeneratorApp } from "@/components/GeneratorApp";
+import { ChatApp } from "@/components/chat/ChatApp";
 
 export default function HomePage() {
-  return <GeneratorApp />;
+  return <ChatApp />;
 }

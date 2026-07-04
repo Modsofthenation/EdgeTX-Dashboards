@@ -5,6 +5,13 @@ import { getRepoRoot } from "./knowledge.js";
 
 const PROTOCOLS: TelemetryProtocol[] = ["betaflight", "rotorflight", "generic-crsf"];
 
+export const ALLOWED_MODEL_IDS = ["composer-2.5", "composer-2", "gpt-5.3-codex"] as const;
+export type AllowedModelId = (typeof ALLOWED_MODEL_IDS)[number];
+
+export function isAllowedModelId(value: string): value is AllowedModelId {
+  return (ALLOWED_MODEL_IDS as readonly string[]).includes(value);
+}
+
 export function isTelemetryProtocol(value: string): value is TelemetryProtocol {
   return PROTOCOLS.includes(value as TelemetryProtocol);
 }
@@ -35,6 +42,11 @@ export function validateGenerateRequest(body: Partial<GenerateRequest>): {
     return { ok: false, error: `Invalid protocol: ${protocol}` };
   }
 
+  const modelId = body.modelId ?? "composer-2.5";
+  if (!isAllowedModelId(modelId)) {
+    return { ok: false, error: `Invalid model: ${modelId}` };
+  }
+
   return {
     ok: true,
     request: {
@@ -42,6 +54,7 @@ export function validateGenerateRequest(body: Partial<GenerateRequest>): {
       radioId,
       protocol,
       edgeTxVersion: body.edgeTxVersion,
+      modelId,
     },
   };
 }

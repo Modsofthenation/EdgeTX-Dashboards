@@ -18,6 +18,8 @@ export interface WidgetRunContext {
 
 /** Build SDK callbacks that mirror session state into SSE events. */
 export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
+  let lastWidgetName: string | undefined;
+
   return {
     onEvent: (ev) => {
       ctx.send({
@@ -27,10 +29,12 @@ export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
       });
     },
     onWidgetName: (name) => {
+      if (name === lastWidgetName) return;
+      lastWidgetName = name;
       ctx.session.widgetName = name;
       ctx.send({
-        type: "status",
-        content: `Widget source updated: ${name}`,
+        type: "widget",
+        content: name,
         sessionId: ctx.session.id,
         widgetName: name,
       });

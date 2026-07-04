@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./RunStream.module.css";
-
-interface StreamLine {
-  type: "text" | "tool" | "status" | "error" | "done";
-  content: string;
-}
 
 interface RunStreamProps {
   lines: StreamLine[];
@@ -14,11 +10,22 @@ interface RunStreamProps {
 }
 
 export function RunStream({ lines, running }: RunStreamProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  const pinnedToBottomRef = useRef(true);
+  const entries = useMemo(() => groupStreamLines(lines), [lines]);
+
+  const handleScroll = () => {
+    const log = logRef.current;
+    if (!log) return;
+    const distanceFromBottom = log.scrollHeight - log.scrollTop - log.clientHeight;
+    pinnedToBottomRef.current = distanceFromBottom < 48;
+  };
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [lines]);
+    const log = logRef.current;
+    if (!log || !pinnedToBottomRef.current) return;
+    log.scrollTop = log.scrollHeight;
+  }, [lines, running]);
 
   return (
     <div className={styles.panel}>
@@ -26,20 +33,47 @@ export function RunStream({ lines, running }: RunStreamProps) {
         <h2 className={styles.title}>Agent log</h2>
         {running && <span className={styles.streaming}>Streaming</span>}
       </div>
-      <div className={styles.log}>
-        {lines.length === 0 && (
+      <div ref={logRef} className={styles.log} onScroll={handleScroll}>
+        {entries.length === 0 && (
           <div className={styles.empty}>
             <span className={styles.emptyIcon}>◇</span>
             <p>Describe your dashboard and hit Generate to start.</p>
           </div>
         )}
-        {lines.map((line, i) => (
-          <div key={i} className={`${styles.line} ${styles[line.type]}`}>
-            {line.type !== "text" && <span className={styles.badge}>{line.type}</span>}
-            <pre className={styles.content}>{line.content}</pre>
-          </div>
-        ))}
-        <div ref={bottomRef} />
+        {entries.map((entry, i) => {
+          if (entry.kind === "text") {
+            return (
+              <p key={i} className={styles.prose}>
+                {entry.text}
+              </p>
+            );
+          }
+
+          if (entry.kind === "tools") {
+            return (
+              <div key={i} className={styles.toolGroup}>
+                <span className={styles.toolGroupLabel}>Tools</span>
+                <div className={styles.toolChips}>
+                  {entry.tools!.map((tool) => (
+                    <span key={tool} className={styles.toolChip}>
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          const line = entry.line!;
+          return (
+            <div key={i} className={`${styles.event} ${styles[line.type]}`}>
+              <span className={styles.badge}>{line.type}</span>
+              <span className={styles.eventText}>
+                {formatEventContent(line.type, line.content)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
