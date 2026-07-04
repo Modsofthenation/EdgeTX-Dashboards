@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { ChatMessage } from "@/lib/chatTypes";
 import { AssistantStream } from "./AssistantStream";
 import styles from "./ChatMessage.module.css";
@@ -8,7 +9,7 @@ interface ChatMessageProps {
   message: ChatMessage;
 }
 
-export function ChatMessageBubble({ message }: ChatMessageProps) {
+export const ChatMessageBubble = memo(function ChatMessageBubble({ message }: ChatMessageProps) {
   if (message.role === "user") {
     return (
       <div className={`${styles.row} ${styles.userRow}`}>
@@ -18,7 +19,13 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className={`${styles.row} ${styles.assistantRow}`}>
+    <div
+      className={`${styles.row} ${styles.assistantRow} ${
+        message.isStreaming && (!message.lines || message.lines.length === 0) && !message.content
+          ? styles.assistantRowPending
+          : ""
+      }`}
+    >
       <div className={styles.avatar} aria-hidden>
         ETX
       </div>
@@ -33,4 +40,4 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
       </div>
     </div>
   );
-}
+});

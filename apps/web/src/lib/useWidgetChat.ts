@@ -51,6 +51,7 @@ export function useWidgetChat() {
   const [edgeTxVersion, setEdgeTxVersion] = useState("2.11.0");
   const [running, setRunning] = useState(false);
   const [artifact, setArtifact] = useState<WidgetSnapshot | null>(null);
+  const [artifactLoading, setArtifactLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
 
   const chatIdRef = useRef<string | null>(null);
@@ -58,9 +59,12 @@ export function useWidgetChat() {
   const widgetNameRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fetchGenerationRef = useRef(0);
+  const chatLoadGenRef = useRef(0);
   const messagesRef = useRef<ChatMessage[]>([]);
   const artifactRef = useRef<WidgetSnapshot | null>(null);
   const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streamDraftRef = useRef<ChatMessage[] | null>(null);
+  const streamFlushRef = useRef<number | null>(null);
 
   const refreshHistory = useCallback(async () => {
     const chats = await fetchChatList();
@@ -113,6 +117,42 @@ export function useWidgetChat() {
     });
   }, []);
 
+  const flushStreamDraft = useCallback(() => {
+    if (streamFlushRef.current !== null) {
+      cancelAnimationFrame(streamFlushRef.current);
+      streamFlushRef.current = null;
+    }
+    if (!streamDraftRef.current) return;
+    const next = streamDraftRef.current;
+    streamDraftRef.current = null;
+    setMessagesTracked(next);
+  }, [setMessagesTracked]);
+
+  const queueAssistantStreamLine = useCallback(
+    (assistantId: string, line: StreamLine) => {
+      const immediate = line.type !== "text";
+      if (immediate && streamFlushRef.current !== null) {
+        cancelAnimationFrame(streamFlushRef.current);
+        streamFlushRef.current = null;
+      }
+
+      const base = streamDraftRef.current ?? messagesRef.current;
+      streamDraftRef.current = appendAssistantLine(base, assistantId, line);
+
+      if (immediate) {
+        flushStreamDraft();
+        return;
+      }
+
+      if (streamFlushRef.current !== null) return;
+      streamFlushRef.current = requestAnimationFrame(() => {
+        streamFlushRef.current = null;
+        flushStreamDraft();
+      });
+    },
+    [flushStreamDraft]
+  );
+
   const setArtifactTracked = useCallback((updater: WidgetSnapshot | null | ((prev: WidgetSnapshot | null) => WidgetSnapshot | null)) => {
     setArtifact((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -122,10 +162,19 @@ export function useWidgetChat() {
   }, []);
 
   const loadArtifact = useCallback(
-    async (name: string, validated?: boolean, issues?: ValidationIssue[]) => {
+    async (
+      name: string,
+      validated?: boolean,
+      issues?: ValidationIssue[],
+      session?: string | null
+    ) => {
       const generation = ++fetchGenerationRef.current;
-      const fetched = await fetchWidgetSource(null, name);
-      if (!fetched || generation !== fetchGenerationRef.current) return;
+      const fetched = await fetchWidgetSource(session ?? sessionIdRef.current, name);
+      if (generation !== fetchGenerationRef.current) return;
+      if (!fetched) {
+        setArtifactLoading(false);
+        return;
+      }
 
       widgetNameRef.current = fetched.name;
       setArtifactTracked((prev) => ({
@@ -134,6 +183,7 @@ export function useWidgetChat() {
         validated: validated ?? prev?.validated ?? false,
         validationIssues: issues ?? prev?.validationIssues ?? [],
       }));
+      setArtifactLoading(false);
     },
     [setArtifactTracked]
   );
@@ -187,12 +237,19 @@ export function useWidgetChat() {
       const assistantMessage = createAssistantPlaceholder();
       const assistantId = assistantMessage.id;
 
+      streamDraftRef.current = null;
+      if (streamFlushRef.current !== null) {
+        cancelAnimationFrame(streamFlushRef.current);
+        streamFlushRef.current = null;
+      }
+
       setMessagesTracked((prev) => [...prev, userMessage, assistantMessage]);
 
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
       setRunning(true);
+      setArtifactLoading(true);
 
       const isRefine = !!sessionIdRef.current;
       if (!isRefine) {
@@ -230,6 +287,7 @@ export function useWidgetChat() {
               content: err.error ?? "Request failed",
             })
           );
+          setArtifactLoading(false);
           return;
         }
 
@@ -253,6 +311,9 @@ export function useWidgetChat() {
               const data = JSON.parse(part.slice(6)) as {
                 type: string;
                 content: string;
+                detail?: string;
+                todos?: StreamLine["todos"];
+                toolName?: string;
                 sessionId?: string;
                 widgetName?: string;
                 success?: boolean;
@@ -276,23 +337,28 @@ export function useWidgetChat() {
               if (shouldRenderStreamEvent(data.type)) {
                 const lineType =
                   data.type === "done" && data.success === false ? "error" : (data.type as StreamLine["type"]);
-                if (lineType === "text" || lineType === "tool" || lineType === "status" || lineType === "error" || lineType === "done") {
-                  setMessagesTracked((prev) =>
-                    appendAssistantLine(prev, assistantId, { type: lineType, content: data.content })
-                  );
+                if (lineType === "text" || lineType === "tool" || lineType === "todo" || lineType === "status" || lineType === "error" || lineType === "done") {
+                  queueAssistantStreamLine(assistantId, {
+                    type: lineType,
+                    content: data.content,
+                    detail: data.detail,
+                    todos: data.todos,
+                    toolName: data.toolName,
+                  });
                 }
               }
 
               if (data.type === "done" || data.type === "error") {
                 const name = data.widgetName ?? widgetNameRef.current;
                 if (name) {
-                  await loadArtifact(name, validated, validationIssues);
+                  void loadArtifact(name, validated, validationIssues);
                 }
 
                 setArtifactTracked((prev) =>
                   prev ? { ...prev, validated, validationIssues } : prev
                 );
 
+                flushStreamDraft();
                 setMessagesTracked((prev) =>
                   patchAssistant(prev, assistantId, {
                     isStreaming: false,
@@ -316,9 +382,12 @@ export function useWidgetChat() {
           );
         }
       } finally {
+        flushStreamDraft();
         setRunning(false);
         if (widgetNameRef.current) {
           await loadArtifact(widgetNameRef.current, validated, validationIssues);
+        } else {
+          setArtifactLoading(false);
         }
         if (chatIdRef.current) {
           await persistChat(chatIdRef.current);
@@ -339,6 +408,8 @@ export function useWidgetChat() {
       scheduleLoadArtifact,
       ensureChat,
       persistChat,
+      queueAssistantStreamLine,
+      flushStreamDraft,
       setMessagesTracked,
       setArtifactTracked,
     ]
@@ -348,9 +419,19 @@ export function useWidgetChat() {
     async (id: string) => {
       if (running) return;
 
+      const loadGen = ++chatLoadGenRef.current;
       abortRef.current?.abort();
+      if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
+      fetchGenerationRef.current += 1;
+
+      setArtifactLoading(true);
+      setArtifactTracked(null);
+
       const chat = await fetchChat(id);
-      if (!chat) return;
+      if (!chat || loadGen !== chatLoadGenRef.current) {
+        if (loadGen === chatLoadGenRef.current) setArtifactLoading(false);
+        return;
+      }
 
       chatIdRef.current = chat.id;
       setChatId(chat.id);
@@ -362,19 +443,34 @@ export function useWidgetChat() {
       setRadioId(chat.radioId);
       setEdgeTxVersion(chat.edgeTxVersion);
       setMessagesTracked(chat.messages);
-      setArtifactTracked(chat.artifact);
 
-      if (!chat.artifact?.luaSource && chat.widgetName) {
-        await loadArtifact(chat.widgetName, chat.artifact?.validated, chat.artifact?.validationIssues);
-        if (chatIdRef.current) {
-          await persistChat(chatIdRef.current);
-        }
+      if (chat.artifact?.luaSource) {
+        setArtifactTracked(chat.artifact);
+        setArtifactLoading(false);
+        return;
       }
+
+      if (chat.widgetName) {
+        await loadArtifact(
+          chat.widgetName,
+          chat.artifact?.validated,
+          chat.artifact?.validationIssues,
+          chat.sessionId
+        );
+        if (loadGen === chatLoadGenRef.current && chatIdRef.current === chat.id) {
+          await persistChat(chat.id);
+        }
+        return;
+      }
+
+      setArtifactTracked(null);
+      setArtifactLoading(false);
     },
     [running, loadArtifact, persistChat, setMessagesTracked, setArtifactTracked]
   );
 
   const startNewChat = useCallback(() => {
+    chatLoadGenRef.current += 1;
     abortRef.current?.abort();
     if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
     fetchGenerationRef.current += 1;
@@ -385,6 +481,7 @@ export function useWidgetChat() {
     sessionIdRef.current = null;
     widgetNameRef.current = null;
     setArtifactTracked(null);
+    setArtifactLoading(false);
     setRunning(false);
   }, [setMessagesTracked, setArtifactTracked]);
 
@@ -424,6 +521,7 @@ export function useWidgetChat() {
     setEdgeTxVersion,
     running,
     artifact,
+    artifactLoading,
     sendMessage,
     startNewChat,
     loadChat,

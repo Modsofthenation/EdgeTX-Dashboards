@@ -1,6 +1,6 @@
-# EdgeTX Widget Generator
+# EdgeTX Dashboard Generator
 
-Prompt-driven generator for EdgeTX Lua full-screen dashboard widgets, targeting **RadioMaster TX15** (480×320) with telemetry support for **Betaflight**, **Rotorflight**, and **generic CRSF**.
+Prompt-driven generator for EdgeTX Lua **full-screen dashboards**, targeting color LCD radios (default **RadioMaster TX15** 480×320) with telemetry for **Betaflight**, **Rotorflight**, and **generic CRSF**. Can also generate companion **Tool** and **Telemetry** scripts (battery selector, flight logger, log viewer) packaged with install instructions.
 
 Built with the [Cursor SDK](https://cursor.com/docs/sdk/typescript) (`@cursor/sdk`) and a Next.js web UI.
 

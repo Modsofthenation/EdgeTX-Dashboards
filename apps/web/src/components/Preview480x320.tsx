@@ -67,18 +67,37 @@ export function Preview480x320({
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container || tab !== "preview") return;
+    if (!canvas || !container || tab !== "preview" || !luaSource) return;
 
-    const scale = container.clientWidth / lcdW;
-    canvas.width = lcdW * scale;
-    canvas.height = lcdH * scale;
+    const paint = () => {
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const scaleX = cw / lcdW;
+      const scaleY = ch / lcdH;
+      const scale = Math.min(scaleX, scaleY);
+      const drawW = Math.floor(lcdW * scale);
+      const drawH = Math.floor(lcdH * scale);
 
-    ctx.imageSmoothingEnabled = false;
-    renderPreviewCommands(ctx, commands, scale, lcdW, lcdH);
-  }, [commands, tab, lcdW, lcdH]);
+      canvas.width = drawW;
+      canvas.height = drawH;
+      canvas.style.width = `${drawW}px`;
+      canvas.style.height = `${drawH}px`;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.imageSmoothingEnabled = false;
+      renderPreviewCommands(ctx, commands, scale, lcdW, lcdH);
+    };
+
+    const observer = new ResizeObserver(paint);
+    observer.observe(container);
+    paint();
+
+    return () => observer.disconnect();
+  }, [commands, tab, lcdW, lcdH, luaSource]);
 
   const showZoneOverlay =
     previewDims &&
@@ -136,12 +155,15 @@ export function Preview480x320({
 
       {tab === "preview" ? (
         <div className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}>
-          <div className={styles.frame}>
+          <div className={variant === "compact" ? styles.frameCompact : styles.frame}>
             <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
               {variant === "default" && (
                 <div className={styles.deviceLabel}>{radioName ?? "EdgeTX Radio"}</div>
               )}
-              <div className={styles.screen} ref={containerRef}>
+              <div
+                className={variant === "compact" ? styles.screenCompact : styles.screen}
+                ref={containerRef}
+              >
                 {!luaSource ? (
                   <div className={styles.placeholder}>
                     <span className={styles.placeholderIcon} aria-hidden>

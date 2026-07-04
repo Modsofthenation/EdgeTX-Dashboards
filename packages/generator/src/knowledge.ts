@@ -110,6 +110,18 @@ export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
   return "";
 }
 
+export function readRotorflightStyleGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "rotorflight-dbk-patterns.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
+export function readCompanionScriptsGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "companion-scripts.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
 export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
   return getSimulateLayoutProfile(getLayoutProfileId(loadRadioProfile(radioId)));
 }

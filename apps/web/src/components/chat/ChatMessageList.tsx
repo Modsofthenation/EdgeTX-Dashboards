@@ -25,23 +25,29 @@ export function ChatMessageList({ messages, running, onSuggestion }: ChatMessage
 
   useEffect(() => {
     if (!pinnedRef.current) return;
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    bottomRef.current?.scrollIntoView({
+      behavior: running ? "auto" : "smooth",
+      block: "end",
+    });
   }, [messages, running]);
 
   return (
     <div ref={listRef} className={styles.list} onScroll={handleScroll}>
       {messages.length === 0 && (
         <div className={styles.empty}>
-          <h2 className={styles.emptyTitle}>What should your widget show?</h2>
+          <h2 className={styles.emptyTitle}>What should your dashboard show?</h2>
           <p className={styles.emptyText}>
-            Describe a TX15 dashboard — the agent writes Lua, validates it, and shows the preview in
-            the panel on the right.
+            Describe a full-screen TX15 dashboard — the agent writes Lua, validates it, and shows the
+            preview in the panel on the right. Ask for companion tools (battery selector, flight
+            logger) when you need them.
           </p>
           <div className={styles.suggestions}>
             {[
-              "Betaflight dashboard with link bar, battery card, and GPS strip",
-              "Rotorflight heli panel with headspeed and voltage cards",
-              "Minimal CRSF widget with large battery voltage readout",
+              "Minimal quad dashboard: large timer, battery bar, and RSSI strip",
+              "Rotorflight heli board with headspeed hero and motor temps",
+              "Dense CRSF telemetry grid with link, GPS, and attitude",
+              "Battery dashboard plus a TOOLS script to select 4S/6S pack",
+              "Flight logger telemetry script with last-flight summary on the dashboard",
             ].map((text) => (
               <button
                 key={text}

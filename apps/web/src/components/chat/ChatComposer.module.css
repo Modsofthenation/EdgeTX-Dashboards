@@ -92,6 +92,23 @@
   box-shadow: none;
 }
 
+.sendSpinner {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: sendSpin 0.7s linear infinite;
+}
+
+@keyframes sendSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .hint {
   max-width: 52rem;
   margin: 0.45rem auto 0;

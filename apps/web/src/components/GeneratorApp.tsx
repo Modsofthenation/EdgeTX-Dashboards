@@ -106,6 +106,9 @@ export function GeneratorApp() {
               const data = JSON.parse(part.slice(6)) as {
                 type: StreamLine["type"];
                 content: string;
+                detail?: string;
+                todos?: StreamLine["todos"];
+                toolName?: string;
                 sessionId?: string;
                 widgetName?: string;
                 success?: boolean;
@@ -115,7 +118,13 @@ export function GeneratorApp() {
 
               const lineType =
                 data.type === "done" && data.success === false ? "error" : data.type;
-              appendLine({ type: lineType, content: data.content });
+              appendLine({
+                type: lineType,
+                content: data.content,
+                detail: data.detail,
+                todos: data.todos,
+                toolName: data.toolName,
+              });
 
               if (data.sessionId) {
                 setSessionId(data.sessionId);
@@ -183,7 +192,7 @@ export function GeneratorApp() {
             <span>ETX</span>
           </div>
           <div className={styles.brandText}>
-            <h1>Widget Generator</h1>
+            <h1>Dashboard Generator</h1>
             <p>AI-powered Lua dashboards for RadioMaster TX15</p>
           </div>
         </div>

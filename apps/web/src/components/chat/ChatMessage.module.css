@@ -13,6 +13,22 @@
 
 .assistantRow {
   justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.assistantRowPending {
+  align-items: center;
+}
+
+.assistantRowPending .avatar {
+  margin-top: 0;
+}
+
+.assistantRowPending .assistantBody {
+  padding-top: 0;
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
 }
 
 .userBubble {

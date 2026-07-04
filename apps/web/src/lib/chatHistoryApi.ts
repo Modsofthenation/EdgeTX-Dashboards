@@ -39,10 +39,26 @@ export async function syncChatRecord(
     artifact?: WidgetSnapshot | null;
   }
 ): Promise<StoredChat | null> {
+  const payload = {
+    sessionId: input.sessionId ?? null,
+    widgetName: input.widgetName ?? null,
+    messages: input.messages
+      ?.filter((message) => !message.isStreaming)
+      .map(({ isStreaming: _, widget: __, ...rest }) => rest),
+    artifact: input.artifact ?? null,
+  };
+
+  let body: string;
+  try {
+    body = JSON.stringify(payload);
+  } catch {
+    return null;
+  }
+
   const res = await fetch(`/api/chats/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body,
   });
   if (!res.ok) return null;
   return (await res.json()) as StoredChat;

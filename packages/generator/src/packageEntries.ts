@@ -1,0 +1,86 @@
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { getGeneratedDir, sanitizeWidgetName } from "./paths.js";
+
+export interface ZipEntry {
+  /** Absolute path on disk */
+  filePath: string;
+  /** Path inside the zip archive */
+  zipPath: string;
+}
+
+function mapToZipPath(widgetName: string, relPath: string): string {
+  const normalized = relPath.replace(/\\/g, "/");
+
+  if (normalized === "main.lua" || normalized === "INSTALL.md") {
+    return `WIDGETS/${widgetName}/${normalized}`;
+  }
+
+  if (normalized.startsWith("tools/") && normalized.endsWith(".lua")) {
+    const base = normalized.slice("tools/".length);
+    return `SCRIPTS/TOOLS/${base}`;
+  }
+
+  if (normalized.startsWith("telemetry/") && normalized.endsWith(".lua")) {
+    const base = normalized.slice("telemetry/".length);
+    return `SCRIPTS/TELEMETRY/${base}`;
+  }
+
+  // Widget assets (png, etc.)
+  return `WIDGETS/${widgetName}/${normalized}`;
+}
+
+export function listWidgetPackageEntries(widgetName: string): ZipEntry[] {
+  const safe = sanitizeWidgetName(widgetName);
+  const root = getGeneratedDir(safe);
+  if (!existsSync(root)) return [];
+
+  const entries: ZipEntry[] = [];
+
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      const st = statSync(full);
+      if (st.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (name === "INSTALL.md" && dir === root) {
+        // included explicitly
+      }
+      const rel = relative(root, full).replace(/\\/g, "/");
+      if (rel.startsWith(".")) continue;
+      entries.push({
+        filePath: full,
+        zipPath: mapToZipPath(safe, rel),
+      });
+    }
+  };
+
+  walk(root);
+  return entries;
+}
+
+export interface CompanionManifest {
+  tools: string[];
+  telemetry: string[];
+  assets: string[];
+}
+
+export function detectCompanions(widgetName: string): CompanionManifest {
+  const manifest: CompanionManifest = { tools: [], telemetry: [], assets: [] };
+  for (const entry of listWidgetPackageEntries(widgetName)) {
+    if (entry.zipPath.startsWith("SCRIPTS/TOOLS/")) {
+      manifest.tools.push(entry.zipPath.replace("SCRIPTS/TOOLS/", ""));
+    } else if (entry.zipPath.startsWith("SCRIPTS/TELEMETRY/")) {
+      manifest.telemetry.push(entry.zipPath.replace("SCRIPTS/TELEMETRY/", ""));
+    } else if (
+      entry.zipPath.startsWith(`WIDGETS/${widgetName}/`) &&
+      !entry.zipPath.endsWith("main.lua") &&
+      !entry.zipPath.endsWith("INSTALL.md")
+    ) {
+      manifest.assets.push(entry.zipPath.split("/").pop() ?? entry.zipPath);
+    }
+  }
+  return manifest;
+}

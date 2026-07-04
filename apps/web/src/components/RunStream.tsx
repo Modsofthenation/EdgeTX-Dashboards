@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { TodoPanel, ToolChipRow } from "@/components/chat/ToolActivity";
 import { formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./RunStream.module.css";
 
@@ -53,13 +54,15 @@ export function RunStream({ lines, running }: RunStreamProps) {
             return (
               <div key={i} className={styles.toolGroup}>
                 <span className={styles.toolGroupLabel}>Tools</span>
-                <div className={styles.toolChips}>
-                  {entry.tools!.map((tool) => (
-                    <span key={tool} className={styles.toolChip}>
-                      {tool}
-                    </span>
-                  ))}
-                </div>
+                <ToolChipRow tools={entry.tools!} />
+              </div>
+            );
+          }
+
+          if (entry.kind === "todo" && entry.todos?.length) {
+            return (
+              <div key={i} className={styles.todoWrap}>
+                <TodoPanel title={entry.title} todos={entry.todos} />
               </div>
             );
           }

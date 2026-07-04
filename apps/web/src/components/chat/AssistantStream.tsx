@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { MarkdownContent } from "./MarkdownContent";
+import { TodoPanel, ToolChipRow } from "./ToolActivity";
 import { formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
@@ -27,19 +28,22 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
     <div className={styles.stream}>
       {entries.map((entry, i) => {
         if (entry.kind === "text") {
+          if (isStreaming) {
+            return (
+              <p key={i} className={styles.prose}>
+                {entry.text}
+              </p>
+            );
+          }
           return <MarkdownContent key={i}>{entry.text ?? ""}</MarkdownContent>;
         }
 
         if (entry.kind === "tools") {
-          return (
-            <div key={i} className={styles.toolGroup}>
-              {entry.tools!.map((tool) => (
-                <span key={tool} className={styles.toolChip}>
-                  {tool}
-                </span>
-              ))}
-            </div>
-          );
+          return <ToolChipRow key={i} tools={entry.tools!} />;
+        }
+
+        if (entry.kind === "todo" && entry.todos?.length) {
+          return <TodoPanel key={i} title={entry.title} todos={entry.todos} />;
         }
 
         const line = entry.line!;

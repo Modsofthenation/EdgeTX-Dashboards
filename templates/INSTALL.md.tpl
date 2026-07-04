@@ -7,7 +7,12 @@ Generated for **{{RADIO_NAME}}** ({{LCD_W}}×{{LCD_H}}) with **{{PROTOCOL_LABEL}
 1. Extract the zip file.
 2. Copy the `WIDGETS/{{WIDGET_NAME}}/` folder to your radio SD card:
    - Path: `SD:/WIDGETS/{{WIDGET_NAME}}/main.lua`
-3. Safely eject the SD card and insert it into the radio (or use USB storage mode).
+3. If the zip includes `SCRIPTS/TOOLS/` or `SCRIPTS/TELEMETRY/` folders, copy those paths to the same locations on your SD card.
+4. Safely eject the SD card and insert it into the radio (or use USB storage mode).
+
+{{#COMPANION_SCRIPTS}}
+{{COMPANION_BLOCK}}
+{{/COMPANION_SCRIPTS}}
 
 ## 2. Discover telemetry sensors
 
@@ -18,7 +23,7 @@ Generated for **{{RADIO_NAME}}** ({{LCD_W}}×{{LCD_H}}) with **{{PROTOCOL_LABEL}
 1. Power on your receiver and flight controller.
 2. On the radio: **Model** → **Telemetry** page → **Discover new**.
 3. Wait until all expected sensors appear.
-4. If values show zero after adding the widget, restart the radio once.
+4. If values show zero after adding the dashboard, restart the radio once.
 
 {{#ROTORFLIGHT_NOTE}}
 ## Rotorflight: enable rf2bg
@@ -30,12 +35,12 @@ Rotorflight custom CRSF telemetry requires the `rf2bg` background script:
 3. Delete all telemetry sensors, then **Discover new** with the FC powered on.
 {{/ROTORFLIGHT_NOTE}}
 
-## 3. Add widget to main view
+## 3. Add dashboard to main view
 
 1. Press **TELE** (or navigate to main views).
 2. Long-press or tap **Setup widgets**.
 3. Tap an empty zone and select **{{WIDGET_NAME}}**.
-4. Configure widget options if desired.
+4. Configure dashboard options if desired.
 
 ## 4. Full-screen mode (recommended for dashboards)
 
@@ -47,16 +52,23 @@ Rotorflight custom CRSF telemetry requires the `rf2bg` background script:
 
 Use this checklist after install:
 
-1. **Widget appears** in the widget picker under the name `{{WIDGET_NAME}}`.
-2. **Full-screen layout** fills the TX15 display ({{LCD_W}}×{{LCD_H}}) without clipped text.
+1. **Dashboard appears** in the widget picker under the name `{{WIDGET_NAME}}`.
+2. **Full-screen layout** fills the display ({{LCD_W}}×{{LCD_H}}) without clipped text.
 3. **Telemetry updates** — battery, link, and GPS values change when the model is connected (not stuck at zero).
-4. **Survives restart** — power cycle the radio; widget reloads on your main view.
+4. **Companion scripts** (if included) run from SYS → Tools or Telemetry → Script as documented above.
+5. **Survives restart** — power cycle the radio; dashboard reloads on your main view.
 
 If the web preview looked correct but the radio shows zeros, run **Discover new** again and restart the radio.
 
+## 6. Sensors used
+
+{{#SENSORS}}
+- **{{name}}** — {{description}} ({{unit}})
+{{/SENSORS}}
+
 ## 7. Simulate in VS Code (optional)
 
-Generated widgets include EdgeTX Dev Kit annotations for in-editor WASM simulation:
+Generated dashboards include EdgeTX Dev Kit annotations for in-editor WASM simulation:
 
 1. Install **Lua** and **EdgeTX Dev Kit** extensions (see `.vscode/extensions.json`).
 2. Run `npm run sync-stubs` if `stubs/2.11/` is missing.
@@ -68,13 +80,8 @@ Generated widgets include EdgeTX Dev Kit annotations for in-editor WASM simulati
 
 | Issue | Fix |
 |-------|-----|
-| Widget not listed | Check folder name matches widget `name` field (max 10 chars) |
+| Dashboard not listed | Check folder name matches widget `name` field (max 10 chars) |
 | All values zero | Run Discover new; restart radio |
-| Layout clipped | Use full-screen mode; widget targets {{LCD_W}}×{{LCD_H}} |
+| Layout clipped | Use full-screen mode; dashboard targets {{LCD_W}}×{{LCD_H}} |
 | Missing Rotorflight sensors | Enable rf2bg special function; rediscover sensors |
-
-## 6. Sensors used
-
-{{#SENSORS}}
-- **{{name}}** — {{description}} ({{unit}})
-{{/SENSORS}}
+| Tool script missing | Copy to `SCRIPTS/TOOLS/` and check filename matches menu entry |

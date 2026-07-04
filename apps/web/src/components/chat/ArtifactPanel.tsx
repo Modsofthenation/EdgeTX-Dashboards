@@ -4,63 +4,45 @@ import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot } from "@/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
+import { PanelCollapseButton } from "./CollapsibleAside";
 import styles from "./ArtifactPanel.module.css";
 
 interface ArtifactPanelProps {
+  chatId: string | null;
   artifact: WidgetSnapshot | null;
   sessionId: string | null;
   protocol: TelemetryProtocol;
   running: boolean;
+  artifactLoading?: boolean;
   layoutProfileId?: string;
   radioName?: string | null;
+  panelCollapsed?: boolean;
+  onTogglePanel?: () => void;
 }
 
 export function ArtifactPanel({
+  chatId,
   artifact,
   sessionId,
   protocol,
   running,
+  artifactLoading = false,
   layoutProfileId = "tx15",
   radioName,
+  panelCollapsed = false,
+  onTogglePanel,
 }: ArtifactPanelProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  if (!artifact?.luaSource && !running) {
-    return (
-      <aside className={styles.panel}>
-        <div className={styles.empty}>
-          <span className={styles.emptyIcon} aria-hidden>
-            ◫
-          </span>
-          <h2 className={styles.emptyTitle}>Widget output</h2>
-          <p className={styles.emptyText}>
-            Your generated widget preview and download will appear here when the agent writes{" "}
-            <code>main.lua</code>.
-          </p>
-        </div>
-      </aside>
-    );
-  }
+  const showPreviewLoader = running || artifactLoading;
+  const hasPreview = !!artifact?.luaSource;
+  const previewKey = `${chatId ?? "new"}-${artifact?.name ?? "empty"}`;
 
-  if (!artifact?.luaSource && running) {
-    return (
-      <aside className={styles.panel}>
-        <div className={styles.empty}>
-          <span className={styles.loading} aria-hidden />
-          <h2 className={styles.emptyTitle}>Generating widget…</h2>
-          <p className={styles.emptyText}>Preview will appear as soon as the agent saves the Lua file.</p>
-        </div>
-      </aside>
-    );
-  }
-
-  if (!artifact) return null;
-
-  const errors = artifact.validationIssues.filter((i) => i.severity === "error");
+  const errors = artifact?.validationIssues.filter((i) => i.severity === "error") ?? [];
 
   const handleDownload = async () => {
-    if (!artifact.validated) return;
+    if (!artifact?.validated) return;
     setDownloading(true);
     setDownloadError(null);
 
@@ -93,48 +75,90 @@ export function ArtifactPanel({
   return (
     <aside className={styles.panel}>
       <div className={styles.header}>
-        <div>
-          <span className={styles.label}>Artifact</span>
-          <h2 className={styles.name}>{artifact.name}</h2>
+        <div className={styles.headerMain}>
+          {onTogglePanel && (
+            <PanelCollapseButton label="Dashboard" collapsed={panelCollapsed} onToggle={onTogglePanel} side="right" />
+          )}
+          <div className={styles.headerText}>
+            <span className={styles.label}>Dashboard</span>
+            <h2 className={styles.name}>{artifact?.name ?? "Output"}</h2>
+          </div>
         </div>
-        <span className={artifact.validated ? styles.badgeOk : styles.badgeWarn}>
-          {artifact.validated ? "Ready" : running ? "Building" : "Needs fixes"}
-        </span>
+        {artifact && (
+          <span className={artifact.validated ? styles.badgeOk : styles.badgeWarn}>
+            {artifact.validated ? "Ready" : running ? "Building" : "Needs fixes"}
+          </span>
+        )}
       </div>
 
-      <Preview480x320
-        luaSource={artifact.luaSource}
-        widgetName={artifact.name}
-        layoutProfileId={layoutProfileId}
-        radioName={radioName}
-        live
-        variant="compact"
-      />
+      {!hasPreview && !showPreviewLoader ? (
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon} aria-hidden>
+            ◫
+          </span>
+          <h3 className={styles.emptyTitle}>No dashboard yet</h3>
+          <p className={styles.emptyText}>
+            Your generated dashboard preview and download zip will appear here when the agent writes{" "}
+            <code>main.lua</code>. Companion scripts (tools, loggers) are included in the zip with
+            install steps in <code>INSTALL.md</code>.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className={styles.previewSection}>
+            <Preview480x320
+              key={previewKey}
+              luaSource={artifact?.luaSource ?? null}
+              widgetName={artifact?.name ?? null}
+              layoutProfileId={layoutProfileId}
+              radioName={radioName}
+              live={!showPreviewLoader}
+              variant="compact"
+            />
+            {showPreviewLoader && (
+              <div className={styles.previewOverlay} role="status" aria-live="polite">
+                <span className={styles.spinner} aria-hidden />
+                <p className={styles.overlayTitle}>
+                  {running ? "Generating dashboard…" : "Loading preview…"}
+                </p>
+                <p className={styles.overlayHint}>
+                  {running
+                    ? "Preview updates when the Lua file is saved."
+                    : "Fetching widget source for this chat."}
+                </p>
+              </div>
+            )}
+          </div>
 
-      {!artifact.validated && errors.length > 0 && (
-        <ul className={styles.errors}>
-          {errors.slice(0, 5).map((issue, i) => (
-            <li key={i}>{issue.message}</li>
-          ))}
-        </ul>
+          {artifact && !artifact.validated && errors.length > 0 && (
+            <ul className={styles.errors}>
+              {errors.slice(0, 5).map((issue, i) => (
+                <li key={i}>{issue.message}</li>
+              ))}
+            </ul>
+          )}
+
+          {artifact && (
+            <>
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.downloadBtn}
+                  disabled={!artifact.validated || downloading || showPreviewLoader}
+                  onClick={() => void handleDownload()}
+                >
+                  {downloading ? "Preparing zip…" : `Download ${artifact.name}.zip`}
+                </button>
+              </div>
+              {downloadError && <p className={styles.downloadError}>{downloadError}</p>}
+              <p className={styles.hint}>
+                Extract to <code>WIDGETS/{artifact.name}/</code> on your radio SD card. INSTALL.md is
+                inside the zip.
+              </p>
+            </>
+          )}
+        </>
       )}
-
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.downloadBtn}
-          disabled={!artifact.validated || downloading}
-          onClick={() => void handleDownload()}
-        >
-          {downloading ? "Preparing zip…" : `Download ${artifact.name}.zip`}
-        </button>
-      </div>
-      {downloadError && <p className={styles.downloadError}>{downloadError}</p>}
-
-      <p className={styles.hint}>
-        Extract to <code>WIDGETS/{artifact.name}/</code> on your radio SD card. INSTALL.md is inside
-        the zip.
-      </p>
     </aside>
   );
 }

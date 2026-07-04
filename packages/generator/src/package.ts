@@ -3,6 +3,7 @@ import { join } from "node:path";
 import archiver from "archiver";
 import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
 import { getRepoRoot, loadTelemetryCatalog, readTemplate, loadRadioProfile } from "./knowledge.js";
+import { detectCompanions, listWidgetPackageEntries } from "./packageEntries.js";
 import { getGeneratedDir, getWidgetLuaPath, sanitizeWidgetName } from "./paths.js";
 import { assertValidForRelease } from "./validationPipeline.js";
 import { defaultWorkspace } from "./workspace.js";
@@ -13,10 +14,13 @@ export function renderInstallMd(
   widgetName: string,
   radio: RadioProfile,
   catalog: TelemetryCatalog,
-  sensorNames: string[]
+  sensorNames: string[],
+  companions?: { tools: string[]; telemetry: string[] }
 ): string {
   let tpl = readTemplate("INSTALL.md.tpl");
   const sensors = catalog.sensors.filter((s) => sensorNames.includes(s.name));
+  const tools = companions?.tools ?? [];
+  const telemetry = companions?.telemetry ?? [];
 
   tpl = tpl.replace(/\{\{WIDGET_NAME\}\}/g, widgetName);
   tpl = tpl.replace(/\{\{RADIO_NAME\}\}/g, radio.name);
@@ -40,8 +44,46 @@ export function renderInstallMd(
   const sensorBlock =
     sensors.length > 0
       ? sensors.map((s) => `- **${s.name}** — ${s.description} (${s.unit})`).join("\n")
-      : "- See generated widget source for sensor references";
+      : "- See generated dashboard source for sensor references";
   tpl = tpl.replace(/\{\{#SENSORS\}\}[\s\S]*?\{\{\/SENSORS\}\}/, sensorBlock);
+
+  if (tools.length > 0 || telemetry.length > 0) {
+    const companionBlock = [
+      "## Companion scripts",
+      "",
+      "This package includes helper scripts alongside the dashboard widget.",
+      "",
+      tools.length > 0
+        ? [
+            "### Tool scripts (`SCRIPTS/TOOLS/`)",
+            "",
+            ...tools.map(
+              (t) =>
+                `1. Copy \`${t}\` to \`SD:/SCRIPTS/TOOLS/${t}\` on your radio.\n2. Open **SYS** → **Tools** → run **${t.replace(/\.lua$/, "")}**.`
+            ),
+            "",
+          ].join("\n")
+        : "",
+      telemetry.length > 0
+        ? [
+            "### Telemetry scripts (`SCRIPTS/TELEMETRY/`)",
+            "",
+            ...telemetry.map(
+              (t) =>
+                `1. Copy \`${t}\` to \`SD:/SCRIPTS/TELEMETRY/${t}\`.\n2. **Model** → **Telemetry** (or **Display**) → set a screen to **Script** → pick **${t.replace(/\.lua$/, "")}**.`
+            ),
+            "",
+          ].join("\n")
+        : "",
+      "Run companion setup **before** or **after** adding the dashboard widget, as described in the agent summary.",
+    ].join("\n");
+    tpl = tpl.replace(/\{\{#COMPANION_SCRIPTS\}\}/, "");
+    tpl = tpl.replace(/\{\{\/COMPANION_SCRIPTS\}\}/, "");
+    tpl = tpl.replace(/\{\{COMPANION_BLOCK\}\}/, companionBlock);
+  } else {
+    tpl = tpl.replace(/\{\{#COMPANION_SCRIPTS\}\}[\s\S]*?\{\{\/COMPANION_SCRIPTS\}\}/, "");
+    tpl = tpl.replace(/\{\{COMPANION_BLOCK\}\}/, "");
+  }
 
   return tpl;
 }
@@ -90,10 +132,13 @@ export async function packageWidget(
 
     archive.pipe(output);
 
-    archive.file(luaPath, { name: `WIDGETS/${safeName}/main.lua` });
-
-    if (existsSync(installPath)) {
-      archive.file(installPath, { name: `WIDGETS/${safeName}/INSTALL.md` });
+    const entries = listWidgetPackageEntries(safeName);
+    if (entries.length === 0) {
+      archive.file(luaPath, { name: `WIDGETS/${safeName}/main.lua` });
+    } else {
+      for (const entry of entries) {
+        archive.file(entry.filePath, { name: entry.zipPath });
+      }
     }
 
     archive.finalize();
@@ -112,7 +157,8 @@ export function writeInstallMd(
   const sensorNames = catalog.sensors
     .filter((s) => source.includes(`"${s.name}"`))
     .map((s) => s.name);
-  const content = renderInstallMd(safeName, radio, catalog, sensorNames);
+  const companions = detectCompanions(safeName);
+  const content = renderInstallMd(safeName, radio, catalog, sensorNames, companions);
   const dir = getGeneratedDir(safeName);
   mkdirSync(dir, { recursive: true });
   const installPath = join(dir, "INSTALL.md");

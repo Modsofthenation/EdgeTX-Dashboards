@@ -100,7 +100,7 @@ export function createCustomTools(): Record<string, SDKCustomTool> {
 
     packageWidget: {
       description:
-        "Package a generated widget into a zip file for SD card deployment (WIDGETS/<name>/main.lua).",
+        "Package a generated dashboard into a zip for SD card deployment (WIDGETS/<name>/main.lua plus any SCRIPTS/TOOLS or SCRIPTS/TELEMETRY companions).",
       inputSchema: {
         type: "object",
         properties: {
@@ -128,7 +128,8 @@ export function createCustomTools(): Record<string, SDKCustomTool> {
     },
 
     writeInstallGuide: {
-      description: "Generate INSTALL.md for a widget based on protocol and radio profile.",
+      description:
+        "Generate INSTALL.md for a dashboard (and companion scripts if present) based on protocol and radio profile.",
       inputSchema: {
         type: "object",
         properties: {

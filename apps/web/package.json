@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "npm run clean && next dev",
     "build": "next build",
     "start": "next start",
+    "clean": "node -e \"require('node:fs').rmSync('.next',{recursive:true,force:true})\"",
     "typecheck": "tsc --noEmit",
     "test:preview": "npx --yes tsx --test src/lib/__tests__/luaPreviewEngine.test.ts"
   },

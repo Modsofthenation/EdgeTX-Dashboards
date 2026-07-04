@@ -64,4 +64,33 @@ describe("parseLuaToDrawCommands", () => {
     assert.ok(voltsText);
     assert.equal(motorText?.text, "Motor 3200 ESC 42C");
   });
+
+  it("evaluates heli-style and/or string assignments used by generated dashboards", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local function create(zone, opts)",
+      '  return { src = { rqly = cacheSource("RQLY"), rxbt = cacheSource("RxBt"), curr = cacheSource("Curr"), hspd = cacheSource("HSpd") } }',
+      "end",
+      "local function refresh(widget)",
+      "  local rqly = telem(widget.src.rqly)",
+      "  local rqlyNum = math.floor(rqly + 0.5)",
+      '  local rqlyStr = rqly > 0 and (tostring(rqlyNum) .. "%") or "---"',
+      "  local amps = telem(widget.src.curr)",
+      '  local ampStr = amps > 0 and (string.format("%.1f", amps) .. "A") or "0.0A"',
+      "  local hspd = telem(widget.src.hspd)",
+      '  local hspdStr = hspd > 0 and tostring(math.floor(hspd + 0.5)) or "--"',
+      "  lcd.drawText(10, 24, rqlyStr, MIDSIZE + GREEN)",
+      "  lcd.drawText(200, 24, ampStr, SMLSIZE + WHITE)",
+      "  lcd.drawText(10, 80, hspdStr, DBLSIZE + CYAN)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    const texts = cmds.filter((c) => c.kind === "text").map((c) => c.text);
+    const bad = texts.find((t) => t?.includes(" and ") || t?.includes("string.format"));
+    assert.equal(bad, undefined, `unevaluated expression in preview: ${bad}`);
+    assert.ok(texts.some((t) => t?.includes("%")), `expected RQLY percent, got ${texts.join("|")}`);
+    assert.ok(texts.some((t) => t?.endsWith("A")), `expected amps suffix, got ${texts.join("|")}`);
+  });
 });

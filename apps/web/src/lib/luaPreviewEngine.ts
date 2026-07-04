@@ -77,6 +77,21 @@ function resolveFontSize(flags: string): number {
   return 12;
 }
 
+function hasTopLevelConcat(expr: string): boolean {
+  let depth = 0;
+  for (let i = 0; i < expr.length - 1; i++) {
+    const ch = expr[i];
+    if (ch === '"' || ch === "'") {
+      i = skipQuotedString(expr, i) - 1;
+      continue;
+    }
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    else if (depth === 0 && expr[i] === "." && expr[i + 1] === ".") return true;
+  }
+  return false;
+}
+
 function splitConcatParts(expr: string): string[] {
   const parts: string[] = [];
   let current = "";
@@ -166,8 +181,8 @@ function evalConcat(
   srcMap: Map<string, string>,
   mock: MockTelemetry
 ): string {
-  return splitConcatParts(expr)
-    .map((part) => String(evalValue(part, ctx, dims, srcMap, mock)))
+  return splitConcatParts(stripOuterParens(expr))
+    .map((part) => String(evalValue(stripOuterParens(part), ctx, dims, srcMap, mock)))
     .join("");
 }
 
@@ -269,15 +284,49 @@ function evalFmtNum(expr: string, ctx: EvalCtx, dims: EvalDims): string | null {
   return value.toFixed(decimals);
 }
 
+function stripOuterParens(expr: string): string {
+  let e = expr.trim();
+  while (e.startsWith("(")) {
+    const inner = extractParenContent(e, 0);
+    if (inner === null) break;
+    if (inner.length + 2 !== e.length) break;
+    e = inner.trim();
+  }
+  return e;
+}
+
+function looksLikeUnevaluated(value: string): boolean {
+  return (
+    /\band\s+.+\s+or\s+/.test(value) ||
+    value.includes("telem(") ||
+    value.includes("widget.") ||
+    /^tostring\s*\(/.test(value) ||
+    /^string\.format\s*\(/.test(value) ||
+    (value.includes("..") && !/^"[^"]*"$/.test(value))
+  );
+}
+
 function evalStringFormat(expr: string, ctx: EvalCtx, dims: EvalDims): string | null {
-  const m = expr.match(/string\.format\s*\(\s*"([^"]*)"\s*,\s*(.+)\s*\)$/);
-  if (!m) return null;
-  const fmt = m[1];
-  const arg = evalNumberExpr(m[2], ctx, dims);
-  if (fmt.includes("%.1f")) return fmt.replace("%.1f", arg.toFixed(1));
-  if (fmt.includes("%.0f")) return fmt.replace("%.0f", String(Math.round(arg)));
-  if (fmt.includes("%d")) return fmt.replace("%d", String(Math.round(arg)));
-  return String(arg);
+  const marker = "string.format(";
+  const start = expr.indexOf(marker);
+  if (start < 0) return null;
+  if (start > 0) return null;
+
+  const open = start + marker.length - 1;
+  const inner = extractParenContent(expr, open);
+  if (inner === null) return null;
+
+  const quoteEnd = inner.indexOf('"', 1);
+  if (quoteEnd < 0) return null;
+  const fmt = inner.slice(1, quoteEnd);
+  const argExpr = inner.slice(quoteEnd + 1).replace(/^,\s*/, "").trim();
+  if (!argExpr) return null;
+
+  const arg = evalNumberExpr(argExpr, ctx, dims);
+  let out = fmt;
+  out = out.replace(/%\.(\d+)f/g, (_, digits) => arg.toFixed(Number(digits)));
+  out = out.replace(/%d/g, String(Math.round(arg)));
+  return out;
 }
 
 function evalTelem(
@@ -339,9 +388,9 @@ function evalValue(
   srcMap: Map<string, string>,
   mock: MockTelemetry
 ): string | number {
-  const expr = raw.trim().replace(/,\s*$/, "");
+  const expr = stripOuterParens(raw.trim().replace(/,\s*$/, ""));
 
-  if (expr.includes("..")) {
+  if (hasTopLevelConcat(expr)) {
     return evalConcat(expr, ctx, dims, srcMap, mock);
   }
 
@@ -400,7 +449,7 @@ function resolveTextTemplate(
   }
 
   if (
-    t.includes("..") ||
+    hasTopLevelConcat(t) ||
     /^tostring\s*\(/.test(t) ||
     /^string\.format\s*\(/.test(t) ||
     /\band\s+.+\s+or\s+/.test(t)
@@ -425,6 +474,7 @@ function isRenderableText(text: string): boolean {
   if (/string\.format\s*\(/.test(text)) return false;
   if (/\.\./.test(text)) return false;
   if (/^tostring\s*\(/.test(text)) return false;
+  if (looksLikeUnevaluated(text)) return false;
   return true;
 }
 
@@ -445,6 +495,7 @@ function collectAssignments(
       if (expr.startsWith("function") || expr.startsWith("{")) continue;
 
       const value = evalValue(expr, ctx, dims, srcMap, mock);
+      if (typeof value === "string" && looksLikeUnevaluated(value)) continue;
       if (typeof value === "string" && (value.includes("widget.") || value.includes("telem("))) {
         continue;
       }

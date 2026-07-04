@@ -68,17 +68,28 @@ local function refresh(widget, event, touchState)
   if widget.options.ShowLink == 1 then
     local rqly = telem(widget.src.rqly)
     local rssi = telem(widget.src.rssi)
+    local rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%"
+    local rssiStr = "RSSI " .. tostring(math.floor(rssi + 0.5))
+    if rqly <= 0 then rqlyStr = "---" end
     lcd.drawFilledRectangle(leftX, cardY, colW, cardH, DARKGREY)
     lcd.drawRectangle(leftX, cardY, colW, cardH, GREY)
     lcd.drawText(leftX + 8, cardY + 8, "LINK", SMLSIZE + GREY)
-    lcd.drawText(leftX + 8, cardY + 24, tostring(rqly) .. "%", MIDSIZE + GREEN)
-    lcd.drawText(leftX + 8, cardY + 44, "RSSI " .. tostring(rssi), SMLSIZE + WHITE)
-    local barW = colW - 16
-    local barY = cardY + cardH - 22
-    lcd.drawFilledRectangle(leftX + 8, barY, barW, 10, GREY)
-    local fillW = math.floor(barW * math.max(0, math.min(100, rqly)) / 100)
+    lcd.drawText(leftX + 8, cardY + 24, rqlyStr, MIDSIZE + (rqly > 0 and GREEN or RED))
+    lcd.drawText(leftX + 8, cardY + 44, rssiStr, SMLSIZE + WHITE)
+    local barX = leftX + 8
+    local barY = cardY + cardH - 36
+    local active = math.floor((math.max(0, math.min(100, rqly)) + 19) / 20)
+    lcd.drawFilledRectangle(barX, barY, 5, 5, rqly > 0 and active >= 1 and RED or GREY)
+    lcd.drawFilledRectangle(barX + 7, barY, 5, 5, rqly > 0 and active >= 2 and ORANGE or GREY)
+    lcd.drawFilledRectangle(barX + 14, barY, 5, 5, rqly > 0 and active >= 3 and YELLOW or GREY)
+    lcd.drawFilledRectangle(barX + 21, barY, 5, 5, rqly > 0 and active >= 4 and LIME or GREY)
+    lcd.drawFilledRectangle(barX + 28, barY, 5, 5, rqly > 0 and active >= 5 and GREEN or GREY)
+    local trackW = colW - 16
+    local trackY = cardY + cardH - 22
+    lcd.drawFilledRectangle(barX, trackY, trackW, 10, GREY)
+    local fillW = math.floor(trackW * math.max(0, math.min(100, rqly)) / 100)
     if fillW > 0 then
-      lcd.drawFilledRectangle(leftX + 8, barY, fillW, 10, GREEN)
+      lcd.drawFilledRectangle(barX, trackY, fillW, 10, GREEN)
     end
   end
 
@@ -122,12 +133,28 @@ local function refresh(widget, event, touchState)
   end
 
   local fm = telem(widget.src.fm)
+  local volts = telem(widget.src.rxbt)
+  local amps = telem(widget.src.curr)
+  local curStr = amps > 0 and string.format("%.1fA", amps) or "0.0A"
+  local power = volts * amps
+  local pwrStr = "0.0W"
+  if power > 0 then
+    if power >= 1000 then
+      pwrStr = string.format("%.1fkW", power / 1000)
+    else
+      pwrStr = string.format("%.0fW", power)
+    end
+  end
   lcd.drawFilledRectangle(0, h - footerH, w, footerH, DARKGREY)
   if type(fm) == "string" and fm ~= "" then
     lcd.drawText(pad, h - footerH + 8, fm, SMLSIZE + ORANGE)
   else
     lcd.drawText(pad, h - footerH + 8, "Ready", SMLSIZE + GREY)
   end
+  lcd.drawText(pad + 140, h - footerH + 8, "Cur", SMLSIZE + GREY)
+  lcd.drawText(pad + 170, h - footerH + 8, curStr, SMLSIZE + GREEN)
+  lcd.drawText(pad + 260, h - footerH + 8, "Pwr", SMLSIZE + GREY)
+  lcd.drawText(pad + 290, h - footerH + 8, pwrStr, SMLSIZE + GREEN)
 end
 
 return {

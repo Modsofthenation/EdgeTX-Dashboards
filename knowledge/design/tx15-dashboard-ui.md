@@ -1,6 +1,8 @@
 # TX15 dashboard visual design guide
 
-Apply these rules to every generated widget. Goal: **clean, readable, professional** full-screen dashboards — not cluttered debug screens.
+Apply these rules to every generated dashboard. Goal: **clean, readable, professional** full-screen layouts — not cluttered debug screens.
+
+**Variety:** Match layout to the user's prompt and chosen archetype (card grid, hero minimal, strip board, dense grid, heli board, etc.). Do not reuse the same two-column card template for every request unless the user asked for it.
 
 ## Design principles
 
@@ -8,7 +10,7 @@ Apply these rules to every generated widget. Goal: **clean, readable, profession
 2. **Clear hierarchy** — One hero metric (DBLSIZE), a few primary values (MIDSIZE), labels always SMLSIZE.
 3. **Consistent grid** — Use 8px or 12px spacing. Margins: 12px from screen edges. Gaps between cards: 12px.
 4. **Card layout** — Group related telemetry in bordered panels (`drawFilledRectangle` + `drawRectangle`), not loose floating text.
-5. **Dark theme default** — Background `BLACK`, cards `DARKGREY` or `GREY`, borders `GREY`, text `WHITE`.
+5. **Dark theme default** — Background `BLACK`. Cards may use `DARKGREY` but **must include accent colors** when the user asks for vibrant/colorful UI (colored borders, CYAN/LIME/MAGENTA headers, YELLOW heroes).
 
 ## Layout template (480×320 full-screen)
 
@@ -100,6 +102,16 @@ Provide 3–5 BOOL toggles (`ShowLink`, `ShowBatt`, `ShowGPS`) plus optional `Te
 ## Touch (TX15)
 
 Reserve bottom 40px or use footer for status. Avoid placing critical numbers in corners where thumbs obscure them.
+
+## Community reference — DBK / Rotorflight TX15
+
+For **rotorflight** heli dashboards, also follow `knowledge/design/rotorflight-dbk-patterns.md` (patterns from [liuhm2019-crypto RotorflightTelemeteringScript](https://github.com/liuhm2019-crypto/RotorflightTelemeteringScript)):
+
+- 5-block color RQLY indicator (red → green)
+- Hero RPM/HSpd top area, voltage stack on the left
+- Throttle bar with % label on the bar
+- Footer **Current** + **Power** row (`volts * amps`)
+- Show `---` / `--` when link or RPM is zero
 
 ## Quality checklist (self-review before validateWidget)
 

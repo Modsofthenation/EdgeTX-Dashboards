@@ -1,6 +1,7 @@
 import type { SDKMessage, SDKToolUseMessage } from "@cursor/sdk";
 import type { StreamEvent, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { packageWidget } from "./package.js";
+import { describeToolUse } from "./toolDisplay.js";
 import { validateWidgetForRelease } from "./validationPipeline.js";
 
 export interface RunCallbacks {
@@ -19,33 +20,65 @@ export function extractTextFromMessage(message: SDKMessage): string | null {
   return parts.length > 0 ? parts.join("") : null;
 }
 
-function formatToolLabel(name: string): string {
-  return name
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/^./, (c) => c.toUpperCase());
+type ToolStreamEvent = {
+  type: "tool" | "todo";
+  content: string;
+  detail?: string;
+  todos?: StreamEvent["todos"];
+  toolName?: string;
+};
+
+function buildToolStreamEvents(
+  name: string,
+  input: unknown,
+  status?: SDKToolUseMessage["status"]
+): ToolStreamEvent[] {
+  const info = describeToolUse(name, input);
+
+  if (info.todos && info.todos.length > 0) {
+    return [{ type: "todo", content: info.label, todos: info.todos, toolName: name }];
+  }
+
+  let label = info.label;
+  if (status === "error") label = `${label} (failed)`;
+
+  return [{ type: "tool", content: label, detail: info.detail, toolName: name }];
 }
 
+/** @deprecated Use extractToolEventsFromMessage — kept for tests and CLI parity. */
 export function extractToolInfo(message: SDKMessage): string | null {
+  const events = extractToolEventsFromMessage(message);
+  if (events.length === 0) return null;
+  return events
+    .map((event) => {
+      if (event.type === "todo") return event.content;
+      return event.detail ? `${event.content}: ${event.detail}` : event.content;
+    })
+    .join(", ");
+}
+
+export function extractToolEventsFromMessage(message: SDKMessage): ToolStreamEvent[] {
   if (message.type === "tool_call") {
     const call = message as SDKToolUseMessage;
-    const label = formatToolLabel(call.name);
-    if (call.status === "running") return label;
-    if (call.status === "error") return `${label} (failed)`;
-    return label;
+    return buildToolStreamEvents(call.name, call.args, call.status);
   }
 
   if (message.type === "assistant") {
-    const tools = message.message.content
-      .filter((block) => block.type === "tool_use")
-      .map((block) => formatToolLabel(block.name));
-    if (tools.length > 0) return tools.join(", ");
+    const events: ToolStreamEvent[] = [];
+    for (const block of message.message.content) {
+      if (block.type === "tool_use") {
+        events.push(...buildToolStreamEvents(block.name, block.input));
+      }
+    }
+    return events;
   }
 
   if (message.type === "task") {
-    return "Subagent task";
+    const detail = message.text?.trim();
+    return [{ type: "tool", content: "Subagent task", detail: detail || undefined }];
   }
 
-  return null;
+  return [];
 }
 
 interface AgentRunLike {
@@ -68,10 +101,11 @@ export async function streamAgentRun(
     if (text) {
       callbacks?.onEvent?.({ type: "text", content: text, runId: run.id, agentId });
     }
-    const tool = extractToolInfo(event);
-    if (tool) {
-      callbacks?.onEvent?.({ type: "tool", content: tool, runId: run.id, agentId });
+
+    for (const toolEvent of extractToolEventsFromMessage(event)) {
+      callbacks?.onEvent?.({ ...toolEvent, runId: run.id, agentId });
     }
+
     const name = resolveName();
     if (name && name !== lastReportedName) {
       lastReportedName = name;

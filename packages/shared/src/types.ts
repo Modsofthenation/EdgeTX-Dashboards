@@ -62,9 +62,20 @@ export interface ValidationResult {
   issues: ValidationIssue[];
 }
 
-export interface StreamEvent {
-  type: "text" | "tool" | "status" | "error" | "done";
+export type StreamTodoStatus = "pending" | "in_progress" | "completed" | "cancelled";
+
+export interface StreamTodoItem {
+  id: string;
   content: string;
+  status: StreamTodoStatus;
+}
+
+export interface StreamEvent {
+  type: "text" | "tool" | "todo" | "status" | "error" | "done";
+  content: string;
+  detail?: string;
+  todos?: StreamTodoItem[];
+  toolName?: string;
   runId?: string;
   agentId?: string;
 }

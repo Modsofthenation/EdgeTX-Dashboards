@@ -121,12 +121,24 @@ describe("validateGenerateRequest", () => {
 });
 
 describe("renderInstallMd", () => {
-  it("includes widget name and rotorflight note when applicable", () => {
+  it("includes dashboard name and rotorflight note when applicable", () => {
     const radio = loadRadioProfile("tx15");
     const catalog = loadTelemetryCatalog("rotorflight");
     const md = renderInstallMd("RF2Dash", radio, catalog, ["RPM"]);
     assert.ok(md.includes("RF2Dash"));
     assert.ok(md.includes("rf2bg"));
+  });
+
+  it("includes companion script section when provided", () => {
+    const radio = loadRadioProfile("tx15");
+    const catalog = loadTelemetryCatalog("betaflight");
+    const md = renderInstallMd("BattDash", radio, catalog, ["RxBt"], {
+      tools: ["batt_sel.lua"],
+      telemetry: ["flight_log.lua"],
+    });
+    assert.ok(md.includes("Companion scripts"));
+    assert.ok(md.includes("SCRIPTS/TOOLS/batt_sel.lua"));
+    assert.ok(md.includes("SCRIPTS/TELEMETRY/flight_log.lua"));
   });
 });
 

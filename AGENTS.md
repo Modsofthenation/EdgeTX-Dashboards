@@ -4,7 +4,7 @@ Guidance for AI agents working in this repository.
 
 ## What this project is
 
-An **EdgeTX Lua widget generator** for **RadioMaster TX15** (480×320). Users describe a dashboard in natural language; a Cursor SDK agent writes `generated/<WidgetName>/main.lua`, validates it, and packages a zip for the radio SD card.
+An **EdgeTX Lua dashboard generator** for **RadioMaster TX15** (480×320). Users describe a dashboard in natural language; a Cursor SDK agent writes `generated/<Name>/main.lua` (plus optional companion scripts), validates, and packages a zip with INSTALL.md for the radio SD card.
 
 **Stack:** npm workspaces monorepo — Next.js web UI (`apps/web`), generator/CLI (`packages/generator`), shared types (`packages/shared`).
 

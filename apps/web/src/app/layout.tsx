@@ -15,8 +15,8 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EdgeTX Widget Generator",
-  description: "Generate EdgeTX Lua dashboard widgets for TX15 with Cursor SDK",
+  title: "EdgeTX Dashboard Generator",
+  description: "Generate EdgeTX Lua dashboards for TX15 with AI — telemetry, companion tools, and install guides",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

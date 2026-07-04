@@ -162,12 +162,12 @@ export function ChatComposer({
           disabled={running}
           placeholder={
             canRefine
-              ? "Refine the widget — e.g. make the battery card larger"
-              : "Describe your EdgeTX dashboard widget…"
+              ? "Refine the dashboard — e.g. switch to a strip layout or add a flight logger tool"
+              : "Describe your EdgeTX dashboard — layout, metrics, optional tools (battery selector, logger)…"
           }
         />
         <button type="submit" className={styles.sendBtn} disabled={running || !input.trim()}>
-          {running ? "…" : "↑"}
+          {running ? <span className={styles.sendSpinner} aria-hidden /> : "↑"}
         </button>
       </div>
 

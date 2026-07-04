@@ -1,0 +1,128 @@
+.wrap {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.left {
+  width: 15rem;
+  border-right: 1px solid var(--border);
+}
+
+.right {
+  width: min(22rem, 32vw);
+  border-left: 1px solid var(--border);
+}
+
+.collapsed.left,
+.collapsed.right {
+  width: 2.75rem;
+}
+
+.inner {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.collapsed .inner {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.rail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 0.35rem;
+  border: none;
+  background: rgba(7, 8, 12, 0.85);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.rail:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.railLabel {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+
+.headerToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.headerToggle:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
+}
+
+.headerToggleRight svg {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 960px) {
+  .wrap {
+    width: 100% !important;
+    height: auto;
+    max-height: none;
+    border-right: none !important;
+    border-left: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .collapsed {
+    max-height: 2.75rem;
+  }
+
+  .collapsed .inner {
+    display: none;
+  }
+
+  .rail {
+    flex-direction: row;
+    justify-content: center;
+    padding: 0.5rem;
+  }
+
+  .railLabel {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+}

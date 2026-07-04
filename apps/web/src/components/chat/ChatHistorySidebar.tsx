@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatSummary } from "@/lib/chatTypes";
+import { PanelCollapseButton } from "./CollapsibleAside";
 import styles from "./ChatHistorySidebar.module.css";
 
 interface ChatHistorySidebarProps {
@@ -8,6 +9,8 @@ interface ChatHistorySidebarProps {
   activeChatId: string | null;
   loading: boolean;
   running: boolean;
+  panelCollapsed?: boolean;
+  onTogglePanel?: () => void;
   onSelect: (id: string) => void;
   onNewChat: () => void;
   onDelete: (id: string) => void;
@@ -33,6 +36,8 @@ export function ChatHistorySidebar({
   activeChatId,
   loading,
   running,
+  panelCollapsed = false,
+  onTogglePanel,
   onSelect,
   onNewChat,
   onDelete,
@@ -41,16 +46,21 @@ export function ChatHistorySidebar({
     <aside className={styles.sidebar}>
       <div className={styles.header}>
         <h2 className={styles.title}>History</h2>
-        <button type="button" className={styles.newBtn} onClick={onNewChat} disabled={running}>
-          +
-        </button>
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.newBtn} onClick={onNewChat} disabled={running} title="New chat">
+            +
+          </button>
+          {onTogglePanel && (
+            <PanelCollapseButton label="History" collapsed={panelCollapsed} onToggle={onTogglePanel} />
+          )}
+        </div>
       </div>
 
       <div className={styles.list} role="list">
         {loading && <p className={styles.empty}>Loading…</p>}
 
         {!loading && chats.length === 0 && (
-          <p className={styles.empty}>No saved chats yet. Generate a widget to start.</p>
+          <p className={styles.empty}>No saved chats yet. Generate a dashboard to start.</p>
         )}
 
         {chats.map((chat) => {

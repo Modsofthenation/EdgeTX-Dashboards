@@ -1,6 +1,22 @@
+import type { StreamTodoItem } from "@widget-gen/shared";
+
 export interface StreamLine {
-  type: "text" | "tool" | "status" | "error" | "done";
+  type: "text" | "tool" | "todo" | "status" | "error" | "done";
   content: string;
+  detail?: string;
+  todos?: StreamTodoItem[];
+  toolName?: string;
+}
+
+export interface ToolChipEntry {
+  label: string;
+  detail?: string;
+  failed?: boolean;
+  key: string;
+}
+
+function toolLineKey(line: StreamLine): string {
+  return `${line.toolName ?? line.content}|${line.detail ?? ""}`;
 }
 
 /** Merge streaming chunks and dedupe tool events for readable log output. */
@@ -21,13 +37,38 @@ export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLi
     return [...prev, line];
   }
 
+  if (line.type === "todo") {
+    if (!line.todos?.length) return prev;
+    const last = prev[prev.length - 1];
+    if (last?.type === "todo") {
+      const updated = [...prev];
+      updated[updated.length - 1] = line;
+      return updated;
+    }
+    return [...prev, line];
+  }
+
   if (line.type === "tool") {
     const last = prev[prev.length - 1];
     if (last?.type === "tool") {
-      if (last.content === content) return prev;
+      if (toolLineKey(last) === toolLineKey(line)) {
+        if (last.content === content && last.detail === line.detail) return prev;
+        const updated = [...prev];
+        updated[updated.length - 1] = line;
+        return updated;
+      }
+
+      const lastFailed = last.content.endsWith("(failed)");
+      const nextFailed = content.endsWith("(failed)");
       const lastBase = last.content.replace(/\s\(failed\)$/, "");
       const nextBase = content.replace(/\s\(failed\)$/, "");
-      if (lastBase === nextBase) {
+      if (lastBase === nextBase && (last.detail ?? "") === (line.detail ?? "")) {
+        const updated = [...prev];
+        updated[updated.length - 1] = line;
+        return updated;
+      }
+
+      if (!lastFailed && nextFailed && lastBase === nextBase && (last.detail ?? "") === (line.detail ?? "")) {
         const updated = [...prev];
         updated[updated.length - 1] = line;
         return updated;
@@ -52,10 +93,22 @@ export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLi
 }
 
 export interface LogEntry {
-  kind: "text" | "tools" | "event";
+  kind: "text" | "tools" | "todo" | "event";
   text?: string;
-  tools?: string[];
+  tools?: ToolChipEntry[];
+  todos?: StreamTodoItem[];
+  title?: string;
   line?: StreamLine;
+}
+
+function toToolChip(line: StreamLine): ToolChipEntry {
+  const failed = line.content.endsWith("(failed)");
+  return {
+    label: failed ? line.content.replace(/\s\(failed\)$/, "") : line.content,
+    detail: line.detail,
+    failed,
+    key: toolLineKey(line),
+  };
 }
 
 /** Group consecutive tool lines into chip rows for display. */
@@ -77,14 +130,35 @@ export function groupStreamLines(lines: StreamLine[]): LogEntry[] {
 
     flushText();
 
+    if (line.type === "todo") {
+      const last = entries[entries.length - 1];
+      if (last?.kind === "todo") {
+        last.todos = line.todos;
+        last.title = line.content;
+        last.line = line;
+      } else {
+        entries.push({
+          kind: "todo",
+          title: line.content,
+          todos: line.todos,
+          line,
+        });
+      }
+      continue;
+    }
+
     if (line.type === "tool") {
+      const chip = toToolChip(line);
       const last = entries[entries.length - 1];
       if (last?.kind === "tools") {
-        if (!last.tools!.includes(line.content)) {
-          last.tools!.push(line.content);
+        const existing = last.tools!.find((tool) => tool.key === chip.key);
+        if (existing) {
+          Object.assign(existing, chip);
+        } else {
+          last.tools!.push(chip);
         }
       } else {
-        entries.push({ kind: "tools", tools: [line.content] });
+        entries.push({ kind: "tools", tools: [chip] });
       }
       continue;
     }

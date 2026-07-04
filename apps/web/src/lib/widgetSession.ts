@@ -25,6 +25,9 @@ export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
       ctx.send({
         type: ev.type,
         content: ev.content,
+        detail: ev.detail,
+        todos: ev.todos,
+        toolName: ev.toolName,
         sessionId: ctx.session.id,
       });
     },

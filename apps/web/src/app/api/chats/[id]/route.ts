@@ -32,13 +32,19 @@ export async function PUT(request: Request, context: RouteContext): Promise<Resp
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const input = body as UpdateChatInput;
-  const chat = updateChat(id, input);
-  if (!chat) {
-    return Response.json({ error: "Chat not found" }, { status: 404 });
-  }
+  try {
+    const input = body as UpdateChatInput;
+    const chat = updateChat(id, input);
+    if (!chat) {
+      return Response.json({ error: "Chat not found" }, { status: 404 });
+    }
 
-  return Response.json(chat);
+    return Response.json(chat);
+  } catch (err) {
+    console.error("[PUT /api/chats/:id]", err);
+    const message = err instanceof Error ? err.message : "Failed to save chat";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request, context: RouteContext): Promise<Response> {
