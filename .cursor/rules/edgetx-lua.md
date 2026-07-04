@@ -1,0 +1,94 @@
+# EdgeTX Lua Widget Rules
+
+These rules apply to all generated EdgeTX widget scripts in this project.
+
+## Widget contract
+
+Every widget MUST return a table with at minimum:
+- `name` (string, max 10 characters)
+- `create` (function)
+- `refresh` (function)
+
+Optional: `options`, `update`, `background`.
+
+## Naming and deployment
+
+- Widget `name` must be 10 characters or fewer with no spaces.
+- Deploy to `WIDGETS/<name>/main.lua` on the radio SD card (folder name matches `name`).
+- Do NOT use `require()` — EdgeTX widgets run in a sandbox without luarocks.
+
+## Options
+
+- EdgeTX 2.11+: max 10 options; EdgeTX 2.10: max 5 options.
+- Each option label (first element) must be 10 characters or fewer with no spaces.
+- Valid option types: SOURCE, BOOL, VALUE, COLOR, STRING.
+
+## Layout
+
+- Use `LCD_W` and `LCD_H` for full-screen layouts, not hardcoded pixel sizes.
+- Use `zone.w` and `zone.h` when not in full-screen mode.
+- Design dashboards for full-screen mode (touch events via `event` and `touchState` in `refresh`).
+
+## Visual design (required)
+
+Generated widgets must look **clean and professional** on a 480×320 TX15 screen.
+
+- **Card panels** — Group metrics in `drawFilledRectangle` + `drawRectangle` boxes on a dark background.
+- **12px grid** — Margins and gaps of 12px; header bar ~40px; footer status strip ~28px.
+- **Typography hierarchy** — SMLSIZE labels, MIDSIZE values, at most one DBLSIZE hero metric.
+- **Label above value** — Not a wall of inline `"Label 12.3 unit"` strings.
+- **2 accent colors max** — e.g. GREEN for link, YELLOW for battery; GREY/WHITE for structure.
+- **4–8 metrics** per screen; hide extras behind BOOL options.
+- **Direct `lcd.*` in `refresh()`** — Required for web preview; no opaque draw helpers.
+
+See `knowledge/design/tx15-dashboard-ui.md` for the full layout template and anti-patterns.
+
+## Telemetry
+
+- Read telemetry via `getValue("SensorName")` using discovered sensor names.
+- Cache source IDs in `create()` with `getSourceIndex("SensorName")` for performance.
+- GPS returns a table; Cels returns a table of cell voltages.
+- Zero is returned when telemetry is not received — handle gracefully in UI.
+
+## Drawing
+
+- Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawLine, etc.).
+- Use predefined colors: WHITE, BLACK, GREY, RED, GREEN, BLUE, YELLOW, ORANGE, etc.
+- Use `SMLSIZE`, `MIDSIZE`, `DBLSIZE` flags for text sizing where appropriate.
+
+## Performance
+
+- Keep `refresh()` lightweight — it runs every frame while visible.
+- Avoid string concatenation in hot paths; pre-format where possible.
+- Do not allocate large tables every refresh cycle.
+
+## Forbidden
+
+- No `require`, `io.*`, `os.execute`, or filesystem access.
+- No `dofile`, `loadfile`, or `loadstring`.
+- No network calls.
+- No infinite loops or blocking operations in refresh/create.
+
+## Validation before download
+
+Generated widgets must pass `validateWidget` with `valid: true` before packaging:
+- Return table includes `name`, `create`, `refresh`
+- Widget name ≤10 characters, no spaces
+- Option names ≤10 characters, no spaces
+- Telemetry sensor names must exist in the selected protocol catalog
+- `---@type WidgetScript` and `---@simulate` annotations (EdgeTX Dev Kit)
+- `lcd.*` / `lvgl.*` calls must match EdgeTX 2.11 stubs when synced
+
+## Dev-kit annotations
+
+Every widget must start with:
+
+```lua
+---@type WidgetScript
+---@simulate Layout1x1 zone=0
+```
+
+- `Layout1x1` — full-screen TX15 dashboard (480×320)
+- `Layout2x2 zone=N` — quarter-screen slot (N = 0..3) for multi-zone layouts
+
+Use [EdgeTX Dev Kit](https://github.com/JeffreyChix/edgetx-dev-kit) in VS Code for WASM firmware simulation with **Simulate Script** / **Watch Script**.

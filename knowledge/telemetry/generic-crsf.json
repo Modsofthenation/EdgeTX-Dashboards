@@ -1,0 +1,29 @@
+{
+  "protocol": "generic-crsf",
+  "label": "Generic CRSF / ELRS",
+  "setupNotes": [
+    "Use Discover new on the TELEMETRY page after powering the receiver.",
+    "Sensor names vary by flight controller firmware; verify names on your radio.",
+    "Use getSourceIndex() once in create() and cache IDs for performance."
+  ],
+  "sensors": [
+    { "name": "1RSS", "unit": "dB", "category": "link", "description": "Uplink RSSI" },
+    { "name": "RQLY", "unit": "%", "category": "link", "description": "Link quality" },
+    { "name": "RFMD", "unit": "", "category": "link", "description": "Packet rate" },
+    { "name": "TPWR", "unit": "mW", "category": "link", "description": "Transmit power" },
+    { "name": "RxBt", "unit": "V", "category": "battery", "description": "Battery voltage" },
+    { "name": "Curr", "unit": "A", "category": "battery", "description": "Current" },
+    { "name": "Capa", "unit": "mAh", "category": "battery", "description": "Consumed mAh" },
+    { "name": "Bat%", "unit": "%", "category": "battery", "description": "Battery percent" },
+    { "name": "Alt", "unit": "m", "category": "gps", "description": "Altitude" },
+    { "name": "GSpd", "unit": "km/h", "category": "gps", "description": "Ground speed" },
+    { "name": "Hdg", "unit": "deg", "category": "gps", "description": "Heading" },
+    { "name": "Sats", "unit": "", "category": "gps", "description": "Satellite count" },
+    { "name": "GPS", "unit": "", "category": "gps", "description": "GPS position table" },
+    { "name": "Ptch", "unit": "rad", "category": "attitude", "description": "Pitch" },
+    { "name": "Roll", "unit": "rad", "category": "attitude", "description": "Roll" },
+    { "name": "Yaw", "unit": "rad", "category": "attitude", "description": "Yaw" },
+    { "name": "FM", "unit": "", "category": "flight", "description": "Flight mode" },
+    { "name": "RPM", "unit": "rpm", "category": "motor", "description": "RPM if available" }
+  ]
+}

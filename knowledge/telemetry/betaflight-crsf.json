@@ -1,0 +1,34 @@
+{
+  "protocol": "betaflight",
+  "label": "Betaflight (CRSF/ELRS)",
+  "setupNotes": [
+    "Power on receiver and flight controller, then use Discover new on the TELEMETRY page.",
+    "Betaflight over CRSF typically exposes about 17 sensors with GPS enabled.",
+    "Restart the radio after first sensor discovery if values show zero."
+  ],
+  "sensors": [
+    { "name": "1RSS", "unit": "dB", "category": "link", "description": "Uplink RSSI antenna 1" },
+    { "name": "2RSS", "unit": "dB", "category": "link", "description": "Uplink RSSI antenna 2" },
+    { "name": "RQLY", "unit": "%", "category": "link", "description": "Uplink link quality" },
+    { "name": "RSNR", "unit": "dB", "category": "link", "description": "Uplink signal-to-noise ratio" },
+    { "name": "ANT", "unit": "", "category": "link", "description": "Active diversity antenna" },
+    { "name": "RFMD", "unit": "", "category": "link", "description": "Uplink packet rate" },
+    { "name": "TPWR", "unit": "mW", "category": "link", "description": "Uplink transmit power" },
+    { "name": "TRSS", "unit": "dB", "category": "link", "description": "Downlink RSSI" },
+    { "name": "TQLY", "unit": "%", "category": "link", "description": "Downlink link quality" },
+    { "name": "TSNR", "unit": "dB", "category": "link", "description": "Downlink signal-to-noise ratio" },
+    { "name": "RxBt", "unit": "V", "category": "battery", "description": "Battery voltage" },
+    { "name": "Curr", "unit": "A", "category": "battery", "description": "Current draw" },
+    { "name": "Capa", "unit": "mAh", "category": "battery", "description": "Consumed capacity" },
+    { "name": "Bat%", "unit": "%", "category": "battery", "description": "Battery remaining" },
+    { "name": "GPS", "unit": "", "category": "gps", "description": "GPS coordinates (table)" },
+    { "name": "GSpd", "unit": "km/h", "category": "gps", "description": "GPS ground speed" },
+    { "name": "Hdg", "unit": "deg", "category": "gps", "description": "GPS heading" },
+    { "name": "Alt", "unit": "m", "category": "gps", "description": "GPS altitude" },
+    { "name": "Sats", "unit": "", "category": "gps", "description": "GPS satellite count" },
+    { "name": "Ptch", "unit": "rad", "category": "attitude", "description": "Pitch angle" },
+    { "name": "Roll", "unit": "rad", "category": "attitude", "description": "Roll angle" },
+    { "name": "Yaw", "unit": "rad", "category": "attitude", "description": "Yaw angle" },
+    { "name": "FM", "unit": "", "category": "flight", "description": "Flight mode string" }
+  ]
+}

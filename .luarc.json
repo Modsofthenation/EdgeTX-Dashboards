@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "workspace": {
+    "library": ["stubs/2.11"],
+    "checkThirdParty": false
+  },
+  "diagnostics": {
+    "disable": ["lowercase-global", "undefined-global"]
+  },
+  "runtime": {
+    "version": "Lua 5.2"
+  }
+}

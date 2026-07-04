@@ -1,0 +1,33 @@
+{
+  "name": "@widget-gen/generator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "widget-gen": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "generate": "node dist/cli.js",
+    "test": "npm run build && node --test dist/__tests__/generator.test.js dist/__tests__/devKit.test.js"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.22",
+    "@widget-gen/shared": "*",
+    "archiver": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.3",
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}
