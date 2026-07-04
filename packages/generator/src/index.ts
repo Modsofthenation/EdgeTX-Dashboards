@@ -25,7 +25,8 @@ export {
   writeInstallMd,
 } from "./package.js";
 export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.js";
-export { buildGenerationPrompt, buildRefinePrompt, createCustomTools } from "./tools.js";
+export { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.js";
+export { createCustomTools } from "./agentTools.js";
 export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS } from "./session.js";
 export {
   listAvailableModels,

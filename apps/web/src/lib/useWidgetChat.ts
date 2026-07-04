@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
+import { consumeGenerationStream, type GenerationSsePayload } from "@/lib/generationStreamClient";
 import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
 import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel } from "@/lib/chatModels";
 import {
@@ -291,86 +292,68 @@ export function useWidgetChat() {
           return;
         }
 
-        const reader = res.body?.getReader();
-        if (!reader) return;
+        if (!res.body) return;
 
-        const decoder = new TextDecoder();
-        let buffer = "";
+        const handlePayload = (data: GenerationSsePayload) => {
+          if (data.sessionId) {
+            setSessionId(data.sessionId);
+            sessionIdRef.current = data.sessionId;
+          }
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          if (data.type === "widget" && data.widgetName) {
+            widgetNameRef.current = data.widgetName;
+            scheduleLoadArtifact(data.widgetName, validated, validationIssues);
+          }
 
-          buffer += decoder.decode(value, { stream: true });
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() ?? "";
+          if (data.validated !== undefined) validated = data.validated;
+          if (data.validationIssues) validationIssues = data.validationIssues;
 
-          for (const part of parts) {
-            if (!part.startsWith("data: ")) continue;
-            try {
-              const data = JSON.parse(part.slice(6)) as {
-                type: string;
-                content: string;
-                detail?: string;
-                todos?: StreamLine["todos"];
-                toolName?: string;
-                sessionId?: string;
-                widgetName?: string;
-                success?: boolean;
-                validated?: boolean;
-                validationIssues?: ValidationIssue[];
-              };
-
-              if (data.sessionId) {
-                setSessionId(data.sessionId);
-                sessionIdRef.current = data.sessionId;
-              }
-
-              if (data.type === "widget" && data.widgetName) {
-                widgetNameRef.current = data.widgetName;
-                scheduleLoadArtifact(data.widgetName, validated, validationIssues);
-              }
-
-              if (data.validated !== undefined) validated = data.validated;
-              if (data.validationIssues) validationIssues = data.validationIssues;
-
-              if (shouldRenderStreamEvent(data.type)) {
-                const lineType =
-                  data.type === "done" && data.success === false ? "error" : (data.type as StreamLine["type"]);
-                if (lineType === "text" || lineType === "tool" || lineType === "todo" || lineType === "status" || lineType === "error" || lineType === "done") {
-                  queueAssistantStreamLine(assistantId, {
-                    type: lineType,
-                    content: data.content,
-                    detail: data.detail,
-                    todos: data.todos,
-                    toolName: data.toolName,
-                  });
-                }
-              }
-
-              if (data.type === "done" || data.type === "error") {
-                const name = data.widgetName ?? widgetNameRef.current;
-                if (name) {
-                  void loadArtifact(name, validated, validationIssues);
-                }
-
-                setArtifactTracked((prev) =>
-                  prev ? { ...prev, validated, validationIssues } : prev
-                );
-
-                flushStreamDraft();
-                setMessagesTracked((prev) =>
-                  patchAssistant(prev, assistantId, {
-                    isStreaming: false,
-                    error: data.type === "error" && data.success === false,
-                  })
-                );
-              }
-            } catch {
-              // skip malformed SSE
+          if (shouldRenderStreamEvent(data.type)) {
+            const lineType =
+              data.type === "done" && data.success === false ? "error" : (data.type as StreamLine["type"]);
+            if (
+              lineType === "text" ||
+              lineType === "tool" ||
+              lineType === "todo" ||
+              lineType === "status" ||
+              lineType === "error" ||
+              lineType === "done"
+            ) {
+              queueAssistantStreamLine(assistantId, {
+                type: lineType,
+                content: data.content,
+                detail: data.detail,
+                todos: data.todos,
+                toolName: data.toolName,
+              });
             }
           }
-        }
+
+          if (data.type === "done" || data.type === "error") {
+            const name = data.widgetName ?? widgetNameRef.current;
+            if (name) {
+              void loadArtifact(name, validated, validationIssues);
+            }
+
+            setArtifactTracked((prev) =>
+              prev ? { ...prev, validated, validationIssues } : prev
+            );
+
+            flushStreamDraft();
+            setMessagesTracked((prev) =>
+              patchAssistant(prev, assistantId, {
+                isStreaming: false,
+                error: data.type === "error" && data.success === false,
+              })
+            );
+          }
+        };
+
+        await consumeGenerationStream({
+          response: res,
+          signal: controller.signal,
+          onPayload: handlePayload,
+        });
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setMessagesTracked((prev) =>

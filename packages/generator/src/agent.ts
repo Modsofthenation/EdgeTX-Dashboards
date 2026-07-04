@@ -1,6 +1,7 @@
 import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
 import type { GenerateRequest, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { buildGenerationPrompt, buildRefinePrompt, createCustomTools } from "./tools.js";
+import { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.js";
+import { createCustomTools } from "./agentTools.js";
 import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge.js";
 import { findLatestWidgetName } from "./widgetResolve.js";
 import { existsSync } from "node:fs";
@@ -153,17 +154,6 @@ export class WidgetGenerator {
     }
 
     const success = runFinished && validated;
-
-    callbacks?.onEvent?.({
-      type: success ? "done" : "error",
-      content: success
-        ? `Generation finished and validated: ${streamed.widgetName}`
-        : runFinished
-          ? `Generation finished but validation failed for ${streamed.widgetName ?? "widget"}`
-          : `Generation failed (run ${streamed.runId})`,
-      runId: streamed.runId,
-      agentId: agent.agentId,
-    });
 
     return {
       runId: streamed.runId,

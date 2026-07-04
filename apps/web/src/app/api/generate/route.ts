@@ -1,4 +1,4 @@
-import { CursorAgentError, getSessionStore, listAvailableModelIds, validateGenerateRequest } from "@widget-gen/generator";
+import { CursorAgentError, getSessionStore, listModelCatalog, validateGenerateRequest } from "@/server/generatorFacade";
 import { checkApiAuth, checkRateLimit, checkSessionCapacity } from "@/lib/apiSecurity";
 import { createSseResponse, createSseStream } from "@/lib/sse";
 import { createRunCallbacks, emitRunCompletion } from "@/lib/widgetSession";
@@ -24,7 +24,8 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const allowedModelIds = await listAvailableModelIds();
+  const catalog = await listModelCatalog();
+  const allowedModelIds = catalog.models.map((m) => m.id);
   const validated = validateGenerateRequest(body as Record<string, unknown>, { allowedModelIds });
   if (!validated.ok) {
     return Response.json({ error: validated.error }, { status: 400 });

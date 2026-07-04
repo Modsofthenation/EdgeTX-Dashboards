@@ -1,10 +1,10 @@
+import { checkApiAuth } from "@/lib/apiSecurity";
 import {
-  validateWidgetForRelease,
   getSessionStore,
   isTelemetryProtocol,
   sanitizeWidgetName,
-} from "@widget-gen/generator";
-import { checkApiAuth } from "@/lib/apiSecurity";
+  validateWidgetRelease,
+} from "@/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,6 +44,6 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid or missing protocol" }, { status: 400 });
   }
 
-  const result = validateWidgetForRelease(safeName, protocol, { radioId, strictTelemetry: true });
+  const result = validateWidgetRelease(safeName, protocol, radioId);
   return Response.json(result);
 }

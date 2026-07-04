@@ -1,3 +1,10 @@
+/**
+ * Static install guide for the web UI (InstallGuidePanel).
+ *
+ * This is generic TX15 + protocol copy for onboarding in the browser. Per-widget
+ * INSTALL.md inside the downloaded zip is generated from templates/INSTALL.md.tpl
+ * at package time and may include widget-specific paths and companion scripts.
+ */
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export interface InstallStep {

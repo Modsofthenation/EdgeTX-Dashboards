@@ -1,16 +1,13 @@
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { checkApiAuth } from "@/lib/apiSecurity";
 import {
-  getRepoRoot,
-  packageWidget,
+  findLatestWidgetName,
   getSessionStore,
   isTelemetryProtocol,
+  readOrBuildWidgetZip,
   sanitizeWidgetName,
-  validateWidgetForRelease,
+  validateWidgetRelease,
   WidgetValidationError,
-  findLatestWidgetName,
-} from "@widget-gen/generator";
-import { checkApiAuth } from "@/lib/apiSecurity";
+} from "@/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,37 +64,27 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid or missing protocol" }, { status: 400 });
   }
 
-  const validation = validateWidgetForRelease(safeName, protocol, { radioId, strictTelemetry: true });
+  const validation = validateWidgetRelease(safeName, protocol, radioId);
   if (!validation.valid) {
-    return Response.json(
-      { error: "Widget failed validation", validation },
-      { status: 422 }
-    );
+    return Response.json({ error: "Widget failed validation", validation }, { status: 422 });
   }
 
-  const repoRoot = getRepoRoot();
-  const distZip = join(repoRoot, "dist-output", `${safeName}.zip`);
-
-  if (!existsSync(distZip)) {
-    try {
-      await packageWidget(safeName, protocol, { radioId });
-    } catch (err) {
-      if (err instanceof WidgetValidationError) {
-        return Response.json({ error: err.message, validation: err.result }, { status: 422 });
-      }
+  try {
+    const buffer = await readOrBuildWidgetZip(safeName, protocol, radioId);
+    if (!buffer) {
       return Response.json({ error: "Widget zip not found" }, { status: 404 });
     }
-  }
 
-  if (!existsSync(distZip)) {
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${safeName}.zip"`,
+      },
+    });
+  } catch (err) {
+    if (err instanceof WidgetValidationError) {
+      return Response.json({ error: err.message, validation: err.result }, { status: 422 });
+    }
     return Response.json({ error: "Widget zip not found" }, { status: 404 });
   }
-
-  const buffer = readFileSync(distZip);
-  return new Response(buffer, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${safeName}.zip"`,
-    },
-  });
 }

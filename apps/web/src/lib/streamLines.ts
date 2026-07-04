@@ -1,12 +1,7 @@
-import type { StreamTodoItem } from "@widget-gen/shared";
+import type { StreamEvent, StreamTodoItem } from "@widget-gen/shared";
 
-export interface StreamLine {
-  type: "text" | "tool" | "todo" | "status" | "error" | "done";
-  content: string;
-  detail?: string;
-  todos?: StreamTodoItem[];
-  toolName?: string;
-}
+/** UI stream line — same shape as shared StreamEvent from the generator seam. */
+export type StreamLine = StreamEvent;
 
 export interface ToolChipEntry {
   label: string;
@@ -84,7 +79,6 @@ export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLi
   }
 
   if (line.type === "done") {
-    if (content.includes("Generation finished and validated")) return prev;
     const last = prev[prev.length - 1];
     if (last?.type === "done" && last.content === line.content) return prev;
   }

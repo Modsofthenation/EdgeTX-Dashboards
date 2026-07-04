@@ -9,7 +9,10 @@
     "start": "next start",
     "clean": "node -e \"require('node:fs').rmSync('.next',{recursive:true,force:true})\"",
     "typecheck": "tsc --noEmit",
-    "test:preview": "npx --yes tsx --test src/lib/__tests__/luaPreviewEngine.test.ts"
+    "test:preview": "npx --yes tsx --test src/lib/__tests__/luaPreviewEngine.test.ts",
+    "test:stream": "npx --yes tsx --test src/lib/__tests__/generationStreamClient.test.ts",
+    "test:chat": "npx --yes tsx --test src/lib/db/__tests__/chatStore.test.ts",
+    "test": "npm run test:preview && npm run test:stream && npm run test:chat"
   },
   "dependencies": {
     "@widget-gen/generator": "*",

@@ -1,5 +1,5 @@
 import { checkApiAuth } from "@/lib/apiSecurity";
-import { getLayoutProfileId, listRadioProfiles } from "@widget-gen/generator";
+import { listRadioCatalog } from "@/server/generatorFacade";
 import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
 
 export const runtime = "nodejs";
@@ -9,13 +9,8 @@ export async function GET(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 
-  const radios = listRadioProfiles().map((radio) => ({
-    id: radio.id,
-    name: radio.name,
-    lcdW: radio.lcdW,
-    lcdH: radio.lcdH,
-    touch: radio.touch,
-    layoutProfile: getLayoutProfileId(radio),
+  const radios = listRadioCatalog().map((radio) => ({
+    ...radio,
     default: radio.id === DEFAULT_RADIO_ID,
   }));
 
