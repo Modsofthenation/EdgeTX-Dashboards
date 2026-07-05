@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { MarkdownContent } from "./MarkdownContent";
-import { TodoPanel, ToolChipRow } from "./ToolActivity";
-import { formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
+import { TodoPanel, ToolActivityStream } from "./ToolActivity";
+import { collectToolEntries, formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
 interface AssistantStreamProps {
@@ -13,6 +13,9 @@ interface AssistantStreamProps {
 
 export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
   const entries = useMemo(() => groupStreamLines(lines), [lines]);
+  const tools = useMemo(() => collectToolEntries(lines), [lines]);
+  const lastLine = lines[lines.length - 1];
+  const showLiveTool = !!isStreaming && lastLine?.type === "tool" && tools.length > 0;
 
   if (entries.length === 0 && isStreaming) {
     return (
@@ -39,7 +42,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
         }
 
         if (entry.kind === "tools") {
-          return <ToolChipRow key={i} tools={entry.tools!} />;
+          return null;
         }
 
         if (entry.kind === "todo" && entry.todos?.length) {
@@ -54,6 +57,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
           </div>
         );
       })}
+      {showLiveTool ? <ToolActivityStream tools={tools} isStreaming /> : null}
       {isStreaming && entries.length > 0 && (
         <span className={styles.cursor} aria-hidden>
           ▍

@@ -178,12 +178,12 @@ export function useWidgetChat() {
       }
 
       widgetNameRef.current = fetched.name;
-      setArtifactTracked((prev) => ({
+      setArtifactTracked({
         name: fetched.name,
         luaSource: fetched.source,
-        validated: validated ?? prev?.validated ?? false,
-        validationIssues: issues ?? prev?.validationIssues ?? [],
-      }));
+        validated: validated ?? false,
+        validationIssues: issues ?? [],
+      });
       setArtifactLoading(false);
     },
     [setArtifactTracked]
@@ -244,6 +244,19 @@ export function useWidgetChat() {
         streamFlushRef.current = null;
       }
 
+      const isRefine = !!sessionIdRef.current;
+
+      fetchGenerationRef.current += 1;
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+        fetchDebounceRef.current = null;
+      }
+
+      if (!isRefine) {
+        widgetNameRef.current = null;
+        setArtifactTracked(null);
+      }
+
       setMessagesTracked((prev) => [...prev, userMessage, assistantMessage]);
 
       abortRef.current?.abort();
@@ -252,7 +265,6 @@ export function useWidgetChat() {
       setRunning(true);
       setArtifactLoading(true);
 
-      const isRefine = !!sessionIdRef.current;
       if (!isRefine) {
         await ensureChat(trimmed, proto, model, edgeTx, radio);
       }
@@ -301,8 +313,19 @@ export function useWidgetChat() {
           }
 
           if (data.type === "widget" && data.widgetName) {
-            widgetNameRef.current = data.widgetName;
-            scheduleLoadArtifact(data.widgetName, validated, validationIssues);
+            const nextName = data.widgetName;
+            const prevName = widgetNameRef.current;
+            widgetNameRef.current = nextName;
+            if (prevName !== nextName) {
+              fetchGenerationRef.current += 1;
+              setArtifactTracked({
+                name: nextName,
+                luaSource: null,
+                validated: false,
+                validationIssues: [],
+              });
+            }
+            scheduleLoadArtifact(nextName, validated, validationIssues);
           }
 
           if (data.validated !== undefined) validated = data.validated;
@@ -331,13 +354,12 @@ export function useWidgetChat() {
 
           if (data.type === "done" || data.type === "error") {
             const name = data.widgetName ?? widgetNameRef.current;
+            const finalValidated = data.validated ?? validated;
+            const finalIssues = data.validationIssues ?? validationIssues;
             if (name) {
-              void loadArtifact(name, validated, validationIssues);
+              widgetNameRef.current = name;
+              void loadArtifact(name, finalValidated, finalIssues);
             }
-
-            setArtifactTracked((prev) =>
-              prev ? { ...prev, validated, validationIssues } : prev
-            );
 
             flushStreamDraft();
             setMessagesTracked((prev) =>
@@ -420,7 +442,7 @@ export function useWidgetChat() {
       setChatId(chat.id);
       setSessionId(chat.sessionId);
       sessionIdRef.current = chat.sessionId;
-      widgetNameRef.current = chat.artifact?.name ?? chat.widgetName;
+      widgetNameRef.current = chat.widgetName ?? chat.artifact?.name ?? null;
       setProtocol(chat.protocol);
       setModelId(chat.modelId);
       setRadioId(chat.radioId);
@@ -428,14 +450,17 @@ export function useWidgetChat() {
       setMessagesTracked(chat.messages);
 
       if (chat.artifact?.luaSource) {
-        setArtifactTracked(chat.artifact);
-        setArtifactLoading(false);
-        return;
+        const targetName = chat.widgetName ?? chat.artifact.name;
+        if (chat.artifact.name === targetName) {
+          setArtifactTracked(chat.artifact);
+          setArtifactLoading(false);
+          return;
+        }
       }
 
-      if (chat.widgetName) {
+      if (chat.widgetName ?? chat.artifact?.name) {
         await loadArtifact(
-          chat.widgetName,
+          chat.widgetName ?? chat.artifact!.name,
           chat.artifact?.validated,
           chat.artifact?.validationIssues,
           chat.sessionId

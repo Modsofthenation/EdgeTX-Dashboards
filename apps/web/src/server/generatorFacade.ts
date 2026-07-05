@@ -83,18 +83,9 @@ export function resolveWidgetNameFromSession(
 ): { name?: string; pending?: boolean } {
   let name = explicitName?.trim() || undefined;
 
-  if (sessionId) {
+  if (sessionId && !name) {
     const stored = getSessionStore().get(sessionId);
-    if (stored) {
-      name = name ?? stored.session.widgetName ?? undefined;
-      if (!name) {
-        const latest = findLatestWidgetName();
-        if (latest) {
-          stored.session.widgetName = latest;
-          name = latest;
-        }
-      }
-    }
+    name = stored?.session.widgetName ?? undefined;
   }
 
   if (!name) return { pending: true };

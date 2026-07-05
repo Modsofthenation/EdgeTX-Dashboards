@@ -105,6 +105,22 @@ function toToolChip(line: StreamLine): ToolChipEntry {
   };
 }
 
+/** Ordered tool chips from stream lines (deduped by tool key). */
+export function collectToolEntries(lines: StreamLine[]): ToolChipEntry[] {
+  const entries: ToolChipEntry[] = [];
+  for (const line of lines) {
+    if (line.type !== "tool") continue;
+    const chip = toToolChip(line);
+    const existing = entries.find((tool) => tool.key === chip.key);
+    if (existing) {
+      Object.assign(existing, chip);
+    } else {
+      entries.push(chip);
+    }
+  }
+  return entries;
+}
+
 /** Group consecutive tool lines into chip rows for display. */
 export function groupStreamLines(lines: StreamLine[]): LogEntry[] {
   const entries: LogEntry[] = [];

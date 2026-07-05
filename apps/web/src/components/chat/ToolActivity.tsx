@@ -1,8 +1,80 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { StreamTodoItem } from "@widget-gen/shared";
 import type { ToolChipEntry } from "@/lib/streamLines";
 import styles from "./ToolActivity.module.css";
+
+function ToolLineContent({ tool, shimmer }: { tool: ToolChipEntry; shimmer?: boolean }) {
+  if (shimmer) {
+    const text = tool.detail ? `${tool.label} · ${tool.detail}` : tool.label;
+    return <span className={styles.toolShimmerText}>{text}</span>;
+  }
+
+  return (
+    <>
+      <span className={styles.toolLineLabel}>{tool.label}</span>
+      {tool.detail ? <span className={styles.toolLineDetail}>{tool.detail}</span> : null}
+    </>
+  );
+}
+
+/** Cursor-style single active tool line with shimmer and slide-up handoff. */
+export function ToolActivityStream({
+  tools,
+  isStreaming,
+}: {
+  tools: ToolChipEntry[];
+  isStreaming?: boolean;
+}) {
+  const activeTool = tools[tools.length - 1];
+  const prevToolRef = useRef<ToolChipEntry | null>(null);
+  const [exitingTool, setExitingTool] = useState<ToolChipEntry | null>(null);
+
+  useEffect(() => {
+    if (tools.length === 0) {
+      prevToolRef.current = null;
+      setExitingTool(null);
+    }
+  }, [tools.length]);
+
+  useEffect(() => {
+    if (!activeTool) return;
+
+    if (prevToolRef.current && prevToolRef.current.key !== activeTool.key) {
+      setExitingTool(prevToolRef.current);
+      const timer = window.setTimeout(() => setExitingTool(null), 420);
+      prevToolRef.current = activeTool;
+      return () => window.clearTimeout(timer);
+    }
+
+    prevToolRef.current = activeTool;
+  }, [activeTool]);
+
+  if (!activeTool && !exitingTool) return null;
+
+  const isActiveRunning = !!isStreaming && !!activeTool && !activeTool.failed;
+
+  return (
+    <div className={styles.toolStream} aria-live="polite" aria-atomic="true">
+      {exitingTool ? (
+        <div className={`${styles.toolLine} ${styles.toolLineExit}`} key={`exit-${exitingTool.key}`}>
+          <ToolLineContent tool={exitingTool} />
+        </div>
+      ) : null}
+      {activeTool ? (
+        <div
+          className={`${styles.toolLine} ${exitingTool ? styles.toolLineEnter : ""} ${
+            isActiveRunning ? styles.toolLineActive : ""
+          } ${activeTool.failed ? styles.toolLineFailed : ""}`}
+          key={activeTool.key}
+        >
+          <ToolLineContent tool={activeTool} shimmer={isActiveRunning} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const TODO_STATUS_LABEL: Record<StreamTodoItem["status"], string> = {
   pending: "Pending",

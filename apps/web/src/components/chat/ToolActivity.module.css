@@ -1,3 +1,119 @@
+.toolStream {
+  position: relative;
+  height: 1.4rem;
+  overflow: hidden;
+}
+
+.toolLine {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.toolLineLabel {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.toolLineDetail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.toolShimmerText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--muted) 38%,
+    var(--text-secondary) 50%,
+    var(--muted) 62%,
+    var(--muted) 100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: toolShimmer 1.8s ease-in-out infinite;
+}
+
+.toolLineActive {
+  z-index: 2;
+}
+
+.toolLineEnter {
+  animation: toolEnter 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toolLineExit {
+  z-index: 1;
+  animation: toolExit 0.38s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+.toolLineFailed .toolLineLabel,
+.toolLineFailed .toolLineDetail {
+  color: var(--error);
+}
+
+@keyframes toolShimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes toolEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toolExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolShimmerText {
+    animation: none;
+    color: var(--text-secondary);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .toolLineEnter,
+  .toolLineExit {
+    animation: none;
+  }
+}
+
 .toolGroup {
   display: flex;
   flex-wrap: wrap;
