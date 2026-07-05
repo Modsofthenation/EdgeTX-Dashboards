@@ -1,0 +1,361 @@
+---@type WidgetScript
+---@simulate Layout1x1 zone=0
+-- TX15 model-background + rotary battery gauge (quad / tinywhoop overview)
+-- Gold standard for model-hero layouts — see knowledge/design/model-hero-dashboard.md
+
+local name = "TXModelHr"
+
+local MODEL_IMG = "/MODELS/model.png"
+
+local options = {
+  { "ShowModel", BOOL, 1 },
+  { "ShowLink", BOOL, 1 },
+  { "ShowGPS", BOOL, 0 },
+  { "ShowAtt", BOOL, 1 },
+}
+
+local function cacheSource(sensorName)
+  local idx = getSourceIndex(sensorName)
+  if idx and idx > 0 then return idx end
+  return nil
+end
+
+local function telem(id)
+  if id then return getValue(id) end
+  return 0
+end
+
+local function attDeg(v)
+  if v == 0 then return nil end
+  if math.abs(v) <= 2 then
+    return math.floor(v * 57.3 + 0.5)
+  end
+  return math.floor(v + 0.5)
+end
+
+local function create(zone, opts)
+  local modelBmp = Bitmap.open(MODEL_IMG)
+  local bmpW, bmpH = Bitmap.getSize(modelBmp)
+
+  return {
+    zone = zone,
+    options = opts,
+    modelBmp = modelBmp,
+    bmpW = bmpW,
+    bmpH = bmpH,
+    BG_DIM = 10,
+    C_CARD = lcd.RGB(36, 38, 48),
+    C_BORDER = MAGENTA,
+    src = {
+      rqly = cacheSource("RQLY"),
+      trss = cacheSource("TRSS"),
+      rxbt = cacheSource("RxBt"),
+      curr = cacheSource("Curr"),
+      capa = cacheSource("Capa"),
+      batpct = cacheSource("Bat%"),
+      alt = cacheSource("Alt"),
+      gspd = cacheSource("GSpd"),
+      sats = cacheSource("Sats"),
+      fm = cacheSource("FM"),
+      ptch = cacheSource("Ptch"),
+      roll = cacheSource("Roll"),
+    },
+  }
+end
+
+local function update(widget, opts)
+  widget.options = opts
+end
+
+local function refresh(widget, event, touchState)
+  local w = LCD_W
+  local h = LCD_H
+  local pad = 12
+  local headerH = 40
+  local footerH = 28
+  local contentTop = headerH + pad
+  local contentBottom = h - footerH - pad
+  local cr = 8
+  local crSm = 6
+
+  lcd.clear(BLACK)
+
+  local rqly = telem(widget.src.rqly)
+  local trss = telem(widget.src.trss)
+  local volts = telem(widget.src.rxbt)
+  local amps = telem(widget.src.curr)
+  local capa = telem(widget.src.capa)
+  local batpct = telem(widget.src.batpct)
+  local alt = telem(widget.src.alt)
+  local gspd = telem(widget.src.gspd)
+  local sats = telem(widget.src.sats)
+  local fm = telem(widget.src.fm)
+  local ptch = telem(widget.src.ptch)
+  local roll = telem(widget.src.roll)
+
+  local batPctVal = batpct
+  if batPctVal <= 0 and volts > 0 then
+    batPctVal = math.max(0, math.min(100, (volts - 3.3) / (4.2 - 3.3) * 100))
+  end
+
+  local rqlyPct = math.max(0, math.min(100, rqly))
+  local linkFillPct = math.floor(rqlyPct + 0.5)
+  local battFillPct = math.floor(batPctVal + 0.5)
+
+  local voltsStr = "--"
+  if volts > 0 then
+    voltsStr = string.format("%.1f", volts)
+  end
+
+  local ampsStr = "--"
+  if amps ~= 0 then
+    ampsStr = string.format("%.1f", amps)
+  end
+
+  local capaStr = "--"
+  if capa > 0 then
+    capaStr = tostring(math.floor(capa + 0.5))
+  end
+
+  local batPctStr = "--"
+  if batPctVal > 0 then
+    batPctStr = tostring(battFillPct) .. "%"
+  end
+
+  local rqlyStr = tostring(linkFillPct) .. "%"
+  local trssStr = "--"
+  if trss ~= 0 then
+    trssStr = tostring(math.floor(trss + 0.5))
+  end
+
+  local altStr = "--"
+  if alt ~= 0 then
+    altStr = tostring(math.floor(alt + 0.5))
+  end
+
+  local gspdStr = "--"
+  if gspd ~= 0 then
+    gspdStr = string.format("%.1f", gspd)
+  end
+
+  local satsStr = "--"
+  if sats > 0 then
+    satsStr = tostring(sats)
+  end
+
+  local fmStr = "DISARM"
+  local armed = false
+  if type(fm) == "string" and fm ~= "" then
+    fmStr = fm
+    local upper = string.upper(fm)
+    if string.find(upper, "ARM") and not string.find(upper, "DISARM") then
+      armed = true
+    end
+  end
+
+  local rollDeg = attDeg(roll)
+  local ptchDeg = attDeg(ptch)
+  local rollStr = "--"
+  local ptchStr = "--"
+  if rollDeg then rollStr = tostring(rollDeg) end
+  if ptchDeg then ptchStr = tostring(ptchDeg) end
+
+  local bodyY = headerH
+  local bodyH = h - headerH - footerH
+
+  if widget.options.ShowModel == 1 then
+    if widget.bmpW > 0 and widget.bmpH > 0 then
+      local bodyW = w
+      local scaleX = math.floor(bodyW * 100 / widget.bmpW)
+      local scaleY = math.floor(bodyH * 100 / widget.bmpH)
+      local bmpScale = scaleX
+      if scaleY > bmpScale then
+        bmpScale = scaleY
+      end
+      local drawW = math.floor(widget.bmpW * bmpScale / 100)
+      local drawH = math.floor(widget.bmpH * bmpScale / 100)
+      local imgX = math.floor((w - drawW) / 2)
+      local imgY = math.floor(bodyY + (bodyH - drawH) / 2)
+      lcd.drawBitmap(widget.modelBmp, imgX, imgY, bmpScale)
+    end
+    lcd.drawFilledRectangle(0, bodyY, w, bodyH, BLACK, widget.BG_DIM)
+  end
+
+  lcd.drawFilledRectangle(0, 0, w, headerH, widget.C_CARD)
+  lcd.drawFilledRectangle(pad, headerH - 2, w - pad * 2, 2, MAGENTA)
+  lcd.drawText(pad, 12, "TINYWHOOP", MIDSIZE + MAGENTA)
+  lcd.drawText(w - pad, 14, "BF CRSF", SMLSIZE + RIGHT + CYAN)
+
+  local topBarH = 30
+  local topBarY = contentTop
+  local barW = math.floor((w - pad * 3) / 2)
+  local leftBarX = pad
+  local rightBarX = pad * 2 + barW
+
+  if widget.options.ShowLink == 1 then
+    lcd.drawFilledRectangle(leftBarX, topBarY + crSm, barW, topBarH - 2 * crSm, widget.C_CARD)
+    lcd.drawFilledRectangle(leftBarX + crSm, topBarY, barW - 2 * crSm, topBarH, widget.C_CARD)
+    lcd.drawFilledCircle(leftBarX + crSm, topBarY + crSm, crSm, widget.C_CARD)
+    lcd.drawFilledCircle(leftBarX + barW - crSm, topBarY + crSm, crSm, widget.C_CARD)
+    lcd.drawFilledCircle(leftBarX + crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
+    lcd.drawFilledCircle(leftBarX + barW - crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
+
+    lcd.drawText(leftBarX + 8, topBarY + 4, "LINK", SMLSIZE + GREY)
+    lcd.drawText(leftBarX + barW - 8, topBarY + 4, rqlyStr, SMLSIZE + RIGHT + CYAN)
+
+    local trackX = leftBarX + 8
+    local trackY = topBarY + 18
+    local trackW = barW - 16
+    local trackH = 8
+    lcd.drawFilledRectangle(trackX, trackY, trackW, trackH, GREY)
+    local linkFillW = math.floor(trackW * rqlyPct / 100)
+    if linkFillW > 0 then
+      lcd.drawFilledRectangle(trackX, trackY, linkFillW, trackH, CYAN)
+    end
+  end
+
+  lcd.drawFilledRectangle(rightBarX, topBarY + crSm, barW, topBarH - 2 * crSm, widget.C_CARD)
+  lcd.drawFilledRectangle(rightBarX + crSm, topBarY, barW - 2 * crSm, topBarH, widget.C_CARD)
+  lcd.drawFilledCircle(rightBarX + crSm, topBarY + crSm, crSm, widget.C_CARD)
+  lcd.drawFilledCircle(rightBarX + barW - crSm, topBarY + crSm, crSm, widget.C_CARD)
+  lcd.drawFilledCircle(rightBarX + crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
+  lcd.drawFilledCircle(rightBarX + barW - crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
+
+  lcd.drawText(rightBarX + 8, topBarY + 4, "BATT", SMLSIZE + GREY)
+  lcd.drawText(rightBarX + barW - 8, topBarY + 4, batPctStr, SMLSIZE + RIGHT + ORANGE)
+
+  local battTrackX = rightBarX + 8
+  local battTrackY = topBarY + 18
+  local battTrackW = barW - 16
+  local battTrackH = 8
+  lcd.drawFilledRectangle(battTrackX, battTrackY, battTrackW, battTrackH, GREY)
+  local battFillW = math.floor(battTrackW * batPctVal / 100)
+  if battFillW > 0 then
+    lcd.drawFilledRectangle(battTrackX, battTrackY, battFillW, battTrackH, ORANGE)
+  end
+
+  local mainTop = topBarY + topBarH + pad
+  local gpsH = 0
+  local gpsY = contentBottom
+  if widget.options.ShowGPS == 1 then
+    gpsH = 44
+    gpsY = contentBottom - gpsH
+  end
+  local mainH = contentBottom - mainTop
+  if gpsH > 0 then
+    mainH = gpsY - mainTop - pad
+  end
+
+  local heroW = math.floor(w * 0.52)
+  local gaugeCx = math.floor(heroW / 2)
+  local gaugeCy = mainTop + math.floor(mainH / 2)
+  local rOut = 54
+  local rIn = 42
+  local startA = 135
+  local span = 270
+  local trackEndA = startA + span
+  local valA = startA + span * (batPctVal / 100)
+
+  lcd.drawFilledCircle(gaugeCx, gaugeCy, rOut + 2, DARKGREY)
+  if trackEndA > 360 then
+    lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, 360, GREY)
+    lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, 0, trackEndA - 360, GREY)
+  else
+    lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, trackEndA, GREY)
+  end
+  if batPctVal > 0 then
+    if valA > 360 then
+      lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, 360, ORANGE)
+      lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, 0, valA - 360, ORANGE)
+    else
+      lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, valA, ORANGE)
+    end
+  end
+
+  lcd.drawText(gaugeCx, gaugeCy - 18, voltsStr, DBLSIZE + CENTER + ORANGE)
+  lcd.drawText(gaugeCx, gaugeCy + 2, "V", SMLSIZE + CENTER + GREY)
+  lcd.drawText(gaugeCx, gaugeCy + 20, capaStr, MIDSIZE + CENTER + WHITE)
+  lcd.drawText(gaugeCx, gaugeCy + 38, "mAh", SMLSIZE + CENTER + GREY)
+
+  local cardX = heroW + pad
+  local cardW = w - cardX - pad
+  local cardY = mainTop
+  local cardH = mainH
+
+  lcd.drawFilledRectangle(cardX, cardY + cr, cardW, cardH - 2 * cr, widget.C_CARD)
+  lcd.drawFilledRectangle(cardX + cr, cardY, cardW - 2 * cr, cardH, widget.C_CARD)
+  lcd.drawFilledCircle(cardX + cr, cardY + cr, cr, widget.C_CARD)
+  lcd.drawFilledCircle(cardX + cardW - cr, cardY + cr, cr, widget.C_CARD)
+  lcd.drawFilledCircle(cardX + cr, cardY + cardH - cr, cr, widget.C_CARD)
+  lcd.drawFilledCircle(cardX + cardW - cr, cardY + cardH - cr, cr, widget.C_CARD)
+
+  lcd.drawLine(cardX + cr, cardY, cardX + cardW - cr, cardY, SOLID, widget.C_BORDER)
+  lcd.drawLine(cardX + cr, cardY + cardH - 1, cardX + cardW - cr, cardY + cardH - 1, SOLID, widget.C_BORDER)
+  lcd.drawLine(cardX, cardY + cr, cardX, cardY + cardH - cr, SOLID, widget.C_BORDER)
+  lcd.drawLine(cardX + cardW - 1, cardY + cr, cardX + cardW - 1, cardY + cardH - cr, SOLID, widget.C_BORDER)
+  lcd.drawArc(cardX + cr, cardY + cr, cr, 270, 360, widget.C_BORDER)
+  lcd.drawArc(cardX + cardW - cr, cardY + cr, cr, 0, 90, widget.C_BORDER)
+  lcd.drawArc(cardX + cardW - cr, cardY + cardH - cr, cr, 90, 180, widget.C_BORDER)
+  lcd.drawArc(cardX + cr, cardY + cardH - cr, cr, 180, 270, widget.C_BORDER)
+
+  lcd.drawText(cardX + 12, cardY + 10, "POWER", SMLSIZE + GREY)
+  lcd.drawText(cardX + 12, cardY + 26, ampsStr, MIDSIZE + CYAN)
+  lcd.drawText(cardX + 12, cardY + 46, "A", SMLSIZE + GREY)
+
+  lcd.drawText(cardX + 12, cardY + 68, "USED", SMLSIZE + GREY)
+  lcd.drawText(cardX + 12, cardY + 84, capaStr, MIDSIZE + ORANGE)
+  lcd.drawText(cardX + 12, cardY + 104, "mAh", SMLSIZE + GREY)
+
+  if widget.options.ShowAtt == 1 then
+    lcd.drawText(cardX + cardW - 12, cardY + 26, rollStr, MIDSIZE + RIGHT + WHITE)
+    lcd.drawText(cardX + cardW - 12, cardY + 42, "R", SMLSIZE + RIGHT + GREY)
+    lcd.drawText(cardX + cardW - 12, cardY + 68, ptchStr, MIDSIZE + RIGHT + WHITE)
+    lcd.drawText(cardX + cardW - 12, cardY + 84, "P", SMLSIZE + RIGHT + GREY)
+  end
+
+  if widget.options.ShowGPS == 1 then
+    local gpsW = w - pad * 2
+    local gpsX = pad
+    lcd.drawFilledRectangle(gpsX, gpsY + crSm, gpsW, gpsH - 2 * crSm, widget.C_CARD)
+    lcd.drawFilledRectangle(gpsX + crSm, gpsY, gpsW - 2 * crSm, gpsH, widget.C_CARD)
+    lcd.drawFilledCircle(gpsX + crSm, gpsY + crSm, crSm, widget.C_CARD)
+    lcd.drawFilledCircle(gpsX + gpsW - crSm, gpsY + crSm, crSm, widget.C_CARD)
+    lcd.drawFilledCircle(gpsX + crSm, gpsY + gpsH - crSm, crSm, widget.C_CARD)
+    lcd.drawFilledCircle(gpsX + gpsW - crSm, gpsY + gpsH - crSm, crSm, widget.C_CARD)
+
+    lcd.drawText(gpsX + 12, gpsY + 6, "ALT", SMLSIZE + GREY)
+    lcd.drawText(gpsX + 12, gpsY + 20, altStr, MIDSIZE + WHITE)
+    lcd.drawText(gpsX + 12, gpsY + 36, "m", SMLSIZE + GREY)
+
+    lcd.drawText(gpsX + 168, gpsY + 6, "SPD", SMLSIZE + GREY)
+    lcd.drawText(gpsX + 168, gpsY + 20, gspdStr, MIDSIZE + WHITE)
+    lcd.drawText(gpsX + 168, gpsY + 36, "km/h", SMLSIZE + GREY)
+
+    lcd.drawText(gpsX + 324, gpsY + 6, "SATS", SMLSIZE + GREY)
+    lcd.drawText(gpsX + 324, gpsY + 20, satsStr, MIDSIZE + CYAN)
+  end
+
+  lcd.drawFilledRectangle(0, h - footerH, w, footerH, widget.C_CARD)
+  lcd.drawFilledRectangle(pad, h - footerH, w - pad * 2, 2, MAGENTA)
+
+  local statusLabel = "DISARMED"
+  local statusColor = GREY
+  if armed then
+    statusLabel = "ARMED"
+    statusColor = ORANGE
+  end
+
+  lcd.drawFilledRectangle(pad, h - footerH + 6, 72, 16, DARKGREY)
+  lcd.drawText(pad + 36, h - footerH + 8, statusLabel, SMLSIZE + CENTER + statusColor)
+
+  lcd.drawText(pad + 84, h - footerH + 8, "TRSS " .. trssStr, SMLSIZE + GREY)
+  lcd.drawText(w - pad, h - footerH + 8, fmStr, SMLSIZE + RIGHT + ORANGE)
+end
+
+return {
+  name = name,
+  options = options,
+  create = create,
+  update = update,
+  refresh = refresh,
+}

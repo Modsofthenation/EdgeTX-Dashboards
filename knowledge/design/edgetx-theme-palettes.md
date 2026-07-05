@@ -99,15 +99,26 @@ lcd.drawRectangle(x, y, w, h, CYAN)
 ```
 
 ### Rotary / arc gauge (`drawAnnulus`) — headspeed, battery %, RPM
+
+**Angles:** `0°` = up, clockwise (`90°` = right) — same as `drawArc`, not math convention.
+
 ```lua
 -- Compute angles as locals BEFORE draw calls
 local cx, cy = 120, 140
 local rOut, rIn = 44, 34
-local startA, endA = 135, 45   -- degrees; wrap via value mapping
+local startA = 135
 local span = 270
+local trackEndA = startA + span
 local valA = startA + span * (pct / 100)
-lcd.drawAnnulus(cx, cy, rOut, rIn, startA, startA + span, GREY)   -- track
-lcd.drawAnnulus(cx, cy, rOut, rIn, startA, valA, CYAN)            -- fill
+
+lcd.drawFilledCircle(cx, cy, rOut + 2, DARKGREY)
+if trackEndA > 360 then
+  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, 360, GREY)
+  lcd.drawAnnulus(cx, cy, rOut, rIn, 0, trackEndA - 360, GREY)
+else
+  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, trackEndA, GREY)
+end
+-- Apply the same split when valA > 360 for the fill color
 lcd.drawText(cx, cy - 6, pctStr, MIDSIZE + CENTER + WHITE)
 ```
 

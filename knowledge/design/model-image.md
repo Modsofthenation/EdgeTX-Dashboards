@@ -48,10 +48,23 @@ end
 
 ## Layout rules
 
+### Thumbnail in a card (default)
+
 - Reserve a fixed **72×56** (or 80×60) box — do not overlap DBLSIZE timer text.
 - Place top-left of a card or in a dedicated strip; keep 8px inset from card border.
 - Add BOOL option `ShowModel` (default on when user requested model image).
 - **All `lcd.drawBitmap` calls must be directly in `refresh()`** for web preview.
+
+### Full-screen background (model behind dashboard)
+
+When the user wants the model **behind** the UI or a **hero overview**:
+
+- Draw the bitmap in the **body region only** (between header and footer), then a dim overlay.
+- Use **cover** scale (`max` of width/height scale factors), center the image — not `min` (contain), which leaves narrow pillars.
+- Dim overlay: `lcd.drawFilledRectangle(0, bodyY, w, bodyH, BLACK, BG_DIM)` where **`BG_DIM` is 0–15** (typical **8–12**). Values like `168` are invalid and break layering.
+- Store `BG_DIM` on the widget table in `create()`; draw header/footer **after** the dim layer so chrome stays opaque.
+
+See `knowledge/design/model-hero-dashboard.md` for layer order, rotary gauge placement, and a full reference widget.
 
 ## INSTALL.md
 

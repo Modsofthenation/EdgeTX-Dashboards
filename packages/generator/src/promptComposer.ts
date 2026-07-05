@@ -7,6 +7,7 @@ import {
   readRotorflightStyleGuide,
   readCompanionScriptsGuide,
   readModelImageGuide,
+  readModelHeroDashboardGuide,
   readRuntimeApiPitfallsGuide,
   readThemePalettesGuide,
   readExampleSnippet,
@@ -83,6 +84,13 @@ function wantsModelImage(userPrompt: string): boolean {
   );
 }
 
+function wantsModelHeroDashboard(userPrompt: string): boolean {
+  if (wantsModelImage(userPrompt)) return true;
+  return /rotary|annulus|hero gauge|battery gauge|model bg|model behind|tinywhoop|whoop overview|quad overview/i.test(
+    userPrompt
+  );
+}
+
 export function buildGenerationPrompt(
   userPrompt: string,
   radio: RadioProfile,
@@ -107,6 +115,7 @@ export function buildGenerationPrompt(
       : "";
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
+  const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
@@ -197,6 +206,8 @@ ${companionGuide}
 
 ${modelImageGuide ? `\n## Model image (user requested — include ShowModel option + placeholder)\n${modelImageGuide}` : ""}
 
+${modelHeroGuide ? `\n## Model-background + hero gauge layout (mandatory for this request)\n${modelHeroGuide}\n\nReference snippet (layer order + gauge — do NOT copy coordinates verbatim):\n\n\`\`\`lua\n${readExampleSnippet("tx15-model-hero-dashboard.lua")}\n\`\`\`` : ""}
+
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
 ${runtimeApiPitfalls}
@@ -266,6 +277,7 @@ export function buildRefinePrompt(
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
+  const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
@@ -309,6 +321,8 @@ ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by crea
 ${companionGuide}
 
 ${modelImageGuide ? `\n## Model image (refinement — include ShowModel + placeholder)\n${modelImageGuide}` : ""}
+
+${modelHeroGuide ? `\n## Model-background + hero gauge layout (apply to refinement)\n${modelHeroGuide}\n\nReference snippet:\n\n\`\`\`lua\n${readExampleSnippet("tx15-model-hero-dashboard.lua")}\n\`\`\`` : ""}
 
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 

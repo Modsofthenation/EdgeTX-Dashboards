@@ -163,6 +163,12 @@ export function readModelImageGuide(): string {
   return readFileSync(path, "utf-8");
 }
 
+export function readModelHeroDashboardGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "model-hero-dashboard.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
 export function readRuntimeApiPitfallsGuide(): string {
   const path = join(getRepoRoot(), "knowledge", "design", "runtime-api-pitfalls.md");
   if (!existsSync(path)) return "";

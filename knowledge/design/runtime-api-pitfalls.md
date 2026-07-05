@@ -56,6 +56,36 @@ lcd.drawArc(x + cr, y + cr, cr, 270, 360, C_BORDER)
 
 See `knowledge/design/rounded-card-panels.md` for all four corners. Prefer fill-only rounded panels (six `drawFilled*` calls, no `drawArc`) if you skip borders.
 
+## lcd.drawFilledRectangle — opacity is 0–15
+
+Optional 6th argument sets **blend opacity** on color LCDs: **0 = transparent, 15 = opaque**. It is **not** 0–255.
+
+```lua
+-- WRONG — undefined behavior; can wash out or hide layers
+lcd.drawFilledRectangle(0, bodyY, w, bodyH, BLACK, 168)
+
+-- RIGHT — subtle dim over model background
+local BG_DIM = 10
+lcd.drawFilledRectangle(0, bodyY, w, bodyH, BLACK, BG_DIM)
+```
+
+Define `BG_DIM` in `create()` and reuse in `refresh()`.
+
+## math.deg — not available on EdgeTX Lua
+
+```lua
+-- WRONG — nil or runtime error on radio
+local rollDeg = math.deg(roll)
+
+-- RIGHT — CRSF attitude is usually already degrees
+local rollDeg = math.floor(roll + 0.5)
+-- If values look like radians (|v| <= 2), use: math.floor(roll * 57.3 + 0.5)
+```
+
+## lcd.drawAnnulus — angles > 360°
+
+Same angle convention as `drawArc` (`0°` = up, clockwise). A 270° arc from `startA = 135` ends at `405°`. Some radios skip arcs when `endAngle > 360` — **split** into two calls (`startA`→`360`, then `0`→remainder). See `model-hero-dashboard.md`.
+
 ## When adding model / background images
 
 See `knowledge/design/model-image.md` for layout and `ShowModel` option. Always follow the `Bitmap.open` + `Bitmap.getSize(bitmap)` pattern above.
