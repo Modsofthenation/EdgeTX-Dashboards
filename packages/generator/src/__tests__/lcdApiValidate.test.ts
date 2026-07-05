@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateGlobalGetSizeCalls, validateLcdDrawLineCalls } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateRoundedPanelArcCalls } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -57,6 +57,26 @@ end`;
     assert.equal(issues.length, 1);
     assert.equal(issues[0].severity, "error");
     assert.match(issues[0].message, /bitmap handle/);
+  });
+});
+
+describe("validateRoundedPanelArcCalls", () => {
+  it("rejects math-style top-left corner arc angles", () => {
+    const source = `local function refresh()
+  lcd.drawFilledCircle(x + cr, y + cr, cr, GREY)
+  lcd.drawArc(x + cr, y + cr, cr, 180, 270, CYAN)
+end`;
+    const issues = validateRoundedPanelArcCalls(source);
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].message, /270, 360/);
+  });
+
+  it("accepts EdgeTX top-left corner arc angles", () => {
+    const source = `local function refresh()
+  lcd.drawFilledCircle(x + cr, y + cr, cr, GREY)
+  lcd.drawArc(x + cr, y + cr, cr, 270, 360, CYAN)
+end`;
+    assert.deepEqual(validateRoundedPanelArcCalls(source), []);
   });
 });
 

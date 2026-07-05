@@ -87,6 +87,7 @@ Generated widgets must pass `validateWidget` with `valid: true` before packaging
 - `lcd.*` / `lvgl.*` calls must match EdgeTX 2.11 stubs when synced
 - **`lcd.drawLine`:** 5th argument must be `SOLID` or `DOTTED`; color goes in 6th flags arg (validator rejects color-as-5th-arg — causes WASM runtime errors)
 - **`Bitmap.getSize`:** pass the bitmap handle from `Bitmap.open()`, never the SD path string (validator rejects path-as-first-arg — causes `create()` crash on radio)
+- **`drawArc` rounded borders:** EdgeTX `0°`=up clockwise — top-left corner uses `270, 360`, not `180, 270` (validator rejects math angles)
 
 ## Dev-kit annotations
 

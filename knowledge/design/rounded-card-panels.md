@@ -26,18 +26,23 @@ Draw **fill before border and text**. Cache `cr` as a local in `refresh()` (or s
 
 ## Rounded border (optional, after fill)
 
-Outline color `C_BORDER`, same `cr`:
+Outline color `C_BORDER`, same `cr`.
+
+**EdgeTX arc angles:** `0°` = up (12 o'clock), increasing **clockwise** (`90°` = right, `180°` = down, `270°` = left). Do **not** use math/textbook angles (`0°` = right).
 
 ```lua
 lcd.drawLine(x + cr, y, x + w - cr, y, SOLID, C_BORDER)
 lcd.drawLine(x + cr, y + h - 1, x + w - cr, y + h - 1, SOLID, C_BORDER)
 lcd.drawLine(x, y + cr, x, y + h - cr, SOLID, C_BORDER)
 lcd.drawLine(x + w - 1, y + cr, x + w - 1, y + h - cr, SOLID, C_BORDER)
-lcd.drawArc(x + cr, y + cr, cr, 180, 270, C_BORDER)
-lcd.drawArc(x + w - cr, y + cr, cr, 270, 360, C_BORDER)
-lcd.drawArc(x + cr, y + h - cr, cr, 90, 180, C_BORDER)
-lcd.drawArc(x + w - cr, y + h - cr, cr, 0, 90, C_BORDER)
+-- corner centers match filled-circle centers above
+lcd.drawArc(x + cr, y + cr, cr, 270, 360, C_BORDER)           -- top-left
+lcd.drawArc(x + w - cr, y + cr, cr, 0, 90, C_BORDER)           -- top-right
+lcd.drawArc(x + w - cr, y + h - cr, cr, 90, 180, C_BORDER)     -- bottom-right
+lcd.drawArc(x + cr, y + h - cr, cr, 180, 270, C_BORDER)         -- bottom-left
 ```
+
+Fill-only panels (no `drawArc` borders) are acceptable when borders look noisy — keep the six fill calls.
 
 ## Grid / strip boards
 

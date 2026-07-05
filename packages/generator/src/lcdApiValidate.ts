@@ -252,11 +252,37 @@ export function validateGlobalGetSizeCalls(source: string): ValidationIssue[] {
   return issues;
 }
 
+/**
+ * Rounded-panel borders: top-left corner arc must use EdgeTX angles 270→360 (0=up),
+ * not math/textbook 180→270.
+ */
+export function validateRoundedPanelArcCalls(source: string): ValidationIssue[] {
+  if (!source.includes("drawFilledCircle") || !source.includes("drawArc")) {
+    return [];
+  }
+
+  const issues: ValidationIssue[] = [];
+  const wrongTopLeft = /drawArc\(\s*[^,]+\s*\+\s*\w*cr\w*\s*,\s*[^,]+\s*\+\s*\w*cr\w*\s*,\s*[^,]+\s*,\s*180\s*,\s*270\b/gi;
+
+  for (const match of source.matchAll(wrongTopLeft)) {
+    if (match.index === undefined) continue;
+    issues.push({
+      severity: "error",
+      message:
+        "drawArc at top-left rounded corner uses math angles (180,270) — EdgeTX uses 0°=up: use drawArc(x+cr, y+cr, cr, 270, 360, color)",
+    });
+    break;
+  }
+
+  return issues;
+}
+
 export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
   return [
     ...validateLcdDrawLineCalls(source),
     ...validateBitmapGetSizeCalls(source),
     ...validateGlobalGetSizeCalls(source),
+    ...validateRoundedPanelArcCalls(source),
   ];
 }
 
