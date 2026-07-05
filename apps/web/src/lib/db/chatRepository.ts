@@ -13,6 +13,8 @@ export interface UpdateChatInput {
   title?: string;
   sessionId?: string | null;
   widgetName?: string | null;
+  widgetInstanceId?: string | null;
+  widgetVersion?: number;
   messages?: ChatMessage[];
   artifact?: WidgetSnapshot | null;
 }
@@ -24,4 +26,5 @@ export interface ChatRepository {
   createChat(input: CreateChatInput): StoredChat;
   updateChat(id: string, input: UpdateChatInput): StoredChat | null;
   deleteChat(id: string): boolean;
+  clearAll?(): void;
 }

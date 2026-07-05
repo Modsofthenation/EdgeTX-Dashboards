@@ -43,6 +43,26 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_id ON chat_messages(chat_id);
 CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
 `;
 
+function migrateSchema(db: Database.Database): void {
+  const chatCols = db.prepare(`PRAGMA table_info(chats)`).all() as Array<{ name: string }>;
+  const chatNames = new Set(chatCols.map((c) => c.name));
+  if (!chatNames.has("widget_instance_id")) {
+    db.exec(`ALTER TABLE chats ADD COLUMN widget_instance_id TEXT`);
+  }
+  if (!chatNames.has("widget_version")) {
+    db.exec(`ALTER TABLE chats ADD COLUMN widget_version INTEGER NOT NULL DEFAULT 0`);
+  }
+
+  const artifactCols = db.prepare(`PRAGMA table_info(chat_artifacts)`).all() as Array<{ name: string }>;
+  const artifactNames = new Set(artifactCols.map((c) => c.name));
+  if (!artifactNames.has("instance_id")) {
+    db.exec(`ALTER TABLE chat_artifacts ADD COLUMN instance_id TEXT`);
+  }
+  if (!artifactNames.has("version")) {
+    db.exec(`ALTER TABLE chat_artifacts ADD COLUMN version INTEGER NOT NULL DEFAULT 0`);
+  }
+}
+
 function titleFromPrompt(prompt: string): string {
   const line = prompt.trim().split(/\r?\n/)[0] ?? "New chat";
   return line.length > 72 ? `${line.slice(0, 69)}…` : line;
@@ -54,6 +74,8 @@ function rowToSummary(row: {
   protocol: string;
   model_id: string;
   widget_name: string | null;
+  widget_instance_id: string | null;
+  widget_version: number | null;
   updated_at: number;
   message_count: number;
   validated: number | null;
@@ -64,6 +86,8 @@ function rowToSummary(row: {
     protocol: row.protocol as TelemetryProtocol,
     modelId: row.model_id,
     widgetName: row.widget_name,
+    widgetInstanceId: row.widget_instance_id,
+    widgetVersion: row.widget_version ?? 0,
     validated: row.validated === 1,
     updatedAt: row.updated_at,
     messageCount: row.message_count,
@@ -78,12 +102,13 @@ export class SqliteChatRepository implements ChatRepository {
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.db.exec(SCHEMA);
+    migrateSchema(this.db);
   }
 
   listChats(limit = 50): ChatSummary[] {
     const rows = this.db
       .prepare(
-        `SELECT c.id, c.title, c.protocol, c.model_id, c.widget_name, c.updated_at,
+        `SELECT c.id, c.title, c.protocol, c.model_id, c.widget_name, c.widget_instance_id, c.widget_version, c.updated_at,
                 COUNT(m.id) AS message_count,
                 COALESCE(a.validated, 0) AS validated
          FROM chats c
@@ -99,6 +124,8 @@ export class SqliteChatRepository implements ChatRepository {
       protocol: string;
       model_id: string;
       widget_name: string | null;
+      widget_instance_id: string | null;
+      widget_version: number | null;
       updated_at: number;
       message_count: number;
       validated: number | null;
@@ -110,7 +137,7 @@ export class SqliteChatRepository implements ChatRepository {
   getChat(id: string): StoredChat | null {
     const row = this.db
       .prepare(
-        `SELECT id, title, session_id, protocol, model_id, edge_tx_version, radio_id, widget_name, created_at, updated_at
+        `SELECT id, title, session_id, protocol, model_id, edge_tx_version, radio_id, widget_name, widget_instance_id, widget_version, created_at, updated_at
          FROM chats WHERE id = ?`
       )
       .get(id) as
@@ -123,6 +150,8 @@ export class SqliteChatRepository implements ChatRepository {
           edge_tx_version: string;
           radio_id: string;
           widget_name: string | null;
+          widget_instance_id: string | null;
+          widget_version: number | null;
           created_at: number;
           updated_at: number;
         }
@@ -155,12 +184,14 @@ export class SqliteChatRepository implements ChatRepository {
 
     const artifactRow = this.db
       .prepare(
-        `SELECT name, lua_source, validated, validation_issues_json
+        `SELECT name, instance_id, version, lua_source, validated, validation_issues_json
          FROM chat_artifacts WHERE chat_id = ?`
       )
       .get(id) as
       | {
           name: string;
+          instance_id: string | null;
+          version: number | null;
           lua_source: string | null;
           validated: number;
           validation_issues_json: string;
@@ -170,6 +201,8 @@ export class SqliteChatRepository implements ChatRepository {
     const artifact: WidgetSnapshot | null = artifactRow
       ? {
           name: artifactRow.name,
+          instanceId: artifactRow.instance_id,
+          version: artifactRow.version ?? 0,
           luaSource: artifactRow.lua_source,
           validated: artifactRow.validated === 1,
           validationIssues: JSON.parse(artifactRow.validation_issues_json) as ValidationIssue[],
@@ -185,6 +218,8 @@ export class SqliteChatRepository implements ChatRepository {
       edgeTxVersion: row.edge_tx_version,
       radioId: row.radio_id,
       widgetName: row.widget_name,
+      widgetInstanceId: row.widget_instance_id,
+      widgetVersion: row.widget_version ?? 0,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       messages,
@@ -246,10 +281,12 @@ export class SqliteChatRepository implements ChatRepository {
     const now = Date.now();
     this.db
       .prepare(
-        `INSERT INTO chat_artifacts (chat_id, name, lua_source, validated, validation_issues_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)
+        `INSERT INTO chat_artifacts (chat_id, name, instance_id, version, lua_source, validated, validation_issues_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(chat_id) DO UPDATE SET
            name = excluded.name,
+           instance_id = excluded.instance_id,
+           version = excluded.version,
            lua_source = excluded.lua_source,
            validated = excluded.validated,
            validation_issues_json = excluded.validation_issues_json,
@@ -258,6 +295,8 @@ export class SqliteChatRepository implements ChatRepository {
       .run(
         chatId,
         artifact.name,
+        artifact.instanceId,
+        artifact.version,
         artifact.luaSource,
         artifact.validated ? 1 : 0,
         JSON.stringify(artifact.validationIssues),
@@ -285,6 +324,14 @@ export class SqliteChatRepository implements ChatRepository {
       fields.push("widget_name = ?");
       values.push(input.widgetName);
     }
+    if (input.widgetInstanceId !== undefined) {
+      fields.push("widget_instance_id = ?");
+      values.push(input.widgetInstanceId);
+    }
+    if (input.widgetVersion !== undefined) {
+      fields.push("widget_version = ?");
+      values.push(input.widgetVersion);
+    }
 
     values.push(id);
     this.db.prepare(`UPDATE chats SET ${fields.join(", ")} WHERE id = ?`).run(...values);
@@ -306,6 +353,10 @@ export class SqliteChatRepository implements ChatRepository {
   deleteChat(id: string): boolean {
     const result = this.db.prepare(`DELETE FROM chats WHERE id = ?`).run(id);
     return result.changes > 0;
+  }
+
+  clearAll(): void {
+    this.db.exec(`DELETE FROM chat_artifacts; DELETE FROM chat_messages; DELETE FROM chats;`);
   }
 
   close(): void {

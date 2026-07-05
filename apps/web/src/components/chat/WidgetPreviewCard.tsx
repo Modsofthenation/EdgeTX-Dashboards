@@ -26,6 +26,7 @@ export function WidgetPreviewCard({ widget, sessionId, protocol }: WidgetPreview
     try {
       const params = new URLSearchParams({ protocol });
       if (sessionId) params.set("sessionId", sessionId);
+      else if (widget.instanceId) params.set("instanceId", widget.instanceId);
       else params.set("name", widget.name);
 
       const res = await fetch(`/api/download?${params}`);

@@ -163,6 +163,12 @@ export function readModelImageGuide(): string {
   return readFileSync(path, "utf-8");
 }
 
+export function readThemePalettesGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "edgetx-theme-palettes.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
 export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
   return getSimulateLayoutProfile(getLayoutProfileId(loadRadioProfile(radioId)));
 }

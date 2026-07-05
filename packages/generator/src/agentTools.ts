@@ -3,15 +3,25 @@ import type { SDKCustomTool } from "@cursor/sdk";
 import type { TelemetryCategory, TelemetryProtocol } from "@widget-gen/shared";
 import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.js";
 import { validateWidgetForRelease } from "./validationPipeline.js";
-import { getWidgetLuaPath, packageWidget, writeInstallMd } from "./package.js";
-import { sanitizeWidgetName } from "./paths.js";
+import { packageWidget, writeInstallMd } from "./package.js";
+import {
+  getWidgetLuaPathForKey,
+  sanitizeWidgetName,
+  sanitizeWidgetInstanceId,
+  isWidgetInstanceId,
+} from "./paths.js";
+import { resolveDisplayName } from "./widgetInstance.js";
 import type { LayoutArchetypeId } from "./layoutArchetype.js";
 import { getActiveLayoutArchetype } from "./variationContext.js";
 
 export interface ToolSessionDefaults {
   protocol?: TelemetryProtocol;
   radioId?: string;
+  /** UUID workspace folder for this chat widget. */
+  widgetInstanceId?: string;
+  /** EdgeTX radio display name (≤10 chars). */
   widgetName?: string;
+  widgetVersion?: number;
 }
 
 function resolveToolProtocol(
@@ -23,7 +33,36 @@ function resolveToolProtocol(
   return "generic-crsf";
 }
 
+function resolveWorkspaceKey(
+  args: Record<string, unknown>,
+  defaults?: ToolSessionDefaults
+): string {
+  const fromArgs = args.widgetInstanceId ?? args.widgetName;
+  if (fromArgs) {
+    const raw = String(fromArgs);
+    return isWidgetInstanceId(raw) ? sanitizeWidgetInstanceId(raw) : sanitizeWidgetName(raw);
+  }
+  if (defaults?.widgetInstanceId) {
+    return sanitizeWidgetInstanceId(defaults.widgetInstanceId);
+  }
+  if (defaults?.widgetName) {
+    return sanitizeWidgetName(defaults.widgetName);
+  }
+  throw new Error("widgetInstanceId is required for this session");
+}
+
 export function createCustomTools(defaults?: ToolSessionDefaults): Record<string, SDKCustomTool> {
+  const workspaceKeyProp = {
+    widgetInstanceId: {
+      type: "string",
+      description: "UUID workspace folder under generated/ (use the session-assigned id)",
+    },
+    widgetName: {
+      type: "string",
+      description: "Legacy display-name folder — prefer widgetInstanceId",
+    },
+  };
+
   return {
     validateWidget: {
       description:
@@ -31,7 +70,7 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
       inputSchema: {
         type: "object",
         properties: {
-          widgetName: { type: "string", description: "Widget folder name under generated/" },
+          ...workspaceKeyProp,
           protocol: {
             type: "string",
             enum: ["betaflight", "rotorflight", "generic-crsf"],
@@ -44,17 +83,20 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
               "Layout archetype id (card-grid, hero-minimal, strip-board, etc.) for visual-design rules",
           },
         },
-        required: ["widgetName"],
+        required: ["widgetInstanceId"],
       },
       execute(args) {
         try {
-          const widgetName = sanitizeWidgetName(String(args.widgetName));
-          if (defaults?.widgetName && widgetName !== defaults.widgetName) {
+          const workspaceKey = resolveWorkspaceKey(args, defaults);
+          if (
+            defaults?.widgetInstanceId &&
+            workspaceKey !== sanitizeWidgetInstanceId(defaults.widgetInstanceId)
+          ) {
             return {
               content: [
                 {
                   type: "text",
-                  text: `Wrong widget name "${widgetName}". Use the assigned name "${defaults.widgetName}" for this session.`,
+                  text: `Wrong workspace id "${workspaceKey}". Use the assigned id "${defaults.widgetInstanceId}" for this session.`,
                 },
               ],
               isError: true,
@@ -64,11 +106,28 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           const radioId = String(args.radioId ?? defaults?.radioId ?? "tx15");
           const layoutArchetype = (args.layoutArchetype as LayoutArchetypeId | undefined) ??
             getActiveLayoutArchetype();
-          const path = getWidgetLuaPath(widgetName);
+          const path = getWidgetLuaPathForKey(workspaceKey);
           if (!existsSync(path)) {
-            return { content: [{ type: "text", text: `File not found for widget: ${widgetName}` }], isError: true };
+            return {
+              content: [{ type: "text", text: `File not found for workspace: ${workspaceKey}` }],
+              isError: true,
+            };
           }
-          const result = validateWidgetForRelease(widgetName, protocol, {
+          if (defaults?.widgetName) {
+            const displayName = resolveDisplayName(workspaceKey);
+            if (displayName && displayName !== defaults.widgetName) {
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: `Lua display name "${displayName}" does not match assigned name "${defaults.widgetName}". Set local name = "${defaults.widgetName}".`,
+                  },
+                ],
+                isError: true,
+              };
+            }
+          }
+          const result = validateWidgetForRelease(workspaceKey, protocol, {
             radioId,
             strictTelemetry: true,
             layoutArchetype,
@@ -136,26 +195,26 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
 
     packageWidget: {
       description:
-        "Package a generated dashboard into a zip for SD card deployment (WIDGETS/<name>/main.lua plus any SCRIPTS/TOOLS or SCRIPTS/TELEMETRY companions).",
+        "Package a generated dashboard into a zip for SD card deployment (WIDGETS/<displayName>/main.lua plus any SCRIPTS/TOOLS or SCRIPTS/TELEMETRY companions).",
       inputSchema: {
         type: "object",
         properties: {
-          widgetName: { type: "string" },
+          ...workspaceKeyProp,
           protocol: {
             type: "string",
             enum: ["betaflight", "rotorflight", "generic-crsf"],
           },
           radioId: { type: "string", description: "Radio profile id (default tx15)" },
         },
-        required: ["widgetName", "protocol"],
+        required: ["widgetInstanceId", "protocol"],
       },
       async execute(args) {
         try {
-          const widgetName = sanitizeWidgetName(String(args.widgetName));
+          const workspaceKey = resolveWorkspaceKey(args, defaults);
           const protocol = args.protocol as TelemetryProtocol;
           const radioId = String(args.radioId ?? "tx15");
-          const { widgetName: name } = await packageWidget(widgetName, protocol, { radioId });
-          return JSON.stringify({ success: true, widgetName: name });
+          const { widgetName: name, instanceId } = await packageWidget(workspaceKey, protocol, { radioId });
+          return JSON.stringify({ success: true, widgetName: name, widgetInstanceId: instanceId ?? workspaceKey });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           return { content: [{ type: "text", text: msg }], isError: true };
@@ -169,29 +228,33 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
       inputSchema: {
         type: "object",
         properties: {
-          widgetName: { type: "string" },
+          ...workspaceKeyProp,
           protocol: {
             type: "string",
             enum: ["betaflight", "rotorflight", "generic-crsf"],
           },
           radioId: { type: "string", default: "tx15" },
         },
-        required: ["widgetName", "protocol"],
+        required: ["widgetInstanceId", "protocol"],
       },
       execute(args) {
         try {
-          const widgetName = sanitizeWidgetName(String(args.widgetName));
+          const workspaceKey = resolveWorkspaceKey(args, defaults);
           const protocol = args.protocol as TelemetryProtocol;
           const radioId = String(args.radioId ?? "tx15");
-          const path = getWidgetLuaPath(widgetName);
+          const path = getWidgetLuaPathForKey(workspaceKey);
           if (!existsSync(path)) {
-            return { content: [{ type: "text", text: `File not found for widget: ${widgetName}` }], isError: true };
+            return {
+              content: [{ type: "text", text: `File not found for workspace: ${workspaceKey}` }],
+              isError: true,
+            };
           }
           const source = readFileSync(path, "utf-8");
           const radio = loadRadioProfile(radioId);
           const catalog = loadTelemetryCatalog(protocol);
-          writeInstallMd(widgetName, radio, catalog, source);
-          return JSON.stringify({ success: true, widgetName });
+          writeInstallMd(workspaceKey, radio, catalog, source);
+          const displayName = resolveDisplayName(workspaceKey) ?? workspaceKey;
+          return JSON.stringify({ success: true, widgetName: displayName, widgetInstanceId: workspaceKey });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           return { content: [{ type: "text", text: msg }], isError: true };

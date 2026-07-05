@@ -1,9 +1,10 @@
 import { checkApiAuth } from "@/lib/apiSecurity";
 import {
-  findLatestWidgetName,
   getSessionStore,
   isTelemetryProtocol,
   readOrBuildWidgetZip,
+  resolveWidgetWorkspaceFromSession,
+  sanitizeWidgetInstanceId,
   sanitizeWidgetName,
   validateWidgetRelease,
   WidgetValidationError,
@@ -17,7 +18,7 @@ export async function GET(request: Request): Promise<Response> {
   if (authErr) return authErr;
 
   const { searchParams } = new URL(request.url);
-  let name = searchParams.get("name");
+  let workspaceKey = searchParams.get("instanceId") ?? searchParams.get("name");
   const sessionId = searchParams.get("sessionId");
   let protocol = searchParams.get("protocol");
   let radioId = searchParams.get("radioId") ?? "tx15";
@@ -36,49 +37,50 @@ export async function GET(request: Request): Promise<Response> {
         { status: 422 }
       );
     }
-    if (stored.session.widgetName) {
-      name = stored.session.widgetName;
-    } else {
-      const latest = findLatestWidgetName();
-      if (latest) {
-        stored.session.widgetName = latest;
-        name = latest;
-      }
-    }
+    workspaceKey = stored.session.widgetInstanceId ?? stored.session.widgetName ?? workspaceKey;
     protocol = stored.session.protocol;
     radioId = stored.session.radioId;
   }
 
-  if (!name) {
-    return Response.json({ error: "name or sessionId is required" }, { status: 400 });
+  if (!workspaceKey) {
+    const resolved = resolveWidgetWorkspaceFromSession(sessionId, null, null);
+    if (!resolved.pending) workspaceKey = resolved.workspaceKey;
   }
 
-  let safeName: string;
+  if (!workspaceKey) {
+    return Response.json({ error: "instanceId, name, or sessionId is required" }, { status: 400 });
+  }
+
+  let safeKey: string;
   try {
-    safeName = sanitizeWidgetName(name);
+    safeKey = sanitizeWidgetInstanceId(workspaceKey);
   } catch {
-    return Response.json({ error: "Invalid widget name" }, { status: 400 });
+    try {
+      safeKey = sanitizeWidgetName(workspaceKey);
+    } catch {
+      return Response.json({ error: "Invalid widget workspace key" }, { status: 400 });
+    }
   }
 
   if (!protocol || !isTelemetryProtocol(protocol)) {
     return Response.json({ error: "Invalid or missing protocol" }, { status: 400 });
   }
 
-  const validation = validateWidgetRelease(safeName, protocol, radioId);
+  const validation = validateWidgetRelease(safeKey, protocol, radioId);
   if (!validation.valid) {
     return Response.json({ error: "Widget failed validation", validation }, { status: 422 });
   }
 
   try {
-    const buffer = await readOrBuildWidgetZip(safeName, protocol, radioId);
-    if (!buffer) {
+    const zip = await readOrBuildWidgetZip(safeKey, protocol, radioId);
+    if (!zip) {
       return Response.json({ error: "Widget zip not found" }, { status: 404 });
     }
 
-    return new Response(new Uint8Array(buffer), {
+    return new Response(new Uint8Array(zip.buffer), {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${safeName}.zip"`,
+        "Content-Disposition": `attachment; filename="${zip.downloadName}.zip"`,
       },
     });
   } catch (err) {

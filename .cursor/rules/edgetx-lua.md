@@ -38,7 +38,7 @@ Generated widgets must look **clean and professional** on a 480×320 TX15 screen
 - **Content budget** — Compute `contentBottom = h - footerH - pad` before assigning block heights; scale rows to fit within `contentH` so the footer never clips the last panel.
 - **Typography hierarchy** — SMLSIZE labels, MIDSIZE values, at most one DBLSIZE hero metric (required for hero-minimal).
 - **Label above value** — Not a wall of inline `"Label 12.3 unit"` strings.
-- **Accent colors** — Follow the creative brief palette; avoid flat grey-only layouts.
+- **Accent colors** — Follow the creative brief palette from `knowledge/design/edgetx-theme-palettes.md`; avoid flat grey-only layouts.
 - **4–8 metrics** per screen; hide extras behind BOOL options.
 - **Direct `lcd.*` in `refresh()`** — Required for web preview; no opaque draw helpers.
 - **Model image:** When requested, use `Bitmap.open` in `create()`, `lcd.drawBitmap` in `refresh()`, plus grey placeholder panel. See `knowledge/design/model-image.md`.
@@ -55,9 +55,11 @@ See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-r
 
 ## Drawing
 
-- Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawLine, etc.).
-- Use predefined colors: WHITE, BLACK, GREY, RED, GREEN, BLUE, YELLOW, ORANGE, etc.
-- Use `SMLSIZE`, `MIDSIZE`, `DBLSIZE` flags for text sizing where appropriate.
+- Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawLine, drawGauge, drawCircle, drawArc, drawAnnulus, drawBitmap, etc.).
+- Use EdgeTX literal colors (WHITE, CYAN, LIME, LIGHTGREY, …) or `lcd.RGB(r,g,b)` locals defined in `create()`. See `knowledge/design/edgetx-theme-palettes.md`.
+- Do **not** call `lcd.setColor(COLOR_THEME_*, …)` — it changes the whole radio UI.
+- **Gauges / rotary dials:** Use `lcd.drawGauge` (bar) or `lcd.drawAnnulus` / `lcd.drawArc` (rotary). Call them **directly in `refresh()`** with angle/value locals computed first — required for web preview.
+- Use `SMLSIZE`, `MIDSIZE`, `DBLSIZE`, `CENTER`, `RIGHT` flags for text sizing/alignment where appropriate.
 
 ## Performance
 

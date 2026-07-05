@@ -45,7 +45,7 @@ export function validateWidgetSource(
  * Workspace adapter handles read/annotate; validator stays pure.
  */
 export function validateWidgetForRelease(
-  widgetName: string,
+  workspaceKey: string,
   protocol: TelemetryProtocol,
   options?: ValidateForReleaseOptions
 ): ValidationResult {
@@ -58,17 +58,17 @@ export function validateWidgetForRelease(
     options?.layoutArchetype
   );
 
-  if (!workspace.exists(widgetName)) {
+  if (!workspace.exists(workspaceKey)) {
     return {
       valid: false,
-      issues: [{ severity: "error", message: `Widget source not found: ${widgetName}` }],
+      issues: [{ severity: "error", message: `Widget source not found: ${workspaceKey}` }],
     };
   }
 
   const prepared =
     options?.ensureAnnotations === false
-      ? workspace.readSource(widgetName)
-      : workspace.prepareForRadio(widgetName, radioId);
+      ? workspace.readSource(workspaceKey)
+      : workspace.prepareForRadio(workspaceKey, radioId);
 
   if (!prepared.ok) {
     return { valid: false, issues: [{ severity: "error", message: prepared.message }] };
@@ -78,11 +78,11 @@ export function validateWidgetForRelease(
 }
 
 export function assertValidForRelease(
-  widgetName: string,
+  workspaceKey: string,
   protocol: TelemetryProtocol,
   options?: ValidateForReleaseOptions
 ): ValidationResult {
-  const result = validateWidgetForRelease(widgetName, protocol, options);
+  const result = validateWidgetForRelease(workspaceKey, protocol, options);
   if (!result.valid) {
     throw new WidgetValidationError(result);
   }

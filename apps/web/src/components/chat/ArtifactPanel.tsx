@@ -37,7 +37,7 @@ export function ArtifactPanel({
 
   const showPreviewLoader = running || artifactLoading;
   const hasPreview = !!artifact?.luaSource;
-  const previewKey = `${chatId ?? "new"}-${artifact?.name ?? "empty"}`;
+  const previewKey = `${chatId ?? "new"}-${artifact?.instanceId ?? artifact?.name ?? "empty"}-v${artifact?.version ?? 0}`;
 
   const errors = artifact?.validationIssues.filter((i) => i.severity === "error") ?? [];
 
@@ -49,6 +49,7 @@ export function ArtifactPanel({
     try {
       const params = new URLSearchParams({ protocol });
       if (sessionId) params.set("sessionId", sessionId);
+      else if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
       else params.set("name", artifact.name);
 
       const res = await fetch(`/api/download?${params}`);

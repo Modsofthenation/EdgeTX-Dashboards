@@ -18,6 +18,8 @@ export interface RestoreSessionInput {
   protocol: TelemetryProtocol;
   modelId?: string;
   widgetName?: string;
+  widgetInstanceId?: string;
+  widgetVersion?: number;
 }
 
 export class SessionStore {
@@ -63,8 +65,16 @@ export class SessionStore {
     if (existing) {
       if (input.widgetName) {
         existing.session.widgetName = input.widgetName;
-        existing.generator.resolveWidgetName(input.widgetName);
       }
+      if (input.widgetInstanceId) {
+        existing.session.widgetInstanceId = input.widgetInstanceId;
+      }
+      if (input.widgetVersion !== undefined) {
+        existing.session.widgetVersion = input.widgetVersion;
+      }
+      existing.generator.resolveWidgetWorkspaceKey(
+        input.widgetInstanceId ?? input.widgetName
+      );
       return existing.session;
     }
 
@@ -72,9 +82,12 @@ export class SessionStore {
     const generator = new WidgetGenerator(undefined, {
       protocol: input.protocol,
       radioId: input.radioId,
+      widgetName: input.widgetName,
+      widgetInstanceId: input.widgetInstanceId,
+      widgetVersion: input.widgetVersion,
     });
-    if (input.widgetName) {
-      generator.resolveWidgetName(input.widgetName);
+    if (input.widgetInstanceId ?? input.widgetName) {
+      generator.resolveWidgetWorkspaceKey(input.widgetInstanceId ?? input.widgetName);
     }
 
     const session: GenerateSession = {
@@ -87,6 +100,8 @@ export class SessionStore {
       runIndex: 0,
       variationSeed: deriveVariationSeed(id, 0),
       widgetName: input.widgetName,
+      widgetInstanceId: input.widgetInstanceId,
+      widgetVersion: input.widgetVersion ?? 0,
     };
     this.sessions.set(id, { session, generator, busy: false });
     return session;

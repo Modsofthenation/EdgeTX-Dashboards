@@ -7,6 +7,7 @@ import {
   readRotorflightStyleGuide,
   readCompanionScriptsGuide,
   readModelImageGuide,
+  readThemePalettesGuide,
   readExampleSnippet,
   loadTelemetryCatalog,
 } from "./knowledge.js";
@@ -29,6 +30,8 @@ export interface PromptBuildContext {
   runIndex?: number;
   variationSeed?: number;
   assignedWidgetName?: string;
+  widgetInstanceId?: string;
+  widgetVersion?: number;
 }
 
 function resolveVariation(ctx: PromptBuildContext): number {
@@ -94,6 +97,7 @@ export function buildGenerationPrompt(
       : "";
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
+  const themePalettesGuide = readThemePalettesGuide();
   const rules = readRules();
 
   const exampleFile = EXAMPLE_BY_ARCHETYPE[archetype.id];
@@ -108,17 +112,19 @@ export function buildGenerationPrompt(
     : "";
 
   const assignedNameSection = ctx?.assignedWidgetName
-    ? `\n## Assigned dashboard name (mandatory — do not invent a different name)
+    ? `\n## Assigned dashboard identity (mandatory)
 
-The server assigned **\`${ctx.assignedWidgetName}\`** — a unique name derived from the user's request (protocol prefix + topic hint + random suffix).
+**Radio display name:** \`${ctx.assignedWidgetName}\` (≤10 chars — used in \`local name\` and on the SD card under WIDGETS/)
+**Workspace id:** \`${ctx.widgetInstanceId ?? "<uuid>"}\` (UUID folder — unique per chat even when display names match)
+**Version:** ${ctx.widgetVersion ?? 0} (refine count)
 
-- Write the dashboard to \`generated/${ctx.assignedWidgetName}/main.lua\`.
+- Write the dashboard to \`generated/${ctx.widgetInstanceId ?? "<uuid>"}/main.lua\` — **never** use the display name as the folder.
 - Set \`local name = "${ctx.assignedWidgetName}"\` and \`return { name = name, ... }\`.
-- Use **exactly** \`${ctx.assignedWidgetName}\` in validateWidget, writeInstallGuide, and packageWidget.
-- Do not rename or pick an alternative — duplicate names break installs on the radio SD card.\n`
+- Call validateWidget, writeInstallGuide, and packageWidget with **widgetInstanceId** \`${ctx.widgetInstanceId ?? "<uuid>"}\` (not the display name).
+- The display name may match another widget; the workspace UUID is what keeps this chat isolated.\n`
     : "";
 
-  const widgetFolder = ctx?.assignedWidgetName ?? "<Name>";
+  const widgetFolder = ctx?.widgetInstanceId ?? ctx?.assignedWidgetName ?? "<uuid>";
 
   return `You are generating an EdgeTX Lua **full-screen dashboard** (widget script) for ${radio.name}.
 
@@ -164,6 +170,8 @@ ${edgeTxVersion ?? radio.edgeTxMin}+
 
 ${designGuide}
 
+${themePalettesGuide ? `\n## EdgeTX theme palettes and gauges (mandatory reference)\n${themePalettesGuide}` : ""}
+
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling — layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
 ## Companion scripts (when user asks for tools, loggers, selectors)
@@ -179,7 +187,7 @@ ${starterSection}${exampleSection}
 
 ## Your tasks
 
-${ctx?.assignedWidgetName ? `1. Use the assigned dashboard name \`${ctx.assignedWidgetName}\` (see above).\n\n2. Write the main dashboard to \`generated/${ctx.assignedWidgetName}/main.lua\`.` : "1. Choose a dashboard name (max 10 chars, no spaces) that fits the use case.\n\n2. Write the main dashboard to `generated/<Name>/main.lua`."}
+${ctx?.assignedWidgetName ? `1. Use display name \`${ctx.assignedWidgetName}\` and workspace id \`${ctx.widgetInstanceId}\` (see above).\n\n2. Write the main dashboard to \`generated/${ctx.widgetInstanceId}/main.lua\`.` : "1. Choose a dashboard name (max 10 chars, no spaces) that fits the use case.\n\n2. Write the main dashboard to `generated/<uuid>/main.lua`."}
 
 3. If the user requested battery selection, flight logging, log viewing, or similar: add companion scripts under \`generated/${widgetFolder}/tools/\` and/or \`generated/${widgetFolder}/telemetry/\` per the companion-scripts guide.
 
@@ -198,7 +206,7 @@ ${ctx?.assignedWidgetName ? `1. Use the assigned dashboard name \`${ctx.assigned
 
 6. Cache telemetry with getSourceIndex() in create().
 
-7. Call validateWidget with dashboard name "${widgetFolder}", protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true.
+7. Call validateWidget with widgetInstanceId "${widgetFolder}", protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true.
 
 8. Only after valid: true, call writeInstallGuide (radioId "${radio.id}") — INSTALL.md must document the dashboard **and every companion script** with SD card paths.
 
@@ -232,8 +240,9 @@ export function buildRefinePrompt(
       ? readRotorflightStyleGuide()
       : "";
   const companionGuide = readCompanionScriptsGuide();
+  const themePalettesGuide = readThemePalettesGuide();
 
-  return `Refine the existing EdgeTX dashboard${widgetName ? ` "${widgetName}"` : ""}.
+  return `Refine the existing EdgeTX dashboard${widgetName ? ` (display name "${widgetName}")` : ""}${ctx?.widgetInstanceId ? ` in workspace \`${ctx.widgetInstanceId}\` (v${ctx.widgetVersion ?? 0})` : ""}.
 
 ## User refinement request
 
@@ -255,6 +264,8 @@ ${archetype.layoutNotes}
 
 ${designGuide}
 
+${themePalettesGuide ? `\n## EdgeTX theme palettes and gauges\n${themePalettesGuide}` : ""}
+
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
 ## Companion scripts
@@ -265,9 +276,9 @@ Keep the dashboard clean and distinct from generic templates. All lcd.* draws mu
 
 ## Tasks
 
-1. Edit files under generated/ as needed (main.lua + any tools/telemetry companions).
+1. Edit files under \`generated/${ctx?.widgetInstanceId ?? "<uuid>"}/\` as needed (main.lua + any tools/telemetry companions).
 
-2. Run validateWidget with widgetName, protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix archetype-relevant visual-design warnings.
+2. Run validateWidget with widgetInstanceId "${ctx?.widgetInstanceId ?? "<uuid>"}", protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix archetype-relevant visual-design warnings.
 
 3. Only after valid: true, run writeInstallGuide with protocol "${resolvedProtocol}" (must list all files + install steps) and packageWidget with protocol "${resolvedProtocol}" again.
 

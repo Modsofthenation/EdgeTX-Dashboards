@@ -8,7 +8,7 @@ export {
 } from "./validationPipeline.js";
 export { WidgetWorkspace, defaultWorkspace } from "./workspace.js";
 export { buildReleaseValidationContext } from "./validationContext.js";
-export { streamAgentRun, finalizeWidgetRun } from "./orchestrator.js";
+export { streamAgentRun, finalizeWidgetRun, type WidgetWorkspaceInfo } from "./orchestrator.js";
 export {
   validateDevKitAnnotations,
   validateStubApiCalls,
@@ -24,6 +24,19 @@ export {
   renderInstallMd,
   writeInstallMd,
 } from "./package.js";
+export {
+  getWidgetLuaPathForKey,
+  getGeneratedDirForKey,
+  isWidgetInstanceId,
+  sanitizeWidgetInstanceId,
+  WIDGET_INSTANCE_ID_PATTERN,
+} from "./paths.js";
+export {
+  readWidgetInstanceMeta,
+  resolveDisplayName,
+  ensureWidgetInstanceDir,
+  type WidgetInstanceMeta,
+} from "./widgetInstance.js";
 export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.js";
 export { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.js";
 export { createCustomTools } from "./agentTools.js";
@@ -39,7 +52,7 @@ export {
   type ModelCatalogEntry,
 } from "./models.js";
 export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.js";
-export { findLatestWidgetName } from "./widgetResolve.js";
+export { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.js";
 export { allocateWidgetName, suggestWidgetName, widgetFolderExists } from "./widgetNaming.js";
 export { WIDGET_NAME_PATTERN } from "./paths.js";
 export { assertNodeVersion } from "./nodeVersion.js";

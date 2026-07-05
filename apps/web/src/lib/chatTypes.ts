@@ -2,7 +2,12 @@ import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { appendStreamLine, type StreamLine } from "@/lib/streamLines";
 
 export interface WidgetSnapshot {
+  /** EdgeTX radio display name (≤10 chars). */
   name: string;
+  /** UUID workspace folder — unique per chat widget. */
+  instanceId: string | null;
+  /** Number of refines applied (0 = initial generation). */
+  version: number;
   luaSource: string | null;
   validated: boolean;
   validationIssues: ValidationIssue[];
@@ -14,6 +19,8 @@ export interface ChatSummary {
   protocol: TelemetryProtocol;
   modelId: string;
   widgetName: string | null;
+  widgetInstanceId: string | null;
+  widgetVersion: number;
   validated: boolean;
   updatedAt: number;
   messageCount: number;
@@ -28,6 +35,8 @@ export interface StoredChat {
   edgeTxVersion: string;
   radioId: string;
   widgetName: string | null;
+  widgetInstanceId: string | null;
+  widgetVersion: number;
   createdAt: number;
   updatedAt: number;
   messages: ChatMessage[];
@@ -83,11 +92,16 @@ export function patchAssistant(
 
 export async function fetchWidgetSource(
   sessionId: string | null,
-  widgetName: string | null
-): Promise<{ source: string; name: string } | null> {
+  options: {
+    instanceId?: string | null;
+    widgetName?: string | null;
+  }
+): Promise<{ source: string; name: string; instanceId: string | null; version: number } | null> {
   const params = new URLSearchParams();
-  if (widgetName) {
-    params.set("name", widgetName);
+  if (options.instanceId) {
+    params.set("instanceId", options.instanceId);
+  } else if (options.widgetName) {
+    params.set("name", options.widgetName);
   } else if (sessionId) {
     params.set("sessionId", sessionId);
   } else {
@@ -100,6 +114,15 @@ export async function fetchWidgetSource(
   const source = await res.text();
   if (!source || source.startsWith("{")) return null;
 
-  const name = res.headers.get("X-Widget-Name") ?? widgetName ?? "";
-  return { source, name };
+  const name = res.headers.get("X-Widget-Name") ?? options.widgetName ?? "";
+  const instanceId = res.headers.get("X-Widget-Instance-Id");
+  const versionHeader = res.headers.get("X-Widget-Version");
+  const version = versionHeader ? Number.parseInt(versionHeader, 10) : 0;
+
+  return {
+    source,
+    name,
+    instanceId: instanceId || options.instanceId || null,
+    version: Number.isFinite(version) ? version : 0,
+  };
 }

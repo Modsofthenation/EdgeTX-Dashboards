@@ -88,7 +88,12 @@ export interface GenerateSession {
   modelId: string;
   createdAt: number;
   lastRunId?: string;
+  /** EdgeTX radio display name (≤10 chars). */
   widgetName?: string;
+  /** UUID workspace folder — unique even when display names collide. */
+  widgetInstanceId?: string;
+  /** Number of refines applied (0 = initial generation). */
+  widgetVersion?: number;
   validated?: boolean;
   validationIssues?: ValidationIssue[];
   /** Per-session seed for layout/color variety across runs. */

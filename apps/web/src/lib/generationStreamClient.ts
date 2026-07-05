@@ -5,6 +5,8 @@ export interface GenerationSsePayload extends Omit<StreamEvent, "type"> {
   type: StreamEvent["type"] | "widget";
   sessionId?: string;
   widgetName?: string;
+  widgetInstanceId?: string;
+  widgetVersion?: number;
   success?: boolean;
   validated?: boolean;
   validationIssues?: ValidationIssue[];

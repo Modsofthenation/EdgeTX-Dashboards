@@ -126,4 +126,44 @@ describe("parseLuaToDrawCommands", () => {
     const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
     assert.ok(cmds.some((c) => c.kind === "bitmap" && c.placeholder === "model"));
   });
+
+  it("renders drawGauge and drawAnnulus rotary gauges", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local function refresh(widget)",
+      "  local pct = 72",
+      "  local cx, cy = 120, 140",
+      "  local rOut, rIn = 44, 34",
+      "  local startA, span = 135, 270",
+      "  local valA = startA + span * (pct / 100)",
+      "  lcd.drawGauge(20, 200, 24, 80, pct, 100, CYAN)",
+      "  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, startA + span, GREY)",
+      "  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, valA, CYAN)",
+      "  lcd.drawText(cx, cy, \"72%\", MIDSIZE + CENTER + WHITE)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    assert.ok(cmds.some((c) => c.kind === "gauge" && c.fill === 72));
+    assert.ok(cmds.filter((c) => c.kind === "annulus").length >= 2);
+    assert.ok(cmds.some((c) => c.kind === "text" && c.text === "72%"));
+  });
+
+  it("resolves LIGHTGREY clear and theme colors", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local function refresh(widget)",
+      "  lcd.clear(LIGHTGREY)",
+      "  lcd.drawText(10, 10, \"Hi\", SMLSIZE + COLOR_THEME_SECONDARY1)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    const clear = cmds.find((c) => c.kind === "clear");
+    const text = cmds.find((c) => c.kind === "text");
+    assert.equal(clear?.color, "#d3d3d3");
+    assert.equal(text?.color, "#e0e0e8");
+  });
 });

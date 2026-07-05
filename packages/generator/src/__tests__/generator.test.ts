@@ -8,7 +8,7 @@ import { validateWidgetLua, extractUsedTelemetrySensors } from "../validate.js";
 import { renderInstallMd } from "../package.js";
 import { loadRadioProfile, loadTelemetryCatalog } from "../knowledge.js";
 import { validateGenerateRequest } from "../requestValidate.js";
-import { findLatestWidgetName } from "../widgetResolve.js";
+import { findLatestWidgetName, pickActiveWidgetName } from "../widgetResolve.js";
 import { validateWidgetForRelease } from "../validationPipeline.js";
 import { suggestWidgetName, allocateWidgetName } from "../widgetNaming.js";
 import { WIDGET_NAME_PATTERN } from "../paths.js";
@@ -178,6 +178,26 @@ describe("findLatestWidgetName", () => {
   it("returns undefined when no generated widgets", () => {
     const name = findLatestWidgetName();
     assert.ok(name === undefined || typeof name === "string");
+  });
+});
+
+describe("pickActiveWidgetName", () => {
+  it("prefers assigned name over latest on disk", () => {
+    const name = pickActiveWidgetName({
+      assigned: "BfModelAy9",
+      exists: (n) => n === "FltLogHub",
+      latest: () => "FltLogHub",
+    });
+    assert.equal(name, "BfModelAy9");
+  });
+
+  it("uses existing assigned file when present", () => {
+    const name = pickActiveWidgetName({
+      assigned: "BfModelAy9",
+      exists: (n) => n === "BfModelAy9",
+      latest: () => "FltLogHub",
+    });
+    assert.equal(name, "BfModelAy9");
   });
 });
 

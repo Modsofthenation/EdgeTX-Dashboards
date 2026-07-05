@@ -43,3 +43,10 @@ export function updateChat(id: string, input: UpdateChatInput): StoredChat | nul
 export function deleteChat(id: string): boolean {
   return getChatRepository().deleteChat(id);
 }
+
+export function clearAllChats(): void {
+  const repo = getChatRepository();
+  if ("clearAll" in repo && typeof repo.clearAll === "function") {
+    repo.clearAll();
+  }
+}

@@ -10,16 +10,20 @@ import {
   FALLBACK_MODELS,
   findLatestWidgetName,
   getDefaultModelId,
-  getGeneratedDir,
+  getGeneratedDirForKey,
   getLayoutProfileId,
   getRepoRoot,
   getSessionStore,
-  getWidgetLuaPath,
+  getWidgetLuaPathForKey,
   isTelemetryProtocol,
+  isWidgetInstanceId,
   listAvailableModels,
   listRadioProfiles,
   MAX_ACTIVE_SESSIONS,
   packageWidget,
+  readWidgetInstanceMeta,
+  resolveDisplayName,
+  sanitizeWidgetInstanceId,
   sanitizeWidgetName,
   validateGenerateRequest,
   validateWidgetForRelease,
@@ -36,6 +40,8 @@ export {
   validateGenerateRequest,
   isTelemetryProtocol,
   WidgetValidationError,
+  isWidgetInstanceId,
+  sanitizeWidgetInstanceId,
 };
 
 export function getDataDirectory(): string {
@@ -78,54 +84,109 @@ export function listRadioCatalog() {
   }));
 }
 
-export function resolveWidgetNameFromSession(
-  sessionId: string | null,
-  explicitName: string | null
-): { name?: string; pending?: boolean } {
-  let name = explicitName?.trim() || undefined;
+export interface ResolvedWidgetWorkspace {
+  workspaceKey: string;
+  displayName?: string;
+  version?: number;
+  pending?: boolean;
+}
 
-  if (sessionId && !name) {
+function normalizeWorkspaceKey(key: string): string {
+  return isWidgetInstanceId(key) ? sanitizeWidgetInstanceId(key) : sanitizeWidgetName(key);
+}
+
+export function resolveWidgetWorkspaceFromSession(
+  sessionId: string | null,
+  explicitInstanceId: string | null,
+  explicitName: string | null
+): ResolvedWidgetWorkspace {
+  let workspaceKey = explicitInstanceId?.trim() || undefined;
+  let displayName = explicitName?.trim() || undefined;
+  let version: number | undefined;
+
+  if (sessionId && !workspaceKey) {
     const stored = getSessionStore().get(sessionId);
-    name = stored?.session.widgetName ?? undefined;
+    workspaceKey = stored?.session.widgetInstanceId ?? undefined;
+    displayName = displayName ?? stored?.session.widgetName ?? undefined;
+    version = stored?.session.widgetVersion;
   }
 
-  if (!name) return { pending: true };
-  return { name };
+  if (!workspaceKey && displayName) {
+    workspaceKey = displayName;
+  }
+
+  if (!workspaceKey) return { workspaceKey: "", pending: true };
+
+  const key = normalizeWorkspaceKey(workspaceKey);
+  if (isWidgetInstanceId(key)) {
+    const meta = readWidgetInstanceMeta(key);
+    return {
+      workspaceKey: key,
+      displayName: meta?.displayName ?? resolveDisplayName(key) ?? displayName,
+      version: meta?.version ?? version,
+    };
+  }
+
+  return { workspaceKey: key, displayName, version };
 }
 
-export function readWidgetLuaSource(name: string): { source: string; name: string } | null {
-  const safeName = sanitizeWidgetName(name);
-  const path = getWidgetLuaPath(safeName);
+export function readWidgetLuaSource(workspaceKey: string): {
+  source: string;
+  name: string;
+  instanceId: string | null;
+  version: number;
+} | null {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  const path = getWidgetLuaPathForKey(key);
   if (!existsSync(path)) return null;
-  return { source: readFileSync(path, "utf-8"), name: safeName };
+
+  const meta = isWidgetInstanceId(key) ? readWidgetInstanceMeta(key) : null;
+  const displayName = meta?.displayName ?? resolveDisplayName(key) ?? key;
+
+  return {
+    source: readFileSync(path, "utf-8"),
+    name: displayName,
+    instanceId: isWidgetInstanceId(key) ? key : null,
+    version: meta?.version ?? 0,
+  };
 }
 
-/** Write chat snapshot back to generated/ before refine (each chat may share a widget folder name). */
-export function writeWidgetLuaSource(name: string, source: string): void {
-  const safeName = sanitizeWidgetName(name);
-  mkdirSync(getGeneratedDir(safeName), { recursive: true });
-  writeFileSync(getWidgetLuaPath(safeName), source, "utf-8");
+/** Write chat snapshot back to generated/ before refine (each chat has its own UUID workspace). */
+export function writeWidgetLuaSource(workspaceKey: string, source: string): void {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  mkdirSync(getGeneratedDirForKey(key), { recursive: true });
+  writeFileSync(getWidgetLuaPathForKey(key), source, "utf-8");
 }
 
 export async function readOrBuildWidgetZip(
-  safeName: string,
+  workspaceKey: string,
   protocol: Parameters<typeof packageWidget>[1],
   radioId: string
-): Promise<Buffer | null> {
-  const distZip = join(getDistOutputDirectory(), `${safeName}.zip`);
+): Promise<{ buffer: Buffer; downloadName: string } | null> {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  const zipBaseName = isWidgetInstanceId(key) ? key : sanitizeWidgetName(key);
+  const distZip = join(getDistOutputDirectory(), `${zipBaseName}.zip`);
   if (!existsSync(distZip)) {
-    await packageWidget(safeName, protocol, { radioId });
+    await packageWidget(key, protocol, { radioId });
   }
   if (!existsSync(distZip)) return null;
-  return readFileSync(distZip);
+
+  const displayName = resolveDisplayName(key) ?? (isWidgetInstanceId(key) ? key : sanitizeWidgetName(key));
+  return {
+    buffer: readFileSync(distZip),
+    downloadName: sanitizeWidgetName(displayName),
+  };
 }
 
 export function validateWidgetRelease(
-  name: string,
+  workspaceKey: string,
   protocol: Parameters<typeof validateWidgetForRelease>[1],
   radioId: string
 ) {
-  return validateWidgetForRelease(name, protocol, { radioId, strictTelemetry: true });
+  return validateWidgetForRelease(normalizeWorkspaceKey(workspaceKey), protocol, {
+    radioId,
+    strictTelemetry: true,
+  });
 }
 
 export { findLatestWidgetName, sanitizeWidgetName };

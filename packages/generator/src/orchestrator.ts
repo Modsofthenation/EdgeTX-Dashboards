@@ -4,9 +4,16 @@ import { packageWidget } from "./package.js";
 import { describeToolUse } from "./toolDisplay.js";
 import { validateWidgetForRelease } from "./validationPipeline.js";
 
+export interface WidgetWorkspaceInfo {
+  instanceId: string;
+  displayName: string;
+  version: number;
+}
+
 export interface RunCallbacks {
   onEvent?: (event: StreamEvent) => void;
   onWidgetName?: (name: string) => void;
+  onWidgetWorkspace?: (info: WidgetWorkspaceInfo) => void;
 }
 
 export function extractTextFromMessage(message: SDKMessage): string | null {
@@ -125,12 +132,12 @@ export async function streamAgentRun(
 
 /** Validate and package a widget after a successful agent run. */
 export async function finalizeWidgetRun(
-  widgetName: string,
+  workspaceKey: string,
   protocol: TelemetryProtocol,
   radioId: string,
   callbacks?: RunCallbacks
 ): Promise<{ validated: boolean; validationIssues: ValidationIssue[] }> {
-  const validation = validateWidgetForRelease(widgetName, protocol, {
+  const validation = validateWidgetForRelease(workspaceKey, protocol, {
     radioId,
     strictTelemetry: true,
   });
@@ -148,7 +155,7 @@ export async function finalizeWidgetRun(
   }
 
   try {
-    await packageWidget(widgetName, protocol, { radioId });
+    await packageWidget(workspaceKey, protocol, { radioId });
     callbacks?.onEvent?.({
       type: "status",
       content: "Validation passed. Widget packaged for download.",

@@ -14,16 +14,23 @@ function resolveRefineSession(sessionId: string, chatId?: string) {
 
   if (!stored && chatId) {
     const chat = getChat(chatId);
-    if (chat?.widgetName) {
+    if (!chat) {
+      return { store, stored, sessionId: effectiveSessionId };
+    }
+    const workspaceKey =
+      chat.widgetInstanceId ?? chat.artifact?.instanceId ?? chat.widgetName;
+    if (workspaceKey) {
       if (chat.artifact?.luaSource) {
-        writeWidgetLuaSource(chat.widgetName, chat.artifact.luaSource);
+        writeWidgetLuaSource(workspaceKey, chat.artifact.luaSource);
       }
       const restored = store.restoreSession({
         id: chat.sessionId ?? sessionId,
         radioId: chat.radioId,
         protocol: chat.protocol,
         modelId: chat.modelId,
-        widgetName: chat.widgetName,
+        widgetName: chat.widgetName ?? chat.artifact?.name ?? undefined,
+        widgetInstanceId: chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
+        widgetVersion: chat.widgetVersion ?? chat.artifact?.version,
       });
       effectiveSessionId = restored.id;
       stored = store.get(restored.id);

@@ -4,7 +4,8 @@ import archiver from "archiver";
 import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
 import { getRepoRoot, loadTelemetryCatalog, readTemplate, loadRadioProfile } from "./knowledge.js";
 import { detectCompanions, listWidgetPackageEntries } from "./packageEntries.js";
-import { getGeneratedDir, getWidgetLuaPath, sanitizeWidgetName } from "./paths.js";
+import { getGeneratedDirForKey, getWidgetLuaPathForKey, sanitizeWidgetName, isWidgetInstanceId, sanitizeWidgetInstanceId } from "./paths.js";
+import { resolveDisplayName } from "./widgetInstance.js";
 import { assertValidForRelease } from "./validationPipeline.js";
 import { defaultWorkspace } from "./workspace.js";
 
@@ -89,39 +90,47 @@ export function renderInstallMd(
 }
 
 export async function packageWidget(
-  widgetName: string,
+  workspaceKey: string,
   protocol: TelemetryProtocol,
   options?: { radioId?: string }
-): Promise<{ zipPath: string; widgetDir: string; widgetName: string }> {
-  const safeName = sanitizeWidgetName(widgetName);
-  const repoRoot = getRepoRoot();
-  const widgetDir = getGeneratedDir(safeName);
-  const luaPath = getWidgetLuaPath(safeName);
+): Promise<{ zipPath: string; widgetDir: string; widgetName: string; instanceId?: string }> {
   const radioId = options?.radioId ?? "tx15";
+  const widgetDir = isWidgetInstanceId(workspaceKey)
+    ? getGeneratedDirForKey(sanitizeWidgetInstanceId(workspaceKey))
+    : getGeneratedDirForKey(sanitizeWidgetName(workspaceKey));
+  const luaPath = getWidgetLuaPathForKey(workspaceKey);
+  const repoRoot = getRepoRoot();
 
-  const prepared = defaultWorkspace.prepareForRadio(safeName, radioId);
+  const prepared = defaultWorkspace.prepareForRadio(workspaceKey, radioId);
   if (!prepared.ok) {
     throw new Error(prepared.message);
   }
 
-  assertValidForRelease(safeName, protocol, {
+  assertValidForRelease(workspaceKey, protocol, {
     radioId,
     strictTelemetry: true,
     ensureAnnotations: false,
   });
+
+  const displayName = resolveDisplayName(workspaceKey);
+  if (!displayName) {
+    throw new Error(`Could not resolve radio display name for workspace ${workspaceKey}`);
+  }
+  const safeDisplay = sanitizeWidgetName(displayName);
 
   const source = prepared.source;
   const installPath = join(widgetDir, "INSTALL.md");
   if (!existsSync(installPath)) {
     const radio = loadRadioProfile(radioId);
     const catalog = loadTelemetryCatalog(protocol);
-    writeInstallMd(safeName, radio, catalog, source);
+    writeInstallMd(workspaceKey, radio, catalog, source);
   }
 
   const distDir = join(repoRoot, "dist-output");
   mkdirSync(distDir, { recursive: true });
 
-  const zipPath = join(distDir, `${safeName}.zip`);
+  const zipBaseName = isWidgetInstanceId(workspaceKey) ? sanitizeWidgetInstanceId(workspaceKey) : safeDisplay;
+  const zipPath = join(distDir, `${zipBaseName}.zip`);
 
   await new Promise<void>((resolve, reject) => {
     const output = createWriteStream(zipPath);
@@ -132,9 +141,9 @@ export async function packageWidget(
 
     archive.pipe(output);
 
-    const entries = listWidgetPackageEntries(safeName);
+    const entries = listWidgetPackageEntries(workspaceKey);
     if (entries.length === 0) {
-      archive.file(luaPath, { name: `WIDGETS/${safeName}/main.lua` });
+      archive.file(luaPath, { name: `WIDGETS/${safeDisplay}/main.lua` });
     } else {
       for (const entry of entries) {
         archive.file(entry.filePath, { name: entry.zipPath });
@@ -144,22 +153,28 @@ export async function packageWidget(
     archive.finalize();
   });
 
-  return { zipPath, widgetDir, widgetName: safeName };
+  return {
+    zipPath,
+    widgetDir,
+    widgetName: safeDisplay,
+    instanceId: isWidgetInstanceId(workspaceKey) ? sanitizeWidgetInstanceId(workspaceKey) : undefined,
+  };
 }
 
 export function writeInstallMd(
-  widgetName: string,
+  workspaceKey: string,
   radio: RadioProfile,
   catalog: TelemetryCatalog,
   source: string
 ): string {
-  const safeName = sanitizeWidgetName(widgetName);
+  const displayName = resolveDisplayName(workspaceKey) ?? workspaceKey;
+  const safeDisplay = sanitizeWidgetName(displayName);
   const sensorNames = catalog.sensors
     .filter((s) => source.includes(`"${s.name}"`))
     .map((s) => s.name);
-  const companions = detectCompanions(safeName);
-  const content = renderInstallMd(safeName, radio, catalog, sensorNames, companions);
-  const dir = getGeneratedDir(safeName);
+  const companions = detectCompanions(workspaceKey);
+  const content = renderInstallMd(safeDisplay, radio, catalog, sensorNames, companions);
+  const dir = getGeneratedDirForKey(workspaceKey);
   mkdirSync(dir, { recursive: true });
   const installPath = join(dir, "INSTALL.md");
   writeFileSync(installPath, content, "utf-8");

@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { getGeneratedDir, sanitizeWidgetName } from "./paths.js";
+import { getGeneratedDirForKey, sanitizeWidgetName, isWidgetInstanceId } from "./paths.js";
+import { resolveDisplayName } from "./widgetInstance.js";
 
 export interface ZipEntry {
   /** Absolute path on disk */
@@ -9,11 +10,11 @@ export interface ZipEntry {
   zipPath: string;
 }
 
-function mapToZipPath(widgetName: string, relPath: string): string {
+function mapToZipPath(displayName: string, relPath: string): string {
   const normalized = relPath.replace(/\\/g, "/");
 
   if (normalized === "main.lua" || normalized === "INSTALL.md") {
-    return `WIDGETS/${widgetName}/${normalized}`;
+    return `WIDGETS/${displayName}/${normalized}`;
   }
 
   if (normalized.startsWith("tools/") && normalized.endsWith(".lua")) {
@@ -27,32 +28,33 @@ function mapToZipPath(widgetName: string, relPath: string): string {
   }
 
   // Widget assets (png, etc.)
-  return `WIDGETS/${widgetName}/${normalized}`;
+  return `WIDGETS/${displayName}/${normalized}`;
 }
 
-export function listWidgetPackageEntries(widgetName: string): ZipEntry[] {
-  const safe = sanitizeWidgetName(widgetName);
-  const root = getGeneratedDir(safe);
+export function listWidgetPackageEntries(workspaceKey: string): ZipEntry[] {
+  const root = getGeneratedDirForKey(workspaceKey);
   if (!existsSync(root)) return [];
 
+  const displayName = resolveDisplayName(workspaceKey);
+  if (!displayName) return [];
+
+  const safeDisplay = sanitizeWidgetName(displayName);
   const entries: ZipEntry[] = [];
 
   const walk = (dir: string) => {
     for (const name of readdirSync(dir)) {
+      if (name === ".widget-meta.json") continue;
       const full = join(dir, name);
       const st = statSync(full);
       if (st.isDirectory()) {
         walk(full);
         continue;
       }
-      if (name === "INSTALL.md" && dir === root) {
-        // included explicitly
-      }
       const rel = relative(root, full).replace(/\\/g, "/");
       if (rel.startsWith(".")) continue;
       entries.push({
         filePath: full,
-        zipPath: mapToZipPath(safe, rel),
+        zipPath: mapToZipPath(safeDisplay, rel),
       });
     }
   };
@@ -67,15 +69,16 @@ export interface CompanionManifest {
   assets: string[];
 }
 
-export function detectCompanions(widgetName: string): CompanionManifest {
+export function detectCompanions(workspaceKey: string): CompanionManifest {
   const manifest: CompanionManifest = { tools: [], telemetry: [], assets: [] };
-  for (const entry of listWidgetPackageEntries(widgetName)) {
+  const displayName = resolveDisplayName(workspaceKey) ?? workspaceKey;
+  for (const entry of listWidgetPackageEntries(workspaceKey)) {
     if (entry.zipPath.startsWith("SCRIPTS/TOOLS/")) {
       manifest.tools.push(entry.zipPath.replace("SCRIPTS/TOOLS/", ""));
     } else if (entry.zipPath.startsWith("SCRIPTS/TELEMETRY/")) {
       manifest.telemetry.push(entry.zipPath.replace("SCRIPTS/TELEMETRY/", ""));
     } else if (
-      entry.zipPath.startsWith(`WIDGETS/${widgetName}/`) &&
+      entry.zipPath.startsWith(`WIDGETS/${displayName}/`) &&
       !entry.zipPath.endsWith("main.lua") &&
       !entry.zipPath.endsWith("INSTALL.md")
     ) {

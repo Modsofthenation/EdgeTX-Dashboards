@@ -1,4 +1,4 @@
-import type { WidgetGenerator, RunCallbacks } from "@widget-gen/generator";
+import type { WidgetGenerator, RunCallbacks, WidgetWorkspaceInfo } from "@widget-gen/generator";
 import type { GenerateSession, ValidationIssue } from "@widget-gen/shared";
 
 export interface WidgetRunOutcome {
@@ -6,6 +6,8 @@ export interface WidgetRunOutcome {
   status: string;
   success: boolean;
   widgetName?: string;
+  widgetInstanceId?: string;
+  widgetVersion?: number;
   validated?: boolean;
   validationIssues?: ValidationIssue[];
 }
@@ -16,9 +18,23 @@ export interface WidgetRunContext {
   send: (data: object) => void;
 }
 
+function emitWidgetWorkspace(ctx: WidgetRunContext, info: WidgetWorkspaceInfo): void {
+  ctx.session.widgetInstanceId = info.instanceId;
+  ctx.session.widgetName = info.displayName;
+  ctx.session.widgetVersion = info.version;
+  ctx.send({
+    type: "widget",
+    content: info.displayName,
+    sessionId: ctx.session.id,
+    widgetName: info.displayName,
+    widgetInstanceId: info.instanceId,
+    widgetVersion: info.version,
+  });
+}
+
 /** Build SDK callbacks that mirror session state into SSE events. */
 export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
-  let lastWidgetName: string | undefined;
+  let lastWorkspaceKey: string | undefined;
 
   return {
     onEvent: (ev) => {
@@ -32,8 +48,10 @@ export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
       });
     },
     onWidgetName: (name) => {
-      if (name === lastWidgetName) return;
-      lastWidgetName = name;
+      if (name === lastWorkspaceKey) return;
+      lastWorkspaceKey = name;
+      // Legacy name-only folders — UUID workspaces use onWidgetWorkspace instead.
+      if (/^[0-9a-f-]{36}$/i.test(name)) return;
       ctx.session.widgetName = name;
       ctx.send({
         type: "widget",
@@ -41,6 +59,11 @@ export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
         sessionId: ctx.session.id,
         widgetName: name,
       });
+    },
+    onWidgetWorkspace: (info) => {
+      if (info.instanceId === lastWorkspaceKey) return;
+      lastWorkspaceKey = info.instanceId;
+      emitWidgetWorkspace(ctx, info);
     },
   };
 }
@@ -53,20 +76,27 @@ export function emitRunCompletion(
 ): void {
   ctx.session.lastRunId = result.runId;
   if (result.widgetName) ctx.session.widgetName = result.widgetName;
+  if (result.widgetInstanceId) ctx.session.widgetInstanceId = result.widgetInstanceId;
+  if (result.widgetVersion !== undefined) ctx.session.widgetVersion = result.widgetVersion;
   ctx.session.validated = result.validated ?? false;
   ctx.session.validationIssues = result.validationIssues ?? [];
 
   const actionLabel = options.action === "generate" ? "Generation" : "Refine";
+  const label = result.widgetName
+    ? `${result.widgetName}${result.widgetVersion !== undefined ? ` v${result.widgetVersion}` : ""}`
+    : undefined;
 
   ctx.send({
     type: result.success ? "done" : "error",
     content: result.success
-      ? `Validated and ready: ${result.widgetName}`
+      ? `Validated and ready: ${label}`
       : result.validated === false && result.widgetName
-        ? `Widget ${result.widgetName} failed validation — download blocked`
+        ? `Widget ${label} failed validation — download blocked`
         : `${actionLabel} failed (status: ${result.status})`,
     sessionId: ctx.session.id,
     widgetName: result.widgetName,
+    widgetInstanceId: result.widgetInstanceId,
+    widgetVersion: result.widgetVersion,
     success: result.success,
     validated: result.validated ?? false,
     validationIssues: result.validationIssues ?? [],

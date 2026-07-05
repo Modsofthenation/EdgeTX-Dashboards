@@ -1,5 +1,6 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { LayoutArchetypeHint, LayoutArchetypeId } from "./layoutArchetype.js";
+import { pickDashboardPaletteForPrompt, DASHBOARD_PALETTES, type DashboardPalette } from "./themePalettes.js";
 
 export interface ColorPalette {
   id: string;
@@ -7,6 +8,11 @@ export interface ColorPalette {
   accents: [string, string, string];
   headerStyle: string;
   borderStyle: string;
+  background?: string;
+  surface?: string;
+  hero?: string;
+  label?: string;
+  rgbSetup?: string;
 }
 
 export interface CreativeBrief {
@@ -17,50 +23,20 @@ export interface CreativeBrief {
   markdown: string;
 }
 
-const PALETTES: ColorPalette[] = [
-  {
-    id: "cyan-lime",
-    name: "Cyan / Lime",
-    accents: ["CYAN", "LIME", "YELLOW"],
-    headerStyle: "4px LIME accent stripe under header bar",
-    borderStyle: "CYAN card borders, LIME hero values",
-  },
-  {
-    id: "magenta-orange",
-    name: "Magenta / Orange",
-    accents: ["MAGENTA", "ORANGE", "YELLOW"],
-    headerStyle: "Colored title text in MAGENTA on dark header",
-    borderStyle: "MAGENTA dividers, ORANGE status chips",
-  },
-  {
-    id: "yellow-cyan",
-    name: "Yellow / Cyan",
-    accents: ["YELLOW", "CYAN", "GREEN"],
-    headerStyle: "YELLOW title, CYAN footer accents",
-    borderStyle: "YELLOW hero, CYAN secondary metrics",
-  },
-  {
-    id: "muted-teal",
-    name: "Muted Teal",
-    accents: ["CYAN", "GREEN", "WHITE"],
-    headerStyle: "Subtle CYAN header line, mostly GREY structure",
-    borderStyle: "TEAL-tinted borders (CYAN at 50% visual weight)",
-  },
-  {
-    id: "warm-amber",
-    name: "Warm Amber",
-    accents: ["ORANGE", "YELLOW", "GREEN"],
-    headerStyle: "ORANGE accent stripe, WHITE labels",
-    borderStyle: "ORANGE borders on battery sections, GREEN link",
-  },
-  {
-    id: "grey-structure",
-    name: "Grey Structure",
-    accents: ["GREY", "WHITE", "GREEN"],
-    headerStyle: "Flat GREY header bar, single GREEN accent metric",
-    borderStyle: "GREY borders with one GREEN highlight element",
-  },
-];
+function toColorPalette(p: DashboardPalette): ColorPalette {
+  return {
+    id: p.id,
+    name: p.name,
+    accents: p.accents,
+    headerStyle: p.headerStyle,
+    borderStyle: p.borderStyle,
+    background: p.background,
+    surface: p.surface,
+    hero: p.hero,
+    label: p.label,
+    rgbSetup: p.rgbSetup,
+  };
+}
 
 const COMPOSITION_BY_ARCHETYPE: Record<LayoutArchetypeId, string[]> = {
   "card-grid": [
@@ -169,9 +145,9 @@ export function buildCreativeBrief(
   protocol: TelemetryProtocol,
   userPrompt: string
 ): CreativeBrief {
-  const palette = PALETTES[seed % PALETTES.length];
+  const palette = toColorPalette(pickDashboardPaletteForPrompt(seed, userPrompt));
   const compositions = COMPOSITION_BY_ARCHETYPE[archetype.id];
-  const compositionVariant = compositions[Math.floor(seed / PALETTES.length) % compositions.length];
+  const compositionVariant = compositions[Math.floor(seed / DASHBOARD_PALETTES.length) % compositions.length];
   const metricEmphasis = pickMetricEmphasis(userPrompt, protocol, seed);
 
   const lines = [
@@ -181,7 +157,12 @@ export function buildCreativeBrief(
     `- **Run seed:** ${seed} — use it to vary metric placement, proportions, and accents; do not ignore it.`,
     `- **Layout archetype:** \`${archetype.id}\` — ${archetype.title}`,
     `- **Composition variant:** ${compositionVariant}`,
-    `- **Color palette:** ${palette.name} — accents: ${palette.accents.join(", ")}`,
+    `- **Color palette:** ${palette.name} (\`${palette.id}\`) — accents: ${palette.accents.join(", ")}`,
+    palette.background ? `- **Background:** ${palette.background}` : "",
+    palette.surface ? `- **Cards / surface:** ${palette.surface}` : "",
+    palette.hero ? `- **Hero values:** ${palette.hero}` : "",
+    palette.label ? `- **Labels:** ${palette.label}` : "",
+    palette.rgbSetup ? `- **Suggested RGB locals in create():** ${palette.rgbSetup}` : "",
     `- **Header treatment:** ${palette.headerStyle}`,
     `- **Border / accent treatment:** ${palette.borderStyle}`,
     `- **Metric emphasis:** ${metricEmphasis}`,

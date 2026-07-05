@@ -5,6 +5,10 @@ import { getChat, updateChat } from "@/lib/db/chatStore";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function resolveWorkspaceKey(chat: NonNullable<ReturnType<typeof getChat>>): string | null {
+  return chat.widgetInstanceId ?? chat.artifact?.instanceId ?? chat.widgetName;
+}
+
 export async function POST(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
@@ -26,12 +30,13 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Chat not found" }, { status: 404 });
   }
 
-  if (!chat.widgetName) {
+  const workspaceKey = resolveWorkspaceKey(chat);
+  if (!workspaceKey) {
     return Response.json({ error: "Chat has no widget to restore" }, { status: 400 });
   }
 
   if (chat.artifact?.luaSource) {
-    writeWidgetLuaSource(chat.widgetName, chat.artifact.luaSource);
+    writeWidgetLuaSource(workspaceKey, chat.artifact.luaSource);
   }
 
   const store = getSessionStore();
@@ -40,12 +45,19 @@ export async function POST(request: Request): Promise<Response> {
     radioId: chat.radioId,
     protocol: chat.protocol,
     modelId: chat.modelId,
-    widgetName: chat.widgetName,
+    widgetName: chat.widgetName ?? chat.artifact?.name ?? undefined,
+    widgetInstanceId: chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
+    widgetVersion: chat.widgetVersion ?? chat.artifact?.version,
   });
 
   if (chat.sessionId !== session.id) {
     updateChat(chat.id, { sessionId: session.id });
   }
 
-  return Response.json({ sessionId: session.id, widgetName: chat.widgetName });
+  return Response.json({
+    sessionId: session.id,
+    widgetName: session.widgetName ?? chat.widgetName,
+    widgetInstanceId: session.widgetInstanceId ?? chat.widgetInstanceId,
+    widgetVersion: session.widgetVersion ?? chat.widgetVersion ?? 0,
+  });
 }

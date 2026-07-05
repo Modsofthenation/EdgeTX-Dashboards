@@ -59,6 +59,8 @@ export function useWidgetChat() {
   const chatIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const widgetNameRef = useRef<string | null>(null);
+  const widgetInstanceIdRef = useRef<string | null>(null);
+  const widgetVersionRef = useRef<number>(0);
   const abortRef = useRef<AbortController | null>(null);
   const fetchGenerationRef = useRef(0);
   const chatLoadGenRef = useRef(0);
@@ -104,6 +106,8 @@ export function useWidgetChat() {
       await syncChatRecord(id, {
         sessionId: sessionIdRef.current,
         widgetName: widgetNameRef.current,
+        widgetInstanceId: widgetInstanceIdRef.current,
+        widgetVersion: widgetVersionRef.current,
         messages: messagesRef.current,
         artifact:
           snapshot?.luaSource != null && snapshot.luaSource.length > 0 ? snapshot : undefined,
@@ -175,7 +179,10 @@ export function useWidgetChat() {
     ) => {
       const generation = ++fetchGenerationRef.current;
       const expectedChatId = forChatId ?? chatIdRef.current;
-      const fetched = await fetchWidgetSource(session ?? sessionIdRef.current, name);
+      const fetched = await fetchWidgetSource(session ?? sessionIdRef.current, {
+        instanceId: widgetInstanceIdRef.current,
+        widgetName: name,
+      });
       if (generation !== fetchGenerationRef.current) return;
       if (expectedChatId !== chatIdRef.current) return;
       if (!fetched) {
@@ -184,8 +191,12 @@ export function useWidgetChat() {
       }
 
       widgetNameRef.current = fetched.name;
+      if (fetched.instanceId) widgetInstanceIdRef.current = fetched.instanceId;
+      widgetVersionRef.current = fetched.version;
       setArtifactTracked({
         name: fetched.name,
+        instanceId: fetched.instanceId,
+        version: fetched.version,
         luaSource: fetched.source,
         validated: validated ?? false,
         validationIssues: issues ?? [],
@@ -250,7 +261,9 @@ export function useWidgetChat() {
         streamFlushRef.current = null;
       }
 
-      const isRefine = !!sessionIdRef.current || (!!chatIdRef.current && !!widgetNameRef.current);
+      const isRefine =
+        !!sessionIdRef.current ||
+        (!!chatIdRef.current && !!(widgetInstanceIdRef.current || widgetNameRef.current));
 
       fetchGenerationRef.current += 1;
       if (fetchDebounceRef.current) {
@@ -260,12 +273,23 @@ export function useWidgetChat() {
 
       if (!isRefine) {
         widgetNameRef.current = null;
+        widgetInstanceIdRef.current = null;
+        widgetVersionRef.current = 0;
         setArtifactTracked(null);
-      } else if (chatIdRef.current && widgetNameRef.current) {
+      } else if (chatIdRef.current && (widgetInstanceIdRef.current || widgetNameRef.current)) {
         const restored = await restoreGeneratorSession(chatIdRef.current);
         if (restored?.sessionId) {
           setSessionId(restored.sessionId);
           sessionIdRef.current = restored.sessionId;
+          if (restored.widgetInstanceId) {
+            widgetInstanceIdRef.current = restored.widgetInstanceId;
+          }
+          if (restored.widgetVersion !== undefined) {
+            widgetVersionRef.current = restored.widgetVersion;
+          }
+          if (restored.widgetName) {
+            widgetNameRef.current = restored.widgetName;
+          }
         } else {
           setMessagesTracked((prev) => [
             ...prev,
@@ -343,12 +367,31 @@ export function useWidgetChat() {
 
           if (data.type === "widget" && data.widgetName) {
             const nextName = data.widgetName;
+            const nextInstanceId = data.widgetInstanceId ?? null;
+            const prevInstanceId = widgetInstanceIdRef.current;
             const prevName = widgetNameRef.current;
+
+            if (prevInstanceId && nextInstanceId && prevInstanceId !== nextInstanceId) {
+              return;
+            }
+            if (!nextInstanceId && prevName && prevName !== nextName) {
+              return;
+            }
+
             widgetNameRef.current = nextName;
-            if (prevName !== nextName) {
+            if (nextInstanceId) widgetInstanceIdRef.current = nextInstanceId;
+            if (data.widgetVersion !== undefined) widgetVersionRef.current = data.widgetVersion;
+
+            const identityChanged =
+              prevInstanceId !== nextInstanceId ||
+              (!nextInstanceId && prevName !== nextName);
+
+            if (identityChanged) {
               fetchGenerationRef.current += 1;
               setArtifactTracked({
                 name: nextName,
+                instanceId: nextInstanceId,
+                version: data.widgetVersion ?? widgetVersionRef.current,
                 luaSource: null,
                 validated: false,
                 validationIssues: [],
@@ -383,15 +426,19 @@ export function useWidgetChat() {
 
           if (data.type === "done" || data.type === "error") {
             const name = data.widgetName ?? widgetNameRef.current;
+            const instanceId = data.widgetInstanceId ?? widgetInstanceIdRef.current;
+            const version = data.widgetVersion ?? widgetVersionRef.current;
             const finalValidated = data.validated ?? validated;
             const finalIssues = data.validationIssues ?? validationIssues;
-            if (name) {
-              widgetNameRef.current = name;
-            }
+            if (name) widgetNameRef.current = name;
+            if (instanceId) widgetInstanceIdRef.current = instanceId;
+            widgetVersionRef.current = version;
             setArtifactTracked((prev) =>
               prev && name && prev.name === name
                 ? {
                     ...prev,
+                    instanceId: instanceId ?? prev.instanceId,
+                    version,
                     validated: finalValidated,
                     validationIssues: finalIssues,
                   }
@@ -431,9 +478,9 @@ export function useWidgetChat() {
         flushStreamDraft();
         setRunning(false);
         const activeChatId = chatIdRef.current;
-        if (widgetNameRef.current) {
+        if (widgetNameRef.current || widgetInstanceIdRef.current) {
           await loadArtifact(
-            widgetNameRef.current,
+            widgetNameRef.current ?? "",
             validated,
             validationIssues,
             sessionIdRef.current,
@@ -497,6 +544,9 @@ export function useWidgetChat() {
       chatIdRef.current = chat.id;
       setChatId(chat.id);
       widgetNameRef.current = chat.widgetName ?? chat.artifact?.name ?? null;
+      widgetInstanceIdRef.current =
+        chat.widgetInstanceId ?? chat.artifact?.instanceId ?? null;
+      widgetVersionRef.current = chat.widgetVersion ?? chat.artifact?.version ?? 0;
       setProtocol(chat.protocol);
       setModelId(chat.modelId);
       setRadioId(chat.radioId);
@@ -504,12 +554,21 @@ export function useWidgetChat() {
       setMessagesTracked(chat.messages);
 
       const activeSessionId = chat.sessionId;
-      if (widgetNameRef.current) {
+      if (widgetNameRef.current || widgetInstanceIdRef.current) {
         const restored = await restoreGeneratorSession(chat.id);
         if (loadGen !== chatLoadGenRef.current) return;
         if (restored?.sessionId) {
           setSessionId(restored.sessionId);
           sessionIdRef.current = restored.sessionId;
+          if (restored.widgetInstanceId) {
+            widgetInstanceIdRef.current = restored.widgetInstanceId;
+          }
+          if (restored.widgetVersion !== undefined) {
+            widgetVersionRef.current = restored.widgetVersion;
+          }
+          if (restored.widgetName) {
+            widgetNameRef.current = restored.widgetName;
+          }
         } else {
           setSessionId(null);
           sessionIdRef.current = null;
@@ -526,9 +585,9 @@ export function useWidgetChat() {
         return;
       }
 
-      if (chat.widgetName ?? chat.artifact?.name) {
+      if (chat.widgetName ?? chat.artifact?.name ?? chat.widgetInstanceId) {
         await loadArtifact(
-          chat.widgetName ?? chat.artifact!.name,
+          chat.widgetName ?? chat.artifact?.name ?? "",
           chat.artifact?.validated,
           chat.artifact?.validationIssues,
           sessionIdRef.current,
@@ -557,6 +616,8 @@ export function useWidgetChat() {
     setSessionId(null);
     sessionIdRef.current = null;
     widgetNameRef.current = null;
+    widgetInstanceIdRef.current = null;
+    widgetVersionRef.current = 0;
     setArtifactTracked(null);
     setArtifactLoading(false);
     setRunning(false);
@@ -604,6 +665,6 @@ export function useWidgetChat() {
     loadChat,
     deleteChat,
     refreshHistory,
-    canRefine: !!(artifact?.name || sessionId),
+    canRefine: !!(artifact?.instanceId || artifact?.name || sessionId),
   };
 }

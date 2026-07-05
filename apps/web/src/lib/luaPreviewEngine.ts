@@ -5,9 +5,15 @@ export type EdgeColor =
   | "WHITE"
   | "BLACK"
   | "GREY"
+  | "LIGHTGREY"
   | "RED"
+  | "LIGHTRED"
+  | "DARKRED"
   | "GREEN"
+  | "BRIGHTGREEN"
+  | "DARKGREEN"
   | "BLUE"
+  | "DARKBLUE"
   | "YELLOW"
   | "ORANGE"
   | "LIME"
@@ -19,24 +25,53 @@ export const COLOR_MAP: Record<EdgeColor, string> = {
   WHITE: "#ffffff",
   BLACK: "#000000",
   GREY: "#808080",
+  LIGHTGREY: "#d3d3d3",
   RED: "#ff0000",
-  GREEN: "#00ff00",
+  LIGHTRED: "#ff6666",
+  DARKRED: "#8b0000",
+  GREEN: "#008000",
+  BRIGHTGREEN: "#00ff00",
+  DARKGREEN: "#006400",
   BLUE: "#0000ff",
+  DARKBLUE: "#00008b",
   YELLOW: "#ffff00",
-  ORANGE: "#ff8800",
+  ORANGE: "#ffa500",
   LIME: "#88ff00",
   CYAN: "#00ffff",
   MAGENTA: "#ff00ff",
   DARKGREY: "#404040",
 };
 
+/** EdgeTX theme constants — preview approximations of default dark theme. */
+export const THEME_COLOR_MAP: Record<string, string> = {
+  COLOR_THEME_PRIMARY1: "#2a3a5c",
+  COLOR_THEME_PRIMARY2: "#1a1a24",
+  COLOR_THEME_PRIMARY3: "#3a3a48",
+  COLOR_THEME_SECONDARY1: "#e0e0e8",
+  COLOR_THEME_SECONDARY2: "#a0a0b0",
+  COLOR_THEME_SECONDARY3: "#484858",
+  COLOR_THEME_FOCUS: "#4a90d9",
+  COLOR_THEME_ACTIVE: "#5ab0ff",
+  COLOR_THEME_WARNING: "#e8a020",
+  COLOR_THEME_DISABLED: "#606068",
+  CUSTOM_COLOR: "#ff8800",
+};
+
 export interface PreviewDrawCommand {
-  kind: "clear" | "text" | "filledRect" | "rect" | "line" | "bitmap";
+  kind: "clear" | "text" | "filledRect" | "rect" | "line" | "bitmap" | "gauge" | "circle" | "arc" | "annulus";
   color?: string;
+  trackColor?: string;
   x?: number;
   y?: number;
   w?: number;
   h?: number;
+  r?: number;
+  rIn?: number;
+  rOut?: number;
+  startAngle?: number;
+  endAngle?: number;
+  fill?: number;
+  maxFill?: number;
   text?: string;
   fontSize?: number;
   textAlign?: "left" | "center" | "right";
@@ -69,6 +104,9 @@ function resolveColor(flags: string, rgbMap: Record<string, string>, fallback = 
   for (const c of Object.keys(COLOR_MAP) as EdgeColor[]) {
     if (flags.includes(c)) return COLOR_MAP[c];
   }
+  for (const [name, hex] of Object.entries(THEME_COLOR_MAP)) {
+    if (flags.includes(name)) return hex;
+  }
   for (const [name, hex] of Object.entries(rgbMap)) {
     if (flags.includes(name)) return hex;
   }
@@ -78,8 +116,13 @@ function resolveColor(flags: string, rgbMap: Record<string, string>, fallback = 
 function resolveDrawColor(colorExpr: string, rgbMap: Record<string, string>): string {
   const trimmed = colorExpr.trim();
   if (trimmed in COLOR_MAP) return COLOR_MAP[trimmed as EdgeColor];
+  if (trimmed in THEME_COLOR_MAP) return THEME_COLOR_MAP[trimmed];
   if (rgbMap[trimmed]) return rgbMap[trimmed];
   return "#808080";
+}
+
+function degToRad(deg: number): number {
+  return (deg * Math.PI) / 180;
 }
 
 function resolveTextAlign(flags: string): "left" | "center" | "right" {
@@ -819,6 +862,66 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
         h: evalNumberExpr(rectArgs[3], ctx, evalDims),
         color: resolveDrawColor(rectArgs[4], rgbMap),
       });
+      continue;
+    }
+
+    const gaugeArgs = parseLcdCall(line, "drawGauge");
+    if (gaugeArgs && gaugeArgs.length >= 6) {
+      const flags = gaugeArgs.length >= 7 ? gaugeArgs[6] : "CYAN";
+      commands.push({
+        kind: "gauge",
+        x: evalNumberExpr(gaugeArgs[0], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(gaugeArgs[1], ctx, evalDims) + dims.zoneY,
+        w: evalNumberExpr(gaugeArgs[2], ctx, evalDims),
+        h: evalNumberExpr(gaugeArgs[3], ctx, evalDims),
+        fill: evalNumberExpr(gaugeArgs[4], ctx, evalDims),
+        maxFill: evalNumberExpr(gaugeArgs[5], ctx, evalDims),
+        color: resolveDrawColor(typeof flags === "string" ? flags : "CYAN", rgbMap),
+      });
+      continue;
+    }
+
+    const circleArgs = parseLcdCall(line, "drawCircle");
+    if (circleArgs && circleArgs.length >= 3) {
+      const flags = circleArgs[3] ?? "WHITE";
+      commands.push({
+        kind: "circle",
+        x: evalNumberExpr(circleArgs[0], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(circleArgs[1], ctx, evalDims) + dims.zoneY,
+        r: evalNumberExpr(circleArgs[2], ctx, evalDims),
+        color: resolveDrawColor(typeof flags === "string" ? flags : "WHITE", rgbMap),
+      });
+      continue;
+    }
+
+    const arcArgs = parseLcdCall(line, "drawArc");
+    if (arcArgs && arcArgs.length >= 5) {
+      const flags = arcArgs[5] ?? "WHITE";
+      commands.push({
+        kind: "arc",
+        x: evalNumberExpr(arcArgs[0], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(arcArgs[1], ctx, evalDims) + dims.zoneY,
+        r: evalNumberExpr(arcArgs[2], ctx, evalDims),
+        startAngle: evalNumberExpr(arcArgs[3], ctx, evalDims),
+        endAngle: evalNumberExpr(arcArgs[4], ctx, evalDims),
+        color: resolveDrawColor(typeof flags === "string" ? flags : "WHITE", rgbMap),
+      });
+      continue;
+    }
+
+    const annulusArgs = parseLcdCall(line, "drawAnnulus");
+    if (annulusArgs && annulusArgs.length >= 7) {
+      const flags = annulusArgs[7] ?? "CYAN";
+      commands.push({
+        kind: "annulus",
+        x: evalNumberExpr(annulusArgs[0], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(annulusArgs[1], ctx, evalDims) + dims.zoneY,
+        rOut: evalNumberExpr(annulusArgs[2], ctx, evalDims),
+        rIn: evalNumberExpr(annulusArgs[3], ctx, evalDims),
+        startAngle: evalNumberExpr(annulusArgs[4], ctx, evalDims),
+        endAngle: evalNumberExpr(annulusArgs[5], ctx, evalDims),
+        color: resolveDrawColor(typeof flags === "string" ? flags : "CYAN", rgbMap),
+      });
     }
   }
 
@@ -898,6 +1001,60 @@ export function renderPreviewCommands(
         ctx.textAlign = "center";
         ctx.fillText("MODEL", bx + bw / 2, by + bh / 2 + 3);
         ctx.textAlign = "left";
+        break;
+      }
+      case "gauge": {
+        const gx = cmd.x ?? 0;
+        const gy = cmd.y ?? 0;
+        const gw = cmd.w ?? 0;
+        const gh = cmd.h ?? 0;
+        const max = cmd.maxFill && cmd.maxFill > 0 ? cmd.maxFill : 100;
+        const ratio = Math.max(0, Math.min(1, (cmd.fill ?? 0) / max));
+        ctx.strokeStyle = "#606070";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(gx + 0.5, gy + 0.5, gw - 1, gh - 1);
+        const fillH = Math.max(0, Math.floor(gh * ratio));
+        if (fillH > 0) {
+          ctx.fillStyle = cmd.color ?? "#00ffff";
+          ctx.fillRect(gx + 1, gy + gh - fillH, gw - 2, fillH);
+        }
+        break;
+      }
+      case "circle": {
+        const cx = cmd.x ?? 0;
+        const cy = cmd.y ?? 0;
+        const r = cmd.r ?? 0;
+        ctx.strokeStyle = cmd.color ?? "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+        break;
+      }
+      case "arc": {
+        const cx = cmd.x ?? 0;
+        const cy = cmd.y ?? 0;
+        const r = cmd.r ?? 0;
+        ctx.strokeStyle = cmd.color ?? "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, degToRad(cmd.startAngle ?? 0), degToRad(cmd.endAngle ?? 360));
+        ctx.stroke();
+        break;
+      }
+      case "annulus": {
+        const cx = cmd.x ?? 0;
+        const cy = cmd.y ?? 0;
+        const rOut = cmd.rOut ?? 0;
+        const rIn = cmd.rIn ?? 0;
+        const midR = (rOut + rIn) / 2;
+        const width = Math.max(1, rOut - rIn);
+        ctx.strokeStyle = cmd.color ?? "#00ffff";
+        ctx.lineWidth = width;
+        ctx.lineCap = "butt";
+        ctx.beginPath();
+        ctx.arc(cx, cy, midR, degToRad(cmd.startAngle ?? 0), degToRad(cmd.endAngle ?? 360));
+        ctx.stroke();
         break;
       }
     }

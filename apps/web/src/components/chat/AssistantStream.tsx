@@ -73,6 +73,13 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
         );
       })}
       {showLiveTool ? <ToolActivityStream tools={tools} isStreaming /> : null}
+      {isStreaming ? (
+        <div className={styles.thinking} aria-label="Generating">
+          <span className={styles.dot} />
+          <span className={styles.dot} />
+          <span className={styles.dot} />
+        </div>
+      ) : null}
     </div>
   );
 }

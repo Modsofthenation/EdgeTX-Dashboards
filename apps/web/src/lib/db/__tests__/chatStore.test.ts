@@ -99,6 +99,24 @@ describe("SqliteChatRepository", () => {
     assert.equal(repo.getChat(chat.id)?.artifact?.validated, true);
   });
 
+  it("clearAll removes every chat", () => {
+    repo.createChat({
+      title: "one",
+      protocol: "betaflight",
+      modelId: "m1",
+      edgeTxVersion: "2.11.0",
+    });
+    repo.createChat({
+      title: "two",
+      protocol: "rotorflight",
+      modelId: "m1",
+      edgeTxVersion: "2.11.0",
+    });
+    assert.equal(repo.listChats().length, 2);
+    repo.clearAll();
+    assert.equal(repo.listChats().length, 0);
+  });
+
   it("excludes streaming messages from persistence", () => {
     const chat = repo.createChat({
       title: "test",
