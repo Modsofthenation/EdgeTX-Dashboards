@@ -73,6 +73,7 @@ Prompts are built in `buildGenerationPrompt()` / `buildRefinePrompt()` and inclu
 - `.cursor/rules/edgetx-lua.md`
 - `knowledge/design/tx15-dashboard-ui.md`
 - Starter template + `examples/tx15-minimal-dashboard.lua`
+- **Refine only:** prior chat summary + versioned Lua snapshots from SQLite (`refineHistory.ts` via `/api/refine`)
 
 ### Lua output requirements (summary)
 
@@ -102,7 +103,8 @@ Steps:
 2. Static checks (structure, forbidden APIs, name/options)
 3. Telemetry catalog match (`strictTelemetry: true`)
 4. Dev-kit annotations + stub-aware `lcd.*` checks
-5. Visual-design warnings (card layout, text density)
+5. **Runtime API checks** (`lcdApiValidate.ts`) — `lcd.drawLine` pattern arg, `Bitmap.getSize` handle (see `knowledge/design/runtime-api-pitfalls.md`)
+6. Visual-design warnings (card layout, text density)
 
 Warnings do not block download; errors do. Download returns **HTTP 422** when invalid.
 

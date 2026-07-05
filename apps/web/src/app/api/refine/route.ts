@@ -1,6 +1,8 @@
-import { CursorAgentError, getSessionStore, validatePromptImages, writeWidgetLuaSource } from "@/server/generatorFacade";
+import { CursorAgentError, getSessionStore, validatePromptImages, writeWidgetLuaSource, readWidgetLuaSource } from "@/server/generatorFacade";
+import type { RefineHistoryInput } from "@widget-gen/generator";
 import { checkApiAuth } from "@/lib/apiSecurity";
 import { getChat } from "@/lib/db/chatStore";
+import { buildRefineHistoryInput } from "@/lib/refineChatContext";
 import { createSseResponse, createSseStream } from "@/lib/sse";
 import { createRunCallbacks, emitRunCompletion } from "@/lib/widgetSession";
 
@@ -91,6 +93,31 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Session not found or expired" }, { status: 404 });
   }
 
+  const chat = data.chatId?.trim() ? getChat(data.chatId.trim()) : null;
+  const workspaceKey =
+    stored.session.widgetInstanceId ??
+    chat?.widgetInstanceId ??
+    chat?.artifact?.instanceId ??
+    undefined;
+  const workspaceLua = workspaceKey ? readWidgetLuaSource(workspaceKey)?.source : null;
+
+  let refineHistory: RefineHistoryInput | undefined;
+  if (chat) {
+    refineHistory = buildRefineHistoryInput(chat, effectivePrompt, workspaceLua);
+  } else if (workspaceLua) {
+    refineHistory = {
+      messages: [],
+      currentPrompt: effectivePrompt,
+      artifact: {
+        version: stored.session.widgetVersion ?? 0,
+        luaSource: workspaceLua,
+        validated: stored.session.validated ?? false,
+      },
+      artifactVersions: [],
+      workspaceLuaSource: workspaceLua,
+    };
+  }
+
   const stream = createSseStream(async (send) => {
     if (!store.tryAcquire(effectiveSessionId)) {
       send({ type: "error", content: "Session busy", sessionId: effectiveSessionId, success: false });
@@ -106,7 +133,8 @@ export async function POST(request: Request): Promise<Response> {
         stored.session.widgetName,
         createRunCallbacks(ctx),
         stored.session,
-        imagesResult.images.length > 0 ? imagesResult.images : undefined
+        imagesResult.images.length > 0 ? imagesResult.images : undefined,
+        refineHistory
       );
 
       emitRunCompletion(ctx, result, { action: "refine" });

@@ -11,7 +11,9 @@ EdgeTX model images live on the radio SD card:
 
 ## Widget pattern (required for web preview)
 
-Load once in `create()`, draw in `refresh()` with a **placeholder fallback** so the web preview and radio both look correct when the file is missing.
+Load once in `create()`, draw in `refresh()` with a **placeholder fallback** when width/height are 0.
+
+**Common crash:** passing the SD path to `Bitmap.getSize` — use the bitmap handle only (see `runtime-api-pitfalls.md`).
 
 ```lua
 local MODEL_IMG = "/MODELS/model.png"

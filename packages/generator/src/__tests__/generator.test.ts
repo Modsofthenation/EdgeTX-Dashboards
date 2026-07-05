@@ -115,6 +115,36 @@ return { name = "Clutter", create = function() return {} end, refresh = refresh 
       )
     );
   });
+
+  it("rejects Bitmap.getSize with SD path (radio create crash)", () => {
+    const source = [
+      'local name = "BmpTest"',
+      "local MODEL_IMG = \"/MODELS/model.png\"",
+      "local function create()",
+      "  local modelBmp = Bitmap.open(MODEL_IMG)",
+      "  local w, h = Bitmap.getSize(MODEL_IMG, modelBmp)",
+      "  return { modelBmp = modelBmp, bmpW = w, bmpH = h }",
+      "end",
+      "local function refresh() end",
+      "return { name = name, create = create, refresh = refresh }",
+    ].join("\n");
+    const result = validateWidgetLua(source);
+    assert.equal(result.valid, false);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("Bitmap.getSize")));
+  });
+
+  it("rejects lcd.drawLine with color as 5th argument", () => {
+    const source = [
+      'local name = "LineTest"',
+      "local function refresh()",
+      "  lcd.drawLine(0, 0, 10, 0, widget.C_BORDER)",
+      "end",
+      "return { name = name, create = function() return {} end, refresh = refresh }",
+    ].join("\n");
+    const result = validateWidgetLua(source);
+    assert.equal(result.valid, false);
+    assert.ok(result.issues.some((i) => i.message.includes("drawLine")));
+  });
 });
 
 describe("validateWidgetForRelease", () => {

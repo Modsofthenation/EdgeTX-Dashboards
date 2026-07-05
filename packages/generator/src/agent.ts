@@ -18,6 +18,8 @@ import {
   type RunCallbacks,
 } from "./orchestrator.js";
 import type { ToolSessionDefaults } from "./agentTools.js";
+import type { RefineHistoryInput } from "./refineHistory.js";
+import { buildRefineHistorySections } from "./refineHistory.js";
 
 export type { RunCallbacks };
 
@@ -261,7 +263,8 @@ export class WidgetGenerator {
     widgetName?: string,
     callbacks?: RunCallbacks,
     session?: GenerateSession,
-    images?: GenerateRequest["images"]
+    images?: GenerateRequest["images"],
+    refineHistory?: RefineHistoryInput
   ): Promise<{
     runId: string;
     status: string;
@@ -319,6 +322,7 @@ export class WidgetGenerator {
             widgetInstanceId: session.widgetInstanceId,
             widgetVersion: session.widgetVersion,
             referenceImageCount: images?.length ?? 0,
+            refineHistory: refineHistory ? buildRefineHistorySections(refineHistory) : undefined,
           }
         : widgetInstanceId
           ? {
@@ -326,8 +330,13 @@ export class WidgetGenerator {
               widgetInstanceId,
               widgetVersion: this.toolDefaults.widgetVersion,
               referenceImageCount: images?.length ?? 0,
+              refineHistory: refineHistory ? buildRefineHistorySections(refineHistory) : undefined,
             }
-          : { sessionId: "refine", referenceImageCount: images?.length ?? 0 }
+          : {
+              sessionId: "refine",
+              referenceImageCount: images?.length ?? 0,
+              refineHistory: refineHistory ? buildRefineHistorySections(refineHistory) : undefined,
+            }
     );
 
     if (session) {

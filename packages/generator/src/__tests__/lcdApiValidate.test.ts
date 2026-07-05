@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateLcdDrawLineCalls } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateGlobalGetSizeCalls, validateLcdDrawLineCalls } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -57,5 +57,23 @@ end`;
     assert.equal(issues.length, 1);
     assert.equal(issues[0].severity, "error");
     assert.match(issues[0].message, /bitmap handle/);
+  });
+});
+
+describe("validateGlobalGetSizeCalls", () => {
+  it("rejects bare getSize with path string", () => {
+    const source = `local function create()
+  local modelBmp = Bitmap.open(MODEL_IMG)
+  local w, h = getSize(MODEL_IMG)
+  return {}
+end`;
+    const issues = validateGlobalGetSizeCalls(source);
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].message, /bitmap handle/);
+  });
+
+  it("ignores Bitmap.getSize (handled separately)", () => {
+    const source = `local w, h = Bitmap.getSize(modelBmp)`;
+    assert.deepEqual(validateGlobalGetSizeCalls(source), []);
   });
 });

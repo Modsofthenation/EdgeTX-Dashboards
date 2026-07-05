@@ -66,7 +66,7 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
   return {
     validateWidget: {
       description:
-        "Validate an EdgeTX Lua widget before download. Runs static checks, telemetry catalog validation, and archetype-scoped visual-design warnings (card panels for card-grid/heli, bands for strip/dense, DBLSIZE hero for hero-minimal). Must pass before packaging.",
+        "Validate an EdgeTX Lua widget before download. Runs static checks, telemetry catalog validation, runtime API checks (lcd.drawLine pattern arg, Bitmap.getSize handle — same failures as radio/WASM create), stub-aware lcd.* calls, and archetype-scoped visual-design warnings. Must pass before packaging.",
       inputSchema: {
         type: "object",
         properties: {

@@ -7,6 +7,7 @@ import {
   readRotorflightStyleGuide,
   readCompanionScriptsGuide,
   readModelImageGuide,
+  readRuntimeApiPitfallsGuide,
   readThemePalettesGuide,
   readExampleSnippet,
   loadTelemetryCatalog,
@@ -28,6 +29,7 @@ import {
 } from "./designVariation.js";
 import { setActiveLayoutArchetype } from "./variationContext.js";
 import { buildReferenceImagesSection } from "./promptImages.js";
+import type { RefineHistorySections } from "./refineHistory.js";
 
 export interface PromptBuildContext {
   sessionId: string;
@@ -38,6 +40,8 @@ export interface PromptBuildContext {
   widgetVersion?: number;
   /** Number of reference images attached to the user message. */
   referenceImageCount?: number;
+  /** Prior chat summary + design artifacts for refine prompts. */
+  refineHistory?: RefineHistorySections;
 }
 
 function resolveVariation(ctx: PromptBuildContext): number {
@@ -74,7 +78,7 @@ ${(catalog.setupNotes ?? []).map((n) => `- ${n}`).join("\n")}`;
 }
 
 function wantsModelImage(userPrompt: string): boolean {
-  return /model image|model photo|model picture|plane image|heli image|photo of (the )?model|show.*model.*(image|photo|picture)/i.test(
+  return /model image|model photo|model picture|plane image|heli image|photo of (the )?model|show.*model.*(image|photo|picture)|full[- ]?screen.*(image|photo|picture|png)|background.*(image|photo|picture|png)|image behind|opacity.*(filter|overlay).*(image|photo|model)|behind.*widget/i.test(
     userPrompt
   );
 }
@@ -103,6 +107,7 @@ export function buildGenerationPrompt(
       : "";
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
+  const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
   const rules = readRules();
@@ -191,6 +196,10 @@ ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling —
 ${companionGuide}
 
 ${modelImageGuide ? `\n## Model image (user requested — include ShowModel option + placeholder)\n${modelImageGuide}` : ""}
+
+## Runtime API pitfalls (mandatory — validateWidget enforces these)
+
+${runtimeApiPitfalls}
 ${assignedNameSection}
 ## Hard rules
 
@@ -215,6 +224,7 @@ ${ctx?.assignedWidgetName ? `1. Use display name \`${ctx.assignedWidgetName}\` a
    - Cache ALL display strings as locals before drawText
    - Put all \`lcd.drawText\`, \`lcd.drawFilledRectangle\`, and \`lcd.drawRectangle\` calls **directly in refresh()** (web preview parses these)
    - **\`lcd.drawLine(x1,y1,x2,y2,SOLID,color)\`** — 5th arg is line pattern (\`SOLID\`/\`DOTTED\`), not color (WASM crashes if color is 5th arg)
+   - **\`Bitmap.getSize(bitmap)\`** — pass the handle from \`Bitmap.open()\`, never the SD path string (\`create()\` crash)
    - Use LCD_W and LCD_H on ${radio.name} (${radio.lcdW}x${radio.lcdH})
 
 6. Cache telemetry with getSourceIndex() in create().
@@ -255,6 +265,8 @@ export function buildRefinePrompt(
   const companionGuide = readCompanionScriptsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
+  const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
+  const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
     loadRadioProfile(radioId).name
@@ -266,6 +278,8 @@ export function buildRefinePrompt(
 
 ${userPrompt}
 
+${ctx?.refineHistory ? `\n## Prior chat summary\n\n${ctx.refineHistory.conversationSummary}\n` : ""}
+${ctx?.refineHistory ? `\n## Design artifacts (current + prior versions)\n\n${ctx.refineHistory.artifactContext}\n` : ""}
 ${referenceImagesSection ? `\n${referenceImagesSection}\n` : ""}
 
 ${buildTelemetrySection(catalog)}
@@ -294,13 +308,19 @@ ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by crea
 
 ${companionGuide}
 
+${modelImageGuide ? `\n## Model image (refinement — include ShowModel + placeholder)\n${modelImageGuide}` : ""}
+
+## Runtime API pitfalls (mandatory — validateWidget enforces these)
+
+${runtimeApiPitfalls}
+
 Keep the dashboard clean and distinct from generic templates. All lcd.* draws must stay directly in refresh().
 
 ## Tasks
 
-1. Edit files under \`generated/${ctx?.widgetInstanceId ?? "<uuid>"}/\` as needed (main.lua + any tools/telemetry companions).
+1. Edit files under \`generated/${ctx?.widgetInstanceId ?? "<uuid>"}/\` as needed (main.lua + any tools/telemetry companions). Start from the **current widget source** above when provided; otherwise read main.lua from the workspace folder.
 
-2. Run validateWidget with widgetInstanceId "${ctx?.widgetInstanceId ?? "<uuid>"}", protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix archetype-relevant visual-design warnings.
+2. Run validateWidget with widgetInstanceId "${ctx?.widgetInstanceId ?? "<uuid>"}", protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix **all errors** (including runtime API pitfalls: drawLine pattern arg, Bitmap.getSize handle) and archetype-relevant visual-design warnings.
 
 3. Only after valid: true, run writeInstallGuide with protocol "${resolvedProtocol}" (must list all files + install steps) and packageWidget with protocol "${resolvedProtocol}" again.
 
