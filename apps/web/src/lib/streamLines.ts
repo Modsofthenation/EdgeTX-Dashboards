@@ -121,6 +121,37 @@ export function collectToolEntries(lines: StreamLine[]): ToolChipEntry[] {
   return entries;
 }
 
+/** Split assistant text into completed paragraph blocks and an in-flight tail. */
+export function splitStreamingMarkdownBlocks(
+  text: string,
+  isStreaming: boolean
+): { frozenBlocks: string[]; tail: string } {
+  if (!text) return { frozenBlocks: [], tail: "" };
+
+  if (!isStreaming) {
+    if (!text.includes("\n\n")) {
+      return { frozenBlocks: [], tail: text };
+    }
+    const parts = text.split(/\n\n/);
+    const tail = parts.pop() ?? "";
+    const frozenBlocks = parts.filter((part) => part.trim().length > 0);
+    if (tail.trim()) {
+      return { frozenBlocks: [...frozenBlocks, tail], tail: "" };
+    }
+    return { frozenBlocks, tail: "" };
+  }
+
+  const lastBreak = text.lastIndexOf("\n\n");
+  if (lastBreak === -1) {
+    return { frozenBlocks: [], tail: text };
+  }
+
+  const completed = text.slice(0, lastBreak);
+  const tail = text.slice(lastBreak + 2);
+  const frozenBlocks = completed.split(/\n\n/).filter((part) => part.trim().length > 0);
+  return { frozenBlocks, tail };
+}
+
 /** Markdown-safe text to show while streaming — hides the in-flight tail. */
 export function visibleStreamingText(text: string, isStreaming: boolean): string {
   if (!isStreaming) return text;

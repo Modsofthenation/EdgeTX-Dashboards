@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { MarkdownContent } from "./MarkdownContent";
+import { StreamingMarkdown } from "./StreamingMarkdown";
 import { TodoPanel, ToolActivityStream } from "./ToolActivity";
-import { collectToolEntries, displayStreamTextEntry, formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
+import { collectToolEntries, formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
 interface AssistantStreamProps {
@@ -20,13 +20,22 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
   const toolInProgress = showLiveTool && !!activeTool && !activeTool.failed;
   const showThinkingDots = !!isStreaming && !toolInProgress;
 
+  const lastTextEntryIndex = useMemo(() => {
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i]?.kind === "text") return i;
+    }
+    return -1;
+  }, [entries]);
+
   const renderedEntries = useMemo(
     () =>
       entries.map((entry, i) => {
         if (entry.kind === "text") {
-          const displayText = displayStreamTextEntry(entry.text ?? "", i, entries, lines, !!isStreaming);
-          if (!displayText.trim()) return null;
-          return { kind: "text" as const, key: i, displayText };
+          const fullText = entry.text ?? "";
+          if (!fullText.trim() && !(isStreaming && i === lastTextEntryIndex)) return null;
+          const streamPartial =
+            !!isStreaming && i === lastTextEntryIndex && lastLine?.type === "text";
+          return { kind: "text" as const, key: i, fullText, streamPartial };
         }
 
         if (entry.kind === "tools") return null;
@@ -37,7 +46,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
 
         return { kind: "event" as const, key: i, entry };
       }),
-    [entries, lines, isStreaming]
+    [entries, isStreaming, lastTextEntryIndex, lastLine?.type]
   );
 
   const hasVisibleContent = renderedEntries.some(Boolean) || showLiveTool;
@@ -58,7 +67,13 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
         if (!item) return null;
 
         if (item.kind === "text") {
-          return <MarkdownContent key={item.key}>{item.displayText}</MarkdownContent>;
+          return (
+            <StreamingMarkdown
+              key={item.key}
+              text={item.fullText}
+              streamPartial={item.streamPartial}
+            />
+          );
         }
 
         if (item.kind === "todo") {

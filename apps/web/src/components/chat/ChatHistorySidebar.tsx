@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { ChatSummary } from "@/lib/chatTypes";
 import { PROTOCOL_BADGE_LABELS, protocolBadgeClass } from "@/lib/protocolLabels";
 import { PanelCollapseButton } from "./CollapsibleAside";
@@ -32,7 +33,7 @@ function formatWhen(timestamp: number): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function ChatHistorySidebar({
+export const ChatHistorySidebar = memo(function ChatHistorySidebar({
   chats,
   activeChatId,
   loading,
@@ -112,4 +113,4 @@ export function ChatHistorySidebar({
       </div>
     </aside>
   );
-}
+});

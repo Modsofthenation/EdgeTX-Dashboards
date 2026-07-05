@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { BASE_MOCK, tickMock } from "@/lib/mockTelemetry";
-import { parseLuaToDrawCommands, renderPreviewCommands, getLastPreviewParseMeta } from "@/lib/luaPreviewEngine";
+import {
+  parseLuaToDrawCommandsStatic,
+  applyMockToCommands,
+  renderPreviewCommands,
+  getLastPreviewParseMeta,
+} from "@/lib/luaPreviewEngine";
 import { RadioSimPreview } from "@/components/RadioSimPreview";
 import styles from "./Preview480x320.module.css";
 
@@ -19,7 +24,7 @@ interface Preview480x320Props {
   variant?: "default" | "compact";
 }
 
-export function Preview480x320({
+export const Preview480x320 = memo(function Preview480x320({
   luaSource,
   widgetName,
   layoutProfileId = "tx15",
@@ -31,6 +36,7 @@ export function Preview480x320({
   const [tick, setTick] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastCanvasSizeRef = useRef({ w: 0, h: 0 });
 
   const mock = useMemo(() => (live ? tickMock(BASE_MOCK, tick) : BASE_MOCK), [live, tick]);
 
@@ -50,14 +56,19 @@ export function Preview480x320({
     [luaSource, layoutProfile]
   );
 
+  const staticParse = useMemo(() => {
+    if (!luaSource) return null;
+    return parseLuaToDrawCommandsStatic(luaSource);
+  }, [luaSource]);
+
   const commands = useMemo(() => {
-    if (!luaSource) return [];
+    if (!luaSource || !staticParse) return [];
     try {
-      return parseLuaToDrawCommands(luaSource, mock);
+      return applyMockToCommands(staticParse, luaSource, mock);
     } catch {
       return [];
     }
-  }, [luaSource, mock]);
+  }, [luaSource, staticParse, mock]);
 
   const parseMeta = useMemo(() => {
     if (!luaSource) return null;
@@ -102,8 +113,12 @@ export function Preview480x320({
       const drawW = Math.floor(lcdW * scale);
       const drawH = Math.floor(lcdH * scale);
 
-      canvas.width = drawW;
-      canvas.height = drawH;
+      const last = lastCanvasSizeRef.current;
+      if (last.w !== drawW || last.h !== drawH) {
+        canvas.width = drawW;
+        canvas.height = drawH;
+        lastCanvasSizeRef.current = { w: drawW, h: drawH };
+      }
       canvas.style.width = `${drawW}px`;
       canvas.style.height = `${drawH}px`;
 
@@ -300,4 +315,4 @@ export function Preview480x320({
       )}
     </div>
   );
-}
+});

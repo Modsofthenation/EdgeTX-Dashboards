@@ -50,6 +50,7 @@ export class SimRuntime {
   private lastKeyboardPollMs = 0;
   private state: RadioSimState = { ...DEFAULT_STATE };
   private callbacks: SimRuntimeCallbacks;
+  private paused = false;
 
   constructor(
     private wasmUrl: string,
@@ -164,7 +165,16 @@ export class SimRuntime {
     this.mock = mock;
   }
 
+  pause(): void {
+    this.paused = true;
+  }
+
+  resume(): void {
+    this.paused = false;
+  }
+
   async dispose(): Promise<void> {
+    this.paused = false;
     this.loopRunning = false;
     this.scriptLaunched = false;
     this.widgetReloadPending = false;
@@ -277,6 +287,11 @@ export class SimRuntime {
 
   private async runLoop(): Promise<void> {
     while (this.loopRunning && this.runner) {
+      if (this.paused) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+
       const runner = this.runner;
       const ex = runner.exports;
       if (!ex) break;
@@ -318,10 +333,10 @@ export class SimRuntime {
         }
       }
 
-      const buf = frame.buffer.slice(
-        frame.byteOffset,
-        frame.byteOffset + frame.byteLength
-      );
+      const buf =
+        frame.byteOffset === 0 && frame.byteLength === frame.buffer.byteLength
+          ? (frame.buffer as ArrayBuffer)
+          : frame.buffer.slice(frame.byteOffset, frame.byteOffset + frame.byteLength);
       this.callbacks.onFrame?.({ buffer: buf, width: w, height: h, depth });
     }
   }

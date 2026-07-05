@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
+import { memo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { ChatModel } from "@/lib/chatModels";
 import {
@@ -78,7 +78,7 @@ function SendIcon() {
   );
 }
 
-export function ChatComposer({
+export const ChatComposer = memo(function ChatComposer({
   running,
   canRefine,
   protocol,
@@ -371,4 +371,4 @@ export function ChatComposer({
       </div>
     </form>
   );
-}
+});

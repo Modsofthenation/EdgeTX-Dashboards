@@ -1,6 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Context,
+  type ReactNode,
+} from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { consumeGenerationStream, type GenerationSsePayload } from "@/lib/generationStreamClient";
 import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
@@ -48,7 +58,7 @@ function shouldRenderStreamEvent(type: string): boolean {
   return type !== "widget" && type !== "status" && type !== "done";
 }
 
-export function useWidgetChat() {
+export function useWidgetChatState() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatId, setChatId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatSummary[]>([]);
@@ -82,6 +92,7 @@ export function useWidgetChat() {
   const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamDraftRef = useRef<ChatMessage[] | null>(null);
   const streamFlushRef = useRef<number | null>(null);
+  const [scrollRevision, setScrollRevision] = useState(0);
 
   const refreshHistory = useCallback(async () => {
     const chats = await fetchChatList();
@@ -176,6 +187,7 @@ export function useWidgetChat() {
     const next = streamDraftRef.current;
     streamDraftRef.current = null;
     setMessagesTracked(next);
+    setScrollRevision((r) => r + 1);
   }, [setMessagesTracked]);
 
   const queueAssistantStreamLine = useCallback(
@@ -404,6 +416,7 @@ export function useWidgetChat() {
       }
 
       setMessagesTracked((prev) => [...prev, userMessage, assistantMessage]);
+      setScrollRevision((r) => r + 1);
 
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -762,6 +775,7 @@ export function useWidgetChat() {
 
   return {
     messages,
+    scrollRevision,
     chatId,
     chatHistory,
     historyLoading,
@@ -793,5 +807,191 @@ export function useWidgetChat() {
     deleteChat,
     refreshHistory,
     canRefine: !!(artifact?.instanceId || artifact?.name || sessionId),
+  };
+}
+
+type ChatMessagesContextValue = Pick<
+  ReturnType<typeof useWidgetChatState>,
+  "messages" | "scrollRevision"
+>;
+
+type ChatSessionContextValue = Pick<
+  ReturnType<typeof useWidgetChatState>,
+  | "running"
+  | "sendMessage"
+  | "chatId"
+  | "chatHistory"
+  | "historyLoading"
+  | "startNewChat"
+  | "loadChat"
+  | "deleteChat"
+>;
+
+type ArtifactContextValue = Pick<
+  ReturnType<typeof useWidgetChatState>,
+  | "artifact"
+  | "artifactVersions"
+  | "viewingVersion"
+  | "latestVersion"
+  | "selectViewingVersion"
+  | "artifactLoading"
+  | "sessionId"
+  | "canRefine"
+>;
+
+type SessionSettingsContextValue = Pick<
+  ReturnType<typeof useWidgetChatState>,
+  | "protocol"
+  | "setProtocol"
+  | "radioId"
+  | "setRadioId"
+  | "radios"
+  | "layoutProfileId"
+  | "selectedRadio"
+  | "models"
+  | "modelsLoading"
+  | "selectedModel"
+  | "modelId"
+  | "setModelId"
+  | "edgeTxVersion"
+  | "setEdgeTxVersion"
+>;
+
+const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
+const ChatSessionContext = createContext<ChatSessionContextValue | null>(null);
+const ArtifactContext = createContext<ArtifactContextValue | null>(null);
+const SessionSettingsContext = createContext<SessionSettingsContextValue | null>(null);
+
+export function WidgetChatProvider({ children }: { children: ReactNode }) {
+  const state = useWidgetChatState();
+
+  const messagesValue = useMemo(
+    () => ({ messages: state.messages, scrollRevision: state.scrollRevision }),
+    [state.messages, state.scrollRevision]
+  );
+
+  const sessionValue = useMemo(
+    () => ({
+      running: state.running,
+      sendMessage: state.sendMessage,
+      chatId: state.chatId,
+      chatHistory: state.chatHistory,
+      historyLoading: state.historyLoading,
+      startNewChat: state.startNewChat,
+      loadChat: state.loadChat,
+      deleteChat: state.deleteChat,
+    }),
+    [
+      state.running,
+      state.sendMessage,
+      state.chatId,
+      state.chatHistory,
+      state.historyLoading,
+      state.startNewChat,
+      state.loadChat,
+      state.deleteChat,
+    ]
+  );
+
+  const artifactValue = useMemo(
+    () => ({
+      artifact: state.artifact,
+      artifactVersions: state.artifactVersions,
+      viewingVersion: state.viewingVersion,
+      latestVersion: state.latestVersion,
+      selectViewingVersion: state.selectViewingVersion,
+      artifactLoading: state.artifactLoading,
+      sessionId: state.sessionId,
+      canRefine: state.canRefine,
+    }),
+    [
+      state.artifact,
+      state.artifactVersions,
+      state.viewingVersion,
+      state.latestVersion,
+      state.selectViewingVersion,
+      state.artifactLoading,
+      state.sessionId,
+      state.canRefine,
+    ]
+  );
+
+  const settingsValue = useMemo(
+    () => ({
+      protocol: state.protocol,
+      setProtocol: state.setProtocol,
+      radioId: state.radioId,
+      setRadioId: state.setRadioId,
+      radios: state.radios,
+      layoutProfileId: state.layoutProfileId,
+      selectedRadio: state.selectedRadio,
+      models: state.models,
+      modelsLoading: state.modelsLoading,
+      selectedModel: state.selectedModel,
+      modelId: state.modelId,
+      setModelId: state.setModelId,
+      edgeTxVersion: state.edgeTxVersion,
+      setEdgeTxVersion: state.setEdgeTxVersion,
+    }),
+    [
+      state.protocol,
+      state.setProtocol,
+      state.radioId,
+      state.setRadioId,
+      state.radios,
+      state.layoutProfileId,
+      state.selectedRadio,
+      state.models,
+      state.modelsLoading,
+      state.selectedModel,
+      state.modelId,
+      state.setModelId,
+      state.edgeTxVersion,
+      state.setEdgeTxVersion,
+    ]
+  );
+
+  return (
+    <SessionSettingsContext.Provider value={settingsValue}>
+      <ArtifactContext.Provider value={artifactValue}>
+        <ChatSessionContext.Provider value={sessionValue}>
+          <ChatMessagesContext.Provider value={messagesValue}>{children}</ChatMessagesContext.Provider>
+        </ChatSessionContext.Provider>
+      </ArtifactContext.Provider>
+    </SessionSettingsContext.Provider>
+  );
+}
+
+function useContextValue<T>(ctx: Context<T | null>, name: string): T {
+  const value = useContext(ctx);
+  if (!value) {
+    throw new Error(`${name} must be used within WidgetChatProvider`);
+  }
+  return value;
+}
+
+export function useChatMessages() {
+  return useContextValue(ChatMessagesContext, "useChatMessages");
+}
+
+export function useChatSession() {
+  return useContextValue(ChatSessionContext, "useChatSession");
+}
+
+export function useArtifactPanel() {
+  return useContextValue(ArtifactContext, "useArtifactPanel");
+}
+
+export function useSessionSettings() {
+  return useContextValue(SessionSettingsContext, "useSessionSettings");
+}
+
+/** @deprecated Prefer focused hooks (useChatMessages, useChatSession, etc.) inside WidgetChatProvider */
+export function useWidgetChat() {
+  return {
+    ...useChatMessages(),
+    ...useChatSession(),
+    ...useArtifactPanel(),
+    ...useSessionSettings(),
   };
 }

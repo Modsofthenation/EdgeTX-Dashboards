@@ -19,10 +19,16 @@ const DEFAULT_STATE: RadioSimState = {
   keyboardMode: "none",
 };
 
+const FRAME_MIN_INTERVAL_MS = 33;
+
+export type FrameSubscriber = (frame: SimFrameData) => void;
+
 export function useRadioSim() {
   const workerRef = useRef<Worker | null>(null);
+  const frameRef = useRef<SimFrameData | null>(null);
+  const frameSubscriberRef = useRef<FrameSubscriber | null>(null);
+  const lastFrameCommitRef = useRef(0);
   const [state, setState] = useState<RadioSimState>(DEFAULT_STATE);
-  const [frame, setFrame] = useState<SimFrameData | null>(null);
   const [wasmSizeMb, setWasmSizeMb] = useState<number | null>(null);
 
   useEffect(() => {
@@ -41,7 +47,15 @@ export function useRadioSim() {
     worker.onmessage = (event: MessageEvent<SimWorkerResponse>) => {
       const msg = event.data;
       if (msg.type === "state") setState(msg.state);
-      if (msg.type === "frame") setFrame(msg.frame);
+      if (msg.type === "frame") {
+        frameRef.current = msg.frame;
+        const subscriber = frameSubscriberRef.current;
+        if (!subscriber) return;
+        const now = performance.now();
+        if (now - lastFrameCommitRef.current < FRAME_MIN_INTERVAL_MS) return;
+        lastFrameCommitRef.current = now;
+        subscriber(msg.frame);
+      }
       if (msg.type === "error") {
         setState({ phase: "error", progress: 0, status: "Error", error: msg.message, keyboardMode: "none" });
       }
@@ -94,33 +108,52 @@ export function useRadioSim() {
     [ensureWorker]
   );
 
-  const sendInput = useCallback(
-    (msg: SimInputMessage) => {
-      const worker = workerRef.current;
-      if (!worker) return;
-      const req: SimWorkerRequest = { type: "input", msg };
-      worker.postMessage(req);
-    },
-    []
-  );
+  const sendInput = useCallback((msg: SimInputMessage) => {
+    const worker = workerRef.current;
+    if (!worker) return;
+    const req: SimWorkerRequest = { type: "input", msg };
+    worker.postMessage(req);
+  }, []);
+
+  const pause = useCallback(() => {
+    workerRef.current?.postMessage({ type: "pause" } satisfies SimWorkerRequest);
+    frameSubscriberRef.current = null;
+    lastFrameCommitRef.current = 0;
+  }, []);
+
+  const resume = useCallback(() => {
+    workerRef.current?.postMessage({ type: "resume" } satisfies SimWorkerRequest);
+  }, []);
+
+  const subscribeFrames = useCallback((subscriber: FrameSubscriber | null) => {
+    frameSubscriberRef.current = subscriber;
+    lastFrameCommitRef.current = 0;
+    if (subscriber && frameRef.current) {
+      subscriber(frameRef.current);
+    }
+  }, []);
 
   const dispose = useCallback(() => {
     workerRef.current?.postMessage({ type: "dispose" } satisfies SimWorkerRequest);
     workerRef.current?.terminate();
     workerRef.current = null;
-    setFrame(null);
+    frameRef.current = null;
+    frameSubscriberRef.current = null;
+    lastFrameCommitRef.current = 0;
     setState(DEFAULT_STATE);
   }, []);
 
   return {
     state,
-    frame,
     wasmSizeMb,
     keyboardMode: state.keyboardMode,
     init,
     loadWidget,
     setMock,
     sendInput,
+    pause,
+    resume,
+    subscribeFrames,
     dispose,
   };
 }

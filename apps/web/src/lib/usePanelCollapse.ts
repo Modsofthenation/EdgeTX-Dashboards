@@ -9,7 +9,7 @@ type PanelCollapseState = {
   artifact: boolean;
 };
 
-const DEFAULT: PanelCollapseState = { history: false, artifact: false };
+const DEFAULT: PanelCollapseState = { history: false, artifact: true };
 
 function readStored(): PanelCollapseState {
   if (typeof window === "undefined") return DEFAULT;
@@ -19,7 +19,7 @@ function readStored(): PanelCollapseState {
     const parsed = JSON.parse(raw) as Partial<PanelCollapseState>;
     return {
       history: parsed.history ?? false,
-      artifact: parsed.artifact ?? false,
+      artifact: parsed.artifact ?? true,
     };
   } catch {
     return DEFAULT;

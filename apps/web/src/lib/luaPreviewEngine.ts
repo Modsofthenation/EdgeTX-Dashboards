@@ -1041,26 +1041,50 @@ function processConditionals(body: string, ctx: EvalCtx, dims: EvalDims): string
   return out.join("\n");
 }
 
-export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BASE_MOCK): PreviewDrawCommand[] {
+export interface PreviewStaticParse {
+  body: string;
+  dims: ReturnType<typeof resolvePreviewDimensions>;
+  srcMap: Map<string, string>;
+  rgbMap: Record<string, string>;
+  evalDims: EvalDims;
+}
+
+/** Runs once per Lua source change — extracts refresh body and layout metadata. */
+export function parseLuaToDrawCommandsStatic(source: string): PreviewStaticParse | null {
+  try {
+    const dims = resolvePreviewDimensions(source);
+    const srcMap = buildSrcSensorMap(source);
+    const rgbMap = buildRgbColorMap(source);
+    const optionIndex = buildOptionIndexMap(source);
+    const evalDims: EvalDims = {
+      zoneW: dims.zoneW,
+      zoneH: dims.zoneH,
+      lcdW: dims.lcdW,
+      lcdH: dims.lcdH,
+      optionIndex,
+    };
+    const body = extractRefreshBody(source);
+    return { body, dims, srcMap, rgbMap, evalDims };
+  } catch {
+    return null;
+  }
+}
+
+/** Re-evaluates telemetry-dependent assignments and builds draw commands for the current mock. */
+export function applyMockToCommands(
+  staticParse: PreviewStaticParse,
+  source: string,
+  mock: MockTelemetry = BASE_MOCK
+): PreviewDrawCommand[] {
+  const { body: rawBody, dims, srcMap, rgbMap, evalDims } = staticParse;
   const commands: PreviewDrawCommand[] = [];
   const warnings: string[] = [];
   let skippedTextCount = 0;
   let zeroCoordCount = 0;
-  const dims = resolvePreviewDimensions(source);
-  const srcMap = buildSrcSensorMap(source);
-  const rgbMap = buildRgbColorMap(source);
-  const optionIndex = buildOptionIndexMap(source);
-  const evalDims: EvalDims = {
-    zoneW: dims.zoneW,
-    zoneH: dims.zoneH,
-    lcdW: dims.lcdW,
-    lcdH: dims.lcdH,
-    optionIndex,
-  };
   const ctx = buildContext(source, mock);
   seedWidgetContext(source, ctx);
 
-  let body = extractRefreshBody(source);
+  let body = rawBody;
   for (let pass = 0; pass < 6; pass++) {
     collectTelemAssignments(body, ctx, evalDims, srcMap, mock);
     collectAssignments(body, ctx, evalDims, srcMap, mock);
@@ -1242,6 +1266,12 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
 
   lastPreviewParseMeta = { warnings, skippedTextCount, zeroCoordCount };
   return commands;
+}
+
+export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BASE_MOCK): PreviewDrawCommand[] {
+  const staticParse = parseLuaToDrawCommandsStatic(source);
+  if (!staticParse) return [];
+  return applyMockToCommands(staticParse, source, mock);
 }
 
 export function renderPreviewCommands(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
@@ -25,7 +25,7 @@ interface ArtifactPanelProps {
   onTogglePanel?: () => void;
 }
 
-export function ArtifactPanel({
+export const ArtifactPanel = memo(function ArtifactPanel({
   chatId,
   artifact,
   artifactVersions,
@@ -185,4 +185,4 @@ export function ArtifactPanel({
       )}
     </aside>
   );
-}
+});

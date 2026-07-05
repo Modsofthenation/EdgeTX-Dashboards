@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import styles from "./MarkdownContent.module.css";
@@ -8,7 +9,7 @@ interface MarkdownContentProps {
   children: string;
 }
 
-export function MarkdownContent({ children }: MarkdownContentProps) {
+export const MarkdownContent = memo(function MarkdownContent({ children }: MarkdownContentProps) {
   if (!children.trim()) return null;
 
   return (
@@ -16,4 +17,4 @@ export function MarkdownContent({ children }: MarkdownContentProps) {
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
     </div>
   );
-}
+});

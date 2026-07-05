@@ -7,14 +7,20 @@ import styles from "./ChatMessageList.module.css";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
+  scrollRevision: number;
   running: boolean;
   onSuggestion: (text: string) => void;
 }
 
-export function ChatMessageList({ messages, running, onSuggestion }: ChatMessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+export function ChatMessageList({
+  messages,
+  scrollRevision,
+  running,
+  onSuggestion,
+}: ChatMessageListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
+  const lastScrollHeightRef = useRef(0);
 
   const handleScroll = () => {
     const list = listRef.current;
@@ -25,11 +31,21 @@ export function ChatMessageList({ messages, running, onSuggestion }: ChatMessage
 
   useEffect(() => {
     if (!pinnedRef.current) return;
-    bottomRef.current?.scrollIntoView({
-      behavior: running ? "auto" : "smooth",
-      block: "end",
-    });
-  }, [messages, running]);
+    const list = listRef.current;
+    if (!list) return;
+    if (list.scrollHeight === lastScrollHeightRef.current && scrollRevision > 0) return;
+    lastScrollHeightRef.current = list.scrollHeight;
+    list.scrollTop = list.scrollHeight;
+  }, [scrollRevision, running]);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    if (!pinnedRef.current) return;
+    const list = listRef.current;
+    if (!list) return;
+    lastScrollHeightRef.current = list.scrollHeight;
+    list.scrollTop = list.scrollHeight;
+  }, [messages.length]);
 
   return (
     <div ref={listRef} className={styles.list} onScroll={handleScroll}>
@@ -66,7 +82,6 @@ export function ChatMessageList({ messages, running, onSuggestion }: ChatMessage
       {messages.map((message) => (
         <ChatMessageBubble key={message.id} message={message} />
       ))}
-      <div ref={bottomRef} className={styles.anchor} />
     </div>
   );
 }

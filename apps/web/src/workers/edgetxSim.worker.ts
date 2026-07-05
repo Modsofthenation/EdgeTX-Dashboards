@@ -64,6 +64,14 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         runtime?.handleInput(msg.msg);
         break;
       }
+      case "pause": {
+        runtime?.pause();
+        break;
+      }
+      case "resume": {
+        runtime?.resume();
+        break;
+      }
       case "dispose": {
         await runtime?.dispose();
         runtime = null;

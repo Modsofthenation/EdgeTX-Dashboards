@@ -78,6 +78,8 @@ export type SimWorkerRequest =
   | { type: "loadWidget"; source: string; zone?: WidgetSimulateZone }
   | { type: "setMock"; mock: MockTelemetryValues }
   | { type: "input"; msg: SimInputMessage }
+  | { type: "pause" }
+  | { type: "resume" }
   | { type: "dispose" };
 
 /** Messages from sim worker → main thread */

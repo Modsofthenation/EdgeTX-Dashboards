@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
-import type { MockTelemetryValues } from "@widget-gen/sim-preview";
+import type { MockTelemetryValues, SimFrameData, SimKeyboardMode } from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
-import { useRadioSim } from "@/lib/radioSim/useRadioSim";
+import { useRadioSim, type FrameSubscriber } from "@/lib/radioSim/useRadioSim";
 import styles from "./Preview480x320.module.css";
 
 const SimulatorThemeProvider = dynamic(
@@ -27,6 +27,92 @@ interface RadioSimPreviewProps {
   active: boolean;
 }
 
+function SimInteractiveOverlay({
+  radioProfile,
+  previewDims,
+  live,
+  running,
+  simState,
+  keyboardMode,
+  onClose,
+  onInput,
+  subscribeFrames,
+}: {
+  radioProfile: RadioProfile;
+  previewDims: ReturnType<typeof resolvePreviewDimensions>;
+  live: boolean;
+  running: boolean;
+  simState: { loading: boolean; error: string | null; progress: number; status: string };
+  keyboardMode: SimKeyboardMode;
+  onClose: () => void;
+  onInput: (msg: object) => void;
+  subscribeFrames: (subscriber: FrameSubscriber | null) => void;
+}) {
+  const [frame, setFrame] = useState<SimFrameData | null>(null);
+
+  useEffect(() => {
+    subscribeFrames((next) => setFrame(next));
+    return () => subscribeFrames(null);
+  }, [subscribeFrames]);
+
+  const frameData = useMemo(() => {
+    if (!frame) return null;
+    return {
+      buffer: frame.buffer,
+      width: frame.width,
+      height: frame.height,
+      depth: frame.depth,
+    };
+  }, [frame]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className={styles.radioSimInteractive}
+      role="dialog"
+      aria-modal="true"
+      aria-label="EdgeTX interactive simulator"
+    >
+      <div className={styles.radioSimInteractiveBar}>
+        <span className={styles.radioSimFullscreenMeta}>
+          {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX WASM · {previewDims.layout} z
+          {previewDims.zone}
+          {live && running && <span className={styles.radioSimLiveTag}> · Live mock telemetry</span>}
+        </span>
+        <button type="button" className={styles.radioSimFullscreenClose} onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <div className={styles.radioSimInteractiveBody}>
+        <div className={styles.radioSimInteractiveStage}>
+          <SimulatorThemeProvider theme="dark">
+            <Simulator
+              radio={radioProfile}
+              frameData={frameData}
+              simState={simState}
+              keyboardMode={keyboardMode}
+              onInput={onInput}
+            />
+          </SimulatorThemeProvider>
+        </div>
+      </div>
+      <p className={styles.radioSimFullscreenHint}>
+        Double-tap widget for fullscreen · Esc to close · Arrow keys = rotary encoder
+      </p>
+    </div>,
+    document.body
+  );
+}
+
 export function RadioSimPreview({
   luaSource,
   layoutProfileId = "tx15",
@@ -34,8 +120,19 @@ export function RadioSimPreview({
   live = true,
   active,
 }: RadioSimPreviewProps) {
-  const { state, frame, wasmSizeMb, keyboardMode, init, loadWidget, setMock, sendInput, dispose } =
-    useRadioSim();
+  const {
+    state,
+    wasmSizeMb,
+    keyboardMode,
+    init,
+    loadWidget,
+    setMock,
+    sendInput,
+    pause,
+    resume,
+    subscribeFrames,
+    dispose,
+  } = useRadioSim();
   const startedRef = useRef(false);
   const loadedSourceRef = useRef<string | null>(null);
   const sendInputRef = useRef(sendInput);
@@ -89,39 +186,14 @@ export function RadioSimPreview({
     [state]
   );
 
-  const frameData = useMemo(() => {
-    if (!frame) return null;
-    return {
-      buffer: frame.buffer,
-      width: frame.width,
-      height: frame.height,
-      depth: frame.depth,
-    };
-  }, [frame]);
-
-  useEffect(() => {
-    if (active && state.phase === "running") {
-      setOverlayOpen(true);
-    }
-  }, [active, state.phase]);
-
-  useEffect(() => {
-    if (!overlayOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOverlayOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [overlayOpen]);
-
   useEffect(() => {
     if (!active) {
+      pause();
       setOverlayOpen(false);
-      dispose();
-      startedRef.current = false;
-      loadedSourceRef.current = null;
       return;
     }
+
+    resume();
     if (!startedRef.current) {
       startedRef.current = true;
       loadedSourceRef.current = luaSource;
@@ -131,12 +203,15 @@ export function RadioSimPreview({
         mock,
       });
     }
+  }, [active, init, pause, resume, luaSource, simZone, mock]);
+
+  useEffect(() => {
     return () => {
       dispose();
       startedRef.current = false;
       loadedSourceRef.current = null;
     };
-  }, [active, init, dispose]);
+  }, [dispose]);
 
   useEffect(() => {
     if (!active || state.phase !== "running") return;
@@ -196,51 +271,19 @@ export function RadioSimPreview({
         </button>
       </div>
 
-      {overlayOpen &&
-        radioProfile &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            className={styles.radioSimInteractive}
-            role="dialog"
-            aria-modal="true"
-            aria-label="EdgeTX interactive simulator"
-          >
-            <div className={styles.radioSimInteractiveBar}>
-              <span className={styles.radioSimFullscreenMeta}>
-                {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX WASM · {previewDims.layout} z
-                {previewDims.zone}
-                {live && state.phase === "running" && (
-                  <span className={styles.radioSimLiveTag}> · Live mock telemetry</span>
-                )}
-              </span>
-              <button
-                type="button"
-                className={styles.radioSimFullscreenClose}
-                onClick={() => setOverlayOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <div className={styles.radioSimInteractiveBody}>
-              <div className={styles.radioSimInteractiveStage}>
-                <SimulatorThemeProvider theme="dark">
-                  <Simulator
-                    radio={radioProfile}
-                    frameData={frameData}
-                    simState={simState}
-                    keyboardMode={keyboardMode}
-                    onInput={stableSendInput}
-                  />
-                </SimulatorThemeProvider>
-              </div>
-            </div>
-            <p className={styles.radioSimFullscreenHint}>
-              Double-tap widget for fullscreen · Esc to close · Arrow keys = rotary encoder
-            </p>
-          </div>,
-          document.body
-        )}
+      {overlayOpen && radioProfile && (
+        <SimInteractiveOverlay
+          radioProfile={radioProfile}
+          previewDims={previewDims}
+          live={live}
+          running={state.phase === "running"}
+          simState={simState}
+          keyboardMode={keyboardMode}
+          onClose={() => setOverlayOpen(false)}
+          onInput={stableSendInput}
+          subscribeFrames={subscribeFrames}
+        />
+      )}
     </>
   );
 }

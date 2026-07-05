@@ -47,7 +47,7 @@ export function CollapsibleAside({
       data-collapsed={collapsed || undefined}
     >
       <div className={styles.inner} aria-hidden={collapsed}>
-        {children}
+        {!collapsed ? children : null}
       </div>
 
       {collapsed && (
