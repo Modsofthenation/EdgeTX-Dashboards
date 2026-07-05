@@ -69,7 +69,27 @@ local BG_DIM = 10
 lcd.drawFilledRectangle(0, bodyY, w, bodyH, BLACK, BG_DIM)
 ```
 
-Define `BG_DIM` in `create()` and reuse in `refresh()`.
+## Unit labels — fixed row strides (no suffix math)
+
+EdgeTX has **no text-width API**. Do **not** position units with `#str * charW` or on the same row as `valueY + 4` — values overlap on radio.
+
+```lua
+-- WRONG — overlaps digits
+lcd.drawText(x, y, ampsStr, MIDSIZE + CYAN)
+lcd.drawText(x + math.floor(#ampsStr * 9) + 4, y + 4, "A", SMLSIZE + LIGHTGREY)
+
+-- RIGHT — label, value, unit on separate rows (+16 / +16 / +18 strides)
+local y0 = cardY + 10
+lcd.drawText(x, y0, "POWER", SMLSIZE + LIGHTGREY)
+lcd.drawText(x, y0 + 16, ampsStr, MIDSIZE + CYAN)
+lcd.drawText(x, y0 + 32, "A", SMLSIZE + LIGHTGREY)
+
+-- Gauge: two CENTER lines only
+lcd.drawText(cx, cy - 14, voltsStr, DBLSIZE + CENTER + ORANGE)
+lcd.drawText(cx, cy + 10, "V", SMLSIZE + CENTER + LIGHTGREY)
+```
+
+See `tx15-dashboard-ui.md` stride table and `model-hero-dashboard.md`.
 
 ## math.deg — not available on EdgeTX Lua
 

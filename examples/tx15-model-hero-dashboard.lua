@@ -273,13 +273,8 @@ local function refresh(widget, event, touchState)
 
   lcd.drawFilledCircle(gaugeCx, gaugeCy, rIn - 4, BLACK)
 
-  lcd.drawText(gaugeCx, gaugeCy - 18, voltsStr, DBLSIZE + CENTER + ORANGE)
-  lcd.drawText(gaugeCx, gaugeCy + 2, "V", SMLSIZE + CENTER + LIGHTGREY)
-  lcd.drawText(gaugeCx, gaugeCy + 18, capaStr, MIDSIZE + CENTER + WHITE)
-  lcd.drawText(gaugeCx, gaugeCy + 34, "mAh", SMLSIZE + CENTER + LIGHTGREY)
-  if batPctVal > 0 then
-    lcd.drawText(gaugeCx, gaugeCy + 50, batPctStr, SMLSIZE + CENTER + ORANGE)
-  end
+  lcd.drawText(gaugeCx, gaugeCy - 14, voltsStr, DBLSIZE + CENTER + ORANGE)
+  lcd.drawText(gaugeCx, gaugeCy + 10, "V", SMLSIZE + CENTER + LIGHTGREY)
 
   local cardX = heroW + pad
   local cardW = w - cardX - pad
@@ -295,19 +290,27 @@ local function refresh(widget, event, touchState)
 
   lcd.drawFilledRectangle(cardX, cardY, cardW, 2, MAGENTA)
 
-  lcd.drawText(cardX + 12, cardY + 10, "POWER", SMLSIZE + LIGHTGREY)
-  lcd.drawText(cardX + 12, cardY + 26, ampsStr, MIDSIZE + CYAN)
-  lcd.drawText(cardX + 12, cardY + 46, "A", SMLSIZE + LIGHTGREY)
+  local valX = cardX + 12
+  local y0 = cardY + 10
+  local yPowerVal = y0 + 16
+  local yPowerUnit = yPowerVal + 16
+  local yUsedLbl = yPowerUnit + 18
+  local yUsedVal = yUsedLbl + 16
+  local yUsedUnit = yUsedVal + 16
 
-  lcd.drawText(cardX + 12, cardY + 68, "USED", SMLSIZE + LIGHTGREY)
-  lcd.drawText(cardX + 12, cardY + 84, capaStr, MIDSIZE + ORANGE)
-  lcd.drawText(cardX + 12, cardY + 104, "mAh", SMLSIZE + LIGHTGREY)
+  lcd.drawText(valX, y0, "POWER", SMLSIZE + LIGHTGREY)
+  lcd.drawText(valX, yPowerVal, ampsStr, MIDSIZE + CYAN)
+  lcd.drawText(valX, yPowerUnit, "A", SMLSIZE + LIGHTGREY)
+
+  lcd.drawText(valX, yUsedLbl, "USED", SMLSIZE + LIGHTGREY)
+  lcd.drawText(valX, yUsedVal, capaStr, MIDSIZE + ORANGE)
+  lcd.drawText(valX, yUsedUnit, "mAh", SMLSIZE + LIGHTGREY)
 
   if widget.options.ShowAtt == 1 then
-    lcd.drawText(cardX + cardW - 12, cardY + 26, rollStr, MIDSIZE + RIGHT + WHITE)
-    lcd.drawText(cardX + cardW - 12, cardY + 42, "R", SMLSIZE + RIGHT + LIGHTGREY)
-    lcd.drawText(cardX + cardW - 12, cardY + 68, ptchStr, MIDSIZE + RIGHT + WHITE)
-    lcd.drawText(cardX + cardW - 12, cardY + 84, "P", SMLSIZE + RIGHT + LIGHTGREY)
+    lcd.drawText(cardX + cardW - 12, yPowerVal, rollStr, MIDSIZE + RIGHT + WHITE)
+    lcd.drawText(cardX + cardW - 12, yPowerUnit, "R", SMLSIZE + RIGHT + LIGHTGREY)
+    lcd.drawText(cardX + cardW - 12, yUsedVal, ptchStr, MIDSIZE + RIGHT + WHITE)
+    lcd.drawText(cardX + cardW - 12, yUsedUnit, "P", SMLSIZE + RIGHT + LIGHTGREY)
   end
 
   if widget.options.ShowGPS == 1 then

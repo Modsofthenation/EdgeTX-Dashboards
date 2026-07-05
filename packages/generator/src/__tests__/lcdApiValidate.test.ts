@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateDrawAnnulusRadiusOrder, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateRoundedPanelArcCalls } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateDrawAnnulusRadiusOrder, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -119,5 +119,20 @@ end`;
     const source = `lcd.drawAnnulus(120, 140, 54, 42, 0, 270, GREY)`;
     const issues = validateDrawAnnulusRadiusOrder(source);
     assert.equal(issues.length, 1);
+  });
+});
+
+describe("validateUnitSuffixPositioning", () => {
+  it("rejects #str*charW unit offset math", () => {
+    const source = `local x = valX + math.floor(#ampsStr * 9) + 4`;
+    const issues = validateUnitSuffixPositioning(source);
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].message, /fixed vertical rows/);
+  });
+
+  it("accepts fixed stride row layout", () => {
+    const source = `local yPowerUnit = yPowerVal + 16
+lcd.drawText(valX, yPowerUnit, "A", SMLSIZE + LIGHTGREY)`;
+    assert.deepEqual(validateUnitSuffixPositioning(source), []);
   });
 });

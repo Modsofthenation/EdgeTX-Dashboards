@@ -40,9 +40,18 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 | Primary | `MIDSIZE` | Section values, link quality % |
 | Label | `SMLSIZE` | Field names, units, footer |
 
-- **Label above value** — Draw label at `y`, value at `y + 14` (not inline `"Batt 12.6V"` unless space is tight).
-- **Units** — Separate from value: `"12.6"` + SMLSIZE `" V"` on the **next line** (y + 28), not concatenated in one drawText.
-- **Minimum vertical spacing** — Labels at y+8, hero values at y+22 or y+28, secondary at y+44 or y+72. Never stack two MIDSIZE/DBLSIZE lines closer than 18px apart.
+- **Label → value → unit** — Use **fixed vertical strides** (no `#str * charW` suffix math — EdgeTX has no text-width API and it overlaps on radio):
+
+| Step | Stride | Example |
+|------|--------|---------|
+| SMLSIZE label → MIDSIZE value | **+16px** | `yVal = yLbl + 16` |
+| MIDSIZE value → SMLSIZE unit | **+16px** | `yUnit = yVal + 16` |
+| unit → next section label | **+18px** | `yNextLbl = yUnit + 18` |
+| DBLSIZE value → SMLSIZE unit (gauge, both CENTER) | value at `cy - 14`, unit at `cy + 10` | two lines only |
+
+- **Same `x` for label, value, and unit** (LEFT align in cards). **CENTER** both lines in a rotary gauge.
+- **Never** place unit at `valueY + 4` on the same row or use `#valueStr * charW` — causes overlap.
+- **Minimum vertical spacing** — Never stack two MIDSIZE/DBLSIZE lines closer than **16px** apart (line tops).
 - Avoid more than **2 DBLSIZE** strings on screen.
 
 ## Web preview compatibility

@@ -316,6 +316,24 @@ export function validateDrawAnnulusRadiusOrder(source: string): ValidationIssue[
   return issues;
 }
 
+/** Reject fragile #str*charW unit positioning — overlaps on TX15 (no text-width API). */
+export function validateUnitSuffixPositioning(source: string): ValidationIssue[] {
+  const suffixMath = /math\.floor\(\s*#\w+\s*\*\s*\d+/;
+  const unitOffsetVars = /\w+UnitX\s*=/;
+
+  if (suffixMath.test(source) || unitOffsetVars.test(source)) {
+    return [
+      {
+        severity: "error",
+        message:
+          "Do not position units with #str*charW or *UnitX variables — use fixed vertical rows (label +16 value +16 unit +18 next label); see tx15-dashboard-ui.md",
+      },
+    ];
+  }
+
+  return [];
+}
+
 export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
   return [
     ...validateLcdDrawLineCalls(source),
@@ -323,6 +341,7 @@ export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
     ...validateGlobalGetSizeCalls(source),
     ...validateRoundedPanelArcCalls(source),
     ...validateDrawAnnulusRadiusOrder(source),
+    ...validateUnitSuffixPositioning(source),
   ];
 }
 
