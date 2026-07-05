@@ -18,7 +18,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "generate": "node dist/cli.js",
-    "test": "npm run build && node --test dist/__tests__/generator.test.js dist/__tests__/devKit.test.js dist/__tests__/toolDisplay.test.js dist/__tests__/layoutArchetype.test.js dist/__tests__/designVariation.test.js dist/__tests__/themePalettes.test.js dist/__tests__/validate.test.js"
+    "test": "npm run build && node --test dist/__tests__/generator.test.js dist/__tests__/devKit.test.js dist/__tests__/toolDisplay.test.js dist/__tests__/layoutArchetype.test.js dist/__tests__/designVariation.test.js dist/__tests__/themePalettes.test.js dist/__tests__/roundedCorners.test.js dist/__tests__/validate.test.js"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.22",

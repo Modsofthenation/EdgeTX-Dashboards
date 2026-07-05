@@ -44,6 +44,8 @@ describe("SqliteChatRepository", () => {
       messages: [userMsg, assistantMsg],
       artifact: {
         name: "heli_dash",
+        instanceId: null,
+        version: 0,
         luaSource: "return {}",
         validated: true,
         validationIssues: [],
@@ -80,6 +82,8 @@ describe("SqliteChatRepository", () => {
     repo.updateChat(chat.id, {
       artifact: {
         name: "BfFltLogk7",
+        instanceId: null,
+        version: 0,
         luaSource: "local name = 'BfFltLogk7'",
         validated: true,
         validationIssues: [],
@@ -89,6 +93,8 @@ describe("SqliteChatRepository", () => {
     repo.updateChat(chat.id, {
       artifact: {
         name: "BfFltLogk7",
+        instanceId: null,
+        version: 0,
         luaSource: null,
         validated: false,
         validationIssues: [],

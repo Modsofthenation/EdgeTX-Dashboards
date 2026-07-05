@@ -20,6 +20,9 @@ export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   let workspaceKey = searchParams.get("instanceId") ?? searchParams.get("name");
   const sessionId = searchParams.get("sessionId");
+  const versionParam = searchParams.get("version");
+  const version =
+    versionParam !== null && versionParam !== "" ? Number.parseInt(versionParam, 10) : undefined;
   let protocol = searchParams.get("protocol");
   let radioId = searchParams.get("radioId") ?? "tx15";
 
@@ -28,7 +31,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!stored) {
       return Response.json({ error: "Session not found or expired" }, { status: 404 });
     }
-    if (!stored.session.validated) {
+    if (version === undefined && !stored.session.validated) {
       return Response.json(
         {
           error: "Widget has not passed validation",
@@ -37,8 +40,9 @@ export async function GET(request: Request): Promise<Response> {
         { status: 422 }
       );
     }
-    workspaceKey = stored.session.widgetInstanceId ?? stored.session.widgetName ?? workspaceKey;
-    protocol = stored.session.protocol;
+    workspaceKey =
+      workspaceKey ?? stored.session.widgetInstanceId ?? stored.session.widgetName ?? null;
+    protocol = protocol ?? stored.session.protocol;
     radioId = stored.session.radioId;
   }
 
@@ -67,12 +71,17 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const validation = validateWidgetRelease(safeKey, protocol, radioId);
-  if (!validation.valid) {
+  if (!validation.valid && version === undefined) {
     return Response.json({ error: "Widget failed validation", validation }, { status: 422 });
   }
 
   try {
-    const zip = await readOrBuildWidgetZip(safeKey, protocol, radioId);
+    const zip = await readOrBuildWidgetZip(
+      safeKey,
+      protocol,
+      radioId,
+      Number.isFinite(version) ? version : undefined
+    );
     if (!zip) {
       return Response.json({ error: "Widget zip not found" }, { status: 404 });
     }

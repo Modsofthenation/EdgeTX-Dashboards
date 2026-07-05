@@ -58,7 +58,7 @@ export const THEME_COLOR_MAP: Record<string, string> = {
 };
 
 export interface PreviewDrawCommand {
-  kind: "clear" | "text" | "filledRect" | "rect" | "line" | "bitmap" | "gauge" | "circle" | "arc" | "annulus";
+  kind: "clear" | "text" | "filledRect" | "rect" | "line" | "bitmap" | "gauge" | "circle" | "filledCircle" | "arc" | "annulus";
   color?: string;
   trackColor?: string;
   x?: number;
@@ -89,6 +89,63 @@ const FONT_SIZES: Record<string, number> = {
 type EvalCtx = Record<string, number | string>;
 type EvalDims = { zoneW: number; zoneH: number; lcdW: number; lcdH: number; optionIndex?: Map<number, string> };
 
+export interface PreviewParseMeta {
+  warnings: string[];
+  skippedTextCount: number;
+  zeroCoordCount: number;
+}
+
+let lastPreviewParseMeta: PreviewParseMeta = {
+  warnings: [],
+  skippedTextCount: 0,
+  zeroCoordCount: 0,
+};
+
+export function getLastPreviewParseMeta(): PreviewParseMeta {
+  return lastPreviewParseMeta;
+}
+
+const EDGE_COLOR_NAMES = Object.keys(COLOR_MAP).sort((a, b) => b.length - a.length) as EdgeColor[];
+
+function substituteCtxNumbers(expr: string, ctx: EvalCtx): string {
+  let e = expr;
+  const keys = Object.keys(ctx)
+    .filter((k) => typeof ctx[k] === "number")
+    .sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    e = e.replace(new RegExp(`\\b${k}\\b(?!\\.)`, "g"), String(ctx[k]));
+  }
+  return e;
+}
+
+function substituteDimensionAliases(expr: string, dims: EvalDims): string {
+  return expr
+    .replace(/\bLCD_W\b/g, String(dims.lcdW))
+    .replace(/\bLCD_H\b/g, String(dims.lcdH))
+    .replace(/\bzone\.w\b/g, String(dims.zoneW))
+    .replace(/\bzone\.h\b/g, String(dims.zoneH))
+    .replace(/(?<![a-zA-Z0-9_])w(?![a-zA-Z0-9_])/g, String(dims.zoneW))
+    .replace(/(?<![a-zA-Z0-9_])h(?![a-zA-Z0-9_])/g, String(dims.zoneH));
+}
+
+function evalAdditiveTerms(expr: string, ctx: EvalCtx, dims: EvalDims): number | null {
+  let depth = 0;
+  for (let i = expr.length - 1; i >= 0; i--) {
+    const ch = expr[i];
+    if (ch === ")") depth++;
+    else if (ch === "(") depth--;
+    else if (depth === 0 && (ch === "+" || ch === "-") && i > 0) {
+      const left = expr.slice(0, i).trim();
+      const right = expr.slice(i + 1).trim();
+      if (!left || !right) continue;
+      const l = evalNumberExpr(left, ctx, dims);
+      const r = evalNumberExpr(right, ctx, dims);
+      return ch === "+" ? l + r : l - r;
+    }
+  }
+  return null;
+}
+
 function buildSrcSensorMap(source: string): Map<string, string> {
   const map = new Map<string, string>();
   const createBlock = source.match(/src\s*=\s*\{([\s\S]*?)\}/);
@@ -100,9 +157,42 @@ function buildSrcSensorMap(source: string): Map<string, string> {
   return map;
 }
 
-function resolveColor(flags: string, rgbMap: Record<string, string>, fallback = "#ffffff"): string {
-  for (const c of Object.keys(COLOR_MAP) as EdgeColor[]) {
-    if (flags.includes(c)) return COLOR_MAP[c];
+function resolveColorToken(
+  token: string,
+  rgbMap: Record<string, string>,
+  ctx: EvalCtx,
+  fallback: string
+): string | null {
+  if (token in COLOR_MAP) return COLOR_MAP[token as EdgeColor];
+  if (token in THEME_COLOR_MAP) return THEME_COLOR_MAP[token];
+  if (rgbMap[token]) return rgbMap[token];
+  if (token in ctx) {
+    const resolved = String(ctx[token]);
+    if (resolved in COLOR_MAP) return COLOR_MAP[resolved as EdgeColor];
+    if (resolved in THEME_COLOR_MAP) return THEME_COLOR_MAP[resolved];
+    if (rgbMap[resolved]) return rgbMap[resolved];
+  }
+  return null;
+}
+
+function resolveColor(
+  flags: string,
+  rgbMap: Record<string, string>,
+  ctx: EvalCtx = {},
+  fallback = "#ffffff"
+): string {
+  const tokens = flags
+    .split("+")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  for (const token of tokens) {
+    const color = resolveColorToken(token, rgbMap, ctx, fallback);
+    if (color) return color;
+  }
+
+  for (const name of EDGE_COLOR_NAMES) {
+    if (flags.includes(name)) return COLOR_MAP[name];
   }
   for (const [name, hex] of Object.entries(THEME_COLOR_MAP)) {
     if (flags.includes(name)) return hex;
@@ -131,15 +221,15 @@ function resolveTextAlign(flags: string): "left" | "center" | "right" {
   return "left";
 }
 
+function rgbToHex(r: number, g: number, b: number): string {
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
 function buildRgbColorMap(source: string): Record<string, string> {
   const map: Record<string, string> = {};
-  for (const m of source.matchAll(
-    /local\s+(\w+)\s*=\s*lcd\.RGB\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/g
-  )) {
-    const r = Number(m[2]);
-    const g = Number(m[3]);
-    const b = Number(m[4]);
-    map[m[1]] = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  const rgbPattern = /(\w+)\s*=\s*lcd\.RGB\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/g;
+  for (const m of source.matchAll(rgbPattern)) {
+    map[m[1]] = rgbToHex(Number(m[2]), Number(m[3]), Number(m[4]));
   }
   return map;
 }
@@ -158,6 +248,9 @@ function seedWidgetContext(source: string, ctx: EvalCtx): void {
     ctx[m[1]] = Number(m[2]);
   }
   ctx.timerSec = 154;
+  if (/model\.getTimer\s*\(\s*0\s*\)/.test(source)) {
+    ctx.tInfo = 1;
+  }
 }
 
 function resolveFontSize(flags: string): number {
@@ -228,10 +321,9 @@ function evalBoolExpr(expr: string, ctx: EvalCtx, dims: EvalDims): boolean {
   if (dims.optionIndex) {
     e = substituteWidgetOptions(e, ctx, dims.optionIndex);
   }
-  e = e.replace(/\bLCD_W\b/g, String(dims.lcdW));
-  e = e.replace(/\bLCD_H\b/g, String(dims.lcdH));
-  e = e.replace(/\bw\b/g, String(dims.zoneW));
-  e = e.replace(/\bh\b/g, String(dims.zoneH));
+  e = e.replace(/\btInfo\.value\b/g, String(ctx.timerSec ?? 154));
+  e = substituteCtxNumbers(e, ctx);
+  e = substituteDimensionAliases(e, dims);
   e = e.replace(/~=/g, "!=");
   e = e.replace(/type\s*\(\s*(\w+)\s*\)\s*==\s*"string"/g, (_, name) =>
     typeof ctx[name] === "string" ? "true" : "false"
@@ -241,9 +333,9 @@ function evalBoolExpr(expr: string, ctx: EvalCtx, dims: EvalDims): boolean {
   );
   for (const [k, v] of Object.entries(ctx)) {
     if (typeof v === "number") {
-      e = e.replace(new RegExp(`\\b${k}\\b`, "g"), String(v));
+      e = e.replace(new RegExp(`\\b${k}\\b(?!\\.)`, "g"), String(v));
     } else if (typeof v === "string") {
-      e = e.replace(new RegExp(`\\b${k}\\b`, "g"), JSON.stringify(v));
+      e = e.replace(new RegExp(`\\b${k}\\b(?!\\.)`, "g"), JSON.stringify(v));
     }
   }
   e = e.replace(/\band\b/g, "&&");
@@ -342,30 +434,27 @@ function evalNumberExpr(expr: string, ctx: EvalCtx, dims: EvalDims): number {
   if (dims.optionIndex) {
     e = substituteWidgetOptions(e, ctx, dims.optionIndex);
   }
-  e = e.replace(/\bLCD_W\b/g, String(dims.lcdW));
-  e = e.replace(/\bLCD_H\b/g, String(dims.lcdH));
-  e = e.replace(/\bw\b/g, String(dims.zoneW));
-  e = e.replace(/\bh\b/g, String(dims.zoneH));
-  for (const [k, v] of Object.entries(ctx)) {
-    if (typeof v === "number") {
-      e = e.replace(new RegExp(`\\b${k}\\b`, "g"), String(v));
-    }
-  }
+  e = substituteCtxNumbers(e, ctx);
+  e = substituteDimensionAliases(e, dims);
   e = replaceMathCalls(e, ctx, dims);
   e = e.replace(/~=/g, "!=");
   if (/[<>=!]/.test(e) || /\band\b|\bor\b/.test(e)) {
     try {
-      return evalBoolExpr(e, ctx, dims) ? 1 : 0;
+      return evalBoolExpr(expr, ctx, dims) ? 1 : 0;
     } catch {
       return 0;
     }
   }
-  if (/^[\d\s+\-*/().]+$/.test(e)) {
+  if (/^[\d\s+\-*/%.()]+$/.test(e)) {
     try {
       return Function(`"use strict"; return (${e})`)() as number;
     } catch {
       return 0;
     }
+  }
+  if (/[a-zA-Z_]/.test(e)) {
+    const additive = evalAdditiveTerms(e, ctx, dims);
+    if (additive !== null && Number.isFinite(additive)) return additive;
   }
   const n = Number(e);
   return Number.isFinite(n) ? n : 0;
@@ -451,14 +540,56 @@ function evalStringFormat(expr: string, ctx: EvalCtx, dims: EvalDims): string | 
   const quoteEnd = inner.indexOf('"', 1);
   if (quoteEnd < 0) return null;
   const fmt = inner.slice(1, quoteEnd);
-  const argExpr = inner.slice(quoteEnd + 1).replace(/^,\s*/, "").trim();
-  if (!argExpr) return null;
+  const argsSource = inner.slice(quoteEnd + 1).replace(/^,\s*/, "").trim();
+  if (!argsSource) return null;
 
-  const arg = evalNumberExpr(argExpr, ctx, dims);
+  const args = splitTopLevelArgs(argsSource).map((arg) => evalNumberExpr(arg, ctx, dims));
   let out = fmt;
-  out = out.replace(/%\.(\d+)f/g, (_, digits) => arg.toFixed(Number(digits)));
-  out = out.replace(/%d/g, String(Math.round(arg)));
+  let argIndex = 0;
+  out = out.replace(/%0(\d+)d/g, (_, width) => {
+    const value = args[argIndex++] ?? 0;
+    return String(Math.round(value)).padStart(Number(width), "0");
+  });
+  out = out.replace(/%\.(\d+)f/g, (_, digits) => {
+    const value = args[argIndex++] ?? 0;
+    return value.toFixed(Number(digits));
+  });
+  out = out.replace(/%d/g, () => String(Math.round(args[argIndex++] ?? 0)));
   return out;
+}
+
+function splitTopLevelArgs(source: string): string[] {
+  const args: string[] = [];
+  let current = "";
+  let depth = 0;
+  let i = 0;
+
+  while (i < source.length) {
+    const ch = source[i];
+    if (ch === "(") {
+      depth++;
+      current += ch;
+      i++;
+      continue;
+    }
+    if (ch === ")") {
+      depth--;
+      current += ch;
+      i++;
+      continue;
+    }
+    if (ch === "," && depth === 0) {
+      args.push(current.trim());
+      current = "";
+      i++;
+      continue;
+    }
+    current += ch;
+    i++;
+  }
+
+  if (current.trim()) args.push(current.trim());
+  return args;
 }
 
 function evalTelem(
@@ -554,6 +685,11 @@ function evalValue(
     return ctx[expr];
   }
 
+  const timerMember = expr.match(/^tInfo\.value$/);
+  if (timerMember) {
+    return ctx.timerSec ?? 154;
+  }
+
   if (expr === "LCD_W") return dims.lcdW;
   if (expr === "LCD_H") return dims.lcdH;
 
@@ -565,7 +701,7 @@ function evalValue(
     return Number(expr);
   }
 
-  if (/^[\w\s\d.+\-*/()]+$/.test(expr)) {
+  if (/^[\w\s\d.+\-*/()%]+$/.test(expr)) {
     const numeric = evalNumberExpr(expr, ctx, dims);
     if (Number.isFinite(numeric)) return numeric;
   }
@@ -616,6 +752,29 @@ function isRenderableText(text: string): boolean {
   return true;
 }
 
+function collectTelemAssignments(
+  body: string,
+  ctx: EvalCtx,
+  dims: EvalDims,
+  srcMap: Map<string, string>,
+  mock: MockTelemetry
+): void {
+  for (const line of body.split("\n")) {
+    const trimmed = line.trim();
+    const localMatch = trimmed.match(/^(?:local\s+)?(\w+)\s*=\s*(.+)$/);
+    if (!localMatch) continue;
+    const [, name, expr] = localMatch;
+    if (!expr.includes("telem(") && !expr.includes("model.getTimer")) continue;
+    if (expr.includes("model.getTimer")) {
+      ctx.timerSec = ctx.timerSec ?? 154;
+      continue;
+    }
+    const value = evalValue(expr, ctx, dims, srcMap, mock);
+    if (typeof value === "string" && (value.includes("widget.") || value.includes("telem("))) continue;
+    ctx[name] = value;
+  }
+}
+
 function collectAssignments(
   body: string,
   ctx: EvalCtx,
@@ -623,23 +782,74 @@ function collectAssignments(
   srcMap: Map<string, string>,
   mock: MockTelemetry
 ): void {
-  for (let pass = 0; pass < 6; pass++) {
+  const applyLine = (trimmed: string): boolean => {
+    const localMatch = trimmed.match(/^(?:local\s+)?(\w+)\s*=\s*(.+)$/);
+    if (!localMatch) return false;
+
+    const [, name, expr] = localMatch;
+    if (expr.includes("model.getTimer")) {
+      ctx.timerSec = ctx.timerSec ?? 154;
+      return false;
+    }
+    if (
+      name === "timerVal" &&
+      expr.trim() === "0" &&
+      typeof ctx.timerVal === "number" &&
+      ctx.timerVal > 0
+    ) {
+      return false;
+    }
+    if (
+      name === "modelBandH" &&
+      expr.trim() === "0" &&
+      typeof ctx.modelBandH === "number" &&
+      ctx.modelBandH > 0
+    ) {
+      return false;
+    }
+    const trimmedExpr = expr.trim();
+    if (
+      (trimmedExpr === '"--"' || trimmedExpr === "'--'" || trimmedExpr === '"---"' || trimmedExpr === "'---'") &&
+      typeof ctx[name] === "string" &&
+      ctx[name] !== "--" &&
+      ctx[name] !== "---"
+    ) {
+      return false;
+    }
+    if (expr.startsWith("function") || expr.startsWith("{")) return false;
+    if (/^widget\.\w+$/.test(expr.trim())) return false;
+
+    const value = evalValue(expr, ctx, dims, srcMap, mock);
+    if (typeof value === "string" && looksLikeUnevaluated(value)) return false;
+    if (typeof value === "string" && (value.includes("widget.") || value.includes("telem("))) {
+      return false;
+    }
+    if (typeof value === "string" && value.includes("..")) return false;
+    if (ctx[name] === value) return false;
+    ctx[name] = value;
+    return true;
+  };
+
+  for (let pass = 0; pass < 20; pass++) {
+    let changed = false;
+    let ifDepth = 0;
     for (const line of body.split("\n")) {
       const trimmed = line.trim();
-      const localMatch = trimmed.match(/^(?:local\s+)?(\w+)\s*=\s*(.+)$/);
-      if (!localMatch) continue;
-
-      const [, name, expr] = localMatch;
-      if (expr.startsWith("function") || expr.startsWith("{")) continue;
-
-      const value = evalValue(expr, ctx, dims, srcMap, mock);
-      if (typeof value === "string" && looksLikeUnevaluated(value)) continue;
-      if (typeof value === "string" && (value.includes("widget.") || value.includes("telem("))) {
+      if (/^if\s+.+\sthen\s*$/.test(trimmed)) {
+        ifDepth++;
         continue;
       }
-      if (typeof value === "string" && value.includes("..")) continue;
-      ctx[name] = value;
+      if (trimmed === "else" || trimmed.startsWith("elseif ")) {
+        continue;
+      }
+      if (trimmed === "end") {
+        ifDepth = Math.max(0, ifDepth - 1);
+        continue;
+      }
+      if (ifDepth > 0) continue;
+      if (applyLine(trimmed)) changed = true;
     }
+    if (!changed) break;
   }
 }
 
@@ -710,46 +920,122 @@ function parseLcdCall(line: string, method: string): string[] | null {
   return splitCallArgs(inner);
 }
 
+/** Apply `if cond then name = expr end` on one line without rewriting the refresh body. */
+function applySingleLineConditionalAssignments(
+  body: string,
+  ctx: EvalCtx,
+  dims: EvalDims,
+  srcMap: Map<string, string>,
+  mock: MockTelemetry
+): void {
+  for (const line of body.split("\n")) {
+    const trimmed = line.trim();
+    const m = trimmed.match(/^if\s+(.+?)\s+then\s+(.+?)\s+end$/);
+    if (!m) continue;
+
+    const [, cond, stmt] = m;
+    if (!evalBoolExpr(cond, ctx, dims)) continue;
+
+    const assign = stmt.match(/^(\w+)\s*=\s*(.+)$/);
+    if (!assign) continue;
+
+    const [, name, expr] = assign;
+    const value = evalValue(expr, ctx, dims, srcMap, mock);
+    if (typeof value === "string" && looksLikeUnevaluated(value)) continue;
+    if (typeof value === "string" && (value.includes("widget.") || value.includes("telem("))) continue;
+    ctx[name] = value;
+  }
+}
+
+function skipIfBlock(lines: string[], start: number): number {
+  let depth = 1;
+  let i = start;
+  while (i < lines.length && depth > 0) {
+    const t = lines[i].trim();
+    if (/^if\s+.+\sthen\s*$/.test(t)) depth++;
+    else if (t === "end") depth--;
+    i++;
+  }
+  return i;
+}
+
+function processIfChain(
+  lines: string[],
+  start: number,
+  ctx: EvalCtx,
+  dims: EvalDims,
+  initialTaken: boolean
+): { out: string[]; next: number } {
+  let i = start;
+  let taken = initialTaken;
+  let branchDone = initialTaken;
+  const out: string[] = [];
+
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+
+    if (trimmed === "end") {
+      return { out, next: i + 1 };
+    }
+
+    const elseifMatch = trimmed.match(/^elseif\s+(.+)\sthen\s*$/);
+    if (elseifMatch) {
+      if (!branchDone) {
+        taken = evalBoolExpr(elseifMatch[1], ctx, dims);
+        if (taken) branchDone = true;
+      } else {
+        taken = false;
+      }
+      i++;
+      continue;
+    }
+
+    if (trimmed === "else" || trimmed.startsWith("else ")) {
+      if (!branchDone) {
+        taken = true;
+        branchDone = true;
+      } else {
+        taken = false;
+      }
+      i++;
+      continue;
+    }
+
+    const ifMatch = trimmed.match(/^if\s+(.+)\sthen\s*$/);
+    if (ifMatch) {
+      if (taken) {
+        const nested = processIfChain(lines, i + 1, ctx, dims, evalBoolExpr(ifMatch[1], ctx, dims));
+        out.push(...nested.out);
+        i = nested.next;
+      } else {
+        i = skipIfBlock(lines, i + 1);
+      }
+      continue;
+    }
+
+    if (taken) {
+      out.push(lines[i]);
+    }
+    i++;
+  }
+
+  return { out, next: i };
+}
+
 function processConditionals(body: string, ctx: EvalCtx, dims: EvalDims): string {
   const lines = body.split("\n");
   const out: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
+    const trimmed = lines[i].trim();
     const ifMatch = trimmed.match(/^if\s+(.+)\sthen\s*$/);
     if (ifMatch) {
-      let taken = evalBoolExpr(ifMatch[1], ctx, dims);
-      i++;
-      while (i < lines.length) {
-        const inner = lines[i];
-        const innerTrim = inner.trim();
-        if (innerTrim === "end") break;
-
-        const elseifMatch = innerTrim.match(/^elseif\s+(.+)\sthen\s*$/);
-        if (elseifMatch) {
-          if (!taken) {
-            taken = evalBoolExpr(elseifMatch[1], ctx, dims);
-          }
-          i++;
-          continue;
-        }
-
-        if (innerTrim === "else" || innerTrim.startsWith("else ")) {
-          if (!taken) taken = true;
-          else taken = false;
-          i++;
-          continue;
-        }
-
-        if (taken) out.push(inner);
-        i++;
-      }
+      const result = processIfChain(lines, i + 1, ctx, dims, evalBoolExpr(ifMatch[1], ctx, dims));
+      out.push(...result.out);
+      i = result.next - 1;
       continue;
     }
-
-    out.push(line);
+    out.push(lines[i]);
   }
 
   return out.join("\n");
@@ -757,6 +1043,9 @@ function processConditionals(body: string, ctx: EvalCtx, dims: EvalDims): string
 
 export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BASE_MOCK): PreviewDrawCommand[] {
   const commands: PreviewDrawCommand[] = [];
+  const warnings: string[] = [];
+  let skippedTextCount = 0;
+  let zeroCoordCount = 0;
   const dims = resolvePreviewDimensions(source);
   const srcMap = buildSrcSensorMap(source);
   const rgbMap = buildRgbColorMap(source);
@@ -773,8 +1062,13 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
 
   let body = extractRefreshBody(source);
   for (let pass = 0; pass < 6; pass++) {
+    collectTelemAssignments(body, ctx, evalDims, srcMap, mock);
     collectAssignments(body, ctx, evalDims, srcMap, mock);
+    applySingleLineConditionalAssignments(body, ctx, evalDims, srcMap, mock);
     body = processConditionals(body, ctx, evalDims);
+    collectAssignments(body, ctx, evalDims, srcMap, mock);
+    applySingleLineConditionalAssignments(body, ctx, evalDims, srcMap, mock);
+    collectAssignments(body, ctx, evalDims, srcMap, mock);
   }
 
   const lines = body
@@ -787,7 +1081,7 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
   for (const line of lines) {
     const clearArgs = parseLcdCall(line, "clear");
     if (clearArgs?.length === 1) {
-      bg = COLOR_MAP[clearArgs[0] as EdgeColor] ?? "#000000";
+      bg = resolveDrawColor(clearArgs[0], rgbMap);
       commands.push({ kind: "clear", color: bg });
       continue;
     }
@@ -799,15 +1093,19 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
       const text = resolveTextTemplate(textArgs[2], ctx, evalDims, srcMap, mock);
       const flags = textArgs[3] ?? "0";
       if (isRenderableText(text)) {
+        if (x === 0 && y === dims.zoneY) zeroCoordCount++;
         commands.push({
           kind: "text",
           x,
           y,
           text,
-          color: resolveColor(flags, rgbMap),
+          color: resolveColor(flags, rgbMap, ctx),
           fontSize: resolveFontSize(flags),
           textAlign: resolveTextAlign(flags),
         });
+      } else {
+        skippedTextCount++;
+        warnings.push(`Skipped unrenderable drawText: ${textArgs[2].trim().slice(0, 40)}`);
       }
       continue;
     }
@@ -894,6 +1192,19 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
       continue;
     }
 
+    const filledCircleArgs = parseLcdCall(line, "drawFilledCircle");
+    if (filledCircleArgs && filledCircleArgs.length >= 3) {
+      const flags = filledCircleArgs[3] ?? "WHITE";
+      commands.push({
+        kind: "filledCircle",
+        x: evalNumberExpr(filledCircleArgs[0], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(filledCircleArgs[1], ctx, evalDims) + dims.zoneY,
+        r: evalNumberExpr(filledCircleArgs[2], ctx, evalDims),
+        color: resolveDrawColor(typeof flags === "string" ? flags : "WHITE", rgbMap),
+      });
+      continue;
+    }
+
     const arcArgs = parseLcdCall(line, "drawArc");
     if (arcArgs && arcArgs.length >= 5) {
       const flags = arcArgs[5] ?? "WHITE";
@@ -929,6 +1240,7 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
     commands.unshift({ kind: "clear", color: bg });
   }
 
+  lastPreviewParseMeta = { warnings, skippedTextCount, zeroCoordCount };
   return commands;
 }
 
@@ -1029,6 +1341,16 @@ export function renderPreviewCommands(
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
+        break;
+      }
+      case "filledCircle": {
+        const cx = cmd.x ?? 0;
+        const cy = cmd.y ?? 0;
+        const r = cmd.r ?? 0;
+        ctx.fillStyle = cmd.color ?? "#808080";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
       case "arc": {

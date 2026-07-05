@@ -13,15 +13,33 @@ const SUBTLE_PALETTE_NOTES = [
 export function detectVisualStyle(userPrompt: string, seed = 0): VisualStyleHints {
   const p = userPrompt.toLowerCase();
 
+  const lightTheme =
+    /white\s+background|background\s+white|light\s+background|light\s+theme|black\s+text|red\s+border/.test(p);
+
   const vibrant =
     /vibrant|colorful|colourful|neon|bright|bold color|pop of color|saturated|lively|striking/.test(
       p
     );
   const colorEmphasis =
     vibrant ||
+    lightTheme ||
     /cyan|magenta|lime|orange accent|yellow accent|custom color|colour scheme|color scheme/.test(
       p
     );
+
+  if (lightTheme && !vibrant) {
+    return {
+      vibrant: false,
+      colorEmphasis: true,
+      promptNotes: [
+        "## Light theme (user request — mandatory)",
+        "The user asked for a **light** dashboard (white/light background, dark text, or colored borders).",
+        "- Do NOT keep BLACK/DARKGREY backgrounds or WHITE text on dark cards.",
+        "- Use lcd.RGB locals in create() for C_BG, C_CARD, C_BORDER, C_TEXT and wire them through refresh().",
+        "- See the explicit color directive in the creative brief if present — it overrides the default palette.",
+      ].join("\n"),
+    };
+  }
 
   if (colorEmphasis) {
     const lines = [

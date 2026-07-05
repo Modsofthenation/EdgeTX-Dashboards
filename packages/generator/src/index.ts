@@ -35,6 +35,8 @@ export {
   readWidgetInstanceMeta,
   resolveDisplayName,
   ensureWidgetInstanceDir,
+  archiveWidgetVersion,
+  readWidgetVersionSource,
   type WidgetInstanceMeta,
 } from "./widgetInstance.js";
 export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.js";

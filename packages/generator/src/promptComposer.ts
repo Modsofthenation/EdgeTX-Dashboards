@@ -10,7 +10,9 @@ import {
   readThemePalettesGuide,
   readExampleSnippet,
   loadTelemetryCatalog,
+  readRoundedCornersGuide,
 } from "./knowledge.js";
+import { wantsRoundedCorners } from "./roundedCorners.js";
 import {
   suggestLayoutArchetype,
   readLayoutArchetypesGuide,
@@ -98,6 +100,7 @@ export function buildGenerationPrompt(
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
   const themePalettesGuide = readThemePalettesGuide();
+  const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
   const rules = readRules();
 
   const exampleFile = EXAMPLE_BY_ARCHETYPE[archetype.id];
@@ -172,6 +175,8 @@ ${designGuide}
 
 ${themePalettesGuide ? `\n## EdgeTX theme palettes and gauges (mandatory reference)\n${themePalettesGuide}` : ""}
 
+${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API only)\n${roundedCornersGuide}` : ""}
+
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling — layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
 ## Companion scripts (when user asks for tools, loggers, selectors)
@@ -241,6 +246,7 @@ export function buildRefinePrompt(
       : "";
   const companionGuide = readCompanionScriptsGuide();
   const themePalettesGuide = readThemePalettesGuide();
+  const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
 
   return `Refine the existing EdgeTX dashboard${widgetName ? ` (display name "${widgetName}")` : ""}${ctx?.widgetInstanceId ? ` in workspace \`${ctx.widgetInstanceId}\` (v${ctx.widgetVersion ?? 0})` : ""}.
 
@@ -265,6 +271,8 @@ ${archetype.layoutNotes}
 ${designGuide}
 
 ${themePalettesGuide ? `\n## EdgeTX theme palettes and gauges\n${themePalettesGuide}` : ""}
+
+${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API only)\n${roundedCornersGuide}` : ""}
 
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 

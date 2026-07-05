@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot } from "@/lib/chatTypes";
+import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export async function fetchChatList(): Promise<ChatSummary[]> {
@@ -39,6 +39,7 @@ export async function syncChatRecord(
     widgetVersion?: number;
     messages?: ChatMessage[];
     artifact?: WidgetSnapshot | null;
+    artifactVersions?: WidgetVersionEntry[];
   }
 ): Promise<StoredChat | null> {
   const payload = {
@@ -50,6 +51,7 @@ export async function syncChatRecord(
       ?.filter((message) => !message.isStreaming)
       .map(({ isStreaming: _, widget: __, ...rest }) => rest),
     artifact: input.artifact ?? null,
+    artifactVersions: input.artifactVersions,
   };
 
   let body: string;

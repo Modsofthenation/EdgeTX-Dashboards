@@ -3,6 +3,8 @@ import type { StreamEvent, TelemetryProtocol, ValidationIssue } from "@widget-ge
 import { packageWidget } from "./package.js";
 import { describeToolUse } from "./toolDisplay.js";
 import { validateWidgetForRelease } from "./validationPipeline.js";
+import { isWidgetInstanceId } from "./paths.js";
+import { archiveWidgetVersion, readWidgetInstanceMeta } from "./widgetInstance.js";
 
 export interface WidgetWorkspaceInfo {
   instanceId: string;
@@ -156,6 +158,10 @@ export async function finalizeWidgetRun(
 
   try {
     await packageWidget(workspaceKey, protocol, { radioId });
+    if (isWidgetInstanceId(workspaceKey)) {
+      const meta = readWidgetInstanceMeta(workspaceKey);
+      if (meta) archiveWidgetVersion(workspaceKey, meta.version);
+    }
     callbacks?.onEvent?.({
       type: "status",
       content: "Validation passed. Widget packaged for download.",

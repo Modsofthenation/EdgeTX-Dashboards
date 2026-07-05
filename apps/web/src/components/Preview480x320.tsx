@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { BASE_MOCK, tickMock } from "@/lib/mockTelemetry";
-import { parseLuaToDrawCommands, renderPreviewCommands } from "@/lib/luaPreviewEngine";
+import { parseLuaToDrawCommands, renderPreviewCommands, getLastPreviewParseMeta } from "@/lib/luaPreviewEngine";
 import styles from "./Preview480x320.module.css";
 
 const DEFAULT_LCD_W = 480;
@@ -57,6 +57,27 @@ export function Preview480x320({
       return [];
     }
   }, [luaSource, mock]);
+
+  const parseMeta = useMemo(() => {
+    if (!luaSource) return null;
+    return getLastPreviewParseMeta();
+  }, [luaSource, mock, commands]);
+
+  const previewHealthMessage = useMemo(() => {
+    if (!parseMeta) return null;
+    const parts: string[] = [];
+    if (parseMeta.skippedTextCount > 0) {
+      parts.push(`${parseMeta.skippedTextCount} text label(s) could not be evaluated`);
+    }
+    if (parseMeta.zeroCoordCount > 0) {
+      parts.push(`${parseMeta.zeroCoordCount} draw call(s) resolved to (0, y)`);
+    }
+    if (parseMeta.warnings.length > 0) {
+      parts.push(parseMeta.warnings[0]);
+    }
+    if (parts.length === 0) return null;
+    return `Preview approximation: ${parts.join("; ")}. Layout may differ on radio.`;
+  }, [parseMeta]);
 
   useEffect(() => {
     if (!live || !luaSource) return;
@@ -221,6 +242,9 @@ export function Preview480x320({
                 Could not parse draw commands. Preview works best with direct lcd.drawText and
                 lcd.drawFilledRectangle calls in refresh().
               </p>
+            )}
+            {luaSource && commands.length > 0 && previewHealthMessage && (
+              <p className={styles.hint}>{previewHealthMessage}</p>
             )}
           </div>
         </div>

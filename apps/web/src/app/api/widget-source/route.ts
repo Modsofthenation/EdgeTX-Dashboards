@@ -12,6 +12,9 @@ export async function GET(request: Request): Promise<Response> {
   const sessionId = searchParams.get("sessionId");
   const explicitName = searchParams.get("name");
   const explicitInstanceId = searchParams.get("instanceId");
+  const versionParam = searchParams.get("version");
+  const version =
+    versionParam !== null && versionParam !== "" ? Number.parseInt(versionParam, 10) : undefined;
 
   const resolved = resolveWidgetWorkspaceFromSession(
     sessionId,
@@ -22,7 +25,10 @@ export async function GET(request: Request): Promise<Response> {
     return new Response(null, { status: 204 });
   }
 
-  const widget = readWidgetLuaSource(resolved.workspaceKey);
+  const widget = readWidgetLuaSource(
+    resolved.workspaceKey,
+    Number.isFinite(version) ? version : undefined
+  );
   if (!widget) {
     return new Response(null, { status: 204 });
   }

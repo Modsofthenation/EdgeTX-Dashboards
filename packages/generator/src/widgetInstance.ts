@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   getGeneratedDirForKey,
@@ -65,4 +65,45 @@ export function ensureWidgetInstanceDir(
     version,
     updatedAt: Date.now(),
   });
+}
+
+export function getWidgetVersionDir(instanceId: string, version: number): string {
+  return join(getGeneratedDirForKey(sanitizeWidgetInstanceId(instanceId)), "versions", `v${version}`);
+}
+
+export function getWidgetVersionLuaPath(instanceId: string, version: number): string {
+  return join(getWidgetVersionDir(instanceId, version), "main.lua");
+}
+
+/** Immutable snapshot of main.lua after a successful generate/refine (industry-style version history). */
+export function archiveWidgetVersion(instanceId: string, version: number): boolean {
+  const id = sanitizeWidgetInstanceId(instanceId);
+  const sourcePath = getWidgetLuaPathForKey(id);
+  if (!existsSync(sourcePath)) return false;
+
+  const destDir = getWidgetVersionDir(id, version);
+  mkdirSync(destDir, { recursive: true });
+  copyFileSync(sourcePath, getWidgetVersionLuaPath(id, version));
+  return true;
+}
+
+export function readWidgetVersionSource(instanceId: string, version?: number): string | null {
+  const id = sanitizeWidgetInstanceId(instanceId);
+  if (version === undefined) {
+    const path = getWidgetLuaPathForKey(id);
+    return existsSync(path) ? readFileSync(path, "utf-8") : null;
+  }
+
+  const versionPath = getWidgetVersionLuaPath(id, version);
+  if (existsSync(versionPath)) {
+    return readFileSync(versionPath, "utf-8");
+  }
+
+  const meta = readWidgetInstanceMeta(id);
+  if (meta?.version === version) {
+    const current = getWidgetLuaPathForKey(id);
+    return existsSync(current) ? readFileSync(current, "utf-8") : null;
+  }
+
+  return null;
 }

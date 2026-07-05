@@ -44,13 +44,27 @@ function loadStubApiIndex(): Map<string, Set<string>> | null {
 
   const data = JSON.parse(readFileSync(apiPath, "utf-8")) as {
     functions?: Array<{ module?: string; name?: string }>;
+    [section: string]: unknown;
   };
 
   const index = new Map<string, Set<string>>();
-  for (const fn of data.functions ?? []) {
-    if (!fn.module || !fn.name) continue;
-    if (!index.has(fn.module)) index.set(fn.module, new Set());
-    index.get(fn.module)!.add(fn.name);
+
+  const addFunctions = (functions: Array<{ module?: string; name?: string }> | undefined) => {
+    for (const fn of functions ?? []) {
+      if (!fn.module || !fn.name) continue;
+      const mod = fn.module.toLowerCase();
+      if (!index.has(mod)) index.set(mod, new Set());
+      index.get(mod)!.add(fn.name);
+    }
+  };
+
+  addFunctions(data.functions);
+
+  for (const [key, section] of Object.entries(data)) {
+    if (key === "functions" || key === "version" || key === "generated") continue;
+    if (section && typeof section === "object" && "functions" in section) {
+      addFunctions((section as { functions?: Array<{ module?: string; name?: string }> }).functions);
+    }
   }
 
   cachedApiIndex = index;

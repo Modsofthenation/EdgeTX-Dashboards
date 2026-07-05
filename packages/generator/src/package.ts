@@ -6,6 +6,7 @@ import { getRepoRoot, loadTelemetryCatalog, readTemplate, loadRadioProfile } fro
 import { detectCompanions, listWidgetPackageEntries } from "./packageEntries.js";
 import { getGeneratedDirForKey, getWidgetLuaPathForKey, sanitizeWidgetName, isWidgetInstanceId, sanitizeWidgetInstanceId } from "./paths.js";
 import { resolveDisplayName } from "./widgetInstance.js";
+import { readWidgetVersionSource, getWidgetVersionLuaPath } from "./widgetInstance.js";
 import { assertValidForRelease } from "./validationPipeline.js";
 import { defaultWorkspace } from "./workspace.js";
 
@@ -92,25 +93,39 @@ export function renderInstallMd(
 export async function packageWidget(
   workspaceKey: string,
   protocol: TelemetryProtocol,
-  options?: { radioId?: string }
+  options?: { radioId?: string; version?: number }
 ): Promise<{ zipPath: string; widgetDir: string; widgetName: string; instanceId?: string }> {
   const radioId = options?.radioId ?? "tx15";
+  const version = options?.version;
   const widgetDir = isWidgetInstanceId(workspaceKey)
     ? getGeneratedDirForKey(sanitizeWidgetInstanceId(workspaceKey))
     : getGeneratedDirForKey(sanitizeWidgetName(workspaceKey));
-  const luaPath = getWidgetLuaPathForKey(workspaceKey);
+  const luaPath =
+    version !== undefined && isWidgetInstanceId(workspaceKey)
+      ? getWidgetVersionLuaPath(sanitizeWidgetInstanceId(workspaceKey), version)
+      : getWidgetLuaPathForKey(workspaceKey);
   const repoRoot = getRepoRoot();
 
-  const prepared = defaultWorkspace.prepareForRadio(workspaceKey, radioId);
-  if (!prepared.ok) {
-    throw new Error(prepared.message);
-  }
+  let source: string;
+  if (version !== undefined && isWidgetInstanceId(workspaceKey)) {
+    const archived = readWidgetVersionSource(workspaceKey, version);
+    if (!archived) {
+      throw new Error(`Version ${version} not found for workspace ${workspaceKey}`);
+    }
+    source = archived;
+  } else {
+    const prepared = defaultWorkspace.prepareForRadio(workspaceKey, radioId);
+    if (!prepared.ok) {
+      throw new Error(prepared.message);
+    }
+    source = prepared.source;
 
-  assertValidForRelease(workspaceKey, protocol, {
-    radioId,
-    strictTelemetry: true,
-    ensureAnnotations: false,
-  });
+    assertValidForRelease(workspaceKey, protocol, {
+      radioId,
+      strictTelemetry: true,
+      ensureAnnotations: false,
+    });
+  }
 
   const displayName = resolveDisplayName(workspaceKey);
   if (!displayName) {
@@ -118,7 +133,6 @@ export async function packageWidget(
   }
   const safeDisplay = sanitizeWidgetName(displayName);
 
-  const source = prepared.source;
   const installPath = join(widgetDir, "INSTALL.md");
   if (!existsSync(installPath)) {
     const radio = loadRadioProfile(radioId);
@@ -130,7 +144,10 @@ export async function packageWidget(
   mkdirSync(distDir, { recursive: true });
 
   const zipBaseName = isWidgetInstanceId(workspaceKey) ? sanitizeWidgetInstanceId(workspaceKey) : safeDisplay;
-  const zipPath = join(distDir, `${zipBaseName}.zip`);
+  const zipPath =
+    version !== undefined
+      ? join(distDir, `${zipBaseName}-v${version}.zip`)
+      : join(distDir, `${zipBaseName}.zip`);
 
   await new Promise<void>((resolve, reject) => {
     const output = createWriteStream(zipPath);
@@ -141,12 +158,16 @@ export async function packageWidget(
 
     archive.pipe(output);
 
-    const entries = listWidgetPackageEntries(workspaceKey);
-    if (entries.length === 0) {
+    if (version !== undefined) {
       archive.file(luaPath, { name: `WIDGETS/${safeDisplay}/main.lua` });
     } else {
-      for (const entry of entries) {
-        archive.file(entry.filePath, { name: entry.zipPath });
+      const entries = listWidgetPackageEntries(workspaceKey);
+      if (entries.length === 0) {
+        archive.file(luaPath, { name: `WIDGETS/${safeDisplay}/main.lua` });
+      } else {
+        for (const entry of entries) {
+          archive.file(entry.filePath, { name: entry.zipPath });
+        }
       }
     }
 

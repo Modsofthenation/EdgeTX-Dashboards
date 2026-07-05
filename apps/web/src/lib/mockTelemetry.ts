@@ -75,7 +75,14 @@ function round1(v: number): number {
   return Math.round(v * 10) / 10;
 }
 
+const SENSOR_ALIASES: Record<string, keyof MockTelemetry> = {
+  TRSS: "1RSS",
+  RSSI: "1RSS",
+};
+
 export function getMockForSensor(name: string, mock: MockTelemetry): string | number {
+  const alias = SENSOR_ALIASES[name];
+  if (alias) return mock[alias];
   const key = name as keyof MockTelemetry;
   if (key in mock) {
     return mock[key];

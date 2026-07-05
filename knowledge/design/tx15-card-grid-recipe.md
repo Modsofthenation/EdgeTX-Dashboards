@@ -29,11 +29,15 @@ Use this wireframe **only** when the archetype is `card-grid` or `heli-rotorflig
 
 ## Card panel pattern
 
+Square corners (default):
+
 ```lua
 lcd.drawFilledRectangle(x, y, cw, ch, DARKGREY)
 lcd.drawRectangle(x, y, cw, ch, GREY)
 lcd.drawText(x + 8, y + 6, "LINK", SMLSIZE + GREY)
 lcd.drawText(x + 8, y + 22, rqlyStr, MIDSIZE + GREEN)
 ```
+
+When the user asks for **rounded corners**, use the lcd pattern in `knowledge/design/rounded-card-panels.md` instead of square `drawRectangle` outlines.
 
 Use accent colors from the creative brief for borders and heroes — not plain GREY on every run.

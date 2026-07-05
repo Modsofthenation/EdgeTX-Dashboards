@@ -9,7 +9,7 @@ import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge
 import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.js";
 import { existsSync } from "node:fs";
 import { getWidgetLuaPathForKey } from "./paths.js";
-import { ensureWidgetInstanceDir } from "./widgetInstance.js";
+import { ensureWidgetInstanceDir, archiveWidgetVersion } from "./widgetInstance.js";
 import { resolveLocalAgentStore } from "./localAgentStore.js";
 import {
   finalizeWidgetRun,
@@ -277,7 +277,13 @@ export class WidgetGenerator {
     }
 
     if (session) {
-      session.widgetVersion = (session.widgetVersion ?? 0) + 1;
+      if (widgetInstanceId) {
+        const prevVersion = session.widgetVersion ?? 0;
+        archiveWidgetVersion(widgetInstanceId, prevVersion);
+        session.widgetVersion = prevVersion + 1;
+      } else {
+        session.widgetVersion = (session.widgetVersion ?? 0) + 1;
+      }
       this.toolDefaults.widgetVersion = session.widgetVersion;
       if (widgetInstanceId && displayName) {
         ensureWidgetInstanceDir(widgetInstanceId, displayName, session.widgetVersion);

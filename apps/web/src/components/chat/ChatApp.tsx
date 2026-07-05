@@ -32,6 +32,10 @@ export function ChatApp() {
     setEdgeTxVersion,
     running,
     artifact,
+    artifactVersions,
+    viewingVersion,
+    latestVersion,
+    selectViewingVersion,
     artifactLoading,
     sendMessage,
     startNewChat,
@@ -138,6 +142,10 @@ export function ChatApp() {
           <ArtifactPanel
             chatId={chatId}
             artifact={artifact}
+            artifactVersions={artifactVersions}
+            viewingVersion={viewingVersion}
+            latestVersion={latestVersion}
+            onSelectVersion={selectViewingVersion}
             sessionId={sessionId}
             protocol={protocol}
             running={running}

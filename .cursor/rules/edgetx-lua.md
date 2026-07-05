@@ -55,7 +55,8 @@ See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-r
 
 ## Drawing
 
-- Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawLine, drawGauge, drawCircle, drawArc, drawAnnulus, drawBitmap, etc.).
+- Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawFilledCircle, drawLine, drawGauge, drawCircle, drawArc, drawAnnulus, drawBitmap, etc.).
+- **Rounded panels:** Use `drawFilledCircle` + inset `drawFilledRectangle` bars and optional `drawArc`/`drawLine` borders per `knowledge/design/rounded-card-panels.md`. Do **not** use LVGL for rounded cards unless the user explicitly opts out of web preview.
 - Use EdgeTX literal colors (WHITE, CYAN, LIME, LIGHTGREY, …) or `lcd.RGB(r,g,b)` locals defined in `create()`. See `knowledge/design/edgetx-theme-palettes.md`.
 - Do **not** call `lcd.setColor(COLOR_THEME_*, …)` — it changes the whole radio UI.
 - **Gauges / rotary dials:** Use `lcd.drawGauge` (bar) or `lcd.drawAnnulus` / `lcd.drawArc` (rotary). Call them **directly in `refresh()`** with angle/value locals computed first — required for web preview.

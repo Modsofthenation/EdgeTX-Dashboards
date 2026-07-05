@@ -13,6 +13,52 @@ export interface WidgetSnapshot {
   validationIssues: ValidationIssue[];
 }
 
+/** Immutable snapshot stored when a generate/refine run completes. */
+export interface WidgetVersionEntry {
+  version: number;
+  name: string;
+  instanceId: string | null;
+  luaSource: string | null;
+  validated: boolean;
+  validationIssues: ValidationIssue[];
+  createdAt: number;
+  messageId?: string | null;
+}
+
+export function snapshotToVersionEntry(
+  snapshot: WidgetSnapshot,
+  createdAt = Date.now(),
+  messageId?: string | null
+): WidgetVersionEntry {
+  return {
+    version: snapshot.version,
+    name: snapshot.name,
+    instanceId: snapshot.instanceId,
+    luaSource: snapshot.luaSource,
+    validated: snapshot.validated,
+    validationIssues: snapshot.validationIssues,
+    createdAt,
+    messageId: messageId ?? null,
+  };
+}
+
+export function versionEntryToSnapshot(entry: WidgetVersionEntry): WidgetSnapshot {
+  return {
+    name: entry.name,
+    instanceId: entry.instanceId,
+    version: entry.version,
+    luaSource: entry.luaSource,
+    validated: entry.validated,
+    validationIssues: entry.validationIssues,
+  };
+}
+
+export function formatVersionOptionLabel(version: number, latestVersion: number): string {
+  if (version === 0) return "v0 — Initial generation";
+  if (version === latestVersion) return `v${version} — Latest`;
+  return `v${version} — Refine ${version}`;
+}
+
 export interface ChatSummary {
   id: string;
   title: string;
@@ -41,6 +87,7 @@ export interface StoredChat {
   updatedAt: number;
   messages: ChatMessage[];
   artifact: WidgetSnapshot | null;
+  artifactVersions: WidgetVersionEntry[];
 }
 
 export interface ChatMessage {
@@ -95,6 +142,7 @@ export async function fetchWidgetSource(
   options: {
     instanceId?: string | null;
     widgetName?: string | null;
+    version?: number;
   }
 ): Promise<{ source: string; name: string; instanceId: string | null; version: number } | null> {
   const params = new URLSearchParams();
@@ -102,10 +150,13 @@ export async function fetchWidgetSource(
     params.set("instanceId", options.instanceId);
   } else if (options.widgetName) {
     params.set("name", options.widgetName);
-  } else if (sessionId) {
+  } else if (sessionId && options.version === undefined) {
     params.set("sessionId", sessionId);
   } else {
     return null;
+  }
+  if (options.version !== undefined) {
+    params.set("version", String(options.version));
   }
 
   const res = await fetch(`/api/widget-source?${params}`);

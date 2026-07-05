@@ -1,6 +1,8 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { LayoutArchetypeHint, LayoutArchetypeId } from "./layoutArchetype.js";
-import { pickDashboardPaletteForPrompt, DASHBOARD_PALETTES, type DashboardPalette } from "./themePalettes.js";
+import { pickDashboardPaletteForPrompt, DASHBOARD_PALETTES, type DashboardPalette, buildExplicitColorDirective } from "./themePalettes.js";
+import { wantsRoundedCorners, buildRoundedCornersDirective } from "./roundedCorners.js";
+import { readRoundedCornersGuide } from "./knowledge.js";
 
 export interface ColorPalette {
   id: string;
@@ -149,6 +151,10 @@ export function buildCreativeBrief(
   const compositions = COMPOSITION_BY_ARCHETYPE[archetype.id];
   const compositionVariant = compositions[Math.floor(seed / DASHBOARD_PALETTES.length) % compositions.length];
   const metricEmphasis = pickMetricEmphasis(userPrompt, protocol, seed);
+  const explicitColors = buildExplicitColorDirective(userPrompt);
+  const roundedCorners = wantsRoundedCorners(userPrompt)
+    ? buildRoundedCornersDirective(readRoundedCornersGuide())
+    : null;
 
   const lines = [
     "## Creative brief (mandatory variety for this run)",
@@ -171,6 +177,14 @@ export function buildCreativeBrief(
     "Vary which metrics sit in which regions. Use the palette accents — not an all-grey layout unless palette is Grey Structure.",
   ];
 
+  if (explicitColors) {
+    lines.push("", explicitColors);
+  }
+
+  if (roundedCorners) {
+    lines.push("", roundedCorners);
+  }
+
   return {
     seed,
     palette,
@@ -183,7 +197,7 @@ export function buildCreativeBrief(
 /** Bump run index when refinement explicitly changes layout intent. */
 export function shouldBumpRunIndexForRefine(prompt: string): boolean {
   const p = prompt.toLowerCase();
-  return /different layout|new layout|more colorful|more colour|minimal|strip|hero|dense|rearrange|redesign|vibrant|asymmetric/.test(
+  return /different layout|new layout|more colorful|more colour|minimal|strip|hero|dense|rearrange|redesign|vibrant|asymmetric|rounded\s+corner|rounded\s+card|rounded\s+grid/.test(
     p
   );
 }

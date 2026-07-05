@@ -139,3 +139,49 @@ export function pickDashboardPaletteForPrompt(seed: number, userPrompt: string):
   }
   return pickDashboardPalette(seed);
 }
+
+/** When the user names concrete colors, emit mandatory override notes for the agent. */
+export function buildExplicitColorDirective(userPrompt: string): string | null {
+  const p = userPrompt.toLowerCase();
+  const wantsWhiteBg = /white\s+background|background\s+white|light\s+background/.test(p);
+  const wantsRedBorder = /red\s+border/.test(p);
+  const wantsBlackText = /black\s+text/.test(p);
+  const wantsCustomRgb = /lcd\.rgb\s*\(/i.test(userPrompt);
+
+  if (!wantsWhiteBg && !wantsRedBorder && !wantsBlackText && !wantsCustomRgb) {
+    return null;
+  }
+
+  const lines = [
+    "## Explicit color directive (user request — overrides palette / prior styling)",
+    "Apply these colors **everywhere** (background, cards, borders, labels, values). Do not keep dark-theme GREY/DARKGREY if the user asked for light panels.",
+    "",
+  ];
+
+  if (wantsWhiteBg) {
+    lines.push(
+      "- **Background & cards:** `C_BG = lcd.RGB(255,255,255)`, `C_CARD = lcd.RGB(255,255,255)` in `create()`, then `lcd.clear(C_BG)` and use `C_CARD` for header/footer/card fills."
+    );
+  }
+  if (wantsRedBorder) {
+    lines.push(
+      "- **Borders:** `C_BORDER = lcd.RGB(200,32,32)` (or RED) on **every** `lcd.drawRectangle` for header, footer, and cards — not GREY or BLACK."
+    );
+  }
+  if (wantsBlackText) {
+    lines.push(
+      "- **Text:** `C_TEXT = lcd.RGB(0,0,0)` and use `BLACK` / `C_TEXT` for labels and values on light cards — never WHITE or LIGHTGREY on white panels."
+    );
+  }
+  if (wantsCustomRgb) {
+    lines.push("- Honor any `lcd.RGB(r,g,b)` values the user specified literally in create().");
+  }
+
+  lines.push(
+    "",
+    "- Store colors on the widget in `create()` (`C_BG`, `C_CARD`, `C_BORDER`, `C_TEXT`, …) and assign `local C_* = widget.C_*` at the top of `refresh()`.",
+    "- The web preview reads `lcd.RGB()` assignments in create() — use them instead of only named flags like GREY/DARKGREY when the user asked custom colors."
+  );
+
+  return lines.join("\n");
+}

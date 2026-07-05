@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot } from "@/lib/chatTypes";
+import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
 import type { ChatRepository, CreateChatInput, UpdateChatInput } from "@/lib/db/chatRepository";
 
 const SCHEMA = `
@@ -41,6 +41,22 @@ CREATE TABLE IF NOT EXISTS chat_artifacts (
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_id ON chat_messages(chat_id);
 CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS chat_artifact_versions (
+  chat_id TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  instance_id TEXT,
+  lua_source TEXT,
+  validated INTEGER NOT NULL DEFAULT 0,
+  validation_issues_json TEXT NOT NULL DEFAULT '[]',
+  message_id TEXT,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (chat_id, version),
+  FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_artifact_versions_chat ON chat_artifact_versions(chat_id, version);
 `;
 
 function migrateSchema(db: Database.Database): void {
@@ -60,6 +76,28 @@ function migrateSchema(db: Database.Database): void {
   }
   if (!artifactNames.has("version")) {
     db.exec(`ALTER TABLE chat_artifacts ADD COLUMN version INTEGER NOT NULL DEFAULT 0`);
+  }
+
+  const versionsTable = db
+    .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='chat_artifact_versions'`)
+    .get();
+  if (!versionsTable) {
+    db.exec(`
+      CREATE TABLE chat_artifact_versions (
+        chat_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        instance_id TEXT,
+        lua_source TEXT,
+        validated INTEGER NOT NULL DEFAULT 0,
+        validation_issues_json TEXT NOT NULL DEFAULT '[]',
+        message_id TEXT,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, version),
+        FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+      );
+      CREATE INDEX idx_chat_artifact_versions_chat ON chat_artifact_versions(chat_id, version);
+    `);
   }
 }
 
@@ -209,6 +247,21 @@ export class SqliteChatRepository implements ChatRepository {
         }
       : null;
 
+    let artifactVersions = this.loadArtifactVersions(id);
+    if (artifactVersions.length === 0 && artifact?.luaSource) {
+      artifactVersions = [
+        {
+          version: artifact.version,
+          name: artifact.name,
+          instanceId: artifact.instanceId,
+          luaSource: artifact.luaSource,
+          validated: artifact.validated,
+          validationIssues: artifact.validationIssues,
+          createdAt: row.updated_at,
+        },
+      ];
+    }
+
     return {
       id: row.id,
       title: row.title,
@@ -224,7 +277,65 @@ export class SqliteChatRepository implements ChatRepository {
       updatedAt: row.updated_at,
       messages,
       artifact,
+      artifactVersions,
     };
+  }
+
+  private loadArtifactVersions(chatId: string): WidgetVersionEntry[] {
+    const rows = this.db
+      .prepare(
+        `SELECT version, name, instance_id, lua_source, validated, validation_issues_json, message_id, created_at
+         FROM chat_artifact_versions WHERE chat_id = ? ORDER BY version ASC`
+      )
+      .all(chatId) as Array<{
+      version: number;
+      name: string;
+      instance_id: string | null;
+      lua_source: string | null;
+      validated: number;
+      validation_issues_json: string;
+      message_id: string | null;
+      created_at: number;
+    }>;
+
+    return rows.map((row) => ({
+      version: row.version,
+      name: row.name,
+      instanceId: row.instance_id,
+      luaSource: row.lua_source,
+      validated: row.validated === 1,
+      validationIssues: JSON.parse(row.validation_issues_json) as ValidationIssue[],
+      messageId: row.message_id,
+      createdAt: row.created_at,
+    }));
+  }
+
+  private replaceArtifactVersions(chatId: string, versions: WidgetVersionEntry[]): void {
+    const deleteStmt = this.db.prepare(`DELETE FROM chat_artifact_versions WHERE chat_id = ?`);
+    const insertStmt = this.db.prepare(
+      `INSERT INTO chat_artifact_versions
+        (chat_id, version, name, instance_id, lua_source, validated, validation_issues_json, message_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+
+    const tx = this.db.transaction(() => {
+      deleteStmt.run(chatId);
+      for (const entry of versions) {
+        if (!entry.luaSource) continue;
+        insertStmt.run(
+          chatId,
+          entry.version,
+          entry.name,
+          entry.instanceId,
+          entry.luaSource,
+          entry.validated ? 1 : 0,
+          JSON.stringify(entry.validationIssues),
+          entry.messageId ?? null,
+          entry.createdAt
+        );
+      }
+    });
+    tx();
   }
 
   createChat(input: CreateChatInput): StoredChat {
@@ -304,6 +415,31 @@ export class SqliteChatRepository implements ChatRepository {
       );
   }
 
+  private mergeArtifactVersion(chatId: string, artifact: WidgetSnapshot, now: number): void {
+    this.db
+      .prepare(
+        `INSERT INTO chat_artifact_versions
+          (chat_id, version, name, instance_id, lua_source, validated, validation_issues_json, message_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+         ON CONFLICT(chat_id, version) DO UPDATE SET
+           name = excluded.name,
+           instance_id = excluded.instance_id,
+           lua_source = COALESCE(chat_artifact_versions.lua_source, excluded.lua_source),
+           validated = excluded.validated,
+           validation_issues_json = excluded.validation_issues_json`
+      )
+      .run(
+        chatId,
+        artifact.version,
+        artifact.name,
+        artifact.instanceId,
+        artifact.luaSource,
+        artifact.validated ? 1 : 0,
+        JSON.stringify(artifact.validationIssues),
+        now
+      );
+  }
+
   updateChat(id: string, input: UpdateChatInput): StoredChat | null {
     const existing = this.getChat(id);
     if (!existing) return null;
@@ -347,6 +483,14 @@ export class SqliteChatRepository implements ChatRepository {
       this.upsertArtifact(id, input.artifact);
     }
 
+    if (input.artifactVersions !== undefined) {
+      if (input.artifactVersions.length > 0) {
+        this.replaceArtifactVersions(id, input.artifactVersions);
+      }
+    } else if (input.artifact?.luaSource) {
+      this.mergeArtifactVersion(id, input.artifact, now);
+    }
+
     return this.getChat(id);
   }
 
@@ -356,7 +500,9 @@ export class SqliteChatRepository implements ChatRepository {
   }
 
   clearAll(): void {
-    this.db.exec(`DELETE FROM chat_artifacts; DELETE FROM chat_messages; DELETE FROM chats;`);
+    this.db.exec(
+      `DELETE FROM chat_artifact_versions; DELETE FROM chat_artifacts; DELETE FROM chat_messages; DELETE FROM chats;`
+    );
   }
 
   close(): void {

@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { WidgetSnapshot } from "@/lib/chatTypes";
+import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
 import { PanelCollapseButton } from "./CollapsibleAside";
+import { ArtifactVersionSelect } from "./ArtifactVersionSelect";
 import styles from "./ArtifactPanel.module.css";
 
 interface ArtifactPanelProps {
   chatId: string | null;
   artifact: WidgetSnapshot | null;
+  artifactVersions: WidgetVersionEntry[];
+  viewingVersion: number;
+  latestVersion: number;
+  onSelectVersion: (version: number) => void;
   sessionId: string | null;
   protocol: TelemetryProtocol;
   running: boolean;
@@ -23,6 +28,10 @@ interface ArtifactPanelProps {
 export function ArtifactPanel({
   chatId,
   artifact,
+  artifactVersions,
+  viewingVersion,
+  latestVersion,
+  onSelectVersion,
   sessionId,
   protocol,
   running,
@@ -37,7 +46,8 @@ export function ArtifactPanel({
 
   const showPreviewLoader = running || artifactLoading;
   const hasPreview = !!artifact?.luaSource;
-  const previewKey = `${chatId ?? "new"}-${artifact?.instanceId ?? artifact?.name ?? "empty"}-v${artifact?.version ?? 0}`;
+  const previewKey = `${chatId ?? "new"}-${artifact?.instanceId ?? artifact?.name ?? "empty"}-v${viewingVersion}`;
+  const isViewingLatest = viewingVersion === latestVersion;
 
   const errors = artifact?.validationIssues.filter((i) => i.severity === "error") ?? [];
 
@@ -51,6 +61,7 @@ export function ArtifactPanel({
       if (sessionId) params.set("sessionId", sessionId);
       else if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
       else params.set("name", artifact.name);
+      if (!isViewingLatest) params.set("version", String(viewingVersion));
 
       const res = await fetch(`/api/download?${params}`);
       if (!res.ok) {
@@ -63,7 +74,7 @@ export function ArtifactPanel({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${artifact.name}.zip`;
+      anchor.download = `${artifact.name}${isViewingLatest ? "" : `-v${viewingVersion}`}.zip`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -91,6 +102,16 @@ export function ArtifactPanel({
           </span>
         )}
       </div>
+
+      {artifact && artifactVersions.length > 1 && (
+        <ArtifactVersionSelect
+          versions={artifactVersions}
+          latestVersion={latestVersion}
+          selectedVersion={viewingVersion}
+          onSelectVersion={(v) => void onSelectVersion(v)}
+          disabled={running || artifactLoading}
+        />
+      )}
 
       {!hasPreview && !showPreviewLoader ? (
         <div className={styles.empty}>
@@ -148,7 +169,9 @@ export function ArtifactPanel({
                   disabled={!artifact.validated || downloading || showPreviewLoader}
                   onClick={() => void handleDownload()}
                 >
-                  {downloading ? "Preparing zip…" : `Download ${artifact.name}.zip`}
+                  {downloading
+                    ? "Preparing zip…"
+                    : `Download ${artifact.name}${isViewingLatest ? "" : ` v${viewingVersion}`}.zip`}
                 </button>
               </div>
               {downloadError && <p className={styles.downloadError}>{downloadError}</p>}

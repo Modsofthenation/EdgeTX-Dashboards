@@ -82,6 +82,12 @@ describe("stub-aware validation", () => {
     assert.ok(issues.some((i) => i.message.includes("notARealMethod")));
   });
 
+  it("accepts lvgl.rectangle from nested stub index", () => {
+    const issues = validateStubApiCalls("lvgl.rectangle({ x = 0, y = 0, w = 10, h = 10 })");
+    const errors = issues.filter((i) => i.severity === "error");
+    assert.equal(errors.length, 0);
+  });
+
   it("validates example widget with dev-kit pipeline", () => {
     const result = validateWidgetLua(exampleSource, {
       simulateProfile: TX15_SIMULATE_PROFILE,

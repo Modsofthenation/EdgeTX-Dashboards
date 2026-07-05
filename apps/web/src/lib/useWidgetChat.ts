@@ -32,7 +32,14 @@ import {
   type ChatSendOptions,
   type ChatSummary,
   type WidgetSnapshot,
+  type WidgetVersionEntry,
 } from "@/lib/chatTypes";
+import {
+  commitVersionSnapshot,
+  buildVersionTimeline,
+  resolveDisplayArtifact,
+  resolveLatestVersion,
+} from "@/lib/artifactVersionHistory";
 import type { StreamLine } from "@/lib/streamLines";
 
 function shouldRenderStreamEvent(type: string): boolean {
@@ -53,6 +60,8 @@ export function useWidgetChat() {
   const [edgeTxVersion, setEdgeTxVersion] = useState("2.11.0");
   const [running, setRunning] = useState(false);
   const [artifact, setArtifact] = useState<WidgetSnapshot | null>(null);
+  const [artifactVersions, setArtifactVersions] = useState<WidgetVersionEntry[]>([]);
+  const [viewingVersion, setViewingVersion] = useState<number | null>(null);
   const [artifactLoading, setArtifactLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
 
@@ -66,6 +75,8 @@ export function useWidgetChat() {
   const chatLoadGenRef = useRef(0);
   const messagesRef = useRef<ChatMessage[]>([]);
   const artifactRef = useRef<WidgetSnapshot | null>(null);
+  const artifactVersionsRef = useRef<WidgetVersionEntry[]>([]);
+  const viewingVersionRef = useRef<number | null>(null);
   const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamDraftRef = useRef<ChatMessage[] | null>(null);
   const streamFlushRef = useRef<number | null>(null);
@@ -100,6 +111,34 @@ export function useWidgetChat() {
 
   const layoutProfileId = selectedRadio?.layoutProfile ?? DEFAULT_RADIO_ID;
 
+  const latestVersion = resolveLatestVersion(artifact, artifactVersions);
+  const effectiveViewingVersion = viewingVersion ?? latestVersion;
+
+  const displayArtifact = useMemo(
+    () => resolveDisplayArtifact(effectiveViewingVersion, latestVersion, artifact, artifactVersions),
+    [effectiveViewingVersion, latestVersion, artifact, artifactVersions]
+  );
+
+  const versionTimeline = useMemo(
+    () => buildVersionTimeline(artifactVersions, latestVersion, artifact),
+    [artifactVersions, latestVersion, artifact]
+  );
+
+  const commitSnapshot = useCallback(
+    (snapshot: WidgetSnapshot, options?: { messageId?: string | null; force?: boolean }) => {
+      if (!snapshot.luaSource) return;
+      const next = commitVersionSnapshot(artifactVersionsRef.current, snapshot, options);
+      artifactVersionsRef.current = next;
+      setArtifactVersions(next);
+    },
+    []
+  );
+
+  const setArtifactVersionsTracked = useCallback((entries: WidgetVersionEntry[]) => {
+    artifactVersionsRef.current = entries;
+    setArtifactVersions(entries);
+  }, []);
+
   const persistChat = useCallback(
     async (id: string) => {
       const snapshot = artifactRef.current;
@@ -111,6 +150,7 @@ export function useWidgetChat() {
         messages: messagesRef.current,
         artifact:
           snapshot?.luaSource != null && snapshot.luaSource.length > 0 ? snapshot : undefined,
+        artifactVersions: artifactVersionsRef.current,
       });
       await refreshHistory();
     },
@@ -175,14 +215,20 @@ export function useWidgetChat() {
       validated?: boolean,
       issues?: ValidationIssue[],
       session?: string | null,
-      forChatId?: string | null
+      forChatId?: string | null,
+      options?: { version?: number; forceHistory?: boolean }
     ) => {
       const generation = ++fetchGenerationRef.current;
       const expectedChatId = forChatId ?? chatIdRef.current;
-      const fetched = await fetchWidgetSource(session ?? sessionIdRef.current, {
-        instanceId: widgetInstanceIdRef.current,
-        widgetName: name,
-      });
+      const targetVersion = options?.version;
+      const fetched = await fetchWidgetSource(
+        targetVersion !== undefined ? null : (session ?? sessionIdRef.current),
+        {
+          instanceId: widgetInstanceIdRef.current,
+          widgetName: name,
+          version: targetVersion,
+        }
+      );
       if (generation !== fetchGenerationRef.current) return;
       if (expectedChatId !== chatIdRef.current) return;
       if (!fetched) {
@@ -193,17 +239,56 @@ export function useWidgetChat() {
       widgetNameRef.current = fetched.name;
       if (fetched.instanceId) widgetInstanceIdRef.current = fetched.instanceId;
       widgetVersionRef.current = fetched.version;
-      setArtifactTracked({
+      const snapshot: WidgetSnapshot = {
         name: fetched.name,
         instanceId: fetched.instanceId,
         version: fetched.version,
         luaSource: fetched.source,
         validated: validated ?? false,
         validationIssues: issues ?? [],
-      });
+      };
+      setArtifactTracked(snapshot);
+      commitSnapshot(snapshot, { force: options?.forceHistory ?? targetVersion === undefined });
       setArtifactLoading(false);
     },
-    [setArtifactTracked]
+    [setArtifactTracked, commitSnapshot]
+  );
+
+  const selectViewingVersion = useCallback(
+    async (version: number) => {
+      viewingVersionRef.current = version;
+      setViewingVersion(version);
+
+      const entry = artifactVersionsRef.current.find((v) => v.version === version);
+      if (entry?.luaSource) return;
+
+      if (!widgetInstanceIdRef.current && !widgetNameRef.current) return;
+
+      setArtifactLoading(true);
+      try {
+        const fetched = await fetchWidgetSource(null, {
+          instanceId: widgetInstanceIdRef.current,
+          widgetName: widgetNameRef.current,
+          version,
+        });
+        if (!fetched?.source) return;
+
+        commitSnapshot(
+          {
+            name: fetched.name,
+            instanceId: fetched.instanceId,
+            version: fetched.version,
+            luaSource: fetched.source,
+            validated: entry?.validated ?? false,
+            validationIssues: entry?.validationIssues ?? [],
+          },
+          { force: false }
+        );
+      } finally {
+        setArtifactLoading(false);
+      }
+    },
+    [commitSnapshot]
   );
 
   const scheduleLoadArtifact = useCallback(
@@ -433,12 +518,13 @@ export function useWidgetChat() {
             if (name) widgetNameRef.current = name;
             if (instanceId) widgetInstanceIdRef.current = instanceId;
             widgetVersionRef.current = version;
+            setViewingVersion(null);
+            viewingVersionRef.current = null;
             setArtifactTracked((prev) =>
-              prev && name && prev.name === name
+              prev && name
                 ? {
                     ...prev,
                     instanceId: instanceId ?? prev.instanceId,
-                    version,
                     validated: finalValidated,
                     validationIssues: finalIssues,
                   }
@@ -478,13 +564,20 @@ export function useWidgetChat() {
         flushStreamDraft();
         setRunning(false);
         const activeChatId = chatIdRef.current;
+
+        const headBeforeLoad = artifactRef.current;
+        if (headBeforeLoad?.luaSource) {
+          commitSnapshot(headBeforeLoad);
+        }
+
         if (widgetNameRef.current || widgetInstanceIdRef.current) {
           await loadArtifact(
             widgetNameRef.current ?? "",
             validated,
             validationIssues,
             sessionIdRef.current,
-            activeChatId
+            activeChatId,
+            { forceHistory: true }
           );
         } else {
           setArtifactLoading(false);
@@ -511,7 +604,8 @@ export function useWidgetChat() {
       queueAssistantStreamLine,
       flushStreamDraft,
       setMessagesTracked,
-      setArtifactTracked,
+      commitSnapshot,
+      setArtifactVersionsTracked,
     ]
   );
 
@@ -534,6 +628,9 @@ export function useWidgetChat() {
 
       setArtifactLoading(true);
       setArtifactTracked(null);
+      setArtifactVersionsTracked([]);
+      setViewingVersion(null);
+      viewingVersionRef.current = null;
 
       const chat = await fetchChat(id);
       if (!chat || loadGen !== chatLoadGenRef.current) {
@@ -552,6 +649,7 @@ export function useWidgetChat() {
       setRadioId(chat.radioId);
       setEdgeTxVersion(chat.edgeTxVersion);
       setMessagesTracked(chat.messages);
+      setArtifactVersionsTracked(chat.artifactVersions ?? []);
 
       const activeSessionId = chat.sessionId;
       if (widgetNameRef.current || widgetInstanceIdRef.current) {
@@ -581,6 +679,13 @@ export function useWidgetChat() {
       // Each chat keeps its own Lua snapshot — never load from shared generated/ when a snapshot exists.
       if (chat.artifact?.luaSource) {
         setArtifactTracked(chat.artifact);
+        const latest =
+          chat.artifactVersions.at(-1)?.version ??
+          chat.artifact.version ??
+          chat.widgetVersion ??
+          0;
+        setViewingVersion(latest);
+        viewingVersionRef.current = latest;
         setArtifactLoading(false);
         return;
       }
@@ -602,7 +707,7 @@ export function useWidgetChat() {
       setArtifactTracked(null);
       setArtifactLoading(false);
     },
-    [running, loadArtifact, persistChat, setMessagesTracked, setArtifactTracked]
+    [running, loadArtifact, persistChat, setMessagesTracked, setArtifactTracked, setArtifactVersionsTracked]
   );
 
   const startNewChat = useCallback(() => {
@@ -619,9 +724,12 @@ export function useWidgetChat() {
     widgetInstanceIdRef.current = null;
     widgetVersionRef.current = 0;
     setArtifactTracked(null);
+    setArtifactVersionsTracked([]);
+    setViewingVersion(null);
+    viewingVersionRef.current = null;
     setArtifactLoading(false);
     setRunning(false);
-  }, [setMessagesTracked, setArtifactTracked]);
+  }, [setMessagesTracked, setArtifactTracked, setArtifactVersionsTracked]);
 
   const deleteChat = useCallback(
     async (id: string) => {
@@ -658,7 +766,11 @@ export function useWidgetChat() {
     edgeTxVersion,
     setEdgeTxVersion,
     running,
-    artifact,
+    artifact: displayArtifact,
+    artifactVersions: versionTimeline,
+    viewingVersion: effectiveViewingVersion,
+    latestVersion,
+    selectViewingVersion,
     artifactLoading,
     sendMessage,
     startNewChat,

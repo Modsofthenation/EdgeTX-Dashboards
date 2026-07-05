@@ -22,6 +22,7 @@ import {
   MAX_ACTIVE_SESSIONS,
   packageWidget,
   readWidgetInstanceMeta,
+  readWidgetVersionSource,
   resolveDisplayName,
   sanitizeWidgetInstanceId,
   sanitizeWidgetName,
@@ -130,13 +131,25 @@ export function resolveWidgetWorkspaceFromSession(
   return { workspaceKey: key, displayName, version };
 }
 
-export function readWidgetLuaSource(workspaceKey: string): {
+export function readWidgetLuaSource(
+  workspaceKey: string,
+  version?: number
+): {
   source: string;
   name: string;
   instanceId: string | null;
   version: number;
 } | null {
   const key = normalizeWorkspaceKey(workspaceKey);
+
+  if (isWidgetInstanceId(key) && version !== undefined) {
+    const source = readWidgetVersionSource(key, version);
+    if (!source) return null;
+    const meta = readWidgetInstanceMeta(key);
+    const displayName = meta?.displayName ?? resolveDisplayName(key) ?? key;
+    return { source, name: displayName, instanceId: key, version };
+  }
+
   const path = getWidgetLuaPathForKey(key);
   if (!existsSync(path)) return null;
 
@@ -147,7 +160,7 @@ export function readWidgetLuaSource(workspaceKey: string): {
     source: readFileSync(path, "utf-8"),
     name: displayName,
     instanceId: isWidgetInstanceId(key) ? key : null,
-    version: meta?.version ?? 0,
+    version: meta?.version ?? version ?? 0,
   };
 }
 
@@ -161,20 +174,26 @@ export function writeWidgetLuaSource(workspaceKey: string, source: string): void
 export async function readOrBuildWidgetZip(
   workspaceKey: string,
   protocol: Parameters<typeof packageWidget>[1],
-  radioId: string
+  radioId: string,
+  version?: number
 ): Promise<{ buffer: Buffer; downloadName: string } | null> {
   const key = normalizeWorkspaceKey(workspaceKey);
   const zipBaseName = isWidgetInstanceId(key) ? key : sanitizeWidgetName(key);
-  const distZip = join(getDistOutputDirectory(), `${zipBaseName}.zip`);
+  const distZip =
+    version !== undefined
+      ? join(getDistOutputDirectory(), `${zipBaseName}-v${version}.zip`)
+      : join(getDistOutputDirectory(), `${zipBaseName}.zip`);
   if (!existsSync(distZip)) {
-    await packageWidget(key, protocol, { radioId });
+    await packageWidget(key, protocol, { radioId, version });
   }
   if (!existsSync(distZip)) return null;
 
   const displayName = resolveDisplayName(key) ?? (isWidgetInstanceId(key) ? key : sanitizeWidgetName(key));
+  const downloadName =
+    version !== undefined ? `${sanitizeWidgetName(displayName)}-v${version}` : sanitizeWidgetName(displayName);
   return {
     buffer: readFileSync(distZip),
-    downloadName: sanitizeWidgetName(displayName),
+    downloadName,
   };
 }
 
