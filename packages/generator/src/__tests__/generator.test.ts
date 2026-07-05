@@ -75,6 +75,25 @@ describe("validateWidgetLua", () => {
     assert.ok(used.has("RxBt"));
   });
 
+  it("accepts rotorflight motor sensors in strict mode", () => {
+    const rotorflightSensors = loadTelemetryCatalog("rotorflight").sensors.map((s) => s.name);
+    const source = [
+      'local function cacheSource(n) return getSourceIndex(n) end',
+      "local function create() return { src = {",
+      '  hspd = cacheSource("HSpd"), rpm = cacheSource("RPM"),',
+      '  esct = cacheSource("EscT"), mott = cacheSource("MotT"),',
+      "}} end",
+      "local function refresh() end",
+      'return { name = "RfMotors", create = create, refresh = refresh }',
+    ].join("\n");
+    const result = validateWidgetLua(source, {
+      knownSensors: rotorflightSensors,
+      strictTelemetry: true,
+    });
+    const telemErrors = result.issues.filter((i) => i.message.includes("not found in selected protocol catalog"));
+    assert.deepEqual(telemErrors, []);
+  });
+
   it("warns on cluttered layout without cards", () => {
     const cluttered = `
 local function refresh(widget, event, touchState)

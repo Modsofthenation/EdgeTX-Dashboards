@@ -8,6 +8,7 @@ import {
   LAYOUT_GROUP_LABELS,
   type RadioCatalogEntry,
 } from "@/lib/radioCatalog";
+import { PROTOCOL_BADGE_LABELS } from "@/lib/protocolLabels";
 import styles from "./ChatComposer.module.css";
 
 interface ChatComposerProps {
@@ -150,6 +151,11 @@ export function ChatComposer({
             {selectedRadio.touch ? " · touch" : ""}
           </span>
         )}
+
+        <span className={styles.protocolChip} title={settingsLocked ? "Protocol is locked for this chat session" : undefined}>
+          {PROTOCOL_BADGE_LABELS[protocol]}
+          {settingsLocked ? " · locked" : ""}
+        </span>
       </div>
 
       <div className={styles.inputRow}>

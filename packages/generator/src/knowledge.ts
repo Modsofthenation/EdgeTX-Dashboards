@@ -157,6 +157,12 @@ export function readCompanionScriptsGuide(): string {
   return readFileSync(path, "utf-8");
 }
 
+export function readModelImageGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "model-image.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
 export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
   return getSimulateLayoutProfile(getLayoutProfileId(loadRadioProfile(radioId)));
 }

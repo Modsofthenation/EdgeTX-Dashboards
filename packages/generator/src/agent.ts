@@ -13,6 +13,7 @@ import {
   streamAgentRun,
   type RunCallbacks,
 } from "./orchestrator.js";
+import type { ToolSessionDefaults } from "./agentTools.js";
 
 export type { RunCallbacks };
 
@@ -20,11 +21,13 @@ export class WidgetGenerator {
   private agent: SDKAgent | null = null;
   private readonly repoRoot: string;
   private readonly apiKey: string;
+  private readonly toolDefaults: ToolSessionDefaults;
   private lastKnownWidget?: string;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, toolDefaults?: ToolSessionDefaults) {
     this.repoRoot = getRepoRoot();
     this.apiKey = apiKey ?? process.env.CURSOR_API_KEY ?? "";
+    this.toolDefaults = toolDefaults ?? {};
     if (!this.apiKey) {
       throw new Error("CURSOR_API_KEY is required");
     }
@@ -46,7 +49,7 @@ export class WidgetGenerator {
       local: {
         cwd: this.repoRoot,
         settingSources: ["project"],
-        customTools: createCustomTools(),
+        customTools: createCustomTools(this.toolDefaults),
         ...(store ? { store } : {}),
         ...(sandboxEnabled ? { sandboxOptions: { enabled: true } } : {}),
       },

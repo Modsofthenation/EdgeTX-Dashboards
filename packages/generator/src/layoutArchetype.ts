@@ -123,10 +123,10 @@ export function suggestLayoutArchetype(
     return ARCHETYPES["telemetry-dense"];
   }
 
-  const heliKeywords = /heli|rotorflight|headspeed|goblin|logo|tail|dbk|hspd|rpm/.test(p);
+  const heliKeywords = /heli|rotorflight|headspeed|goblin|logo|tail|dbk|hspd/.test(p);
   const explicitHeliBoard = /heli dashboard|dbk|rotorflight board/.test(p);
 
-  if (heliKeywords || explicitHeliBoard) {
+  if (protocol === "rotorflight" && (heliKeywords || explicitHeliBoard)) {
     if (/vibrant|colorful|colourful|neon|bright|bold color|saturated|lively/.test(p)) {
       const vibrantHeli: LayoutArchetypeId[] = ["strip-board", "hero-minimal", "telemetry-dense"];
       const idx = hashPrompt(userPrompt, seed) % vibrantHeli.length;

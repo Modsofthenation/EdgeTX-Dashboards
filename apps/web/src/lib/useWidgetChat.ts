@@ -14,6 +14,7 @@ import {
   fetchChat,
   fetchChatList,
   removeChatRecord,
+  restoreGeneratorSession,
   syncChatRecord,
 } from "@/lib/chatHistoryApi";
 import {
@@ -244,7 +245,7 @@ export function useWidgetChat() {
         streamFlushRef.current = null;
       }
 
-      const isRefine = !!sessionIdRef.current;
+      const isRefine = !!sessionIdRef.current || (!!chatIdRef.current && !!widgetNameRef.current);
 
       fetchGenerationRef.current += 1;
       if (fetchDebounceRef.current) {
@@ -255,6 +256,25 @@ export function useWidgetChat() {
       if (!isRefine) {
         widgetNameRef.current = null;
         setArtifactTracked(null);
+      } else if (chatIdRef.current && widgetNameRef.current) {
+        const restored = await restoreGeneratorSession(chatIdRef.current);
+        if (restored?.sessionId) {
+          setSessionId(restored.sessionId);
+          sessionIdRef.current = restored.sessionId;
+        } else {
+          setMessagesTracked((prev) => [
+            ...prev,
+            userMessage,
+            {
+              ...assistantMessage,
+              isStreaming: false,
+              error: true,
+              content:
+                "Session not found or expired. Reload this chat from history and try again.",
+            },
+          ]);
+          return;
+        }
       }
 
       setMessagesTracked((prev) => [...prev, userMessage, assistantMessage]);
@@ -271,7 +291,11 @@ export function useWidgetChat() {
 
       const url = isRefine ? "/api/refine" : "/api/generate";
       const body = isRefine
-        ? { sessionId: sessionIdRef.current, prompt: trimmed }
+        ? {
+            sessionId: sessionIdRef.current,
+            chatId: chatIdRef.current,
+            prompt: trimmed,
+          }
         : {
             prompt: trimmed,
             radioId: radio,
@@ -440,14 +464,27 @@ export function useWidgetChat() {
 
       chatIdRef.current = chat.id;
       setChatId(chat.id);
-      setSessionId(chat.sessionId);
-      sessionIdRef.current = chat.sessionId;
       widgetNameRef.current = chat.widgetName ?? chat.artifact?.name ?? null;
       setProtocol(chat.protocol);
       setModelId(chat.modelId);
       setRadioId(chat.radioId);
       setEdgeTxVersion(chat.edgeTxVersion);
       setMessagesTracked(chat.messages);
+
+      const activeSessionId = chat.sessionId;
+      if (widgetNameRef.current) {
+        const restored = await restoreGeneratorSession(chat.id);
+        if (restored?.sessionId) {
+          setSessionId(restored.sessionId);
+          sessionIdRef.current = restored.sessionId;
+        } else {
+          setSessionId(null);
+          sessionIdRef.current = null;
+        }
+      } else {
+        setSessionId(activeSessionId);
+        sessionIdRef.current = activeSessionId;
+      }
 
       if (chat.artifact?.luaSource) {
         const targetName = chat.widgetName ?? chat.artifact.name;
@@ -463,7 +500,7 @@ export function useWidgetChat() {
           chat.widgetName ?? chat.artifact!.name,
           chat.artifact?.validated,
           chat.artifact?.validationIssues,
-          chat.sessionId
+          sessionIdRef.current
         );
         if (loadGen === chatLoadGenRef.current && chatIdRef.current === chat.id) {
           await persistChat(chat.id);
@@ -535,6 +572,6 @@ export function useWidgetChat() {
     loadChat,
     deleteChat,
     refreshHistory,
-    canRefine: !!sessionId,
+    canRefine: !!(artifact?.name || sessionId),
   };
 }

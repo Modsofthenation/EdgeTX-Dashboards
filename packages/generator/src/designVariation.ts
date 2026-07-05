@@ -103,13 +103,19 @@ const COMPOSITION_BY_ARCHETYPE: Record<LayoutArchetypeId, string[]> = {
   ],
 };
 
-const METRIC_KEYWORDS: Array<{ pattern: RegExp; emphasis: string }> = [
+const METRIC_KEYWORDS: Array<{ pattern: RegExp; emphasis: string; rotorflightOnly?: boolean }> = [
   { pattern: /voltage|battery|cell|mah|pack/, emphasis: "Battery voltage and mAh as primary focus" },
   { pattern: /gps|altitude|alt|speed|sats/, emphasis: "GPS altitude and speed as primary focus" },
   { pattern: /link|rssi|rqly|signal/, emphasis: "Link quality and RSSI as primary focus" },
   { pattern: /timer|flight time|armed/, emphasis: "Flight timer and armed state as primary focus" },
-  { pattern: /headspeed|hspd|rpm|motor|esc|rotorflight|heli/, emphasis: "Headspeed/RPM and motor temps as primary focus" },
+  {
+    pattern: /headspeed|hspd|rotorflight|heli/,
+    emphasis: "Headspeed/RPM and motor temps as primary focus",
+    rotorflightOnly: true,
+  },
+  { pattern: /rpm|motor|esc/, emphasis: "Motor RPM and ESC telemetry as primary focus", rotorflightOnly: true },
   { pattern: /current|power|amps|watt/, emphasis: "Current and power draw as primary focus" },
+  { pattern: /logger|log viewer|flight log|history|record flight/, emphasis: "Flight logging and last-flight summary as primary focus" },
 ];
 
 const ROTORFLIGHT_METRICS = [
@@ -146,8 +152,11 @@ function pickMetricEmphasis(
   seed: number
 ): string {
   const p = userPrompt.toLowerCase();
-  for (const { pattern, emphasis } of METRIC_KEYWORDS) {
-    if (pattern.test(p)) return emphasis;
+  for (const { pattern, emphasis, rotorflightOnly } of METRIC_KEYWORDS) {
+    if (pattern.test(p)) {
+      if (rotorflightOnly && protocol !== "rotorflight") continue;
+      return emphasis;
+    }
   }
 
   const pool = protocol === "rotorflight" ? ROTORFLIGHT_METRICS : BETAFLIGHT_METRICS;
@@ -167,7 +176,7 @@ export function buildCreativeBrief(
 
   const lines = [
     "## Creative brief (mandatory variety for this run)",
-    "Follow this brief unless it **conflicts with the user's explicit request**. The user request always wins.",
+    "Follow this brief unless it **conflicts with the user's explicit request**. Layout and metrics must still obey the **selected telemetry protocol** — never use sensors from another firmware catalog.",
     "",
     `- **Run seed:** ${seed} — use it to vary metric placement, proportions, and accents; do not ignore it.`,
     `- **Layout archetype:** \`${archetype.id}\` — ${archetype.title}`,

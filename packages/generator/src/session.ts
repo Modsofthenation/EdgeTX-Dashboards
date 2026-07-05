@@ -12,6 +12,14 @@ interface StoredSession {
   busy: boolean;
 }
 
+export interface RestoreSessionInput {
+  id?: string;
+  radioId: string;
+  protocol: TelemetryProtocol;
+  modelId?: string;
+  widgetName?: string;
+}
+
 export class SessionStore {
   private sessions = new Map<string, StoredSession>();
 
@@ -26,7 +34,7 @@ export class SessionStore {
   ): GenerateSession {
     this.evictExpired();
     const id = randomUUID();
-    const generator = new WidgetGenerator();
+    const generator = new WidgetGenerator(undefined, { protocol, radioId });
     const session: GenerateSession = {
       id,
       agentId: "",
@@ -44,6 +52,44 @@ export class SessionStore {
   get(id: string): StoredSession | undefined {
     this.evictExpired();
     return this.sessions.get(id);
+  }
+
+  /** Recreate an in-memory session for a persisted chat (after TTL expiry or server restart). */
+  restoreSession(input: RestoreSessionInput): GenerateSession {
+    this.evictExpired();
+
+    const id = input.id ?? randomUUID();
+    const existing = this.sessions.get(id);
+    if (existing) {
+      if (input.widgetName) {
+        existing.session.widgetName = input.widgetName;
+        existing.generator.resolveWidgetName(input.widgetName);
+      }
+      return existing.session;
+    }
+
+    const modelId = input.modelId ?? "composer-2.5";
+    const generator = new WidgetGenerator(undefined, {
+      protocol: input.protocol,
+      radioId: input.radioId,
+    });
+    if (input.widgetName) {
+      generator.resolveWidgetName(input.widgetName);
+    }
+
+    const session: GenerateSession = {
+      id,
+      agentId: "",
+      radioId: input.radioId,
+      protocol: input.protocol,
+      modelId,
+      createdAt: Date.now(),
+      runIndex: 0,
+      variationSeed: deriveVariationSeed(id, 0),
+      widgetName: input.widgetName,
+    };
+    this.sessions.set(id, { session, generator, busy: false });
+    return session;
   }
 
   tryAcquire(id: string): StoredSession | undefined {

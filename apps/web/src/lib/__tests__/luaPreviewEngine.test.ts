@@ -93,4 +93,37 @@ describe("parseLuaToDrawCommands", () => {
     assert.ok(texts.some((t) => t?.includes("%")), `expected RQLY percent, got ${texts.join("|")}`);
     assert.ok(texts.some((t) => t?.endsWith("A")), `expected amps suffix, got ${texts.join("|")}`);
   });
+
+  it("keeps placeholder when rqly is zero (does not force 0%)", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      'local function create() return { src = { rqly = cacheSource("RQLY") } } end',
+      "local function refresh(widget)",
+      "  local rqly = telem(widget.src.rqly)",
+      '  local rqlyStr = "--"',
+      "  if rqly > 0 then",
+      '    rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%"',
+      "  end",
+      "  lcd.drawText(10, 10, rqlyStr, MIDSIZE + GREEN)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, { ...BASE_MOCK, RQLY: 0 });
+    const text = cmds.find((c) => c.kind === "text");
+    assert.equal(text?.text, "--");
+  });
+
+  it("renders drawBitmap as a model placeholder", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local function refresh(widget)",
+      "  lcd.drawBitmap(widget.modelBmp, 20, 30)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    assert.ok(cmds.some((c) => c.kind === "bitmap" && c.placeholder === "model"));
+  });
 });

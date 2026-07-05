@@ -27,7 +27,7 @@ export {
 export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.js";
 export { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.js";
 export { createCustomTools } from "./agentTools.js";
-export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS } from "./session.js";
+export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS, type RestoreSessionInput } from "./session.js";
 export {
   listAvailableModels,
   listAvailableModelIds,

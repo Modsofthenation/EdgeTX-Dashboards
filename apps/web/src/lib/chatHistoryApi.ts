@@ -68,3 +68,15 @@ export async function removeChatRecord(id: string): Promise<boolean> {
   const res = await fetch(`/api/chats/${id}`, { method: "DELETE" });
   return res.ok;
 }
+
+export async function restoreGeneratorSession(
+  chatId: string
+): Promise<{ sessionId: string; widgetName: string } | null> {
+  const res = await fetch("/api/sessions/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatId }),
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as { sessionId: string; widgetName: string };
+}

@@ -31,7 +31,7 @@ export const COLOR_MAP: Record<EdgeColor, string> = {
 };
 
 export interface PreviewDrawCommand {
-  kind: "clear" | "text" | "filledRect" | "rect" | "line";
+  kind: "clear" | "text" | "filledRect" | "rect" | "line" | "bitmap";
   color?: string;
   x?: number;
   y?: number;
@@ -39,8 +39,10 @@ export interface PreviewDrawCommand {
   h?: number;
   text?: string;
   fontSize?: number;
+  textAlign?: "left" | "center" | "right";
   x2?: number;
   y2?: number;
+  placeholder?: "model";
 }
 
 const FONT_SIZES: Record<string, number> = {
@@ -50,7 +52,7 @@ const FONT_SIZES: Record<string, number> = {
 };
 
 type EvalCtx = Record<string, number | string>;
-type EvalDims = { zoneW: number; zoneH: number; lcdW: number; lcdH: number };
+type EvalDims = { zoneW: number; zoneH: number; lcdW: number; lcdH: number; optionIndex?: Map<number, string> };
 
 function buildSrcSensorMap(source: string): Map<string, string> {
   const map = new Map<string, string>();
@@ -63,11 +65,56 @@ function buildSrcSensorMap(source: string): Map<string, string> {
   return map;
 }
 
-function resolveColor(flags: string, fallback = "#ffffff"): string {
+function resolveColor(flags: string, rgbMap: Record<string, string>, fallback = "#ffffff"): string {
   for (const c of Object.keys(COLOR_MAP) as EdgeColor[]) {
     if (flags.includes(c)) return COLOR_MAP[c];
   }
+  for (const [name, hex] of Object.entries(rgbMap)) {
+    if (flags.includes(name)) return hex;
+  }
   return fallback;
+}
+
+function resolveDrawColor(colorExpr: string, rgbMap: Record<string, string>): string {
+  const trimmed = colorExpr.trim();
+  if (trimmed in COLOR_MAP) return COLOR_MAP[trimmed as EdgeColor];
+  if (rgbMap[trimmed]) return rgbMap[trimmed];
+  return "#808080";
+}
+
+function resolveTextAlign(flags: string): "left" | "center" | "right" {
+  if (flags.includes("CENTER")) return "center";
+  if (flags.includes("RIGHT")) return "right";
+  return "left";
+}
+
+function buildRgbColorMap(source: string): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const m of source.matchAll(
+    /local\s+(\w+)\s*=\s*lcd\.RGB\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/g
+  )) {
+    const r = Number(m[2]);
+    const g = Number(m[3]);
+    const b = Number(m[4]);
+    map[m[1]] = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  }
+  return map;
+}
+
+function buildOptionIndexMap(source: string): Map<number, string> {
+  const map = new Map<number, string>();
+  let index = 1;
+  for (const m of source.matchAll(/\{\s*"([^"]+)"\s*,\s*(?:BOOL|SOURCE|VALUE|COLOR|STRING)/g)) {
+    map.set(index++, m[1]);
+  }
+  return map;
+}
+
+function seedWidgetContext(source: string, ctx: EvalCtx): void {
+  for (const m of source.matchAll(/\{\s*"([^"]+)"\s*,\s*BOOL\s*,\s*(\d+)\s*\}/g)) {
+    ctx[m[1]] = Number(m[2]);
+  }
+  ctx.timerSec = 154;
 }
 
 function resolveFontSize(flags: string): number {
@@ -135,6 +182,9 @@ function skipQuotedString(source: string, start: number): number {
 
 function evalBoolExpr(expr: string, ctx: EvalCtx, dims: EvalDims): boolean {
   let e = expr.trim();
+  if (dims.optionIndex) {
+    e = substituteWidgetOptions(e, ctx, dims.optionIndex);
+  }
   e = e.replace(/\bLCD_W\b/g, String(dims.lcdW));
   e = e.replace(/\bLCD_H\b/g, String(dims.lcdH));
   e = e.replace(/\bw\b/g, String(dims.zoneW));
@@ -246,6 +296,9 @@ function splitTopLevelArg(inner: string): [string, string] {
 
 function evalNumberExpr(expr: string, ctx: EvalCtx, dims: EvalDims): number {
   let e = expr.trim();
+  if (dims.optionIndex) {
+    e = substituteWidgetOptions(e, ctx, dims.optionIndex);
+  }
   e = e.replace(/\bLCD_W\b/g, String(dims.lcdW));
   e = e.replace(/\bLCD_H\b/g, String(dims.lcdH));
   e = e.replace(/\bw\b/g, String(dims.zoneW));
@@ -273,6 +326,42 @@ function evalNumberExpr(expr: string, ctx: EvalCtx, dims: EvalDims): number {
   }
   const n = Number(e);
   return Number.isFinite(n) ? n : 0;
+}
+
+function evalFmtDuration(expr: string, ctx: EvalCtx, dims: EvalDims): string | null {
+  const m = expr.match(/^fmtDuration\s*\(\s*(.+)\s*\)$/);
+  if (!m) return null;
+  const sec = Math.floor(evalNumberExpr(m[1], ctx, dims) + 0.5);
+  if (sec <= 0) return "--:--";
+  const mins = Math.floor(sec / 60);
+  const secs = sec % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function evalFmtTimer(expr: string, ctx: EvalCtx, dims: EvalDims): string | null {
+  const m = expr.match(/^fmtTimer\s*\(\s*(.+)\s*\)$/);
+  if (!m) return null;
+  const raw = evalNumberExpr(m[1], ctx, dims);
+  if (raw < 0) return "00:00";
+  const sec = Math.floor(raw + 0.5);
+  const mins = Math.floor(sec / 60);
+  const secs = sec % 60;
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
+function substituteWidgetOptions(expr: string, ctx: EvalCtx, optionIndex: Map<number, string>): string {
+  let e = expr;
+  e = e.replace(/widget\.options\.(\w+)/g, (_, name: string) => {
+    const value = ctx[name];
+    return typeof value === "number" ? String(value) : "0";
+  });
+  e = e.replace(/widget\.options\[(\d+)\]/g, (_, index: string) => {
+    const name = optionIndex.get(Number(index));
+    if (!name) return "0";
+    const value = ctx[name];
+    return typeof value === "number" ? String(value) : "0";
+  });
+  return e;
 }
 
 function evalFmtNum(expr: string, ctx: EvalCtx, dims: EvalDims): string | null {
@@ -399,6 +488,12 @@ function evalValue(
 
   const fmtNumVal = evalFmtNum(expr, ctx, dims);
   if (fmtNumVal !== null) return fmtNumVal;
+
+  const fmtTimerVal = evalFmtTimer(expr, ctx, dims);
+  if (fmtTimerVal !== null) return fmtTimerVal;
+
+  const fmtDurationVal = evalFmtDuration(expr, ctx, dims);
+  if (fmtDurationVal !== null) return fmtDurationVal;
 
   const formatVal = evalStringFormat(expr, ctx, dims);
   if (formatVal !== null) return formatVal;
@@ -572,50 +667,72 @@ function parseLcdCall(line: string, method: string): string[] | null {
   return splitCallArgs(inner);
 }
 
-function stripElseBranches(body: string): string {
+function processConditionals(body: string, ctx: EvalCtx, dims: EvalDims): string {
   const lines = body.split("\n");
   const out: string[] = [];
-  let skippingElse = 0;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (skippingElse > 0) {
-      if (/^\s*else\b/.test(line) || /^\s*elseif\b/.test(line)) continue;
-      if (/^\s*end\b/.test(line)) {
-        skippingElse--;
-        continue;
+
+    const ifMatch = trimmed.match(/^if\s+(.+)\sthen\s*$/);
+    if (ifMatch) {
+      let taken = evalBoolExpr(ifMatch[1], ctx, dims);
+      i++;
+      while (i < lines.length) {
+        const inner = lines[i];
+        const innerTrim = inner.trim();
+        if (innerTrim === "end") break;
+
+        const elseifMatch = innerTrim.match(/^elseif\s+(.+)\sthen\s*$/);
+        if (elseifMatch) {
+          if (!taken) {
+            taken = evalBoolExpr(elseifMatch[1], ctx, dims);
+          }
+          i++;
+          continue;
+        }
+
+        if (innerTrim === "else" || innerTrim.startsWith("else ")) {
+          if (!taken) taken = true;
+          else taken = false;
+          i++;
+          continue;
+        }
+
+        if (taken) out.push(inner);
+        i++;
       }
       continue;
     }
-    if (/^\s*else\b/.test(line)) {
-      skippingElse = 1;
-      continue;
-    }
+
     out.push(line);
   }
 
   return out.join("\n");
 }
 
-function stripConditionals(body: string): string {
-  const enabled = body.replace(/\bif\b[^\n]*\bthen\b/g, "if true then");
-  return stripElseBranches(enabled);
-}
-
 export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BASE_MOCK): PreviewDrawCommand[] {
   const commands: PreviewDrawCommand[] = [];
   const dims = resolvePreviewDimensions(source);
+  const srcMap = buildSrcSensorMap(source);
+  const rgbMap = buildRgbColorMap(source);
+  const optionIndex = buildOptionIndexMap(source);
   const evalDims: EvalDims = {
     zoneW: dims.zoneW,
     zoneH: dims.zoneH,
     lcdW: dims.lcdW,
     lcdH: dims.lcdH,
+    optionIndex,
   };
-  const srcMap = buildSrcSensorMap(source);
-  const body = stripConditionals(extractRefreshBody(source));
   const ctx = buildContext(source, mock);
+  seedWidgetContext(source, ctx);
 
-  collectAssignments(body, ctx, evalDims, srcMap, mock);
+  let body = extractRefreshBody(source);
+  for (let pass = 0; pass < 6; pass++) {
+    collectAssignments(body, ctx, evalDims, srcMap, mock);
+    body = processConditionals(body, ctx, evalDims);
+  }
 
   const lines = body
     .split("\n")
@@ -644,10 +761,38 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
           x,
           y,
           text,
-          color: resolveColor(flags),
+          color: resolveColor(flags, rgbMap),
           fontSize: resolveFontSize(flags),
+          textAlign: resolveTextAlign(flags),
         });
       }
+      continue;
+    }
+
+    const lineArgs = parseLcdCall(line, "drawLine");
+    if (lineArgs && lineArgs.length >= 5) {
+      const colorExpr = lineArgs.length >= 6 ? lineArgs[5] : lineArgs[4];
+      commands.push({
+        kind: "line",
+        x: evalNumberExpr(lineArgs[0], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(lineArgs[1], ctx, evalDims) + dims.zoneY,
+        x2: evalNumberExpr(lineArgs[2], ctx, evalDims) + dims.zoneX,
+        y2: evalNumberExpr(lineArgs[3], ctx, evalDims) + dims.zoneY,
+        color: resolveDrawColor(colorExpr, rgbMap),
+      });
+      continue;
+    }
+
+    const bitmapArgs = parseLcdCall(line, "drawBitmap");
+    if (bitmapArgs && bitmapArgs.length >= 3) {
+      commands.push({
+        kind: "bitmap",
+        x: evalNumberExpr(bitmapArgs[1], ctx, evalDims) + dims.zoneX,
+        y: evalNumberExpr(bitmapArgs[2], ctx, evalDims) + dims.zoneY,
+        w: 72,
+        h: 56,
+        placeholder: "model",
+      });
       continue;
     }
 
@@ -659,7 +804,7 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
         y: evalNumberExpr(fillArgs[1], ctx, evalDims) + dims.zoneY,
         w: evalNumberExpr(fillArgs[2], ctx, evalDims),
         h: evalNumberExpr(fillArgs[3], ctx, evalDims),
-        color: COLOR_MAP[fillArgs[4] as EdgeColor] ?? "#808080",
+        color: resolveDrawColor(fillArgs[4], rgbMap),
       });
       continue;
     }
@@ -672,7 +817,7 @@ export function parseLuaToDrawCommands(source: string, mock: MockTelemetry = BAS
         y: evalNumberExpr(rectArgs[1], ctx, evalDims) + dims.zoneY,
         w: evalNumberExpr(rectArgs[2], ctx, evalDims),
         h: evalNumberExpr(rectArgs[3], ctx, evalDims),
-        color: COLOR_MAP[rectArgs[4] as EdgeColor] ?? "#ffffff",
+        color: resolveDrawColor(rectArgs[4], rgbMap),
       });
     }
   }
@@ -717,11 +862,44 @@ export function renderPreviewCommands(
         ctx.lineTo(cmd.x2 ?? 0, cmd.y2 ?? 0);
         ctx.stroke();
         break;
-      case "text":
+      case "text": {
         ctx.fillStyle = cmd.color ?? "#ffffff";
         ctx.font = `bold ${cmd.fontSize ?? 12}px monospace`;
-        ctx.fillText(cmd.text ?? "", cmd.x ?? 0, (cmd.y ?? 0) + (cmd.fontSize ?? 12));
+        const fontSize = cmd.fontSize ?? 12;
+        const text = cmd.text ?? "";
+        const align = cmd.textAlign ?? "left";
+        const textY = (cmd.y ?? 0) + fontSize;
+        const textX = cmd.x ?? 0;
+        if (align === "center") {
+          ctx.textAlign = "center";
+          ctx.fillText(text, textX, textY);
+        } else if (align === "right") {
+          ctx.textAlign = "right";
+          ctx.fillText(text, textX, textY);
+        } else {
+          ctx.textAlign = "left";
+          ctx.fillText(text, textX, textY);
+        }
+        ctx.textAlign = "left";
         break;
+      }
+      case "bitmap": {
+        const bx = cmd.x ?? 0;
+        const by = cmd.y ?? 0;
+        const bw = cmd.w ?? 72;
+        const bh = cmd.h ?? 56;
+        ctx.fillStyle = "#2a2a32";
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeStyle = "#606070";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+        ctx.fillStyle = "#9090a0";
+        ctx.font = "bold 9px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("MODEL", bx + bw / 2, by + bh / 2 + 3);
+        ctx.textAlign = "left";
+        break;
+      }
     }
   }
 

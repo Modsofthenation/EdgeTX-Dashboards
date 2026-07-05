@@ -8,7 +8,21 @@ import { sanitizeWidgetName } from "./paths.js";
 import type { LayoutArchetypeId } from "./layoutArchetype.js";
 import { getActiveLayoutArchetype } from "./variationContext.js";
 
-export function createCustomTools(): Record<string, SDKCustomTool> {
+export interface ToolSessionDefaults {
+  protocol?: TelemetryProtocol;
+  radioId?: string;
+}
+
+function resolveToolProtocol(
+  args: Record<string, unknown>,
+  defaults?: ToolSessionDefaults
+): TelemetryProtocol {
+  if (args.protocol) return args.protocol as TelemetryProtocol;
+  if (defaults?.protocol) return defaults.protocol;
+  return "generic-crsf";
+}
+
+export function createCustomTools(defaults?: ToolSessionDefaults): Record<string, SDKCustomTool> {
   return {
     validateWidget: {
       description:
@@ -34,8 +48,8 @@ export function createCustomTools(): Record<string, SDKCustomTool> {
       execute(args) {
         try {
           const widgetName = sanitizeWidgetName(String(args.widgetName));
-          const protocol = (args.protocol as TelemetryProtocol) ?? "generic-crsf";
-          const radioId = String(args.radioId ?? "tx15");
+          const protocol = resolveToolProtocol(args, defaults);
+          const radioId = String(args.radioId ?? defaults?.radioId ?? "tx15");
           const layoutArchetype = (args.layoutArchetype as LayoutArchetypeId | undefined) ??
             getActiveLayoutArchetype();
           const path = getWidgetLuaPath(widgetName);

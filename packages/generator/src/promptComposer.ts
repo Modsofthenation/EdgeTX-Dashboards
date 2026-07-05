@@ -6,7 +6,9 @@ import {
   readDesignGuideForArchetype,
   readRotorflightStyleGuide,
   readCompanionScriptsGuide,
+  readModelImageGuide,
   readExampleSnippet,
+  loadTelemetryCatalog,
 } from "./knowledge.js";
 import {
   suggestLayoutArchetype,
@@ -33,6 +35,40 @@ function resolveVariation(ctx: PromptBuildContext): number {
   return deriveVariationSeed(ctx.sessionId, ctx.runIndex ?? 0);
 }
 
+function buildProtocolLockSection(catalog: TelemetryCatalog): string {
+  const firmwareHint =
+    catalog.protocol === "betaflight"
+      ? "Do NOT use rotorflight-only sensors (HSpd, EscT, MotT) or label the UI/footer as \"Rotorflight\"."
+      : catalog.protocol === "rotorflight"
+        ? "Rotorflight motor sensors (HSpd, RPM, EscT, MotT) require rf2bg — see setup notes."
+        : "Use only sensors listed for generic CRSF; do not assume betaflight or rotorflight names.";
+
+  return `## Protocol lock (authoritative — UI selection overrides prompt text)
+
+The user selected **${catalog.label}** (\`${catalog.protocol}\`) in the generator UI.
+
+- Call \`listTelemetrySensors\` with protocol \`"${catalog.protocol}"\` before writing telemetry code.
+- Use **only** sensor names from that catalog — validation rejects unknown sensors.
+- If the user's prompt mentions another firmware (heli, rotorflight, betaflight, etc.), **ignore the firmware hint** and keep the selected protocol.
+- ${firmwareHint}`;
+}
+
+function buildTelemetrySection(catalog: TelemetryCatalog): string {
+  return `## Telemetry protocol: ${catalog.label}
+
+${buildProtocolLockSection(catalog)}
+
+Setup notes:
+
+${(catalog.setupNotes ?? []).map((n) => `- ${n}`).join("\n")}`;
+}
+
+function wantsModelImage(userPrompt: string): boolean {
+  return /model image|model photo|model picture|plane image|heli image|photo of (the )?model|show.*model.*(image|photo|picture)/i.test(
+    userPrompt
+  );
+}
+
 export function buildGenerationPrompt(
   userPrompt: string,
   radio: RadioProfile,
@@ -52,8 +88,11 @@ export function buildGenerationPrompt(
   const designGuide = readDesignGuideForArchetype(radio.id, archetype.id);
   const archetypeMenu = readLayoutArchetypesGuide();
   const rotorflightGuide =
-    archetype.id === "heli-rotorflight" ? readRotorflightStyleGuide() : "";
+    catalog.protocol === "rotorflight" && archetype.id === "heli-rotorflight"
+      ? readRotorflightStyleGuide()
+      : "";
   const companionGuide = readCompanionScriptsGuide();
+  const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
   const rules = readRules();
 
   const exampleFile = EXAMPLE_BY_ARCHETYPE[archetype.id];
@@ -71,9 +110,11 @@ export function buildGenerationPrompt(
 
 Primary goal: a **clean, modern, readable** dashboard tailored to the user's request — not a copy of a fixed template.
 
-## User request (follow this closely — layout and metrics must reflect it)
+## User request (layout and metrics — must still obey the selected protocol below)
 
 ${userPrompt}
+
+${buildTelemetrySection(catalog)}
 
 ## Recommended layout archetype (suggested default — switch if user intent fits another)
 
@@ -101,14 +142,6 @@ ${archetypeMenu}
 
 ${JSON.stringify(radio, null, 2)}
 
-## Telemetry protocol: ${catalog.label}
-
-Use ONLY sensor names from the ${catalog.protocol} catalog. Call listTelemetrySensors before writing telemetry code.
-
-Setup notes:
-
-${(catalog.setupNotes ?? []).map((n) => `- ${n}`).join("\n")}
-
 ## EdgeTX version target
 
 ${edgeTxVersion ?? radio.edgeTxMin}+
@@ -122,6 +155,8 @@ ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling —
 ## Companion scripts (when user asks for tools, loggers, selectors)
 
 ${companionGuide}
+
+${modelImageGuide ? `\n## Model image (user requested — include ShowModel option + placeholder)\n${modelImageGuide}` : ""}
 
 ## Hard rules
 
@@ -171,14 +206,19 @@ export function buildRefinePrompt(
   const runIndex = ctx?.runIndex ?? 0;
   const seed = resolveVariation({ sessionId, runIndex, variationSeed: ctx?.variationSeed });
 
-  const archetype = suggestLayoutArchetype(userPrompt, protocol ?? "generic-crsf", seed);
+  const resolvedProtocol = protocol ?? "generic-crsf";
+  const catalog = loadTelemetryCatalog(resolvedProtocol);
+
+  const archetype = suggestLayoutArchetype(userPrompt, resolvedProtocol, seed);
   setActiveLayoutArchetype(archetype.id);
 
   const visualStyle = detectVisualStyle(userPrompt, seed);
-  const brief = buildCreativeBrief(seed, archetype, protocol ?? "generic-crsf", userPrompt);
+  const brief = buildCreativeBrief(seed, archetype, resolvedProtocol, userPrompt);
   const designGuide = readDesignGuideForArchetype(radioId, archetype.id);
   const rotorflightGuide =
-    archetype.id === "heli-rotorflight" ? readRotorflightStyleGuide() : "";
+    resolvedProtocol === "rotorflight" && archetype.id === "heli-rotorflight"
+      ? readRotorflightStyleGuide()
+      : "";
   const companionGuide = readCompanionScriptsGuide();
 
   return `Refine the existing EdgeTX dashboard${widgetName ? ` "${widgetName}"` : ""}.
@@ -186,6 +226,8 @@ export function buildRefinePrompt(
 ## User refinement request
 
 ${userPrompt}
+
+${buildTelemetrySection(catalog)}
 
 ${brief.markdown}
 
@@ -213,9 +255,9 @@ Keep the dashboard clean and distinct from generic templates. All lcd.* draws mu
 
 1. Edit files under generated/ as needed (main.lua + any tools/telemetry companions).
 
-2. Run validateWidget with protocol, radioId, and layoutArchetype "${archetype.id}" until valid: true. Fix archetype-relevant visual-design warnings.
+2. Run validateWidget with widgetName, protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix archetype-relevant visual-design warnings.
 
-3. Only after valid: true, run writeInstallGuide (must list all files + install steps) and packageWidget again.
+3. Only after valid: true, run writeInstallGuide with protocol "${resolvedProtocol}" (must list all files + install steps) and packageWidget with protocol "${resolvedProtocol}" again.
 
 4. Summarize changes made, including install instructions for any new companion scripts.`;
 }

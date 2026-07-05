@@ -24,6 +24,9 @@
     { "name": "Roll", "unit": "rad", "category": "attitude", "description": "Roll" },
     { "name": "Yaw", "unit": "rad", "category": "attitude", "description": "Yaw" },
     { "name": "FM", "unit": "", "category": "flight", "description": "Flight mode" },
-    { "name": "RPM", "unit": "rpm", "category": "motor", "description": "RPM if available" }
+    { "name": "RPM", "unit": "rpm", "category": "motor", "description": "Motor/head RPM if available", "requiresCustomCrsf": true },
+    { "name": "HSpd", "unit": "rpm", "category": "motor", "description": "Headspeed if available", "requiresCustomCrsf": true },
+    { "name": "EscT", "unit": "C", "category": "motor", "description": "ESC temperature if available", "requiresCustomCrsf": true },
+    { "name": "MotT", "unit": "C", "category": "motor", "description": "Motor temperature if available", "requiresCustomCrsf": true }
   ]
 }

@@ -41,6 +41,7 @@ Generated widgets must look **clean and professional** on a 480×320 TX15 screen
 - **Accent colors** — Follow the creative brief palette; avoid flat grey-only layouts.
 - **4–8 metrics** per screen; hide extras behind BOOL options.
 - **Direct `lcd.*` in `refresh()`** — Required for web preview; no opaque draw helpers.
+- **Model image:** When requested, use `Bitmap.open` in `create()`, `lcd.drawBitmap` in `refresh()`, plus grey placeholder panel. See `knowledge/design/model-image.md`.
 
 See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-recipe.md` only for card-grid archetypes.
 
@@ -48,6 +49,7 @@ See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-r
 
 - Read telemetry via `getValue("SensorName")` using discovered sensor names.
 - Cache source IDs in `create()` with `getSourceIndex("SensorName")` for performance.
+- **Protocol lock:** Use only sensors from the session's selected protocol catalog (`listTelemetrySensors`). UI protocol overrides firmware mentions in the user prompt — never mix betaflight and rotorflight sensor names.
 - GPS returns a table; Cels returns a table of cell voltages.
 - Zero is returned when telemetry is not received — handle gracefully in UI.
 

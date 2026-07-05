@@ -1,10 +1,34 @@
 import { CursorAgentError, getSessionStore } from "@/server/generatorFacade";
 import { checkApiAuth } from "@/lib/apiSecurity";
+import { getChat } from "@/lib/db/chatStore";
 import { createSseResponse, createSseStream } from "@/lib/sse";
 import { createRunCallbacks, emitRunCompletion } from "@/lib/widgetSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function resolveRefineSession(sessionId: string, chatId?: string) {
+  const store = getSessionStore();
+  let effectiveSessionId = sessionId;
+  let stored = store.get(sessionId);
+
+  if (!stored && chatId) {
+    const chat = getChat(chatId);
+    if (chat?.widgetName) {
+      const restored = store.restoreSession({
+        id: chat.sessionId ?? sessionId,
+        radioId: chat.radioId,
+        protocol: chat.protocol,
+        modelId: chat.modelId,
+        widgetName: chat.widgetName,
+      });
+      effectiveSessionId = restored.id;
+      stored = store.get(restored.id);
+    }
+  }
+
+  return { store, stored, sessionId: effectiveSessionId };
+}
 
 export async function POST(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
@@ -21,20 +45,22 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const data = body as { sessionId?: string; prompt?: string };
+  const data = body as { sessionId?: string; chatId?: string; prompt?: string };
   if (!data.sessionId?.trim() || !data.prompt?.trim()) {
     return Response.json({ error: "sessionId and prompt are required" }, { status: 400 });
   }
 
-  const store = getSessionStore();
-  const stored = store.get(data.sessionId);
+  const { store, stored, sessionId: effectiveSessionId } = resolveRefineSession(
+    data.sessionId,
+    data.chatId?.trim()
+  );
   if (!stored) {
     return Response.json({ error: "Session not found or expired" }, { status: 404 });
   }
 
   const stream = createSseStream(async (send) => {
-    if (!store.tryAcquire(data.sessionId!)) {
-      send({ type: "error", content: "Session busy", sessionId: data.sessionId, success: false });
+    if (!store.tryAcquire(effectiveSessionId)) {
+      send({ type: "error", content: "Session busy", sessionId: effectiveSessionId, success: false });
       return;
     }
 
@@ -57,9 +83,9 @@ export async function POST(request: Request): Promise<Response> {
           : err instanceof Error
             ? err.message
             : "Unknown error";
-      send({ type: "error", content: message, sessionId: data.sessionId, success: false });
+      send({ type: "error", content: message, sessionId: effectiveSessionId, success: false });
     } finally {
-      store.release(data.sessionId!);
+      store.release(effectiveSessionId);
     }
   });
 
