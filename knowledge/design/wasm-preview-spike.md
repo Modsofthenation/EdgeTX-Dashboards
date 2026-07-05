@@ -50,15 +50,15 @@ Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in 
 
 2. `WasmRunner.load("/sim/edgetx-tx15-simulator.wasm")`
 
-3. `simuInit()` → `simuFatfsSetPaths("/", "/")` → `simuCreateDefaults()` → `simuStart(0)`
+3. `simuInit()` → `simuFatfsSetPaths("/", "/")` → `simuCreateDefaults()` → deploy `/MODELS/model1.yml` (CRSF sensors + pre-assigned `screenData` for `@simulate` zone) → `simuStart(0)`
 
 4. Write `WIDGETS/<Name>/main.lua` + `MODELS/model.png` via `fsWriteFile`
 
-5. On first LCD frame: `simuLoadWidgetByLayout(name, layout, zone)` when `@simulate` is present (matches Dev Kit); `simuLoadWidget(name)` only when no zone annotation
+5. After ~12 frames of CRSF priming: `simuLoadWidgetByLayout(name, layout, zone)` once when `@simulate` is present (matches Dev Kit); `simuLoadWidget(name)` only when no zone annotation. Model YAML is backed up before inject and restored on dispose.
 
-6. After `simuCreateDefaults()`, overwrite `/MODELS/model1.yml` with a CRSF model + Betaflight sensor labels, then inject CRSF telemetry to internal and external module bays via `simuSendTelemetry(mod, 2, …)` (~60 frames before first widget load, reload once after ~45 more frames so `create()` re-caches `getSourceIndex()`)
+6. Inject CRSF telemetry each tick via `simuSendTelemetry(mod, 2, …)` (extra bursts while priming before widget load)
 
-7. User input (touch, keys, sticks, switches) forwarded from `@edgetx/simulator-ui` `Simulator` → worker → `SimRuntime.handleInput()` → WASM exports. Double-tap the widget on the LCD to enter widget fullscreen (same as on hardware).
+7. Interactive overlay auto-opens when boot completes. User input (touch, keys, sticks, switches) forwarded from `@edgetx/simulator-ui` `Simulator` → worker → `SimRuntime.handleInput()` → WASM exports. Full-LCD `@simulate` zones auto double-tap for widget fullscreen; partial zones stay in layout view.
 
 
 

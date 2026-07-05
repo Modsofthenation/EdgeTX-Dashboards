@@ -5,7 +5,7 @@ import {
   BASE_MOCK_TELEMETRY,
 } from "./telemetryBridge.js";
 import { lcdFrameByteSize } from "./framebuffer.js";
-import { deploySimModel } from "./simModel.js";
+import { deploySimModel, SIM_MODEL1_PATH, type SimWidgetLayoutPlan } from "./simModel.js";
 import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.js";
 import type {
   ExtendedSimulatorExports,
@@ -31,20 +31,28 @@ const DEFAULT_STATE: RadioSimState = {
   keyboardMode: "none",
 };
 
-/** Frames to stream CRSF before first widget load (~1s at 60 Hz). */
-const WIDGET_LAUNCH_DELAY_FRAMES = 60;
+/** Frames to stream CRSF before first widget load (~200ms at 60 Hz). */
+export const WIDGET_LAUNCH_DELAY_FRAMES = 12;
 
-/** After first load, stream CRSF then reload so create() re-caches source indices. */
-const WIDGET_RELOAD_DELAY_FRAMES = 45;
+const FULLSCREEN_WAIT_FRAMES = 10;
+const FULLSCREEN_TAP_GAP_FRAMES = 3;
+
+type FullscreenTapGesture = {
+  x: number;
+  y: number;
+  /** 0=wait, 1=down, 2=up+gap, 3=down, 4=up */
+  step: number;
+  counter: number;
+};
 
 export class SimRuntime {
   private runner: WasmRunner | null = null;
   private loopRunning = false;
   private scriptLaunched = false;
-  private widgetReloadPending = false;
-  private widgetReloadDelayFrames = 0;
   private widgetLaunchDelayFrames = 0;
   private pendingWidget: { source: string; zone?: WidgetSimulateZone } | null = null;
+  private modelBackup: Map<string, string> | null = null;
+  private fullscreenTap: FullscreenTapGesture | null = null;
   private mock: MockTelemetryValues = { ...BASE_MOCK_TELEMETRY };
   private lastTelemetryMs = 0;
   private lastKeyboardPollMs = 0;
@@ -125,8 +133,7 @@ export class SimRuntime {
         await this.deployWidget(options.source);
         this.pendingWidget = { source: options.source, zone: options.zone };
         this.scriptLaunched = false;
-        this.widgetReloadPending = false;
-        this.widgetReloadDelayFrames = 0;
+        this.fullscreenTap = null;
         this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
       }
 
@@ -138,7 +145,7 @@ export class SimRuntime {
       ex.simuInit();
       this.runner.setFatfsPaths("/", "/");
       (ex as ExtendedSimulatorExports).simuCreateDefaults?.();
-      await deploySimModel(this.runner);
+      await deploySimModel(this.runner, this.layoutPlanFrom(options?.source, options?.zone));
       ex.simuStart(0);
 
       this.loopRunning = true;
@@ -153,11 +160,13 @@ export class SimRuntime {
 
   async loadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
     this.scriptLaunched = false;
-    this.widgetReloadPending = false;
-    this.widgetReloadDelayFrames = 0;
-    this.pendingWidget = null;
+    this.fullscreenTap = null;
     this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
     await this.deployWidget(source);
+    const runner = this.runner;
+    if (runner) {
+      await deploySimModel(runner, this.layoutPlanFrom(source, zone));
+    }
     this.pendingWidget = { source, zone };
   }
 
@@ -177,16 +186,30 @@ export class SimRuntime {
     this.paused = false;
     this.loopRunning = false;
     this.scriptLaunched = false;
-    this.widgetReloadPending = false;
-    this.widgetReloadDelayFrames = 0;
     this.pendingWidget = null;
+    this.fullscreenTap = null;
     if (this.runner) {
+      await this.restoreModels();
       this.runner.stopSim();
       await this.runner.stopFs();
       this.runner = null;
     }
+    this.modelBackup = null;
     this.state = { ...DEFAULT_STATE };
     this.callbacks.onState?.(this.state);
+  }
+
+  private layoutPlanFrom(
+    source?: string,
+    zone?: WidgetSimulateZone
+  ): SimWidgetLayoutPlan | undefined {
+    if (!source || !zone) return undefined;
+    const plan = planWidgetDeploy(source);
+    return {
+      widgetName: plan.widgetName,
+      layoutId: zone.layout,
+      zoneIndex: zone.zone,
+    };
   }
 
   private getExports(): NonNullable<WasmRunner["exports"]> {
@@ -214,6 +237,40 @@ export class SimRuntime {
         PLACEHOLDER_MODEL_PNG.byteOffset + PLACEHOLDER_MODEL_PNG.byteLength
       ) as ArrayBuffer
     );
+  }
+
+  private async backupModels(): Promise<void> {
+    const runner = this.runner;
+    if (!runner?.hasFsWorker || this.modelBackup) return;
+
+    try {
+      const backup = new Map<string, string>();
+      const listed = await runner.fsListFiles("/MODELS");
+      for (const entry of listed) {
+        if (!entry.endsWith(".yml")) continue;
+        const path = entry.startsWith("/") ? entry : `/MODELS/${entry}`;
+        const text = await runner.fsReadTextFile(path);
+        if (text != null) backup.set(path, text);
+      }
+      if (!backup.has(SIM_MODEL1_PATH)) {
+        const text = await runner.fsReadTextFile(SIM_MODEL1_PATH);
+        if (text != null) backup.set(SIM_MODEL1_PATH, text);
+      }
+      this.modelBackup = backup.size > 0 ? backup : null;
+    } catch {
+      this.modelBackup = null;
+    }
+  }
+
+  private async restoreModels(): Promise<void> {
+    if (!this.modelBackup || !this.runner) return;
+    for (const [path, text] of this.modelBackup) {
+      await this.runner.fsWriteFile(
+        path,
+        new TextEncoder().encode(text).buffer as ArrayBuffer
+      );
+    }
+    this.modelBackup = null;
   }
 
   private launchWidget(source: string, zone?: WidgetSimulateZone): void {
@@ -248,6 +305,54 @@ export class SimRuntime {
     } else {
       this.callbacks.onLog?.("Radio sim: firmware missing simuLoadWidget export");
     }
+
+    if (zone?.enterFullscreen) {
+      const x = Math.floor((zone.zoneX ?? 0) + (zone.zoneW ?? 480) / 2);
+      const y = Math.floor((zone.zoneY ?? 0) + (zone.zoneH ?? 320) / 2);
+      this.fullscreenTap = {
+        x,
+        y,
+        step: 0,
+        counter: FULLSCREEN_WAIT_FRAMES,
+      };
+    }
+  }
+
+  private advanceFullscreenTap(ex: ExtendedSimulatorExports): void {
+    const gesture = this.fullscreenTap;
+    if (!gesture) return;
+    if (typeof ex.simuTouchDown !== "function" || typeof ex.simuTouchUp !== "function") {
+      this.fullscreenTap = null;
+      return;
+    }
+
+    switch (gesture.step) {
+      case 0:
+        gesture.counter -= 1;
+        if (gesture.counter <= 0) gesture.step = 1;
+        break;
+      case 1:
+        ex.simuTouchDown(gesture.x, gesture.y);
+        gesture.step = 2;
+        break;
+      case 2:
+        ex.simuTouchUp();
+        gesture.step = 3;
+        gesture.counter = FULLSCREEN_TAP_GAP_FRAMES;
+        break;
+      case 3:
+        gesture.counter -= 1;
+        if (gesture.counter <= 0) gesture.step = 4;
+        break;
+      case 4:
+        ex.simuTouchDown(gesture.x, gesture.y);
+        gesture.step = 5;
+        break;
+      default:
+        ex.simuTouchUp();
+        this.fullscreenTap = null;
+        break;
+    }
   }
 
   private maybePollKeyboardMode(now: number): void {
@@ -274,12 +379,7 @@ export class SimRuntime {
     if (!ex?.simuSendTelemetry) return;
     const frames = buildTelemetryFrames(this.mock);
     injectTelemetryFrames(ex, frames);
-    // Extra bursts while priming so CRSF sensors register before create().
-    if (
-      this.widgetLaunchDelayFrames > 0 ||
-      this.widgetReloadPending ||
-      this.widgetReloadDelayFrames > 0
-    ) {
+    if (this.widgetLaunchDelayFrames > 0) {
       injectTelemetryFrames(ex, frames);
       injectTelemetryFrames(ex, frames);
     }
@@ -313,25 +413,17 @@ export class SimRuntime {
 
       ex.simuLcdFlushed();
 
-      if (this.pendingWidget) {
-        if (!this.scriptLaunched) {
-          if (this.widgetLaunchDelayFrames > 0) {
-            this.widgetLaunchDelayFrames -= 1;
-          } else {
-            this.scriptLaunched = true;
-            this.widgetReloadPending = true;
-            this.widgetReloadDelayFrames = WIDGET_RELOAD_DELAY_FRAMES;
-            this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
-          }
-        } else if (this.widgetReloadPending) {
-          if (this.widgetReloadDelayFrames > 0) {
-            this.widgetReloadDelayFrames -= 1;
-          } else {
-            this.widgetReloadPending = false;
-            this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
-          }
+      if (this.pendingWidget && !this.scriptLaunched) {
+        if (this.widgetLaunchDelayFrames > 0) {
+          this.widgetLaunchDelayFrames -= 1;
+        } else {
+          await this.backupModels();
+          this.scriptLaunched = true;
+          this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
         }
       }
+
+      this.advanceFullscreenTap(ex as ExtendedSimulatorExports);
 
       const buf =
         frame.byteOffset === 0 && frame.byteLength === frame.buffer.byteLength

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
+import { resolvePreviewDimensions, getSimulateLayoutProfile, isFullLcdSimulateZone } from "@widget-gen/shared";
 import type { MockTelemetryValues, SimFrameData, SimKeyboardMode } from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
 import { useRadioSim, type FrameSubscriber } from "@/lib/radioSim/useRadioSim";
@@ -172,9 +172,20 @@ export function RadioSimPreview({
     () => ({
       layout: previewDims.layout,
       zone: previewDims.zone,
+      enterFullscreen: isFullLcdSimulateZone(previewDims),
+      zoneX: previewDims.zoneX,
+      zoneY: previewDims.zoneY,
+      zoneW: previewDims.zoneW,
+      zoneH: previewDims.zoneH,
     }),
     [previewDims]
   );
+
+  useEffect(() => {
+    if (active && state.phase === "running") {
+      setOverlayOpen(true);
+    }
+  }, [active, state.phase]);
 
   const simState = useMemo(
     () => ({

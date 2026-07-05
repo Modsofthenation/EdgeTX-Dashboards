@@ -5,6 +5,18 @@
 
 export const SIM_MODEL1_PATH = "/MODELS/model1.yml";
 
+/**
+ * Model `view` index for custom screen 0 on TX15 / Horus-class 2.11 firmware.
+ * simuLoadWidgetByLayout also navigates; this ensures boot lands on the dashboard.
+ */
+export const SIM_CUSTOM_SCREEN_VIEW = 7;
+
+export interface SimWidgetLayoutPlan {
+  widgetName: string;
+  layoutId: string;
+  zoneIndex: number;
+}
+
 /** Betaflight CRSF sensor names used by generated widgets. */
 export const SIM_TELEMETRY_SENSOR_LABELS = [
   "RQLY",
@@ -372,6 +384,33 @@ export type SimFsWriter = {
   fsReadFile?: (path: string) => Promise<ArrayBuffer | null>;
 };
 
+/** YAML fragment: custom screen 0 with widget assigned to a layout zone. */
+export function buildScreenDataYaml(
+  layoutId: string,
+  zoneIndex: number,
+  widgetName: string
+): string {
+  return `screenData:
+  "0":
+    LayoutId: ${layoutId}
+    layoutData:
+      zones:
+        "${zoneIndex}":
+          widgetName: ${widgetName}
+view: ${SIM_CUSTOM_SCREEN_VIEW}`;
+}
+
+/** CRSF model YAML, optionally with pre-assigned dashboard widget in screen 0. */
+export function buildSimModelYaml(layoutPlan?: SimWidgetLayoutPlan): string {
+  const base = SIM_MODEL1_YML.trimEnd();
+  if (!layoutPlan) return `${base}\n`;
+  return `${base}\n${buildScreenDataYaml(
+    layoutPlan.layoutId,
+    layoutPlan.zoneIndex,
+    layoutPlan.widgetName
+  )}\n`;
+}
+
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
@@ -394,8 +433,12 @@ export async function patchRadioInternalCrsf(fs: SimFsWriter): Promise<void> {
   await fs.fsWriteFile("/RADIO/radio.yml", toArrayBuffer(new TextEncoder().encode(text)));
 }
 
-/** Overwrite default model1.yml with CRSF + Betaflight sensor labels. */
-export async function deploySimModel(fs: SimFsWriter): Promise<void> {
-  await fs.fsWriteFile(SIM_MODEL1_PATH, toArrayBuffer(new TextEncoder().encode(SIM_MODEL1_YML)));
+/** Overwrite default model1.yml with CRSF + optional dashboard widget assignment. */
+export async function deploySimModel(
+  fs: SimFsWriter,
+  layoutPlan?: SimWidgetLayoutPlan
+): Promise<void> {
+  const yaml = buildSimModelYaml(layoutPlan);
+  await fs.fsWriteFile(SIM_MODEL1_PATH, toArrayBuffer(new TextEncoder().encode(yaml)));
   await patchRadioInternalCrsf(fs);
 }

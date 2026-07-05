@@ -52,6 +52,12 @@ export interface RadioSimState {
 export interface WidgetSimulateZone {
   layout: string;
   zone: number;
+  /** When true, double-tap the zone after load to enter widget fullscreen. */
+  enterFullscreen?: boolean;
+  zoneX?: number;
+  zoneY?: number;
+  zoneW?: number;
+  zoneH?: number;
 }
 
 /** Input messages mirroring EdgeTX Dev Kit simulatorHost.handleInput */
