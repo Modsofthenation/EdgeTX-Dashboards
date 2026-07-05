@@ -316,6 +316,25 @@ export function validateDrawAnnulusRadiusOrder(source: string): ValidationIssue[
   return issues;
 }
 
+/** Reject hardcoded /MODELS/ paths for model bitmaps (images live in /IMAGES/). */
+export function validateModelBitmapPath(source: string): ValidationIssue[] {
+  if (!source.includes("Bitmap.open") && !source.includes("MODEL_IMG")) {
+    return [];
+  }
+
+  if (/["']\/MODELS\/[^"']+\.(png|bmp)["']/i.test(source)) {
+    return [
+      {
+        severity: "error",
+        message:
+          'Model images live in /IMAGES/ — use model.getInfo().bitmap: Bitmap.open("/IMAGES/" .. name); see model-image.md',
+      },
+    ];
+  }
+
+  return [];
+}
+
 /** Reject fragile #str*charW unit positioning — overlaps on TX15 (no text-width API). */
 export function validateUnitSuffixPositioning(source: string): ValidationIssue[] {
   const suffixMath = /math\.floor\(\s*#\w+\s*\*\s*\d+/;
@@ -341,6 +360,7 @@ export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
     ...validateGlobalGetSizeCalls(source),
     ...validateRoundedPanelArcCalls(source),
     ...validateDrawAnnulusRadiusOrder(source),
+    ...validateModelBitmapPath(source),
     ...validateUnitSuffixPositioning(source),
   ];
 }

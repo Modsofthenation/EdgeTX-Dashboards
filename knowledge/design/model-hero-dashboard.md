@@ -121,7 +121,7 @@ EdgeTX Lua has **no `math.deg`**. Betaflight CRSF `Ptch` / `Roll` are usually al
 - `lcd.drawFilledRectangle(..., BLACK, 168)` — opacity is **0–15**, not 0–255
 - `math.deg(...)` — crashes or nil on radio
 - Duplicate flight-mode text (mid-page bar **and** footer)
-- `Bitmap.getSize(MODEL_IMG)` — path string instead of handle
+- Hardcoded `/MODELS/*.png` for model images — use `model.getInfo().bitmap` + `/IMAGES/`
 - Contain-scale (`min(scaleX, scaleY)`) for full-screen backgrounds — leaves empty pillars
 - `drawArc` borders on every tiny strip
 - `#str * charW` unit positioning or `unitY = valueY + 4` inline units — use fixed row strides instead

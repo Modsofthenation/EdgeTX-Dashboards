@@ -3,6 +3,8 @@
  * telemetry sensor labels (matches widget getSourceIndex() names).
  */
 
+import { SIM_MODEL_BITMAP } from "./virtualSd.js";
+
 export const SIM_MODEL1_PATH = "/MODELS/model1.yml";
 
 /**
@@ -39,7 +41,7 @@ export const SIM_TELEMETRY_SENSOR_LABELS = [
 export const SIM_MODEL1_YML = `semver: 2.11.0
 header:
   name: SimWidget
-  bitmap: ""
+  bitmap: ${SIM_MODEL_BITMAP}
   labels: ""
 timers:
   0:

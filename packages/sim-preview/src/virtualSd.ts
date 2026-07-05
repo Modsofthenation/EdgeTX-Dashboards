@@ -1,4 +1,6 @@
-/** 56×40 grey PNG for MODELS/model.png (Bitmap.open paths). */
+/** 56×40 grey PNG deployed to /IMAGES/ for model.getInfo().bitmap in WASM sim. */
+export const SIM_MODEL_BITMAP = "simmodel.png";
+
 export const PLACEHOLDER_MODEL_PNG = new Uint8Array([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
   0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x00, 0x28, 0x08, 0x02, 0x00, 0x00, 0x00, 0x24, 0x32, 0xae,
@@ -41,7 +43,7 @@ export function buildVirtualSdPaths(widgetFolderName: string): VirtualSdPaths {
   return {
     widgetDir: `/WIDGETS/${safe}`,
     luaPath: `/WIDGETS/${safe}/main.lua`,
-    modelPngPath: "/MODELS/model.png",
+    modelPngPath: `/IMAGES/${SIM_MODEL_BITMAP}`,
   };
 }
 

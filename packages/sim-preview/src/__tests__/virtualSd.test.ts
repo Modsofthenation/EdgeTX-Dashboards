@@ -5,6 +5,7 @@ import {
   extractWidgetName,
   planWidgetDeploy,
   sanitizeWidgetFolderName,
+  SIM_MODEL_BITMAP,
 } from "../virtualSd.js";
 
 describe("virtualSd", () => {
@@ -16,7 +17,7 @@ describe("virtualSd", () => {
   it("builds WIDGETS paths", () => {
     const paths = buildVirtualSdPaths("BfModel");
     assert.equal(paths.luaPath, "/WIDGETS/BfModel/main.lua");
-    assert.equal(paths.modelPngPath, "/MODELS/model.png");
+    assert.equal(paths.modelPngPath, `/IMAGES/${SIM_MODEL_BITMAP}`);
   });
 
   it("planWidgetDeploy uses parsed name", () => {

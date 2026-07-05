@@ -2,25 +2,39 @@
 
 When the user asks for a **model photo**, **plane/heli image**, or **model picture** on the dashboard, include an optional model-image region.
 
-## SD card path
+## SD card path (same as Model Info widget)
 
-EdgeTX model images live on the radio SD card:
+EdgeTX model images live on the radio SD card under **`/IMAGES/`** (PNG, filename ≤ 9 characters before extension).
 
-- `/MODELS/<modelname>.png` — model image selected in Model Setup
-- Use `Bitmap.open("/MODELS/model.png")` as a documented default; mention in INSTALL.md that users should copy their model PNG or match the filename to their model.
+The user assigns the image in **Model Setup → Assign Bitmap**. The filename is returned by **`model.getInfo().bitmap`** — use that name, not a hardcoded `/MODELS/` path.
+
+```lua
+local function loadModelBitmap()
+  local info = model.getInfo()
+  local name = info and info.bitmap or ""
+  if name == nil or name == "" then
+    return nil, 0, 0
+  end
+  local bmp = Bitmap.open("/IMAGES/" .. name)
+  if bmp == nil then
+    return nil, 0, 0
+  end
+  local w, h = Bitmap.getSize(bmp)
+  return bmp, w, h
+end
+```
+
+Ideal size for the Model Info widget: **192×114** (thumbnails **156×92**).
 
 ## Widget pattern (required for web preview)
 
-Load once in `create()`, draw in `refresh()` with a **placeholder fallback** when width/height are 0.
+Load once in `create()`, reload in `update()` if the model bitmap may change, draw in `refresh()` with a **placeholder fallback** when width/height are 0.
 
 **Common crash:** passing the SD path to `Bitmap.getSize` — use the bitmap handle only (see `runtime-api-pitfalls.md`).
 
 ```lua
-local MODEL_IMG = "/MODELS/model.png"
-
 local function create(zone, opts)
-  local modelBmp = Bitmap.open(MODEL_IMG)
-  local bmpW, bmpH = Bitmap.getSize(modelBmp)  -- bitmap handle only, never the path string
+  local modelBmp, bmpW, bmpH = loadModelBitmap()
 
   return {
     zone = zone,
@@ -32,6 +46,14 @@ local function create(zone, opts)
   }
 end
 
+local function update(widget, opts)
+  widget.options = opts
+  local modelBmp, bmpW, bmpH = loadModelBitmap()
+  widget.modelBmp = modelBmp
+  widget.bmpW = bmpW
+  widget.bmpH = bmpH
+end
+
 -- Inside refresh(), when ShowModel option enabled:
 local imgW = 72
 local imgH = 56
@@ -39,10 +61,12 @@ local imgX = leftX + 8
 local imgY = cardY + 8
 
 if widget.options.ShowModel == 1 then
-  lcd.drawBitmap(widget.modelBmp, imgX, imgY)
-  -- Fallback when bitmap missing (width 0 on radio; preview draws MODEL placeholder for drawBitmap)
-  -- Also draw placeholder panel if you need guaranteed border on radio:
-  -- lcd.drawFilledRectangle + lcd.drawRectangle + lcd.drawText "MODEL"
+  if widget.bmpW > 0 and widget.bmpH > 0 then
+    lcd.drawBitmap(widget.modelBmp, imgX, imgY)
+  else
+    lcd.drawFilledRectangle(imgX, imgY, imgW, imgH, DARKGREY)
+    lcd.drawText(imgX + math.floor(imgW / 2), imgY + math.floor(imgH / 2) - 6, "MODEL", SMLSIZE + CENTER + GREY)
+  end
 end
 ```
 
@@ -68,4 +92,4 @@ See `knowledge/design/model-hero-dashboard.md` for layer order, rotary gauge pla
 
 ## INSTALL.md
 
-Document: copy `model.png` to SD `/MODELS/` or rename to match the model name in Model Setup.
+Document: assign a model bitmap in **Model Setup → Assign Bitmap** (PNG in SD `/IMAGES/`). The widget uses the assigned image automatically — no extra copy step unless the user has not assigned one yet.

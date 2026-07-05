@@ -40,7 +40,18 @@ Load bitmaps **once in `create()`**, store on the widget table, draw with `lcd.d
 ## Bitmap.open placement
 
 - Call `Bitmap.open(path)` in **`create()`** only — not every `refresh()` frame.
-- If the file is missing, the bitmap width/height are 0 — draw a grey placeholder panel instead of calling `getSize` on the path.
+- Use **`model.getInfo().bitmap`** and path **`/IMAGES/` .. name`** — same as the built-in Model Info widget. Do **not** hardcode `/MODELS/model.png` (that folder holds model YAML, not bitmaps).
+- If no bitmap is assigned or the file is missing, width/height are 0 — draw a grey placeholder panel instead of calling `getSize` on the path.
+
+```lua
+-- WRONG — /MODELS/ is for .yml model files, not PNGs
+local MODEL_IMG = "/MODELS/model.png"
+local modelBmp = Bitmap.open(MODEL_IMG)
+
+-- RIGHT — follows Model Setup → Assign Bitmap
+local info = model.getInfo()
+local bmp = Bitmap.open("/IMAGES/" .. info.bitmap)
+```
 
 ## lcd.drawArc — EdgeTX angle convention (rounded borders)
 

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateDrawAnnulusRadiusOrder, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateDrawAnnulusRadiusOrder, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -119,6 +119,26 @@ end`;
     const source = `lcd.drawAnnulus(120, 140, 54, 42, 0, 270, GREY)`;
     const issues = validateDrawAnnulusRadiusOrder(source);
     assert.equal(issues.length, 1);
+  });
+});
+
+describe("validateModelBitmapPath", () => {
+  it("rejects hardcoded /MODELS/*.png paths", () => {
+    const source = `local MODEL_IMG = "/MODELS/model.png"
+local function create()
+  return { modelBmp = Bitmap.open(MODEL_IMG) }
+end`;
+    const issues = validateModelBitmapPath(source);
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].message, /\/IMAGES\//);
+  });
+
+  it("accepts model.getInfo bitmap path", () => {
+    const source = `local function loadModelBitmap()
+  local info = model.getInfo()
+  return Bitmap.open("/IMAGES/" .. info.bitmap)
+end`;
+    assert.deepEqual(validateModelBitmapPath(source), []);
   });
 });
 

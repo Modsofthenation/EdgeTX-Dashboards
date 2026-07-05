@@ -5,10 +5,22 @@
 
 local name = "TXModelHr"
 
-local MODEL_IMG = "/MODELS/model.png"
-
 -- TX15 lcd.drawText line heights (px) — knowledge/design/tx15-text-layout.md
 local LH = { SML = 12, MID = 18, DBL = 26, GAP = 4, SEC = 8 }
+
+local function loadModelBitmap()
+  local info = model.getInfo()
+  local name = info and info.bitmap or ""
+  if name == nil or name == "" then
+    return nil, 0, 0
+  end
+  local bmp = Bitmap.open("/IMAGES/" .. name)
+  if bmp == nil then
+    return nil, 0, 0
+  end
+  local w, h = Bitmap.getSize(bmp)
+  return bmp, w, h
+end
 
 local options = {
   { "ShowModel", BOOL, 1 },
@@ -37,8 +49,7 @@ local function attDeg(v)
 end
 
 local function create(zone, opts)
-  local modelBmp = Bitmap.open(MODEL_IMG)
-  local bmpW, bmpH = Bitmap.getSize(modelBmp)
+  local modelBmp, bmpW, bmpH = loadModelBitmap()
 
   return {
     zone = zone,
@@ -68,6 +79,10 @@ end
 
 local function update(widget, opts)
   widget.options = opts
+  local modelBmp, bmpW, bmpH = loadModelBitmap()
+  widget.modelBmp = modelBmp
+  widget.bmpW = bmpW
+  widget.bmpH = bmpH
 end
 
 local function refresh(widget, event, touchState)
