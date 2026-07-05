@@ -227,6 +227,7 @@ export function Preview480x320({
                     luaSource={luaSource}
                     layoutProfileId={layoutProfileId}
                     mock={mock}
+                    live={live}
                     active={tab === "radioSim"}
                   />
                 ) : (
@@ -266,6 +267,15 @@ export function Preview480x320({
                 <span className={styles.liveBadge}>EdgeTX WASM</span>
               )}
             </div>
+            {tab === "preview" && luaSource && (
+              <p className={styles.previewDisclaimer}>
+                Lightweight preview — layout and telemetry may not match the radio exactly. Use{" "}
+                <button type="button" className={styles.previewDisclaimerLink} onClick={() => setTab("radioSim")}>
+                  Radio sim
+                </button>{" "}
+                for real EdgeTX firmware behavior.
+              </p>
+            )}
             {tab === "preview" && luaSource && commands.length === 0 && (
               <p className={styles.hint}>
                 Could not parse draw commands. Preview works best with direct lcd.drawText and
@@ -277,7 +287,8 @@ export function Preview480x320({
             )}
             {tab === "radioSim" && luaSource && (
               <p className={styles.hintMuted}>
-                Radio sim runs real EdgeTX 2.11 firmware in WASM. First load may take several seconds.
+                Radio sim runs real EdgeTX 2.11 firmware with live mock CRSF telemetry. First load may
+                take several seconds.
               </p>
             )}
           </div>

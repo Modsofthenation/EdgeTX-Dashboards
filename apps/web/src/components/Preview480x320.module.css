@@ -544,3 +544,32 @@
   text-align: center;
   max-width: 480px;
 }
+
+.previewDisclaimer {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 520px;
+  line-height: 1.45;
+}
+
+.previewDisclaimerLink {
+  border: none;
+  padding: 0;
+  background: none;
+  color: var(--accent-bright);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.previewDisclaimerLink:hover {
+  color: var(--text);
+}
+
+.radioSimLiveTag {
+  color: var(--success);
+}

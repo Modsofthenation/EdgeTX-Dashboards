@@ -5,6 +5,7 @@ import {
   BASE_MOCK_TELEMETRY,
 } from "./telemetryBridge.js";
 import { lcdFrameByteSize } from "./framebuffer.js";
+import { deploySimModel } from "./simModel.js";
 import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.js";
 import type {
   ExtendedSimulatorExports,
@@ -30,10 +31,19 @@ const DEFAULT_STATE: RadioSimState = {
   keyboardMode: "none",
 };
 
+/** Frames to stream CRSF before first widget load (~1s at 60 Hz). */
+const WIDGET_LAUNCH_DELAY_FRAMES = 60;
+
+/** After first load, stream CRSF then reload so create() re-caches source indices. */
+const WIDGET_RELOAD_DELAY_FRAMES = 45;
+
 export class SimRuntime {
   private runner: WasmRunner | null = null;
   private loopRunning = false;
   private scriptLaunched = false;
+  private widgetReloadPending = false;
+  private widgetReloadDelayFrames = 0;
+  private widgetLaunchDelayFrames = 0;
   private pendingWidget: { source: string; zone?: WidgetSimulateZone } | null = null;
   private mock: MockTelemetryValues = { ...BASE_MOCK_TELEMETRY };
   private lastTelemetryMs = 0;
@@ -89,10 +99,17 @@ export class SimRuntime {
     }
   }
 
-  async init(options?: { source?: string; zone?: WidgetSimulateZone }): Promise<void> {
+  async init(options?: {
+    source?: string;
+    zone?: WidgetSimulateZone;
+    mock?: MockTelemetryValues;
+  }): Promise<void> {
     this.setState({ phase: "loading-wasm", progress: 5, status: "Loading firmware…" });
 
     try {
+      if (options?.mock) {
+        this.mock = options.mock;
+      }
       const { WasmRunner } = await import("@edgetx/simulator-ui");
       this.runner = new WasmRunner(
         (text: string) => this.callbacks.onLog?.(text),
@@ -107,6 +124,9 @@ export class SimRuntime {
         await this.deployWidget(options.source);
         this.pendingWidget = { source: options.source, zone: options.zone };
         this.scriptLaunched = false;
+        this.widgetReloadPending = false;
+        this.widgetReloadDelayFrames = 0;
+        this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
       }
 
       this.setState({ progress: 40, status: "Loading WASM…" });
@@ -117,6 +137,7 @@ export class SimRuntime {
       ex.simuInit();
       this.runner.setFatfsPaths("/", "/");
       (ex as ExtendedSimulatorExports).simuCreateDefaults?.();
+      await deploySimModel(this.runner);
       ex.simuStart(0);
 
       this.loopRunning = true;
@@ -131,7 +152,10 @@ export class SimRuntime {
 
   async loadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
     this.scriptLaunched = false;
+    this.widgetReloadPending = false;
+    this.widgetReloadDelayFrames = 0;
     this.pendingWidget = null;
+    this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
     await this.deployWidget(source);
     this.pendingWidget = { source, zone };
   }
@@ -143,6 +167,8 @@ export class SimRuntime {
   async dispose(): Promise<void> {
     this.loopRunning = false;
     this.scriptLaunched = false;
+    this.widgetReloadPending = false;
+    this.widgetReloadDelayFrames = 0;
     this.pendingWidget = null;
     if (this.runner) {
       this.runner.stopSim();
@@ -236,7 +262,17 @@ export class SimRuntime {
     this.lastTelemetryMs = now;
     const ex = this.runner?.exports;
     if (!ex?.simuSendTelemetry) return;
-    injectTelemetryFrames(ex, buildTelemetryFrames(this.mock));
+    const frames = buildTelemetryFrames(this.mock);
+    injectTelemetryFrames(ex, frames);
+    // Extra bursts while priming so CRSF sensors register before create().
+    if (
+      this.widgetLaunchDelayFrames > 0 ||
+      this.widgetReloadPending ||
+      this.widgetReloadDelayFrames > 0
+    ) {
+      injectTelemetryFrames(ex, frames);
+      injectTelemetryFrames(ex, frames);
+    }
   }
 
   private async runLoop(): Promise<void> {
@@ -262,9 +298,24 @@ export class SimRuntime {
 
       ex.simuLcdFlushed();
 
-      if (!this.scriptLaunched && this.pendingWidget) {
-        this.scriptLaunched = true;
-        this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
+      if (this.pendingWidget) {
+        if (!this.scriptLaunched) {
+          if (this.widgetLaunchDelayFrames > 0) {
+            this.widgetLaunchDelayFrames -= 1;
+          } else {
+            this.scriptLaunched = true;
+            this.widgetReloadPending = true;
+            this.widgetReloadDelayFrames = WIDGET_RELOAD_DELAY_FRAMES;
+            this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
+          }
+        } else if (this.widgetReloadPending) {
+          if (this.widgetReloadDelayFrames > 0) {
+            this.widgetReloadDelayFrames -= 1;
+          } else {
+            this.widgetReloadPending = false;
+            this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
+          }
+        }
       }
 
       const buf = frame.buffer.slice(

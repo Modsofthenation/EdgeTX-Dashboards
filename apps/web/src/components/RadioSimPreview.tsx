@@ -23,6 +23,7 @@ interface RadioSimPreviewProps {
   luaSource: string;
   layoutProfileId?: string;
   mock: MockTelemetryValues;
+  live?: boolean;
   active: boolean;
 }
 
@@ -30,6 +31,7 @@ export function RadioSimPreview({
   luaSource,
   layoutProfileId = "tx15",
   mock,
+  live = true,
   active,
 }: RadioSimPreviewProps) {
   const { state, frame, wasmSizeMb, keyboardMode, init, loadWidget, setMock, sendInput, dispose } =
@@ -126,6 +128,7 @@ export function RadioSimPreview({
       init({
         source: luaSource,
         zone: simZone,
+        mock,
       });
     }
     return () => {
@@ -207,6 +210,9 @@ export function RadioSimPreview({
               <span className={styles.radioSimFullscreenMeta}>
                 {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX WASM · {previewDims.layout} z
                 {previewDims.zone}
+                {live && state.phase === "running" && (
+                  <span className={styles.radioSimLiveTag}> · Live mock telemetry</span>
+                )}
               </span>
               <button
                 type="button"

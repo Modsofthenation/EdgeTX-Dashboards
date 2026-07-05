@@ -56,7 +56,7 @@ Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in 
 
 5. On first LCD frame: `simuLoadWidgetByLayout(name, layout, zone)` when `@simulate` is present (matches Dev Kit); `simuLoadWidget(name)` only when no zone annotation
 
-6. Inject CRSF telemetry each tick via `simuSendTelemetry(0, 2, …)`
+6. After `simuCreateDefaults()`, overwrite `/MODELS/model1.yml` with a CRSF model + Betaflight sensor labels, then inject CRSF telemetry to internal and external module bays via `simuSendTelemetry(mod, 2, …)` (~60 frames before first widget load, reload once after ~45 more frames so `create()` re-caches `getSourceIndex()`)
 
 7. User input (touch, keys, sticks, switches) forwarded from `@edgetx/simulator-ui` `Simulator` → worker → `SimRuntime.handleInput()` → WASM exports. Double-tap the widget on the LCD to enter widget fullscreen (same as on hardware).
 

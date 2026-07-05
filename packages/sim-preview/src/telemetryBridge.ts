@@ -87,7 +87,7 @@ function buildGpsFrame(mock: MockTelemetryValues): number[] {
   buf[2] = GPS_ID;
   i32be(buf, 3, 437654321);
   i32be(buf, 7, -792345678);
-  i16be(buf, 11, 0);
+  i16be(buf, 11, Math.round(mock.GSpd * 10));
   i16be(buf, 13, Math.round(mock.Hdg * 100));
   i16be(buf, 15, Math.round(mock.Alt + 1000));
   buf[17] = Math.round(mock.Sats) & 0xff;
@@ -127,7 +127,13 @@ export function buildTelemetryFrames(mock: MockTelemetryValues): number[][] {
   ];
 }
 
-/** Inject CRSF frames via simuSendTelemetry (module 0, protocol 2). */
+/** CRSF protocol id for simuSendTelemetry. */
+export const CRSF_TELEMETRY_PROTOCOL = 2;
+
+/** Internal (0) and external (1) module bays — inject both until model bay is known. */
+export const CRSF_TELEMETRY_MODULES = [0, 1] as const;
+
+/** Inject CRSF frames via simuSendTelemetry (protocol 2). */
 export function injectTelemetryFrames(
   exports: {
     malloc: (size: number) => number;
@@ -135,7 +141,8 @@ export function injectTelemetryFrames(
     memory: WebAssembly.Memory;
     simuSendTelemetry: (mod: number, protocol: number, ptr: number, frameLen: number) => void;
   },
-  frames: number[][]
+  frames: number[][],
+  modules: readonly number[] = CRSF_TELEMETRY_MODULES
 ): void {
   for (const frameData of frames) {
     if (!frameData.length) continue;
@@ -143,7 +150,9 @@ export function injectTelemetryFrames(
     const ptr = exports.malloc(bytes.length);
     if (!ptr) continue;
     new Uint8Array(exports.memory.buffer).set(bytes, ptr);
-    exports.simuSendTelemetry(0, 2, ptr, bytes.length);
+    for (const mod of modules) {
+      exports.simuSendTelemetry(mod, CRSF_TELEMETRY_PROTOCOL, ptr, bytes.length);
+    }
     exports.free(ptr);
   }
 }

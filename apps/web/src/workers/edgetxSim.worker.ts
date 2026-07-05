@@ -32,11 +32,21 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
             post({ type: "frame", frame }, [frame.buffer]),
           onLog: (text) => post({ type: "log", text }),
         });
+        if (msg.mock) {
+          currentMock = msg.mock;
+        }
         await runtime.init(
-          msg.source
-            ? { source: msg.source, zone: msg.zone }
+          msg.source || msg.mock
+            ? {
+                source: msg.source,
+                zone: msg.zone,
+                mock: msg.mock ?? currentMock ?? undefined,
+              }
             : undefined
         );
+        if (currentMock) {
+          runtime.setMockTelemetry(currentMock);
+        }
         break;
       }
       case "loadWidget": {

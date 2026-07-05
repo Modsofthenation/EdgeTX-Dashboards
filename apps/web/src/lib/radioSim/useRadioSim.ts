@@ -60,7 +60,7 @@ export function useRadioSim() {
   }, []);
 
   const init = useCallback(
-    (widget?: { source: string; zone?: WidgetSimulateZone }) => {
+    (widget?: { source: string; zone?: WidgetSimulateZone; mock?: MockTelemetryValues }) => {
       const worker = ensureWorker();
       setState({ phase: "loading-wasm", progress: 0, status: "Starting…", error: null, keyboardMode: "none" });
       const req: SimWorkerRequest = {
@@ -69,6 +69,7 @@ export function useRadioSim() {
         radioKey: "tx15",
         source: widget?.source,
         zone: widget?.zone,
+        mock: widget?.mock,
       };
       worker.postMessage(req);
     },

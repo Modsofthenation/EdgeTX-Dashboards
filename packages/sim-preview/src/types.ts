@@ -73,6 +73,7 @@ export type SimWorkerRequest =
       radioKey: string;
       source?: string;
       zone?: WidgetSimulateZone;
+      mock?: MockTelemetryValues;
     }
   | { type: "loadWidget"; source: string; zone?: WidgetSimulateZone }
   | { type: "setMock"; mock: MockTelemetryValues }
