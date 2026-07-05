@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { cropZoneFromFramebuffer } from "@widget-gen/sim-preview";
@@ -12,6 +13,47 @@ const RadioScreen = dynamic(
   () => import("@edgetx/simulator-ui").then((m) => m.RadioScreen),
   { ssr: false }
 );
+
+type SimFrame = {
+  buffer: ArrayBuffer;
+  width: number;
+  height: number;
+  depth: number;
+} | null;
+
+function fitMaxWidth(
+  containerW: number,
+  containerH: number,
+  lcdW: number,
+  lcdH: number,
+  capAtNative: boolean
+): number {
+  if (containerW <= 0 || containerH <= 0) return lcdW;
+  const scale = Math.min(containerW / lcdW, containerH / lcdH, capAtNative ? 1 : Infinity);
+  return Math.max(1, Math.floor(lcdW * scale));
+}
+
+function SimDisplay({
+  zoneFrame,
+  zoneW,
+  zoneH,
+  maxWidth,
+}: {
+  zoneFrame: SimFrame;
+  zoneW: number;
+  zoneH: number;
+  maxWidth: number;
+}) {
+  return (
+    <RadioScreen
+      frameData={zoneFrame}
+      width={zoneW}
+      height={zoneH}
+      depth={zoneFrame?.depth ?? 16}
+      maxWidth={maxWidth}
+    />
+  );
+}
 
 interface RadioSimPreviewProps {
   luaSource: string;
@@ -30,6 +72,7 @@ export function RadioSimPreview({
   const startedRef = useRef(false);
   const loadedSourceRef = useRef<string | null>(null);
   const screenRef = useRef<HTMLDivElement>(null);
+  const fullscreenScreenRef = useRef<HTMLDivElement>(null);
 
   const layoutProfile = useMemo(() => {
     try {
@@ -45,6 +88,8 @@ export function RadioSimPreview({
   );
 
   const [displayMaxWidth, setDisplayMaxWidth] = useState(previewDims.zoneW);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenMaxWidth, setFullscreenMaxWidth] = useState(previewDims.zoneW);
 
   const zoneFrame = useMemo(() => {
     if (!frame) return null;
@@ -71,11 +116,17 @@ export function RadioSimPreview({
   const updateDisplaySize = useCallback(() => {
     const el = screenRef.current;
     if (!el) return;
-    const cw = el.clientWidth;
-    const ch = el.clientHeight;
-    if (cw <= 0 || ch <= 0) return;
-    const scale = Math.min(cw / previewDims.zoneW, ch / previewDims.zoneH, 1);
-    setDisplayMaxWidth(Math.max(1, Math.floor(previewDims.zoneW * scale)));
+    setDisplayMaxWidth(
+      fitMaxWidth(el.clientWidth, el.clientHeight, previewDims.zoneW, previewDims.zoneH, true)
+    );
+  }, [previewDims.zoneW, previewDims.zoneH]);
+
+  const updateFullscreenSize = useCallback(() => {
+    const el = fullscreenScreenRef.current;
+    if (!el) return;
+    setFullscreenMaxWidth(
+      fitMaxWidth(el.clientWidth, el.clientHeight, previewDims.zoneW, previewDims.zoneH, false)
+    );
   }, [previewDims.zoneW, previewDims.zoneH]);
 
   useEffect(() => {
@@ -91,6 +142,29 @@ export function RadioSimPreview({
     updateDisplaySize();
     return () => ro.disconnect();
   }, [state.phase, updateDisplaySize]);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const el = fullscreenScreenRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(updateFullscreenSize);
+    ro.observe(el);
+    updateFullscreenSize();
+    return () => ro.disconnect();
+  }, [fullscreen, updateFullscreenSize]);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+
+  useEffect(() => {
+    if (!active) setFullscreen(false);
+  }, [active]);
 
   useEffect(() => {
     if (!active) {
@@ -163,14 +237,57 @@ export function RadioSimPreview({
   }
 
   return (
-    <div ref={screenRef} className={styles.radioSimScreen}>
-      <RadioScreen
-        frameData={zoneFrame}
-        width={previewDims.zoneW}
-        height={previewDims.zoneH}
-        depth={zoneFrame?.depth ?? 16}
-        maxWidth={displayMaxWidth}
-      />
-    </div>
+    <>
+      <div ref={screenRef} className={styles.radioSimScreen}>
+        <SimDisplay
+          zoneFrame={zoneFrame}
+          zoneW={previewDims.zoneW}
+          zoneH={previewDims.zoneH}
+          maxWidth={displayMaxWidth}
+        />
+        <button
+          type="button"
+          className={styles.radioSimExpand}
+          onClick={() => setFullscreen(true)}
+          aria-label="Open Radio sim fullscreen"
+          title="Fullscreen"
+        >
+          ⛶
+        </button>
+      </div>
+      {fullscreen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className={styles.radioSimFullscreen}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Radio sim fullscreen"
+          >
+            <div className={styles.radioSimFullscreenBar}>
+              <span className={styles.radioSimFullscreenMeta}>
+                {previewDims.zoneW} × {previewDims.zoneH} · EdgeTX WASM
+              </span>
+              <button
+                type="button"
+                className={styles.radioSimFullscreenClose}
+                onClick={() => setFullscreen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div ref={fullscreenScreenRef} className={styles.radioSimFullscreenScreen}>
+              <SimDisplay
+                zoneFrame={zoneFrame}
+                zoneW={previewDims.zoneW}
+                zoneH={previewDims.zoneH}
+                maxWidth={fullscreenMaxWidth}
+              />
+            </div>
+            <p className={styles.radioSimFullscreenHint}>Press Esc to exit</p>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
