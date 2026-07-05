@@ -41,7 +41,7 @@ Generated widgets must look **clean and professional** on a 480×320 TX15 screen
 - **Accent colors** — Follow the creative brief palette from `knowledge/design/edgetx-theme-palettes.md`; avoid flat grey-only layouts.
 - **4–8 metrics** per screen; hide extras behind BOOL options.
 - **Direct `lcd.*` in `refresh()`** — Required for web preview; no opaque draw helpers.
-- **Model image:** When requested, use `Bitmap.open` in `create()`, `lcd.drawBitmap` in `refresh()`, plus grey placeholder panel. See `knowledge/design/model-image.md`.
+- **Model image:** When requested, use `Bitmap.open` in `create()`, `Bitmap.getSize(bitmap)` (bitmap handle only — never the path string), `lcd.drawBitmap` in `refresh()`, plus grey placeholder panel. See `knowledge/design/model-image.md`.
 
 See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-recipe.md` only for card-grid archetypes.
 
@@ -86,6 +86,7 @@ Generated widgets must pass `validateWidget` with `valid: true` before packaging
 - `---@type WidgetScript` and `---@simulate` annotations (EdgeTX Dev Kit)
 - `lcd.*` / `lvgl.*` calls must match EdgeTX 2.11 stubs when synced
 - **`lcd.drawLine`:** 5th argument must be `SOLID` or `DOTTED`; color goes in 6th flags arg (validator rejects color-as-5th-arg — causes WASM runtime errors)
+- **`Bitmap.getSize`:** pass the bitmap handle from `Bitmap.open()`, never the SD path string (validator rejects path-as-first-arg — causes `create()` crash on radio)
 
 ## Dev-kit annotations
 

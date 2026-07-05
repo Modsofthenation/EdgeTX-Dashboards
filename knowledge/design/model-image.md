@@ -17,10 +17,15 @@ Load once in `create()`, draw in `refresh()` with a **placeholder fallback** so 
 local MODEL_IMG = "/MODELS/model.png"
 
 local function create(zone, opts)
+  local modelBmp = Bitmap.open(MODEL_IMG)
+  local bmpW, bmpH = Bitmap.getSize(modelBmp)  -- bitmap handle only, never the path string
+
   return {
     zone = zone,
     options = opts,
-    modelBmp = Bitmap.open(MODEL_IMG),
+    modelBmp = modelBmp,
+    bmpW = bmpW,
+    bmpH = bmpH,
     src = { ... },
   }
 end

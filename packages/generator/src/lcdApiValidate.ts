@@ -49,10 +49,10 @@ export function splitTopLevelArgs(argsSource: string): string[] {
   return args;
 }
 
-/** Extract inner argument strings for lcd.<method>(...) calls in source. */
-export function extractLcdCallArgStrings(source: string, method: string): string[] {
+/** Extract inner argument strings for namespace.<method>(...) calls in source. */
+export function extractCallArgStrings(source: string, prefix: string, method: string): string[] {
   const calls: string[] = [];
-  const needle = `lcd.${method}(`;
+  const needle = `${prefix}.${method}(`;
   let index = 0;
 
   while (index < source.length) {
@@ -88,6 +88,11 @@ export function extractLcdCallArgStrings(source: string, method: string): string
   return calls;
 }
 
+/** Extract inner argument strings for lcd.<method>(...) calls in source. */
+export function extractLcdCallArgStrings(source: string, method: string): string[] {
+  return extractCallArgStrings(source, "lcd", method);
+}
+
 function skipQuoted(source: string, start: number): number {
   const quote = source[start];
   let i = start + 1;
@@ -116,6 +121,16 @@ function looksLikeColorArg(arg: string): boolean {
     return false;
   }
   return true;
+}
+
+function looksLikeBitmapPathArg(arg: string): boolean {
+  const trimmed = arg.trim();
+  if (!trimmed) return false;
+  if (/^["']/.test(trimmed)) return true;
+  if (/^MODEL_IMG\b/.test(trimmed)) return true;
+  if (/_(IMG|PATH)\b/.test(trimmed)) return true;
+  if (/^\/[A-Z]/.test(trimmed)) return true;
+  return false;
 }
 
 /**
@@ -159,6 +174,29 @@ export function validateLcdDrawLineCalls(source: string): ValidationIssue[] {
   return issues;
 }
 
+/**
+ * EdgeTX Bitmap.getSize(bitmap) expects the handle from Bitmap.open(), not the SD path string.
+ */
+export function validateBitmapGetSizeCalls(source: string): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  for (const argsSource of extractCallArgStrings(source, "Bitmap", "getSize")) {
+    const args = splitTopLevelArgs(argsSource);
+    if (args.length === 0) continue;
+
+    const firstArg = args[0];
+    if (looksLikeBitmapPathArg(firstArg) || args.length > 1) {
+      issues.push({
+        severity: "error",
+        message:
+          "Bitmap.getSize() expects the bitmap handle from Bitmap.open(), not the path string — use Bitmap.getSize(modelBmp)",
+      });
+    }
+  }
+
+  return issues;
+}
+
 export function validateLcdApiUsage(source: string): ValidationIssue[] {
-  return validateLcdDrawLineCalls(source);
+  return [...validateLcdDrawLineCalls(source), ...validateBitmapGetSizeCalls(source)];
 }

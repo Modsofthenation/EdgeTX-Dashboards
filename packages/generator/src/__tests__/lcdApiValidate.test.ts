@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateLcdDrawLineCalls } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateLcdDrawLineCalls } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -34,5 +34,28 @@ describe("validateLcdDrawLineCalls", () => {
   it("rejects named color constant as 5th argument", () => {
     const source = REFRESH_PREFIX + "lcd.drawLine(1, 2, 3, 4, CYAN)\n" + REFRESH_SUFFIX;
     assert.equal(validateLcdDrawLineCalls(source).length, 1);
+  });
+});
+
+describe("validateBitmapGetSizeCalls", () => {
+  it("accepts bitmap handle as sole argument", () => {
+    const source = `local function create()
+  local modelBmp = Bitmap.open(MODEL_IMG)
+  local bmpW, bmpH = Bitmap.getSize(modelBmp)
+  return { modelBmp = modelBmp }
+end`;
+    assert.deepEqual(validateBitmapGetSizeCalls(source), []);
+  });
+
+  it("rejects path string as first argument (radio create() crash)", () => {
+    const source = `local function create()
+  local modelBmp = Bitmap.open(MODEL_IMG)
+  local bmpW, bmpH = Bitmap.getSize(MODEL_IMG, modelBmp)
+  return {}
+end`;
+    const issues = validateBitmapGetSizeCalls(source);
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].severity, "error");
+    assert.match(issues[0].message, /bitmap handle/);
   });
 });

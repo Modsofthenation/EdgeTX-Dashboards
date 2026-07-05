@@ -25,12 +25,11 @@ function Bitmap.open(name) end
 ---
 --- **Since:** 2.2.0
 --- > **Notice:** Only available on radios with color display
----@param name string
----@param bitmap? any #(pointer) point to a bitmap previously opened with Bitmap.open()
+---@param bitmap any #(pointer) point to a bitmap previously opened with Bitmap.open()
 ---@return number multiple #returns 2 values:
 --- (number) width in pixels
 --- (number) height in pixels
-function Bitmap.getSize(name, bitmap) end
+function Bitmap.getSize(bitmap) end
 --- Return a resized bitmap object
 ---
 --- **Since:** 2.8.0

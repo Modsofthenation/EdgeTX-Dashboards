@@ -1,89 +1,58 @@
 # EdgeTX Dashboard Generator
 
-Prompt-driven generator for EdgeTX Lua **full-screen dashboards**, targeting color LCD radios (default **RadioMaster TX15** 480×320) with telemetry for **Betaflight**, **Rotorflight**, and **generic CRSF**. Can also generate companion **Tool** and **Telemetry** scripts (battery selector, flight logger, log viewer) packaged with install instructions.
+Describe the dashboard you want. The app writes the Lua, checks it, shows a live preview on a virtual TX15, and gives you a zip to copy to your radio SD card.
 
-Built with the [Cursor SDK](https://cursor.com/docs/sdk/typescript) (`@cursor/sdk`) and a Next.js web UI.
+Built for full-screen widgets on color LCD radios (default: **RadioMaster TX15**, 480×320). Works with **Betaflight**, **Rotorflight**, and **generic CRSF** telemetry. You can also ask for companion **Tool** or **Telemetry** scripts (battery selector, flight logger, and similar).
 
-## Prerequisites
+![Home screen with chat and dashboard panel](docs/screenshots/home.png)
 
-- **Node.js 22.13+** (required by `@cursor/sdk`)
-- **Cursor API key** — set `CURSOR_API_KEY` in your environment ([Cursor Dashboard → Integrations](https://cursor.com/dashboard/integrations))
+![Generated widget preview running EdgeTX WASM firmware](docs/screenshots/preview-panel.png)
+
+## What you get
+
+1. A chat where you describe layout, sensors, colors, and options
+2. An agent that writes `main.lua` (and optional companion scripts)
+3. Validation against EdgeTX rules and your telemetry protocol
+4. A **Preview** panel that runs real EdgeTX firmware in the browser (WASM), not a fake canvas
+5. A **Download** button with `INSTALL.md` inside the zip
+
+Pick your radio, protocol, and EdgeTX version in the composer bar. Refine in chat until it looks right, then download.
 
 ## Quick start
 
+**You need:** Node.js **22.13+** and a [Cursor API key](https://cursor.com/dashboard/integrations) (`CURSOR_API_KEY`).
+
 ```bash
-# Install dependencies (also patches @edgetx/simulator-ui via postinstall)
 npm install
-
-# One-shot: sync stubs + WASM firmware, patch simulator-ui, build all packages
-npm run setup
-
-# Start web UI
-export CURSOR_API_KEY="cursor_..."   # Windows PowerShell: $env:CURSOR_API_KEY="cursor_..."
+npm run setup    # stubs, WASM firmware, build (first time)
+export CURSOR_API_KEY="cursor_..."   # PowerShell: $env:CURSOR_API_KEY="cursor_..."
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), describe your dashboard, and download the generated zip for your radio SD card.
+Open [http://localhost:3000](http://localhost:3000), describe a dashboard, wait for the agent to finish, then check the preview on the right.
 
-### Setup commands (reference)
+The first WASM preview load downloads about 5 MB of EdgeTX firmware. Your browser caches it after that.
 
-| Command | When to run |
-|---------|-------------|
-| `npm install` | First clone; re-run after dependency updates. Runs `postinstall` → patches `@edgetx/simulator-ui`. |
-| `npm run setup` | **Recommended first-time setup** — stubs + WASM + patch + full build. |
-| `npm run setup:sim` | Radio sim tab broken or after `@edgetx/simulator-ui` reinstall — WASM + patch + `sim-preview` build only. |
-| `npm run build` | After changing `packages/*` or before production deploy. |
-| `npm run sync-stubs` | Fetch LuaLS stubs into `stubs/2.11/` (VS Code Dev Kit + validation). |
-| `npm run sync-wasm` | Fetch TX15 WASM into `apps/web/public/sim/` (~5 MB; required for **Sim** tab). |
-| `node scripts/patch-simulator-ui.mjs` | Re-apply EdgeTX 2.11 env stubs if Radio sim errors on `simuAuxSerial*`. Also runs on `npm install`. |
-| `npm run test:wasm` | Verify WASM manifest + file presence after `sync-wasm`. |
+## Using the web UI
 
-Manual equivalent of `npm run setup`:
+**History** on the left keeps past chats. **Output** on the right shows:
 
-```bash
-npm install
-node scripts/patch-simulator-ui.mjs
-npm run sync-stubs
-npm run sync-wasm
-npm run build
-```
+- **Preview**: live EdgeTX WASM render of your widget (mock CRSF telemetry ticks every few seconds)
+- **Lua**: the generated source
+- **Open interactive sim**: full radio overlay with touch, keys, and sticks (Esc to close)
+- **Download**: zip for your SD card (blocked until validation passes)
 
-## Web UI preview modes
+You can attach reference screenshots to your prompt (PNG, JPEG, WebP, GIF, up to 4 MB each).
 
-The output panel has three tabs:
+## Put it on your radio
 
-| Tab | What it runs | Setup needed |
-|-----|--------------|--------------|
-| **Preview** | Fast regex canvas at 480×320 with mock telemetry | None beyond `npm run build` |
-| **Radio sim** | Real EdgeTX 2.11 WASM Lua runtime | `npm run setup:sim` (or full `npm run setup`) |
-| **Lua** | Source viewer | Generated widget only |
+1. Download the zip from the app
+2. Copy `WIDGETS/<WidgetName>/` to your SD card
+3. On the radio: **Model → Telemetry → Discover new** (power the FC/receiver first)
+4. Add the widget to your main view, then go **full screen** (double-tap on TX15)
+5. Read `INSTALL.md` in the zip for protocol-specific notes (Rotorflight needs `rf2bg`, etc.)
 
-After changing sim-preview code or reinstalling deps, restart `npm run dev` and hard-refresh the browser (Ctrl+Shift+R).
-
-### Radio sim troubleshooting
-
-| Error / symptom | Fix |
-|-----------------|-----|
-| Stuck on “Loading Radio sim…” | Restart dev server; check browser console for worker errors. |
-| `simuAuxSerialStart: function import requires a callable` | `npm run setup:sim` then restart dev server. |
-| `Cannot use 'in' operator to search for '_start' in undefined` | Rebuild sim-preview (`npm run setup:sim`); ensure dev server restarted after code changes. |
-| WASM file missing / 404 on `/sim/*.wasm` | `npm run sync-wasm` or `npm run setup:sim`. |
-
-## EdgeTX Dev Kit (VS Code simulation)
-
-1. Install **Lua** + **EdgeTX Dev Kit** (see `.vscode/extensions.json`).
-2. Open a generated `main.lua` — annotations are added automatically:
-   ```lua
-   ---@type WidgetScript
-   ---@simulate Layout1x1 zone=0
-   ```
-3. **EdgeTX: Simulate Script** or **Watch Script** for live reload.
-
-The web UI live preview also reads `@simulate` to size the widget zone on the 480×320 canvas.
-
-The web UI also includes an **Install & verify guide** and bundles **INSTALL.md** inside each downloaded zip.
-
-## CLI usage
+## CLI (optional)
 
 ```bash
 npm run build
@@ -91,68 +60,72 @@ export CURSOR_API_KEY="cursor_..."
 npm run generate -- --protocol betaflight "Full-screen battery and GPS dashboard"
 ```
 
-Options:
-
-- `--radio tx15` — radio profile (default: tx15)
-- `--protocol betaflight|rotorflight|generic-crsf`
-- `--edge-tx 2.11.0`
-
-## Project structure
-
-```
-apps/web/              Next.js UI + API routes (SSE streaming)
-packages/generator/    Cursor SDK orchestration, validation, packaging
-packages/shared/       Shared TypeScript types, @simulate layouts
-packages/sim-preview/  EdgeTX WASM radio preview (SimRuntime, telemetry bridge)
-knowledge/             Radio profiles, layout zones, telemetry catalogs
-stubs/2.11/            EdgeTX LuaLS stubs (edgetx-stubs, via npm run sync-stubs)
-apps/web/public/sim/   EdgeTX WASM firmware (via npm run sync-wasm)
-templates/             Lua starter template and INSTALL.md template
-examples/              Reference widgets
-generated/             Agent output (gitignored)
-dist-output/           Packaged zips (gitignored)
-.cursor/rules/         EdgeTX Lua constraints for the agent
-```
-
-## Deploying to TX15
-
-1. Download the generated `.zip`
-2. Copy `WIDGETS/<WidgetName>/` to your radio SD card
-3. **Model → Telemetry → Discover new** (power on FC/receiver first)
-4. Add widget to main view, then enter **Full screen** (double-tap on TX15)
-5. Read `INSTALL.md` in the zip for protocol-specific setup (e.g. Rotorflight `rf2bg`)
+Useful flags: `--radio tx15`, `--protocol betaflight|rotorflight|generic-crsf`, `--edge-tx 2.11.0`.
 
 ## Telemetry protocols
 
-| Protocol | Catalog file | Notes |
-|----------|--------------|-------|
-| Betaflight | `knowledge/telemetry/betaflight-crsf.json` | Standard CRSF sensors via ELRS/Crossfire |
-| Rotorflight | `knowledge/telemetry/rotorflight-crsf.json` | Requires `rf2bg` special function for custom sensors |
-| Generic CRSF | `knowledge/telemetry/generic-crsf.json` | Common ELRS/CRSF sensor names |
+| Protocol | Catalog | Notes |
+|----------|---------|-------|
+| Betaflight | `knowledge/telemetry/betaflight-crsf.json` | Standard CRSF via ELRS / Crossfire |
+| Rotorflight | `knowledge/telemetry/rotorflight-crsf.json` | Needs `rf2bg` for custom sensors |
+| Generic CRSF | `knowledge/telemetry/generic-crsf.json` | Common ELRS / CRSF sensor names |
 
-## Validation pipeline
+## Validation
 
-Before any widget zip is offered for download, the generator runs:
+Nothing ships until the widget passes checks:
 
-1. **Static checks** (TypeScript) — `return { name, create, refresh }`, name ≤10 chars, no `require`/`dofile`/`loadstring`, option name constraints
-2. **Constraint checks** — telemetry sensor names must exist in the selected protocol catalog (`strictTelemetry: true`)
-3. **Agent tool** — `validateWidget` custom tool uses the same pipeline; agent must reach `valid: true` before `packageWidget`
+- Widget structure (`name`, `create`, `refresh`, no `require` / `dofile`)
+- Sensor names match the protocol catalog
+- EdgeTX LCD API rules (including dev-kit stubs)
+- Agent must get `valid: true` from `validateWidget` before packaging
 
-Download is **blocked** (HTTP 422) if validation fails. The UI shows errors and prompts refinement.
+Failed validation blocks download (HTTP 422). Fix issues in chat or edit the Lua, then try again.
 
-`GET /api/validate?sessionId=...` returns the full validation report.
+## If preview or sim breaks
 
-**Phase 2:** [edgetx-dev-kit](https://github.com/JeffreyChix/edgetx-dev-kit) LuaLS stubs + `@simulate` for dev-time simulation.
+| Symptom | Try this |
+|---------|----------|
+| Stuck on “Booting EdgeTX preview…” | Restart `npm run dev`, hard-refresh the browser |
+| WASM 404 | `npm run sync-wasm` or `npm run setup:sim` |
+| `simuAuxSerialStart` errors | `npm run setup:sim`, restart dev server |
+| After changing `packages/sim-preview` | Rebuild (`npm run setup:sim`), restart dev server |
 
-3. **Dev-kit checks** — `---@type WidgetScript`, `---@simulate` layout/zone, stub-aware `lcd.*` API validation (EdgeTX 2.11 stubs in `stubs/2.11/`)
+## VS Code / EdgeTX Dev Kit
+
+For local script debugging outside the web app:
+
+1. Install **Lua** + **EdgeTX Dev Kit** (see `.vscode/extensions.json`)
+2. Open generated `main.lua` (annotations are injected automatically):
+
+   ```lua
+   ---@type WidgetScript
+   ---@simulate Layout1x1 zone=0
+   ```
+
+3. Run **EdgeTX: Simulate Script** or **Watch Script**
+
+## Project layout
+
+```
+apps/web/              Next.js UI and API routes
+packages/generator/    Cursor SDK agent, validation, packaging
+packages/shared/       Shared types and @simulate layouts
+packages/sim-preview/  EdgeTX WASM runtime and telemetry bridge
+knowledge/             Radio profiles, telemetry catalogs, design guides
+templates/             Starter Lua and INSTALL.md template
+examples/              Reference widgets
+apps/web/public/sim/   EdgeTX WASM firmware (auto-fetched on install)
+generated/             Agent output (gitignored)
+```
 
 ## Environment variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `CURSOR_API_KEY` | Yes | Cursor API key for SDK agent runs |
-| `GENERATOR_API_SECRET` | No | If set, API routes require `Authorization: Bearer <secret>` or `X-Generator-Secret` header |
+| `CURSOR_API_KEY` | Yes | Cursor API key for generation |
+| `GENERATOR_API_SECRET` | No | Protects API routes when set |
+| `SKIP_WASM_SYNC` | No | Set to `1` to skip WASM download on install |
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT. See [LICENSE](LICENSE).
