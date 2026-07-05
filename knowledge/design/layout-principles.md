@@ -55,6 +55,35 @@ Use the run palette accents — not rainbow on every line.
 
 Provide 3–5 BOOL toggles plus optional COLOR options. Do not expose every layout knob.
 
+## Content budget (footer-safe layouts)
+
+On a 480×320 screen with header (~40px), footer (~28px), and 12px margins, the **drawable body** is only ~228px tall. Never stack fixed-height blocks that exceed this — the footer will clip the bottom row.
+
+Compute the safe area first, then scale row heights:
+
+```lua
+local pad = 12
+local headerH = 40
+local footerH = 28
+local contentTop = headerH + pad
+local contentBottom = h - footerH - pad   -- gap above footer
+local contentH = contentBottom - contentTop
+
+-- Example: 3 stacked rows with 2 gaps between them
+local blockH = contentH - 2 * pad
+local ratioSum = 76 + 96 + 52            -- desired proportions
+local gpsH = math.floor(blockH * 76 / ratioSum)
+local midH = math.floor(blockH * 96 / ratioSum)
+local motorH = blockH - gpsH - midH      -- remainder avoids rounding overflow
+
+local gpsY = contentTop
+local midY = gpsY + gpsH + pad
+local motorY = midY + midH + pad
+-- motorY + motorH must be <= contentBottom
+```
+
+When BOOL options hide a row, **reclaim its height** — do not leave empty reserved space and do not keep using the full 3-row stack.
+
 ## Touch (TX15)
 
 Reserve bottom 40px or use footer for status. Avoid placing critical numbers where thumbs obscure them.

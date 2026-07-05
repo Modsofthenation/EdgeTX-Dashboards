@@ -35,6 +35,7 @@ Generated widgets must look **clean and professional** on a 480×320 TX15 screen
 
 - **Grouped regions** — Organize metrics in visual regions appropriate to the layout archetype (card panels, vertical strips, horizontal bands, or hero + corners) on a dark background.
 - **12px grid** — Margins and gaps of 12px; header bar ~40px when used; footer status strip ~28px when used.
+- **Content budget** — Compute `contentBottom = h - footerH - pad` before assigning block heights; scale rows to fit within `contentH` so the footer never clips the last panel.
 - **Typography hierarchy** — SMLSIZE labels, MIDSIZE values, at most one DBLSIZE hero metric (required for hero-minimal).
 - **Label above value** — Not a wall of inline `"Label 12.3 unit"` strings.
 - **Accent colors** — Follow the creative brief palette; avoid flat grey-only layouts.

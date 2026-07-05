@@ -122,6 +122,35 @@
   opacity: 0.6;
 }
 
+.protocolBadge {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.625rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.protocolBetaflight {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.protocolRotorflight {
+  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.14);
+  border-color: rgba(6, 182, 212, 0.28);
+}
+
+.protocolGenericCrsf {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.28);
+}
+
 .badgeOk,
 .badgeDraft {
   font-weight: 600;

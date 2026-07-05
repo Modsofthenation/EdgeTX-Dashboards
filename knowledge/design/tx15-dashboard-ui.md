@@ -30,6 +30,7 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 - Use `LCD_W` and `LCD_H` (or `zone.w` / `zone.h`) for all sizing — never hardcode 480/320.
 - Two-column cards: `colW = math.floor((w - pad * 3) / 2)` with `pad = 12`.
+- **Footer-safe height:** `contentBottom = h - footerH - pad`. All body blocks must end at or above `contentBottom` (~280 on TX15). Scale row heights from `contentH = contentBottom - (headerH + pad)` instead of fixed 76/96/52 stacks. See `layout-principles.md` content budget section.
 
 ## Typography
 

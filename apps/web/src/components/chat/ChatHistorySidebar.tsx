@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatSummary } from "@/lib/chatTypes";
+import { PROTOCOL_BADGE_LABELS, protocolBadgeClass } from "@/lib/protocolLabels";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import styles from "./ChatHistorySidebar.module.css";
 
@@ -79,14 +80,20 @@ export function ChatHistorySidebar({
               >
                 <span className={styles.itemTitle}>{chat.title}</span>
                 <span className={styles.itemMeta}>
+                  <span
+                    className={`${styles.protocolBadge} ${styles[protocolBadgeClass(chat.protocol)]}`}
+                  >
+                    {PROTOCOL_BADGE_LABELS[chat.protocol]}
+                  </span>
                   {chat.widgetName ? (
                     <>
+                      <span className={styles.dot}>·</span>
                       <span className={chat.validated ? styles.badgeOk : styles.badgeDraft}>
                         {chat.widgetName}
                       </span>
-                      <span className={styles.dot}>·</span>
                     </>
                   ) : null}
+                  <span className={styles.dot}>·</span>
                   <span>{formatWhen(chat.updatedAt)}</span>
                 </span>
               </button>
