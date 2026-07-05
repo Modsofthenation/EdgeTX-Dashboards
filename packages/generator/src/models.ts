@@ -1,4 +1,7 @@
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { Cursor } from "@cursor/sdk";
+import { getRepoRoot } from "./knowledge.js";
 
 export interface ModelCatalogEntry {
   id: string;
@@ -26,15 +29,66 @@ export const FALLBACK_MODELS: ModelCatalogEntry[] = [
 
 export const DEFAULT_MODEL_ID = "composer-2.5";
 
-const CACHE_MS = 5 * 60 * 1000;
+/** How long to reuse a fetched model list before calling Cursor again. */
+export const MODEL_CATALOG_CACHE_MS = 24 * 60 * 60 * 1000;
 
-let cached:
-  | {
-      models: ModelCatalogEntry[];
-      ids: Set<string>;
-      expires: number;
-    }
-  | undefined;
+interface ModelCatalogCache {
+  models: ModelCatalogEntry[];
+  ids: Set<string>;
+  expires: number;
+}
+
+interface DiskCachePayload {
+  fetchedAt: number;
+  models: ModelCatalogEntry[];
+}
+
+let memoryCache: ModelCatalogCache | undefined;
+
+function getCacheFilePath(): string {
+  const dataDir = process.env.WIDGET_GEN_DATA_DIR ?? join(getRepoRoot(), "data");
+  return join(dataDir, "model-catalog-cache.json");
+}
+
+function toMemoryCache(models: ModelCatalogEntry[], fetchedAt: number): ModelCatalogCache {
+  return {
+    models,
+    ids: new Set(models.map((m) => m.id)),
+    expires: fetchedAt + MODEL_CATALOG_CACHE_MS,
+  };
+}
+
+function readDiskCache(): ModelCatalogCache | undefined {
+  try {
+    const path = getCacheFilePath();
+    if (!existsSync(path)) return undefined;
+
+    const payload = JSON.parse(readFileSync(path, "utf-8")) as DiskCachePayload;
+    if (!Array.isArray(payload.models) || payload.models.length === 0) return undefined;
+
+    const cache = toMemoryCache(payload.models, payload.fetchedAt);
+    if (cache.expires <= Date.now()) return undefined;
+    return cache;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeDiskCache(models: ModelCatalogEntry[], fetchedAt: number): void {
+  try {
+    const path = getCacheFilePath();
+    mkdirSync(dirname(path), { recursive: true });
+    const payload: DiskCachePayload = { fetchedAt, models };
+    writeFileSync(path, JSON.stringify(payload), "utf-8");
+  } catch {
+    // Ignore cache write failures; in-memory cache still applies for this process.
+  }
+}
+
+function hydrateMemoryCache(): void {
+  if (memoryCache) return;
+  memoryCache = readDiskCache();
+}
 
 function mapSdkModel(model: { id: string; displayName?: string; description?: string }): ModelCatalogEntry {
   return {
@@ -63,20 +117,17 @@ export async function listAvailableModels(apiKey?: string): Promise<ModelCatalog
   }
 
   const now = Date.now();
-  if (cached && cached.expires > now) {
-    return cached.models;
+  hydrateMemoryCache();
+  if (memoryCache && memoryCache.expires > now) {
+    return memoryCache.models;
   }
 
   try {
     const sdkModels = await Cursor.models.list({ apiKey: key });
-    const models =
-      sdkModels.length > 0 ? sdkModels.map(mapSdkModel) : [...FALLBACK_MODELS];
+    const models = sdkModels.length > 0 ? sdkModels.map(mapSdkModel) : [...FALLBACK_MODELS];
 
-    cached = {
-      models,
-      ids: new Set(models.map((m) => m.id)),
-      expires: now + CACHE_MS,
-    };
+    memoryCache = toMemoryCache(models, now);
+    writeDiskCache(models, now);
     return models;
   } catch {
     return [...FALLBACK_MODELS];
@@ -93,7 +144,13 @@ export function isAllowedModelId(modelId: string, allowedModelIds?: string[]): b
   return allowed.includes(modelId);
 }
 
-/** Clear in-memory model cache (useful in tests). */
+/** Clear in-memory and on-disk model cache (useful in tests). */
 export function resetModelCatalogCache(): void {
-  cached = undefined;
+  memoryCache = undefined;
+  try {
+    const path = getCacheFilePath();
+    if (existsSync(path)) unlinkSync(path);
+  } catch {
+    // Ignore cache delete failures.
+  }
 }

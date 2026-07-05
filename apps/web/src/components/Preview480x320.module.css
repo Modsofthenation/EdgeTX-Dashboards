@@ -418,6 +418,70 @@
   color: var(--muted);
 }
 
+.radioSimInlineRunning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.radioSimInlineStatus {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.radioSimInlineOpen {
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.radioSimInlineOpen:hover {
+  border-color: var(--border-strong);
+}
+
+.radioSimInteractive {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1rem 1rem;
+  background: rgba(6, 8, 12, 0.98);
+  backdrop-filter: blur(8px);
+  overflow: auto;
+}
+
+.radioSimInteractiveBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1200px, 100%);
+  gap: 1rem;
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+}
+
+.radioSimInteractiveBody {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: min(1200px, 100%);
+  min-height: 0;
+  overflow: auto;
+}
+
 .radioSimMessage {
   display: flex;
   flex-direction: column;

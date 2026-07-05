@@ -107,6 +107,18 @@ export function resolvePreviewDimensions(
   };
 }
 
+/** True when @simulate zone covers the full LCD (dashboard full-screen mode in WASM sim). */
+export function isFullLcdSimulateZone(
+  dims: Pick<PreviewDimensions, "lcdW" | "lcdH" | "zoneX" | "zoneY" | "zoneW" | "zoneH">
+): boolean {
+  return (
+    dims.zoneX === 0 &&
+    dims.zoneY === 0 &&
+    dims.zoneW === dims.lcdW &&
+    dims.zoneH === dims.lcdH
+  );
+}
+
 export function ensureDevKitAnnotations(
   source: string,
   profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,

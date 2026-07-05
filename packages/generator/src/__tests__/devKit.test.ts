@@ -8,6 +8,7 @@ import {
   parseScriptTypeAnnotation,
   resolvePreviewDimensions,
   TX15_SIMULATE_PROFILE,
+  isFullLcdSimulateZone,
 } from "@widget-gen/shared";
 import {
   validateDevKitAnnotations,
@@ -40,6 +41,13 @@ describe("dev-kit annotations", () => {
     assert.equal(dims.zoneW, 480);
     assert.equal(dims.zoneH, 320);
     assert.equal(dims.layout, "Layout1x1");
+    assert.equal(isFullLcdSimulateZone(dims), true);
+  });
+
+  it("detects partial zones for layout simulation", () => {
+    const source = `---@type WidgetScript\n---@simulate Layout2x2 zone=1\n`;
+    const dims = resolvePreviewDimensions(source);
+    assert.equal(isFullLcdSimulateZone(dims), false);
   });
 
   it("resolves Layout2x2 zone dimensions", () => {

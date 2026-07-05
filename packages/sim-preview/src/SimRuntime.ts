@@ -11,6 +11,8 @@ import type {
   MockTelemetryValues,
   RadioSimState,
   SimFrameData,
+  SimInputMessage,
+  SimKeyboardMode,
   WidgetSimulateZone,
 } from "./types.js";
 
@@ -20,7 +22,13 @@ export type SimRuntimeCallbacks = {
   onLog?: (text: string) => void;
 };
 
-const TICK_MS = 10;
+const DEFAULT_STATE: RadioSimState = {
+  phase: "idle",
+  progress: 0,
+  status: "",
+  error: null,
+  keyboardMode: "none",
+};
 
 export class SimRuntime {
   private runner: WasmRunner | null = null;
@@ -29,6 +37,8 @@ export class SimRuntime {
   private pendingWidget: { source: string; zone?: WidgetSimulateZone } | null = null;
   private mock: MockTelemetryValues = { ...BASE_MOCK_TELEMETRY };
   private lastTelemetryMs = 0;
+  private lastKeyboardPollMs = 0;
+  private state: RadioSimState = { ...DEFAULT_STATE };
   private callbacks: SimRuntimeCallbacks;
 
   constructor(
@@ -40,13 +50,43 @@ export class SimRuntime {
   }
 
   private setState(partial: Partial<RadioSimState>): void {
-    const state: RadioSimState = {
-      phase: partial.phase ?? "idle",
-      progress: partial.progress ?? 0,
-      status: partial.status ?? "",
-      error: partial.error ?? null,
-    };
-    this.callbacks.onState?.(state);
+    this.state = { ...this.state, ...partial };
+    this.callbacks.onState?.(this.state);
+  }
+
+  handleInput(msg: SimInputMessage): void {
+    const runner = this.runner;
+    const ex = runner?.exports;
+    if (!runner || !ex) return;
+
+    switch (msg.type) {
+      case "simAnalog": {
+        const v = Math.round(Math.max(0, Math.min(4096, msg.value)));
+        runner.setAnalog(msg.index, v);
+        break;
+      }
+      case "simSwitch":
+        ex.simuSetSwitch(msg.index, msg.state);
+        break;
+      case "simKey":
+        ex.simuSetKey(msg.key, msg.state);
+        break;
+      case "simTrim":
+        ex.simuSetTrim(msg.trim, msg.state);
+        break;
+      case "simRotary":
+        ex.simuRotaryEncoderEvent(msg.steps);
+        break;
+      case "simChar":
+        ex.simuInjectChar(msg.code);
+        break;
+      case "simTouch":
+        ex.simuTouchDown(msg.x, msg.y);
+        break;
+      case "simTouchUp":
+        ex.simuTouchUp();
+        break;
+    }
   }
 
   async init(options?: { source?: string; zone?: WidgetSimulateZone }): Promise<void> {
@@ -109,7 +149,8 @@ export class SimRuntime {
       await this.runner.stopFs();
       this.runner = null;
     }
-    this.setState({ phase: "idle", progress: 0, status: "" });
+    this.state = { ...DEFAULT_STATE };
+    this.callbacks.onState?.(this.state);
   }
 
   private getExports(): NonNullable<WasmRunner["exports"]> {
@@ -173,6 +214,23 @@ export class SimRuntime {
     }
   }
 
+  private maybePollKeyboardMode(now: number): void {
+    if (now - this.lastKeyboardPollMs < 200) return;
+    this.lastKeyboardPollMs = now;
+    const ex = this.runner?.exports;
+    if (!ex) return;
+
+    let mode: SimKeyboardMode = "none";
+    if (ex.simuIsTextKeyboardActive?.()) {
+      mode = "text";
+    } else if (ex.simuIsNumberKeyboardActive?.()) {
+      mode = "number";
+    }
+    if (mode !== this.state.keyboardMode) {
+      this.setState({ keyboardMode: mode });
+    }
+  }
+
   private maybeInjectTelemetry(now: number): void {
     if (now - this.lastTelemetryMs < 100) return;
     this.lastTelemetryMs = now;
@@ -191,7 +249,9 @@ export class SimRuntime {
       if (!this.loopRunning || !runner.exports) break;
       if (!ready) continue;
 
-      this.maybeInjectTelemetry(Date.now());
+      const now = Date.now();
+      this.maybeInjectTelemetry(now);
+      this.maybePollKeyboardMode(now);
 
       const depth = ex.simuLcdGetDepth();
       const w = ex.simuLcdGetWidth();

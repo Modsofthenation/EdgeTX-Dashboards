@@ -50,11 +50,15 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         runtime?.setMockTelemetry(msg.mock);
         break;
       }
+      case "input": {
+        runtime?.handleInput(msg.msg);
+        break;
+      }
       case "dispose": {
         await runtime?.dispose();
         runtime = null;
         currentMock = null;
-        post({ type: "state", state: { phase: "idle", progress: 0, status: "", error: null } });
+        post({ type: "state", state: { phase: "idle", progress: 0, status: "", error: null, keyboardMode: "none" } });
         break;
       }
     }
@@ -62,7 +66,7 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     post({
       type: "state",
-      state: { phase: "error", progress: 0, status: "Error", error: message },
+      state: { phase: "error", progress: 0, status: "Error", error: message, keyboardMode: "none" },
     });
     post({ type: "error", message });
   }

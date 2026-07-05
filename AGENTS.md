@@ -116,7 +116,7 @@ Warnings do not block download; errors do. Download returns **HTTP 422** when in
 ## Working on the web UI
 
 - **Preview tab:** `apps/web/src/lib/luaPreviewEngine.ts` (regex; direct `lcd.*` in `refresh()` only)
-- **Radio sim tab:** `packages/sim-preview` + `apps/web/src/workers/edgetxSim.worker.ts` (EdgeTX 2.11 WASM; lazy-loaded)
+- **Radio sim tab:** Interactive EdgeTX WASM sim — `packages/sim-preview` (`SimRuntime.handleInput`), `apps/web/src/workers/edgetxSim.worker.ts`, `@edgetx/simulator-ui` `Simulator` in fullscreen overlay (`RadioSimPreview.tsx`). Touch/keys/sticks forward to firmware; double-tap widget for fullscreen on LCD.
 - Mock telemetry: `apps/web/src/lib/mockTelemetry.ts` (shared with CRSF bridge in sim-preview)
 - Optional API auth: `GENERATOR_API_SECRET` (see `.env.example`)
 - Radio sim firmware: `npm run sync-wasm` → `apps/web/public/sim/`

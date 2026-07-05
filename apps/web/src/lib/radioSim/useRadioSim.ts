@@ -5,6 +5,7 @@ import type {
   MockTelemetryValues,
   RadioSimState,
   SimFrameData,
+  SimInputMessage,
   SimWorkerRequest,
   SimWorkerResponse,
   WidgetSimulateZone,
@@ -15,6 +16,7 @@ const DEFAULT_STATE: RadioSimState = {
   progress: 0,
   status: "",
   error: null,
+  keyboardMode: "none",
 };
 
 export function useRadioSim() {
@@ -41,7 +43,7 @@ export function useRadioSim() {
       if (msg.type === "state") setState(msg.state);
       if (msg.type === "frame") setFrame(msg.frame);
       if (msg.type === "error") {
-        setState({ phase: "error", progress: 0, status: "Error", error: msg.message });
+        setState({ phase: "error", progress: 0, status: "Error", error: msg.message, keyboardMode: "none" });
       }
     };
     worker.onerror = () => {
@@ -50,6 +52,7 @@ export function useRadioSim() {
         progress: 0,
         status: "Error",
         error: "Radio sim worker failed. Check the browser console.",
+        keyboardMode: "none",
       });
     };
     workerRef.current = worker;
@@ -59,7 +62,7 @@ export function useRadioSim() {
   const init = useCallback(
     (widget?: { source: string; zone?: WidgetSimulateZone }) => {
       const worker = ensureWorker();
-      setState({ phase: "loading-wasm", progress: 0, status: "Starting…", error: null });
+      setState({ phase: "loading-wasm", progress: 0, status: "Starting…", error: null, keyboardMode: "none" });
       const req: SimWorkerRequest = {
         type: "init",
         wasmUrl: "/sim/edgetx-tx15-simulator.wasm",
@@ -90,6 +93,16 @@ export function useRadioSim() {
     [ensureWorker]
   );
 
+  const sendInput = useCallback(
+    (msg: SimInputMessage) => {
+      const worker = workerRef.current;
+      if (!worker) return;
+      const req: SimWorkerRequest = { type: "input", msg };
+      worker.postMessage(req);
+    },
+    []
+  );
+
   const dispose = useCallback(() => {
     workerRef.current?.postMessage({ type: "dispose" } satisfies SimWorkerRequest);
     workerRef.current?.terminate();
@@ -98,5 +111,15 @@ export function useRadioSim() {
     setState(DEFAULT_STATE);
   }, []);
 
-  return { state, frame, wasmSizeMb, init, loadWidget, setMock, dispose };
+  return {
+    state,
+    frame,
+    wasmSizeMb,
+    keyboardMode: state.keyboardMode,
+    init,
+    loadWidget,
+    setMock,
+    sendInput,
+    dispose,
+  };
 }

@@ -18,6 +18,8 @@ export type {
   SimFrameData,
   RadioSimPhase,
   RadioSimState,
+  SimKeyboardMode,
+  SimInputMessage,
   WidgetSimulateZone,
   SimWorkerRequest,
   SimWorkerResponse,
