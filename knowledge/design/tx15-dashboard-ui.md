@@ -47,7 +47,18 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 ## Web preview compatibility
 
-The generator web UI renders your widget by parsing `lcd.drawText` in `refresh()`. To preview correctly:
+The generator web UI offers two preview modes:
+
+| Mode | Engine | Guarantees | Default |
+|------|--------|------------|---------|
+| **Preview** | Regex parser (`luaPreviewEngine.ts`) | Fast; parses direct `lcd.*` in `refresh()` only | Yes |
+| **Radio sim** | EdgeTX 2.11 WASM (`@edgetx/simulator-ui`) | Real Lua + firmware draw; LVGL-capable; ~5–15 MB first load | Lazy (tab) |
+
+Both modes use the same mock telemetry catalog (`mockTelemetry.ts` → CRSF injection in Radio sim). `@simulate` zone cropping applies in Preview (overlay) and Radio sim (framebuffer crop).
+
+To enable Radio sim locally: `npm run sync-wasm` (downloads `edgetx-tx15-simulator.wasm` to `apps/web/public/sim/`).
+
+For **Preview** (regex) parsing rules:
 
 1. **Cache telemetry and formatted strings as locals** before any `lcd.drawText` call.
 2. In `lcd.drawText`, use **variable names or string literals only** — never `fmtNum(...)`, `telem(...)`, or `string.format(...)` inline in drawText args.

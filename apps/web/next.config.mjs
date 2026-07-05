@@ -1,9 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@widget-gen/shared"],
+  transpilePackages: ["@widget-gen/shared", "@widget-gen/sim-preview", "@edgetx/simulator-ui"],
   serverExternalPackages: ["@cursor/sdk", "archiver", "@widget-gen/generator", "better-sqlite3"],
-  // Windows dev: persistent webpack pack cache often races with HMR and leaves missing .pack.gz files.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+        ],
+      },
+    ];
+  },
   webpack: (config, { dev }) => {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true };
     if (dev && process.platform === "win32") {
       config.cache = false;
     }

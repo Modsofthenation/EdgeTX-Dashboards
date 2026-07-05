@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { BASE_MOCK, tickMock } from "@/lib/mockTelemetry";
 import { parseLuaToDrawCommands, renderPreviewCommands, getLastPreviewParseMeta } from "@/lib/luaPreviewEngine";
+import { RadioSimPreview } from "@/components/RadioSimPreview";
 import styles from "./Preview480x320.module.css";
 
 const DEFAULT_LCD_W = 480;
@@ -26,7 +27,7 @@ export function Preview480x320({
   live = true,
   variant = "default",
 }: Preview480x320Props) {
-  const [tab, setTab] = useState<"preview" | "source">("preview");
+  const [tab, setTab] = useState<"preview" | "radioSim" | "source">("preview");
   const [tick, setTick] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,6 +153,14 @@ export function Preview480x320({
             </button>
             <button
               role="tab"
+              aria-selected={tab === "radioSim"}
+              className={tab === "radioSim" ? styles.tabActive : styles.tab}
+              onClick={() => setTab("radioSim")}
+            >
+              Radio sim
+            </button>
+            <button
+              role="tab"
               aria-selected={tab === "source"}
               className={tab === "source" ? styles.tabActive : styles.tab}
               onClick={() => setTab("source")}
@@ -174,6 +183,14 @@ export function Preview480x320({
           </button>
           <button
             role="tab"
+            aria-selected={tab === "radioSim"}
+            className={tab === "radioSim" ? styles.tabActive : styles.tab}
+            onClick={() => setTab("radioSim")}
+          >
+            Sim
+          </button>
+          <button
+            role="tab"
             aria-selected={tab === "source"}
             className={tab === "source" ? styles.tabActive : styles.tab}
             onClick={() => setTab("source")}
@@ -183,7 +200,7 @@ export function Preview480x320({
         </div>
       )}
 
-      {tab === "preview" ? (
+      {tab === "preview" || tab === "radioSim" ? (
         <div className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}>
           <div
             className={variant === "compact" ? styles.frameCompact : styles.frame}
@@ -205,6 +222,13 @@ export function Preview480x320({
                     </span>
                     <span>Generate a widget to preview on the TX15 display</span>
                   </div>
+                ) : tab === "radioSim" ? (
+                  <RadioSimPreview
+                    luaSource={luaSource}
+                    layoutProfileId={layoutProfileId}
+                    mock={mock}
+                    active={tab === "radioSim"}
+                  />
                 ) : (
                   <>
                     <canvas ref={canvasRef} className={styles.canvas} aria-label="Widget preview" />
@@ -235,16 +259,26 @@ export function Preview480x320({
                   {previewDims.layout} · zone {previewDims.zone}
                 </span>
               )}
-              {luaSource && live && <span className={styles.liveBadge}>Live mock data</span>}
+              {luaSource && live && tab === "preview" && (
+                <span className={styles.liveBadge}>Live mock data</span>
+              )}
+              {luaSource && tab === "radioSim" && (
+                <span className={styles.liveBadge}>EdgeTX WASM</span>
+              )}
             </div>
-            {luaSource && commands.length === 0 && (
+            {tab === "preview" && luaSource && commands.length === 0 && (
               <p className={styles.hint}>
                 Could not parse draw commands. Preview works best with direct lcd.drawText and
                 lcd.drawFilledRectangle calls in refresh().
               </p>
             )}
-            {luaSource && commands.length > 0 && previewHealthMessage && (
+            {tab === "preview" && luaSource && commands.length > 0 && previewHealthMessage && (
               <p className={styles.hint}>{previewHealthMessage}</p>
+            )}
+            {tab === "radioSim" && luaSource && (
+              <p className={styles.hintMuted}>
+                Radio sim runs real EdgeTX 2.11 firmware in WASM. First load may take several seconds.
+              </p>
             )}
           </div>
         </div>

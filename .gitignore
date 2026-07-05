@@ -4,17 +4,20 @@ node_modules/
 .pnp.js
 
 # Build outputs (monorepo)
+*.tsbuildinfo
+.turbo/
+build/
 dist/
 .next/
 out/
-build/
-*.tsbuildinfo
-.turbo/
 
 # Generated widget artifacts (local agent output)
-generated/
-dist-output/
 data/
+dist-output/
+generated/
+
+# EdgeTX WASM radio preview (manifest.json tracked; run npm run sync-wasm)
+apps/web/public/sim/*.wasm
 
 # Environment & secrets (keep .env.example tracked)
 .env
@@ -37,15 +40,15 @@ coverage/
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
 # IDE / OS
 .DS_Store
+Desktop.ini
 Thumbs.db
 ehthumbs.db
-Desktop.ini
 .idea/
 *.swp
 *.swo
@@ -54,35 +57,35 @@ Desktop.ini
 # Vercel / deploy caches
 .vercel/
 
+# Archives produced during packaging (widget zips land in dist-output/)
+*.src.rock
+*.tar.gz
+*.zip
+
 # Compiled Lua (if testing locally)
 luac.out
 
-# Archives produced during packaging (widget zips land in dist-output/)
-*.zip
-*.tar.gz
-*.src.rock
-
 # Native / binary artifacts (Lua C extensions, etc.)
-*.o
-*.os
-*.ko
-*.obj
-*.elf
-*.gch
-*.pch
-*.lib
 *.a
-*.la
-*.lo
+*.app
 *.def
-*.exp
 *.dll
+*.dylib
+*.elf
+*.exe
+*.exp
+*.gch
+*.hex
+*.i*86
+*.ko
+*.la
+*.lib
+*.lo
+*.o
+*.obj
+*.os
+*.out
+*.pch
 *.so
 *.so.*
-*.dylib
-*.exe
-*.out
-*.app
-*.i*86
 *.x86_64
-*.hex

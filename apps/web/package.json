@@ -16,8 +16,10 @@
     "test": "npm run test:preview && npm run test:versions && npm run test:stream && npm run test:chat"
   },
   "dependencies": {
+    "@edgetx/simulator-ui": "^0.1.0",
     "@widget-gen/generator": "*",
     "@widget-gen/shared": "*",
+    "@widget-gen/sim-preview": "*",
     "better-sqlite3": "^12.11.1",
     "next": "^15.3.3",
     "react": "^19.1.0",

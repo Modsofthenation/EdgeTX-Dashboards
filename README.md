@@ -12,26 +12,64 @@ Built with the [Cursor SDK](https://cursor.com/docs/sdk/typescript) (`@cursor/sd
 ## Quick start
 
 ```bash
-# Install dependencies
+# Install dependencies (also patches @edgetx/simulator-ui via postinstall)
 npm install
 
-# Build packages
-npm run build
+# One-shot: sync stubs + WASM firmware, patch simulator-ui, build all packages
+npm run setup
 
 # Start web UI
-export CURSOR_API_KEY="cursor_..."
+export CURSOR_API_KEY="cursor_..."   # Windows PowerShell: $env:CURSOR_API_KEY="cursor_..."
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000), describe your dashboard, and download the generated zip for your radio SD card.
 
-## EdgeTX Dev Kit (VS Code simulation)
+### Setup commands (reference)
 
-For WASM firmware simulation with real EdgeTX Lua APIs:
+| Command | When to run |
+|---------|-------------|
+| `npm install` | First clone; re-run after dependency updates. Runs `postinstall` → patches `@edgetx/simulator-ui`. |
+| `npm run setup` | **Recommended first-time setup** — stubs + WASM + patch + full build. |
+| `npm run setup:sim` | Radio sim tab broken or after `@edgetx/simulator-ui` reinstall — WASM + patch + `sim-preview` build only. |
+| `npm run build` | After changing `packages/*` or before production deploy. |
+| `npm run sync-stubs` | Fetch LuaLS stubs into `stubs/2.11/` (VS Code Dev Kit + validation). |
+| `npm run sync-wasm` | Fetch TX15 WASM into `apps/web/public/sim/` (~5 MB; required for **Sim** tab). |
+| `node scripts/patch-simulator-ui.mjs` | Re-apply EdgeTX 2.11 env stubs if Radio sim errors on `simuAuxSerial*`. Also runs on `npm install`. |
+| `npm run test:wasm` | Verify WASM manifest + file presence after `sync-wasm`. |
+
+Manual equivalent of `npm run setup`:
 
 ```bash
-npm run sync-stubs   # fetch LuaLS stubs into stubs/2.11/
+npm install
+node scripts/patch-simulator-ui.mjs
+npm run sync-stubs
+npm run sync-wasm
+npm run build
 ```
+
+## Web UI preview modes
+
+The output panel has three tabs:
+
+| Tab | What it runs | Setup needed |
+|-----|--------------|--------------|
+| **Preview** | Fast regex canvas at 480×320 with mock telemetry | None beyond `npm run build` |
+| **Radio sim** | Real EdgeTX 2.11 WASM Lua runtime | `npm run setup:sim` (or full `npm run setup`) |
+| **Lua** | Source viewer | Generated widget only |
+
+After changing sim-preview code or reinstalling deps, restart `npm run dev` and hard-refresh the browser (Ctrl+Shift+R).
+
+### Radio sim troubleshooting
+
+| Error / symptom | Fix |
+|-----------------|-----|
+| Stuck on “Loading Radio sim…” | Restart dev server; check browser console for worker errors. |
+| `simuAuxSerialStart: function import requires a callable` | `npm run setup:sim` then restart dev server. |
+| `Cannot use 'in' operator to search for '_start' in undefined` | Rebuild sim-preview (`npm run setup:sim`); ensure dev server restarted after code changes. |
+| WASM file missing / 404 on `/sim/*.wasm` | `npm run sync-wasm` or `npm run setup:sim`. |
+
+## EdgeTX Dev Kit (VS Code simulation)
 
 1. Install **Lua** + **EdgeTX Dev Kit** (see `.vscode/extensions.json`).
 2. Open a generated `main.lua` — annotations are added automatically:
@@ -43,10 +81,7 @@ npm run sync-stubs   # fetch LuaLS stubs into stubs/2.11/
 
 The web UI live preview also reads `@simulate` to size the widget zone on the 480×320 canvas.
 
-The web UI includes:
-- **Live preview** — canvas render of the generated widget at 480×320 with mock telemetry that updates every few seconds
-- **Install & verify guide** — step-by-step checklist with "Ensure:" verification points per protocol
-- **INSTALL.md** — also bundled inside each downloaded zip
+The web UI also includes an **Install & verify guide** and bundles **INSTALL.md** inside each downloaded zip.
 
 ## CLI usage
 
@@ -67,9 +102,11 @@ Options:
 ```
 apps/web/              Next.js UI + API routes (SSE streaming)
 packages/generator/    Cursor SDK orchestration, validation, packaging
-packages/shared/       Shared TypeScript types
+packages/shared/       Shared TypeScript types, @simulate layouts
+packages/sim-preview/  EdgeTX WASM radio preview (SimRuntime, telemetry bridge)
 knowledge/             Radio profiles, layout zones, telemetry catalogs
 stubs/2.11/            EdgeTX LuaLS stubs (edgetx-stubs, via npm run sync-stubs)
+apps/web/public/sim/   EdgeTX WASM firmware (via npm run sync-wasm)
 templates/             Lua starter template and INSTALL.md template
 examples/              Reference widgets
 generated/             Agent output (gitignored)

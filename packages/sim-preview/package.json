@@ -1,0 +1,29 @@
+{
+  "name": "@widget-gen/sim-preview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test dist/__tests__/virtualSd.test.js dist/__tests__/telemetryBridge.test.js dist/__tests__/wasmImportPatch.test.js",
+    "test:wasm": "npm run build && node --test dist/__tests__/simRuntimeHarness.test.js"
+  },
+  "dependencies": {
+    "@edgetx/simulator-ui": "^0.1.0",
+    "@widget-gen/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}
