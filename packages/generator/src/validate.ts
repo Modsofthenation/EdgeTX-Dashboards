@@ -1,5 +1,10 @@
 import type { SimulateLayoutProfile, ValidationIssue, ValidationResult } from "@widget-gen/shared";
 import { analyzeDrawSurface } from "@widget-gen/shared";
+import {
+  validateDrawGeometry,
+  DEFAULT_LAYOUT_SCENARIO,
+  TORTURE_SCENARIOS,
+} from "@widget-gen/layout-verify";
 import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.js";
 import { validateLcdApiUsage } from "./lcdApiValidate.js";
 import type { LayoutArchetypeId } from "./layoutArchetype.js";
@@ -43,6 +48,38 @@ export function extractUsedTelemetrySensors(source: string): Set<string> {
     }
   }
   return used;
+}
+
+function validateLayoutGeometry(
+  source: string,
+  layoutArchetype?: LayoutArchetypeId
+): ValidationIssue[] {
+  if (!/lcd\.draw(Text|FilledRectangle|Annulus|FilledCircle)/.test(source)) {
+    return [];
+  }
+
+  const hasAnnulus = source.includes("drawAnnulus");
+  const strictArchetypes = new Set<LayoutArchetypeId>(["quad-overview", "hero-minimal"]);
+  const strict = hasAnnulus || (layoutArchetype !== undefined && strictArchetypes.has(layoutArchetype));
+  const scenarios = strict ? TORTURE_SCENARIOS : [DEFAULT_LAYOUT_SCENARIO];
+
+  const issues: ValidationIssue[] = [];
+  for (const scenario of scenarios) {
+    const scenarioIssues = validateDrawGeometry(source, { scenario, strict });
+    const errors = scenarioIssues.filter((i) => i.severity === "error");
+    if (errors.length > 0) {
+      for (const err of errors) {
+        issues.push({
+          ...err,
+          message: `[scenario ${scenario.id}] ${err.message}`,
+        });
+      }
+      return issues;
+    }
+    issues.push(...scenarioIssues.filter((i) => i.severity === "warning"));
+  }
+
+  return issues;
 }
 
 function validateVisualDesign(source: string, issues: ValidationIssue[], layoutArchetype?: LayoutArchetypeId): void {
@@ -277,6 +314,7 @@ export function validateWidgetLua(
   }
 
   issues.push(...validateLcdApiUsage(source));
+  issues.push(...validateLayoutGeometry(source, options?.layoutArchetype));
 
   const errors = issues.filter((i) => i.severity === "error");
   return { valid: errors.length === 0, widgetName, issues };

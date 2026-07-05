@@ -19,6 +19,14 @@ const exampleLua = readFileSync(
   join(repoRoot, "examples", "tx15-minimal-dashboard.lua"),
   "utf-8"
 );
+const bfdash8fLua = readFileSync(
+  join(repoRoot, "examples", "tx15-bfdash8f-whoop-dashboard.lua"),
+  "utf-8"
+);
+const modelHeroLua = readFileSync(
+  join(repoRoot, "examples", "tx15-model-hero-dashboard.lua"),
+  "utf-8"
+);
 
 describe("sanitizeWidgetName", () => {
   it("accepts valid names", () => {
@@ -46,6 +54,24 @@ describe("validateWidgetLua", () => {
     });
     assert.equal(result.valid, true);
     assert.equal(result.widgetName, "TX15Dash");
+  });
+
+  it("validates bfdash8f gold example (layout + betaflight telemetry)", () => {
+    const result = validateWidgetLua(bfdash8fLua, {
+      knownSensors: betaflightSensors,
+      strictTelemetry: true,
+      layoutArchetype: "quad-overview",
+    });
+    assert.equal(result.valid, true, result.issues.map((i) => i.message).join("; "));
+  });
+
+  it("validates model-hero gold example with layout validators", () => {
+    const result = validateWidgetLua(modelHeroLua, {
+      knownSensors: betaflightSensors,
+      strictTelemetry: true,
+      layoutArchetype: "quad-overview",
+    });
+    assert.equal(result.valid, true, result.issues.map((i) => i.message).join("; "));
   });
 
   it("rejects require()", () => {

@@ -335,6 +335,100 @@ export function validateModelBitmapPath(source: string): ValidationIssue[] {
   return [];
 }
 
+/** Reject flooring mainH with a literal when gauge + strip share vertical space. */
+export function validateMainHLiteralClamp(source: string): ValidationIssue[] {
+  if (!source.includes("drawAnnulus")) {
+    return [];
+  }
+  if (!source.includes("stripY") && !source.includes("stripH")) {
+    return [];
+  }
+  if (/if\s+mainH\s*<\s*\d+/.test(source) && /mainH\s*=\s*\d+/.test(source)) {
+    return [
+      {
+        severity: "error",
+        message:
+          "Do not floor mainH with a literal when gauge+strip layouts share space — shrink rOut via gaugeZoneH() or recompute stripY; see layout-reserved-rects.md",
+      },
+    ];
+  }
+  return [];
+}
+
+/** Gauge satellite labels at gaugeCy+rOut must be included in layout budget. */
+export function validateGaugeSatelliteBudget(source: string): ValidationIssue[] {
+  if (!source.includes("drawAnnulus")) {
+    return [];
+  }
+  const hasSatelliteAnchor =
+    /yAmp\w*\s*=/.test(source) || /gaugeCy\s*\+\s*rOut\s*\+/.test(source);
+  if (!hasSatelliteAnchor) {
+    return [];
+  }
+  const hasBudget =
+    /satelliteBelowH|satelliteBelow|gaugeZoneH|gaugeObstacles/.test(source);
+  if (!hasBudget) {
+    return [
+      {
+        severity: "error",
+        message:
+          "Labels anchored to gaugeCy+rOut must use satelliteBelowH()/gaugeZoneH() in layout budget before stripY — see layout-reserved-rects.md",
+      },
+    ];
+  }
+  return [];
+}
+
+/** Annulus + strip layouts must plan rects / mainBottom before drawing. */
+export function validateGaugeStripLayoutPlanning(source: string): ValidationIssue[] {
+  if (!source.includes("drawAnnulus")) {
+    return [];
+  }
+  if (!source.includes("stripY") && !source.includes("stripH")) {
+    return [];
+  }
+  const hasPlanner =
+    /gaugeZoneH|mainBottom|gaugeObstacles|function\s+rect\s*\(/.test(source) ||
+    (/local\s+function\s+rect\b/.test(source) && /rectBottom/.test(source));
+  if (!hasPlanner) {
+    return [
+      {
+        severity: "error",
+        message:
+          "Gauge + strip dashboards must compute reserved rects (rect(), mainBottom, or gaugeZoneH) before drawing — see layout-reserved-rects.md",
+      },
+    ];
+  }
+  return [];
+}
+
+/** Link/battery bar block height must include the last % text row (barsPctY). */
+export function validateBarsBlockHeightSync(source: string): ValidationIssue[] {
+  if (!source.includes("barsBlockH") && !source.includes("rBars")) {
+    return [];
+  }
+  const hasPctAnchor =
+    source.includes("barsPctY") ||
+    /trackY\s*\+\s*barH\s*\+\s*LH\.GAP/.test(source) ||
+    /drawText\([^)]*,\s*trackY\s*\+\s*barH/.test(source);
+  if (!hasPctAnchor) {
+    return [];
+  }
+  const synced =
+    /barsBlockH\s*=\s*barsPctY\s*\+/.test(source) ||
+    /barsBlockH\s*=\s*[^;\n]*barsPctY[^;\n]*-\s*barsY/.test(source);
+  if (!synced) {
+    return [
+      {
+        severity: "error",
+        message:
+          "barsBlockH must derive from barsPctY (same expression as the last % drawText row) — see layout-reserved-rects.md rule 3",
+      },
+    ];
+  }
+  return [];
+}
+
 /** Reject fragile #str*charW unit positioning — overlaps on TX15 (no text-width API). */
 export function validateUnitSuffixPositioning(source: string): ValidationIssue[] {
   const suffixMath = /math\.floor\(\s*#\w+\s*\*\s*\d+/;
@@ -362,6 +456,10 @@ export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
     ...validateDrawAnnulusRadiusOrder(source),
     ...validateModelBitmapPath(source),
     ...validateUnitSuffixPositioning(source),
+    ...validateMainHLiteralClamp(source),
+    ...validateGaugeSatelliteBudget(source),
+    ...validateGaugeStripLayoutPlanning(source),
+    ...validateBarsBlockHeightSync(source),
   ];
 }
 

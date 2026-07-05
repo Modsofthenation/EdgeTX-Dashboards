@@ -127,6 +127,29 @@ export function readExampleSnippet(exampleFile: string, maxLines = 55): string {
   return lines.slice(0, maxLines).join("\n");
 }
 
+/** Layout-heavy examples need the reserved-rect planner in refresh(), not just create(). */
+const LAYOUT_HEAVY_EXAMPLES = new Set([
+  "tx15-bfdash8f-whoop-dashboard.lua",
+  "tx15-model-hero-dashboard.lua",
+]);
+
+export function readLayoutExampleSnippet(exampleFile: string, maxLines = 140): string {
+  return readExampleSnippet(exampleFile, maxLines);
+}
+
+export function readExampleSnippetForArchetype(exampleFile: string): string {
+  if (LAYOUT_HEAVY_EXAMPLES.has(exampleFile)) {
+    return readLayoutExampleSnippet(exampleFile);
+  }
+  return readExampleSnippet(exampleFile);
+}
+
+export function readLayoutReservedRectsGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "layout-reserved-rects.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
 export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
   const radio = loadRadioProfile(radioId);
   const layoutKey = getLayoutProfileId(radio);

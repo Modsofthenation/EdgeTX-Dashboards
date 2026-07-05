@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.22",
+    "@widget-gen/layout-verify": "*",
     "@widget-gen/shared": "*",
     "archiver": "^7.0.1"
   },

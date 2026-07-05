@@ -9,9 +9,12 @@ import {
   readModelImageGuide,
   readModelHeroDashboardGuide,
   readTextLayoutGuide,
+  readLayoutReservedRectsGuide,
   readRuntimeApiPitfallsGuide,
   readThemePalettesGuide,
   readExampleSnippet,
+  readExampleSnippetForArchetype,
+  readLayoutExampleSnippet,
   loadTelemetryCatalog,
   loadRadioProfile,
   readRoundedCornersGuide,
@@ -92,6 +95,20 @@ function wantsModelHeroDashboard(userPrompt: string): boolean {
   );
 }
 
+function wantsGaugeSatelliteLayout(userPrompt: string): boolean {
+  return /annulus|rotary gauge|battery gauge|voltage hero|hero gauge/i.test(userPrompt);
+}
+
+function layoutReferenceExample(archetypeId: LayoutArchetypeId, userPrompt: string): string | null {
+  if (archetypeId === "quad-overview") {
+    return "tx15-bfdash8f-whoop-dashboard.lua";
+  }
+  if (archetypeId === "hero-minimal" && wantsGaugeSatelliteLayout(userPrompt)) {
+    return "tx15-bfdash8f-whoop-dashboard.lua";
+  }
+  return null;
+}
+
 export function buildGenerationPrompt(
   userPrompt: string,
   radio: RadioProfile,
@@ -119,12 +136,15 @@ export function buildGenerationPrompt(
   const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const textLayoutGuide = readTextLayoutGuide();
+  const layoutReservedRectsGuide = readLayoutReservedRectsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
   const rules = readRules();
 
   const exampleFile = EXAMPLE_BY_ARCHETYPE[archetype.id];
-  const exampleSnippet = readExampleSnippet(exampleFile);
+  const exampleSnippet = readExampleSnippetForArchetype(exampleFile);
+  const layoutRefFile = layoutReferenceExample(archetype.id, userPrompt);
+  const layoutRefSnippet = layoutRefFile ? readLayoutExampleSnippet(layoutRefFile) : "";
 
   const starterSection = shouldIncludeCardStarter(archetype.id)
     ? `\n## Starter template (card layout reference — vary metrics and proportions per creative brief)\n\n\`\`\`lua\n${readTemplate("dashboard-starter.lua")}\n\`\`\`\n`
@@ -133,6 +153,11 @@ export function buildGenerationPrompt(
   const exampleSection = exampleSnippet
     ? `\n## API / typography snippet (do NOT copy coordinates or layout)\n\n\`\`\`lua\n${exampleSnippet}\n\`\`\`\n`
     : "";
+
+  const layoutRefSection =
+    layoutRefSnippet && layoutRefFile && layoutRefFile !== exampleFile
+      ? `\n## Reserved-rect layout reference (mandatory for gauge + strip dashboards)\n\nFollow \`layout-reserved-rects.md\` — compute all rects before drawing. Reference:\n\n\`\`\`lua\n${layoutRefSnippet}\n\`\`\`\n`
+      : "";
 
   const assignedNameSection = ctx?.assignedWidgetName
     ? `\n## Assigned dashboard identity (mandatory)
@@ -208,7 +233,7 @@ ${companionGuide}
 
 ${modelImageGuide ? `\n## Model image (user requested — include ShowModel option + placeholder)\n${modelImageGuide}` : ""}
 
-${modelHeroGuide ? `\n## Model-background + hero gauge layout (mandatory for this request)\n${modelHeroGuide}\n\nReference snippet (layer order + gauge — do NOT copy coordinates verbatim):\n\n\`\`\`lua\n${readExampleSnippet("tx15-model-hero-dashboard.lua")}\n\`\`\`` : ""}
+${modelHeroGuide ? `\n## Model-background + hero gauge layout (mandatory for this request)\n${modelHeroGuide}\n\nReference snippet (layer order + gauge — do NOT copy coordinates verbatim):\n\n\`\`\`lua\n${readLayoutExampleSnippet("tx15-model-hero-dashboard.lua")}\n\`\`\`` : ""}
 
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
@@ -217,11 +242,17 @@ ${runtimeApiPitfalls}
 ## TX15 text layout (mandatory — height-aware stacking in cards and gauges)
 
 ${textLayoutGuide}
+
+## Reserved rectangles (mandatory when using annulus gauges, strip cards, or optional BOOL bands)
+
+${layoutReservedRectsGuide}
+
+**Do not implement custom overlap loops** (\`anyTextForeignOverlap\`, \`anyLayoutOverlap\`, \`layoutAllRects\` audit passes, etc.). Size regions with \`gaugeZoneH\` / \`barsBlockH\` planning math; \`validateWidget\` checks actual \`lcd.*\` draw geometry for annulus-vs-text and text-vs-text collisions.
 ${assignedNameSection}
 ## Hard rules
 
 ${rules}
-${starterSection}${exampleSection}
+${starterSection}${exampleSection}${layoutRefSection}
 
 ## Your tasks
 
@@ -286,6 +317,9 @@ export function buildRefinePrompt(
   const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const textLayoutGuide = readTextLayoutGuide();
+  const layoutReservedRectsGuide = readLayoutReservedRectsGuide();
+  const layoutRefFile = layoutReferenceExample(archetype.id, userPrompt);
+  const layoutRefSnippet = layoutRefFile ? readLayoutExampleSnippet(layoutRefFile) : "";
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
     loadRadioProfile(radioId).name
@@ -329,7 +363,9 @@ ${companionGuide}
 
 ${modelImageGuide ? `\n## Model image (refinement — include ShowModel + placeholder)\n${modelImageGuide}` : ""}
 
-${modelHeroGuide ? `\n## Model-background + hero gauge layout (apply to refinement)\n${modelHeroGuide}\n\nReference snippet:\n\n\`\`\`lua\n${readExampleSnippet("tx15-model-hero-dashboard.lua")}\n\`\`\`` : ""}
+${modelHeroGuide ? `\n## Model-background + hero gauge layout (apply to refinement)\n${modelHeroGuide}\n\nReference snippet:\n\n\`\`\`lua\n${readLayoutExampleSnippet("tx15-model-hero-dashboard.lua")}\n\`\`\`` : ""}
+
+${layoutRefSnippet ? `\n## Reserved-rect layout reference (gauge + strip dashboards)\n\n\`\`\`lua\n${layoutRefSnippet}\n\`\`\`\n` : ""}
 
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
@@ -338,6 +374,12 @@ ${runtimeApiPitfalls}
 ## TX15 text layout (mandatory — height-aware stacking)
 
 ${textLayoutGuide}
+
+## Reserved rectangles (mandatory when using annulus gauges, strip cards, or optional BOOL bands)
+
+${layoutReservedRectsGuide}
+
+**Do not implement custom overlap loops** (\`anyTextForeignOverlap\`, \`anyLayoutOverlap\`, \`layoutAllRects\` audit passes, etc.). Size regions with planning math; \`validateWidget\` checks actual \`lcd.*\` draw geometry.
 
 Keep the dashboard clean and distinct from generic templates. All lcd.* draws must stay directly in refresh().
 

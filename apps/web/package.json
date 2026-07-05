@@ -19,6 +19,7 @@
   "dependencies": {
     "@edgetx/simulator-ui": "^0.1.0",
     "@widget-gen/generator": "*",
+    "@widget-gen/layout-verify": "*",
     "@widget-gen/shared": "*",
     "@widget-gen/sim-preview": "*",
     "better-sqlite3": "^12.11.1",

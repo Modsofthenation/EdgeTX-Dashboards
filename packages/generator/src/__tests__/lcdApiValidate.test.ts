@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateDrawAnnulusRadiusOrder, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateBarsBlockHeightSync, validateDrawAnnulusRadiusOrder, validateGaugeSatelliteBudget, validateGaugeStripLayoutPlanning, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateMainHLiteralClamp, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -139,6 +139,75 @@ end`;
   return Bitmap.open("/IMAGES/" .. info.bitmap)
 end`;
     assert.deepEqual(validateModelBitmapPath(source), []);
+  });
+});
+
+describe("validateMainHLiteralClamp", () => {
+  it("rejects literal mainH floor with gauge+strip", () => {
+    const source = `local stripY = 200
+local function refresh()
+  if mainH < 72 then
+    mainH = 72
+  end
+  lcd.drawAnnulus(0, 0, 40, 52, 0, 270, GREY)
+end`;
+    const issues = validateMainHLiteralClamp(source);
+    assert.equal(issues.length, 1);
+  });
+
+  it("accepts gaugeZoneH layout without literal clamp", () => {
+    const source = `local function gaugeZoneH(rOut) return rOut * 2 end
+lcd.drawAnnulus(0, 0, 40, 52, 0, 270, GREY)
+local stripY = 200`;
+    assert.deepEqual(validateMainHLiteralClamp(source), []);
+  });
+});
+
+describe("validateGaugeSatelliteBudget", () => {
+  it("rejects gaugeCy+rOut satellites without budget helper", () => {
+    const source = `local yAmpVal = gaugeCy + rOut + 6
+lcd.drawAnnulus(cx, cy, 40, 52, 0, 270, GREY)`;
+    const issues = validateGaugeSatelliteBudget(source);
+    assert.equal(issues.length, 1);
+  });
+
+  it("accepts satelliteBelowH budget", () => {
+    const source = `local function satelliteBelowH() return 50 end
+local yAmpVal = gaugeCy + rOut + 6
+lcd.drawAnnulus(cx, cy, 40, 52, 0, 270, GREY)`;
+    assert.deepEqual(validateGaugeSatelliteBudget(source), []);
+  });
+});
+
+describe("validateGaugeStripLayoutPlanning", () => {
+  it("rejects annulus+strip without planner", () => {
+    const source = `local stripY = 200
+lcd.drawAnnulus(0, 0, 40, 52, 0, 270, GREY)`;
+    const issues = validateGaugeStripLayoutPlanning(source);
+    assert.equal(issues.length, 1);
+  });
+
+  it("accepts mainBottom planner", () => {
+    const source = `local mainBottom = stripY - pad
+local stripY = 200
+lcd.drawAnnulus(0, 0, 40, 52, 0, 270, GREY)`;
+    assert.deepEqual(validateGaugeStripLayoutPlanning(source), []);
+  });
+});
+
+describe("validateBarsBlockHeightSync", () => {
+  it("rejects barsBlockH that omits barsPctY", () => {
+    const source = `local barsBlockH = LH.SML + LH.GAP + barH + LH.SEC
+local barsPctY = trackY + barH + LH.GAP
+lcd.drawText(0, barsPctY, "91%", SMLSIZE)`;
+    const issues = validateBarsBlockHeightSync(source);
+    assert.equal(issues.length, 1);
+  });
+
+  it("accepts barsBlockH derived from barsPctY", () => {
+    const source = `local barsPctY = trackY + barH + LH.GAP
+local barsBlockH = barsPctY + barsPctRowH() - barsY`;
+    assert.deepEqual(validateBarsBlockHeightSync(source), []);
   });
 });
 

@@ -46,7 +46,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     title: "Quad / FPV overview",
     summary: "Battery + link bars on top, flight timer center, GPS/alt/speed row, armed indicator.",
     layoutNotes:
-      "Emphasize timer, battery bar, and RSSI bar. Use ORANGE for armed state. Compact rows, not heli cards.",
+      "Emphasize timer, battery bar, and RSSI bar. Use ORANGE for armed state. Compact rows, not heli cards. **Mandatory:** reserved rectangles for every block (header, bars, gauge+satellite labels, strip cards, footer). Gauge effective height = `rOut*2 + satelliteBelowH()` — include amp/`LEFT` labels in budget before placing stripY. `barsBlockH` must derive from `barsPctY` (same formula as last drawText row). Every drawText → `textRowRect` in `textFootprintRects`; run `anyTextForeignOverlap` before draw. Compute mainTop/mainBottom before drawing; never clamp mainH to a literal after stripY is set. Phase 1 = fills/annulus, phase 2 = all text. See layout-reserved-rects.md and tx15-bfdash8f-whoop-dashboard.lua.",
   },
   "heli-rotorflight": {
     id: "heli-rotorflight",
@@ -178,7 +178,7 @@ export const EXAMPLE_BY_ARCHETYPE: Record<LayoutArchetypeId, string> = {
   "hero-minimal": "tx15-hero-minimal.lua",
   "strip-board": "tx15-strip-board.lua",
   "telemetry-dense": "tx15-telemetry-dense.lua",
-  "quad-overview": "tx15-quad-overview.lua",
+  "quad-overview": "tx15-bfdash8f-whoop-dashboard.lua",
   "flight-logger-suite": "tx15-minimal-dashboard.lua",
   "battery-tool-suite": "tx15-minimal-dashboard.lua",
 };
