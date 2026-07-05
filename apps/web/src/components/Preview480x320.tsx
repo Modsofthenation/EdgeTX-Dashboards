@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { BASE_MOCK, tickMock } from "@/lib/mockTelemetry";
+import { isChatScrolling } from "@/lib/chatScrollPause";
 import {
   parseLuaToDrawCommandsStatic,
   applyMockToCommands,
@@ -39,6 +40,8 @@ export const Preview480x320 = memo(function Preview480x320({
   const lastCanvasSizeRef = useRef({ w: 0, h: 0 });
 
   const mock = useMemo(() => (live ? tickMock(BASE_MOCK, tick) : BASE_MOCK), [live, tick]);
+  const deferredMock = useDeferredValue(mock);
+  const deferredLuaSource = useDeferredValue(luaSource);
 
   const layoutProfile = useMemo(() => {
     try {
@@ -57,18 +60,18 @@ export const Preview480x320 = memo(function Preview480x320({
   );
 
   const staticParse = useMemo(() => {
-    if (!luaSource) return null;
-    return parseLuaToDrawCommandsStatic(luaSource);
-  }, [luaSource]);
+    if (!deferredLuaSource) return null;
+    return parseLuaToDrawCommandsStatic(deferredLuaSource);
+  }, [deferredLuaSource]);
 
   const commands = useMemo(() => {
-    if (!luaSource || !staticParse) return [];
+    if (!deferredLuaSource || !staticParse) return [];
     try {
-      return applyMockToCommands(staticParse, luaSource, mock);
+      return applyMockToCommands(staticParse, deferredLuaSource, deferredMock);
     } catch {
       return [];
     }
-  }, [luaSource, staticParse, mock]);
+  }, [deferredLuaSource, staticParse, deferredMock]);
 
   const parseMeta = useMemo(() => {
     if (!luaSource) return null;
@@ -93,7 +96,10 @@ export const Preview480x320 = memo(function Preview480x320({
 
   useEffect(() => {
     if (!live || !luaSource) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1500);
+    const id = setInterval(() => {
+      if (isChatScrolling()) return;
+      setTick((t) => t + 1);
+    }, 1500);
     return () => clearInterval(id);
   }, [live, luaSource]);
 
@@ -103,6 +109,7 @@ export const Preview480x320 = memo(function Preview480x320({
     if (!canvas || !container || tab !== "preview" || !luaSource) return;
 
     const paint = () => {
+      if (isChatScrolling()) return;
       const cw = container.clientWidth;
       const ch = container.clientHeight;
       if (cw <= 0 || ch <= 0) return;

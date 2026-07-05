@@ -147,7 +147,7 @@ function ChatMessageListSection() {
 }
 
 function ChatComposerSection() {
-  const { running, sendMessage } = useChatSession();
+  const { running, sendMessage, canRefine } = useChatSession();
   const {
     protocol,
     setProtocol,
@@ -161,8 +161,6 @@ function ChatComposerSection() {
     edgeTxVersion,
     setEdgeTxVersion,
   } = useSessionSettings();
-  const { canRefine } = useArtifactPanel();
-
   const handleSend = useCallback(
     (prompt: string, images?: PendingPromptImage[]) =>
       void sendMessage(prompt, images ? { images } : undefined),

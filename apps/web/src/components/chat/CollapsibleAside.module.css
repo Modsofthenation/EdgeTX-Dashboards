@@ -17,6 +17,8 @@
 .right {
   width: min(22rem, 32vw);
   border-left: 1px solid var(--border);
+  contain: layout paint;
+  isolation: isolate;
 }
 
 .collapsed.left,

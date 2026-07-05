@@ -825,6 +825,7 @@ type ChatSessionContextValue = Pick<
   | "startNewChat"
   | "loadChat"
   | "deleteChat"
+  | "canRefine"
 >;
 
 type ArtifactContextValue = Pick<
@@ -836,7 +837,6 @@ type ArtifactContextValue = Pick<
   | "selectViewingVersion"
   | "artifactLoading"
   | "sessionId"
-  | "canRefine"
 >;
 
 type SessionSettingsContextValue = Pick<
@@ -880,6 +880,7 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       startNewChat: state.startNewChat,
       loadChat: state.loadChat,
       deleteChat: state.deleteChat,
+      canRefine: state.canRefine,
     }),
     [
       state.running,
@@ -890,6 +891,7 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       state.startNewChat,
       state.loadChat,
       state.deleteChat,
+      state.canRefine,
     ]
   );
 
@@ -902,7 +904,6 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       selectViewingVersion: state.selectViewingVersion,
       artifactLoading: state.artifactLoading,
       sessionId: state.sessionId,
-      canRefine: state.canRefine,
     }),
     [
       state.artifact,
@@ -912,7 +913,6 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       state.selectViewingVersion,
       state.artifactLoading,
       state.sessionId,
-      state.canRefine,
     ]
   );
 

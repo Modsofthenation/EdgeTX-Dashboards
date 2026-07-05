@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/lib/chatTypes";
+import { markChatScrolling } from "@/lib/chatScrollPause";
 import { ChatMessageBubble } from "./ChatMessage";
 import styles from "./ChatMessageList.module.css";
 
@@ -23,6 +24,7 @@ export function ChatMessageList({
   const lastScrollHeightRef = useRef(0);
 
   const handleScroll = () => {
+    markChatScrolling();
     const list = listRef.current;
     if (!list) return;
     const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
