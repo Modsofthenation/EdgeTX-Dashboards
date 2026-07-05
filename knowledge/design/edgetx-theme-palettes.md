@@ -4,13 +4,24 @@ Use these palettes so dashboards look polished on TX15 color LCDs and preview co
 
 ## EdgeTX color constants (use in `lcd.*` flags)
 
-**Literal colors** (safe everywhere; preview supports all listed):
+**Literal colors** (safe on radio — EdgeTX 2.11):
 
 | Constant | Typical use |
 |----------|-------------|
 | `BLACK`, `WHITE`, `LIGHTGREY`, `GREY`, `DARKGREY` | Backgrounds, cards, labels |
-| `CYAN`, `LIME`, `YELLOW`, `ORANGE`, `MAGENTA` | Accents, heroes, borders |
-| `GREEN`, `BRIGHTGREEN`, `RED`, `DARKRED`, `BLUE`, `DARKBLUE` | Status, warnings, links |
+| `GREEN`, `BRIGHTGREEN`, `DARKGREEN`, `RED`, `DARKRED` | Status, links, OK states |
+| `YELLOW`, `ORANGE`, `BLUE`, `DARKBLUE` | Warnings, heroes, accents |
+
+**Not radio globals — crash `refresh()` if used in `SMLSIZE + LIME` etc.:**
+
+| Avoid | Use instead |
+|-------|-------------|
+| `LIME` | `BRIGHTGREEN` or `lcd.RGB(136, 255, 0)` |
+| `CYAN` | `lcd.RGB(0, 210, 255)` as `C_ACCENT` in `create()` |
+| `MAGENTA` | `lcd.RGB(255, 80, 200)` as `C_HERO` in `create()` |
+| `GRAY` | `GREY` |
+
+The web preview accepts `LIME`/`CYAN`/`MAGENTA` for drawing, but the radio does not define them. `validateWidget` rejects these names.
 
 **Theme colors** (match radio UI; preview approximates these):
 
@@ -53,12 +64,12 @@ Preview parses `local Name = lcd.RGB(r, g, b)` and resolves draws that use `Name
 - Labels: `GREY`
 - Status OK: `GREEN` · Warning: `ORANGE` · Alarm: `RED`
 
-### 2. Edge Dark Lime (FPV / energetic)
+### 2. Edge Dark Green (FPV / energetic)
 - Background: `BLACK`
-- Cards: `DARKGREY` + `LIME` 2px top stripe
-- Hero: `LIME`
+- Cards: `DARKGREY` + `BRIGHTGREEN` 2px top stripe
+- Hero: `BRIGHTGREEN`
 - Secondary: `YELLOW`
-- Link bars: `LIME` fill on `GREY` track
+- Link bars: `BRIGHTGREEN` fill on `GREY` track
 
 ### 3. Warm Cockpit (battery-centric)
 - Background: `lcd.RGB(20, 14, 10)`

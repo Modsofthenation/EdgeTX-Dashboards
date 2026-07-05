@@ -36,6 +36,7 @@ local function create(zone, opts)
       sats = cacheSource("Sats"),
       fm = cacheSource("FM"),
     },
+    C_ACCENT = lcd.RGB(0, 210, 255),
   }
 end
 
@@ -101,7 +102,7 @@ local function refresh(widget, event, touchState)
     lcd.drawText(pad + 8, gpsY + 44, "m alt", SMLSIZE + GREY)
     lcd.drawText(pad + 120, gpsY + 26, tostring(spd), MIDSIZE + WHITE)
     lcd.drawText(pad + 120, gpsY + 44, "km/h", SMLSIZE + GREY)
-    lcd.drawText(pad + 240, gpsY + 26, tostring(sats), MIDSIZE + CYAN)
+    lcd.drawText(pad + 240, gpsY + 26, tostring(sats), MIDSIZE + widget.C_ACCENT)
     lcd.drawText(pad + 240, gpsY + 44, "sats", SMLSIZE + GREY)
   end
 

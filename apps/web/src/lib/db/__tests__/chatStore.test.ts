@@ -123,6 +123,29 @@ describe("SqliteChatRepository", () => {
     assert.equal(repo.listChats().length, 0);
   });
 
+  it("lists chats in creation order after updates", () => {
+    const first = repo.createChat({
+      title: "first chat",
+      protocol: "betaflight",
+      modelId: "m1",
+      edgeTxVersion: "2.11.0",
+    });
+    const second = repo.createChat({
+      title: "second chat",
+      protocol: "rotorflight",
+      modelId: "m1",
+      edgeTxVersion: "2.11.0",
+    });
+
+    repo.updateChat(first.id, { widgetName: "updated_first" });
+
+    const listed = repo.listChats();
+    assert.equal(listed.length, 2);
+    assert.equal(listed[0].id, first.id);
+    assert.equal(listed[1].id, second.id);
+    assert.equal(listed[0].widgetName, "updated_first");
+  });
+
   it("excludes streaming messages from persistence", () => {
     const chat = repo.createChat({
       title: "test",

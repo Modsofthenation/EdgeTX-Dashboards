@@ -1,4 +1,9 @@
 import type { ValidationIssue } from "@widget-gen/shared";
+import {
+  PREVIEW_ONLY_COLOR_HINTS,
+  PREVIEW_ONLY_COLOR_NAMES,
+  stripLuaComments,
+} from "./edgeTxLiteralColors.js";
 
 const DRAW_LINE_PATTERN = /^(SOLID|DOTTED|\d+)$/;
 
@@ -110,13 +115,13 @@ function looksLikeColorArg(arg: string): boolean {
   const trimmed = arg.trim();
   if (!trimmed) return false;
   if (DRAW_LINE_PATTERN.test(trimmed)) return false;
-  if (/^(WHITE|BLACK|GREY|GRAY|RED|GREEN|BLUE|CYAN|YELLOW|ORANGE|MAGENTA|LIME|LIGHTGREY|DARKGREY)$/i.test(trimmed)) {
+  if (/^(WHITE|BLACK|GREY|GRAY|RED|GREEN|BLUE|YELLOW|ORANGE|LIGHTGREY|DARKGREY|BRIGHTGREEN|DARKGREEN|DARKBLUE|DARKRED|LIGHTWHITE)$/i.test(trimmed)) {
     return true;
   }
   if (/^widget\.C_/.test(trimmed)) return true;
   if (/^lcd\.RGB\s*\(/.test(trimmed)) return true;
   if (/^(heroColor|accentCol|linkColor|battColor|armColor|armFill|C_[A-Z_]+)$/.test(trimmed)) return true;
-  if (/\+/.test(trimmed) && /(WHITE|CYAN|RIGHT|SMLSIZE|MIDSIZE|DBLSIZE|GREEN|RED|YELLOW|ORANGE|MAGENTA|LIME)/.test(trimmed)) {
+  if (/\+/.test(trimmed) && /(WHITE|RIGHT|SMLSIZE|MIDSIZE|DBLSIZE|GREEN|RED|YELLOW|ORANGE|BRIGHTGREEN)/.test(trimmed)) {
     return false;
   }
   return true;
@@ -447,8 +452,26 @@ export function validateUnitSuffixPositioning(source: string): ValidationIssue[]
   return [];
 }
 
+/** Reject preview-only color globals (LIME, CYAN, MAGENTA, …) that crash on radio. */
+export function validateColorConstants(source: string): ValidationIssue[] {
+  const stripped = stripLuaComments(source);
+  const issues: ValidationIssue[] = [];
+
+  for (const name of PREVIEW_ONLY_COLOR_NAMES) {
+    if (new RegExp(`\\b${name}\\b`).test(stripped)) {
+      issues.push({
+        severity: "error",
+        message: `${name} is not an EdgeTX literal color on radio — use ${PREVIEW_ONLY_COLOR_HINTS[name]}`,
+      });
+    }
+  }
+
+  return issues;
+}
+
 export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
   return [
+    ...validateColorConstants(source),
     ...validateLcdDrawLineCalls(source),
     ...validateBitmapGetSizeCalls(source),
     ...validateGlobalGetSizeCalls(source),

@@ -229,6 +229,7 @@
 }
 
 .input {
+  composes: appScrollbar from global;
   flex: 1;
   resize: none;
   min-height: 2.5rem;

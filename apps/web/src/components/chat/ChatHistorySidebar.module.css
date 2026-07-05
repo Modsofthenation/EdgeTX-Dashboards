@@ -57,6 +57,7 @@
 }
 
 .list {
+  composes: appScrollbar from global;
   flex: 1;
   overflow-y: auto;
   padding: 0.35rem;

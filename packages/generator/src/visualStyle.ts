@@ -45,9 +45,9 @@ export function detectVisualStyle(userPrompt: string, seed = 0): VisualStyleHint
     const lines = [
       "## Color & style (user request — mandatory)",
       "The user asked for a **colorful / vibrant** dashboard. Do NOT ship a flat grey-only layout.",
-      "- Use BOOL **ValueColor** and **TextColor** options; default to saturated colors (CYAN, LIME, MAGENTA, YELLOW, ORANGE) — not only GREY/DARKGREY/WHITE.",
-      "- Card **borders** in accent colors (CYAN, MAGENTA, LIME, YELLOW) — not plain GREY rectangles on DARKGREY.",
-      "- Header: dark fill plus a **4px accent stripe** (CYAN/LIME/MAGENTA) or colored title text — not a flat GREY bar.",
+      "- Use BOOL **ValueColor** and **TextColor** options; default to saturated lcd.RGB() locals (C_ACCENT, C_HERO) plus BRIGHTGREEN, YELLOW, ORANGE — not only GREY/DARKGREY/WHITE.",
+      "- Card **borders** in accent colors (C_ACCENT, C_HERO, BRIGHTGREEN, YELLOW) — not plain GREY rectangles on DARKGREY.",
+      "- Header: dark fill plus a **4px accent stripe** (C_ACCENT / C_HERO) or colored title text — not a flat GREY bar.",
       "- Hero metric uses ValueColor (DBLSIZE); footer/status uses ORANGE/GREEN/YELLOW as appropriate.",
       "- Minimum **3 distinct accent colors** visible on screen at once.",
       "- Do not clone the dull DBK grey card clone unless user said \"minimal\" or \"DBK\".",

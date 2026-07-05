@@ -14,7 +14,18 @@ export const MarkdownContent = memo(function MarkdownContent({ children }: Markd
 
   return (
     <div className={styles.markdown}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          pre: ({ children, ...props }) => (
+            <pre className="appScrollbar" {...props}>
+              {children}
+            </pre>
+          ),
+        }}
+      >
+        {children}
+      </ReactMarkdown>
     </div>
   );
 });

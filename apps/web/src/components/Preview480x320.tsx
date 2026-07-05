@@ -28,6 +28,7 @@ export const Preview480x320 = memo(function Preview480x320({
 }: Preview480x320Props) {
   const [tab, setTab] = useState<"preview" | "source">("preview");
   const [tick, setTick] = useState(0);
+  const [copied, setCopied] = useState(false);
   const [interactiveControls, setInteractiveControls] = useState<{ openInteractive: () => void } | null>(
     null
   );
@@ -74,12 +75,81 @@ export const Preview480x320 = memo(function Preview480x320({
   const simActive = !!luaSource && tab !== "source";
   const firmwareLabel = edgeTxVersion.replace(/\.0$/, "");
 
+  const handleCopySource = async () => {
+    if (!luaSource) return;
+    try {
+      await navigator.clipboard.writeText(luaSource);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const copyButton =
+    luaSource && tab === "source" ? (
+      <button
+        type="button"
+        className={`${styles.copyBtn} ${copied ? styles.copyBtnCopied : ""}`}
+        onClick={() => void handleCopySource()}
+        title={copied ? "Copied" : "Copy all Lua"}
+        aria-label={copied ? "Lua source copied" : "Copy all Lua source"}
+      >
+        {copied ? (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M20 6 9 17l-5-5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.75" />
+            <path
+              d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              stroke="currentColor"
+              strokeWidth="1.75"
+            />
+          </svg>
+        )}
+      </button>
+    ) : null;
+
   return (
     <div className={variant === "compact" ? styles.panelCompact : styles.panel}>
       {variant === "default" && (
         <div className={styles.header}>
           <h2 className={styles.title}>{widgetName ?? "TX15 Preview"}</h2>
-          <div className={styles.tabs} role="tablist">
+          <div className={styles.headerTabs}>
+            <div className={styles.tabs} role="tablist">
+              <button
+                role="tab"
+                aria-selected={tab === "preview"}
+                className={tab === "preview" ? styles.tabActive : styles.tab}
+                onClick={() => setTab("preview")}
+              >
+                Preview
+              </button>
+              <button
+                role="tab"
+                aria-selected={tab === "source"}
+                className={tab === "source" ? styles.tabActive : styles.tab}
+                onClick={() => setTab("source")}
+              >
+                Source
+              </button>
+            </div>
+            {copyButton}
+          </div>
+        </div>
+      )}
+
+      {variant === "compact" && (
+        <div className={styles.compactTabRow}>
+          <div className={styles.compactTabs} role="tablist">
             <button
               role="tab"
               aria-selected={tab === "preview"}
@@ -94,30 +164,10 @@ export const Preview480x320 = memo(function Preview480x320({
               className={tab === "source" ? styles.tabActive : styles.tab}
               onClick={() => setTab("source")}
             >
-              Source
+              Lua
             </button>
           </div>
-        </div>
-      )}
-
-      {variant === "compact" && (
-        <div className={styles.compactTabs} role="tablist">
-          <button
-            role="tab"
-            aria-selected={tab === "preview"}
-            className={tab === "preview" ? styles.tabActive : styles.tab}
-            onClick={() => setTab("preview")}
-          >
-            Preview
-          </button>
-          <button
-            role="tab"
-            aria-selected={tab === "source"}
-            className={tab === "source" ? styles.tabActive : styles.tab}
-            onClick={() => setTab("source")}
-          >
-            Lua
-          </button>
+          {copyButton}
         </div>
       )}
 

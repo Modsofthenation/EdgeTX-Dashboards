@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateBarsBlockHeightSync, validateDrawAnnulusRadiusOrder, validateGaugeSatelliteBudget, validateGaugeStripLayoutPlanning, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateMainHLiteralClamp, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateBarsBlockHeightSync, validateColorConstants, validateDrawAnnulusRadiusOrder, validateGaugeSatelliteBudget, validateGaugeStripLayoutPlanning, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateMainHLiteralClamp, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -208,6 +208,32 @@ lcd.drawText(0, barsPctY, "91%", SMLSIZE)`;
     const source = `local barsPctY = trackY + barH + LH.GAP
 local barsBlockH = barsPctY + barsPctRowH() - barsY`;
     assert.deepEqual(validateBarsBlockHeightSync(source), []);
+  });
+});
+
+describe("validateColorConstants", () => {
+  it("rejects preview-only LIME global", () => {
+    const source =
+      REFRESH_PREFIX +
+      "local linkBarColor = LIME\nlcd.drawText(x, y, \"RSSI\", SMLSIZE + LIME)\n" +
+      REFRESH_SUFFIX;
+    const issues = validateColorConstants(source);
+    assert.ok(issues.length >= 1);
+    assert.match(issues[0].message, /LIME/);
+    assert.match(issues[0].message, /BRIGHTGREEN/);
+  });
+
+  it("accepts BRIGHTGREEN and lcd.RGB locals", () => {
+    const source =
+      `local function create()
+  return { C_ACCENT = lcd.RGB(0, 210, 255) }
+end
+` +
+      REFRESH_PREFIX +
+      "lcd.drawText(x, y, \"OK\", SMLSIZE + BRIGHTGREEN)\n" +
+      "lcd.drawText(x, y + 20, \"V\", MIDSIZE + widget.C_ACCENT)\n" +
+      REFRESH_SUFFIX;
+    assert.deepEqual(validateColorConstants(source), []);
   });
 });
 

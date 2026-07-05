@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS chat_artifacts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_id ON chat_messages(chat_id);
-CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chats_created_at ON chats(created_at ASC);
 
 CREATE TABLE IF NOT EXISTS chat_artifact_versions (
   chat_id TEXT NOT NULL,
@@ -153,7 +153,7 @@ export class SqliteChatRepository implements ChatRepository {
          LEFT JOIN chat_messages m ON m.chat_id = c.id
          LEFT JOIN chat_artifacts a ON a.chat_id = c.id
          GROUP BY c.id
-         ORDER BY c.updated_at DESC
+         ORDER BY c.created_at ASC
          LIMIT ?`
       )
       .all(limit) as Array<{

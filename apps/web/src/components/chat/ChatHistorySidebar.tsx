@@ -1,8 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { ChatSummary } from "@/lib/chatTypes";
 import { PROTOCOL_BADGE_LABELS, protocolBadgeClass } from "@/lib/protocolLabels";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import styles from "./ChatHistorySidebar.module.css";
 
@@ -44,6 +45,14 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
   onNewChat,
   onDelete,
 }: ChatHistorySidebarProps) {
+  const [pendingDelete, setPendingDelete] = useState<ChatSummary | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    onDelete(pendingDelete.id);
+    setPendingDelete(null);
+  };
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.header}>
@@ -102,7 +111,7 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
                 type="button"
                 className={styles.deleteBtn}
                 aria-label={`Delete ${chat.title}`}
-                onClick={() => onDelete(chat.id)}
+                onClick={() => setPendingDelete(chat)}
                 disabled={running}
               >
                 ×
@@ -111,6 +120,21 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete chat?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.title}" and its widget history will be permanently removed.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </aside>
   );
 });

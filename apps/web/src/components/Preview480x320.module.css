@@ -21,15 +21,53 @@
   align-items: center;
 }
 
+.compactTabRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
 .compactTabs {
   display: flex;
   gap: 0;
   padding: 2px;
-  margin-bottom: 0.5rem;
   width: fit-content;
   background: var(--bg-elevated);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+}
+
+.copyBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.copyBtn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.copyBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.copyBtnCopied {
+  color: var(--success);
+  border-color: rgba(52, 211, 153, 0.35);
 }
 
 .header {
@@ -39,6 +77,12 @@
   margin-bottom: 1rem;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.headerTabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .title {
@@ -295,6 +339,7 @@
 }
 
 .sourceCompact {
+  composes: appScrollbar from global;
   margin: 0;
   max-height: 200px;
   overflow: auto;
@@ -310,6 +355,7 @@
 }
 
 .source {
+  composes: appScrollbar from global;
   margin: 0;
   max-height: 340px;
   overflow: auto;
@@ -322,15 +368,6 @@
   padding: 1rem;
   white-space: pre-wrap;
   color: var(--text-secondary);
-}
-
-.source::-webkit-scrollbar {
-  width: 6px;
-}
-
-.source::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 3px;
 }
 
 .radioSimScreen {

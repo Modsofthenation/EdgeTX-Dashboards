@@ -58,7 +58,7 @@ See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-r
 - Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawFilledCircle, drawLine, drawGauge, drawCircle, drawArc, drawAnnulus, drawBitmap, etc.).
 - **`lcd.drawLine(x1, y1, x2, y2, pattern, [flags])`** — 5th arg is **`SOLID` or `DOTTED`**, not color. Put color in the 6th `flags` argument: `lcd.drawLine(x1, y1, x2, y2, SOLID, C_BORDER)`.
 - **Rounded panels:** Use `drawFilledCircle` + inset `drawFilledRectangle` bars and optional `drawArc`/`drawLine` borders per `knowledge/design/rounded-card-panels.md`. Do **not** use LVGL for rounded cards unless the user explicitly opts out of web preview.
-- Use EdgeTX literal colors (WHITE, CYAN, LIME, LIGHTGREY, …) or `lcd.RGB(r,g,b)` locals defined in `create()`. See `knowledge/design/edgetx-theme-palettes.md`.
+- Use EdgeTX **literal** colors (`WHITE`, `GREEN`, `BRIGHTGREEN`, `ORANGE`, `YELLOW`, …) or **`lcd.RGB(r,g,b)` locals** defined in `create()`. **Do not use `LIME`, `CYAN`, or `MAGENTA`** — they are not radio globals and crash `refresh()`. See `knowledge/design/edgetx-theme-palettes.md` and `runtime-api-pitfalls.md`.
 - Do **not** call `lcd.setColor(COLOR_THEME_*, …)` — it changes the whole radio UI.
 - **Gauges / rotary dials:** Use `lcd.drawGauge` (bar) or `lcd.drawAnnulus` / `lcd.drawArc` (rotary). Call them **directly in `refresh()`** with angle/value locals computed first — required for web preview.
 - Use `SMLSIZE`, `MIDSIZE`, `DBLSIZE`, `CENTER`, `RIGHT` flags for text sizing/alignment where appropriate.
@@ -88,6 +88,7 @@ Generated widgets must pass `validateWidget` with `valid: true` before packaging
 - **`lcd.drawLine`:** 5th argument must be `SOLID` or `DOTTED`; color goes in 6th flags arg (validator rejects color-as-5th-arg — causes WASM runtime errors)
 - **`Bitmap.getSize`:** pass the bitmap handle from `Bitmap.open()`, never the SD path string (validator rejects path-as-first-arg — causes `create()` crash on radio)
 - **`drawArc` rounded borders:** EdgeTX `0°`=up clockwise — top-left corner uses `270, 360`, not `180, 270` (validator rejects math angles)
+- **Color globals:** Do not use `LIME`, `CYAN`, `MAGENTA`, or `GRAY` — use `BRIGHTGREEN`/`GREY` or `lcd.RGB()` locals from `create()` (validator rejects preview-only names)
 
 ## Dev-kit annotations
 

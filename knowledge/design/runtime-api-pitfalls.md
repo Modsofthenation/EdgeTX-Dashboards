@@ -134,3 +134,22 @@ Same angle convention as `drawArc` (`0°` = up, clockwise). A 270° arc from `st
 ## When adding model / background images
 
 See `knowledge/design/model-image.md` for layout and `ShowModel` option. Always follow the `Bitmap.open` + `Bitmap.getSize(bitmap)` pattern above.
+
+## Color globals — LIME / CYAN / MAGENTA
+
+The web preview understands `LIME`, `CYAN`, and `MAGENTA`, but **EdgeTX radio Lua does not define them**. Using them in flag math (`SMLSIZE + LIME`) crashes `refresh()` with `attempt to perform arithmetic on a nil value`.
+
+```lua
+-- WRONG — nil on radio
+lcd.drawText(x, y, "OK", SMLSIZE + LIME)
+local linkColor = CYAN
+
+-- RIGHT — literal or lcd.RGB in create()
+lcd.drawText(x, y, "OK", SMLSIZE + BRIGHTGREEN)
+-- in create():
+widget.C_ACCENT = lcd.RGB(0, 210, 255)
+-- in refresh():
+lcd.drawText(x, y, voltsStr, MIDSIZE + widget.C_ACCENT)
+```
+
+`validateWidget` rejects `LIME`, `CYAN`, `MAGENTA`, `GRAY`, and `LIGHTRED` as undefined radio globals.
