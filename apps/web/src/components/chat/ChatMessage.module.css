@@ -31,8 +31,15 @@
   min-height: 2rem;
 }
 
-.userBubble {
+.userContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
   max-width: min(85%, 36rem);
+}
+
+.userBubble {
   padding: 0.75rem 1rem;
   border-radius: 1.125rem 1.125rem 0.35rem 1.125rem;
   background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
@@ -45,16 +52,18 @@
 .userImages {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .userImageThumb {
-  width: 5rem;
-  height: 5rem;
+  width: 5.5rem;
+  height: 5.5rem;
   object-fit: cover;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
 }
 
 .avatar {

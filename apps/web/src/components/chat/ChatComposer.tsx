@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { ChatModel } from "@/lib/chatModels";
 import {
@@ -33,6 +33,51 @@ interface ChatComposerProps {
   onSend: (prompt: string, images?: PendingPromptImage[]) => void;
 }
 
+function AttachImageIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12.5 6.5v11M7.5 12h10"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <rect
+        x="3.75"
+        y="5.75"
+        width="16.5"
+        height="12.5"
+        rx="2.25"
+        stroke="currentColor"
+        strokeWidth="1.75"
+      />
+      <circle cx="8.75" cy="10.25" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
+function RemoveIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+      <path d="M3 3l6 6M9 3 3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 5v14M12 5l6 6M12 5 6 11"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ChatComposer({
   running,
   canRefine,
@@ -52,11 +97,14 @@ export function ChatComposer({
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<PendingPromptImage[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
 
   const selectedRadio = radios.find((r) => r.id === radioId);
   const radioGroups = groupRadiosByLayout(radios);
   const canSend = !running && (input.trim().length > 0 || attachments.length > 0);
+  const attachDisabled = running || attachments.length >= maxPromptImages();
 
   const submit = () => {
     if (!canSend) return;
@@ -84,7 +132,7 @@ export function ChatComposer({
 
     const remaining = maxPromptImages() - attachments.length;
     if (remaining <= 0) {
-      setAttachError(`At most ${maxPromptImages()} reference images`);
+      setAttachError(`You can attach up to ${maxPromptImages()} images`);
       return;
     }
 
@@ -101,6 +149,37 @@ export function ChatComposer({
 
   const removeAttachment = (id: string) => {
     setAttachments((prev) => prev.filter((img) => img.id !== id));
+    setAttachError(null);
+  };
+
+  const handleDragEnter = (e: DragEvent) => {
+    e.preventDefault();
+    if (attachDisabled) return;
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault();
+    dragDepthRef.current -= 1;
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0;
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    if (attachDisabled) return;
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    if (attachDisabled) return;
+    void handlePickImages(e.dataTransfer.files);
   };
 
   const settingsLocked = running || canRefine;
@@ -193,69 +272,103 @@ export function ChatComposer({
         </span>
       </div>
 
-      {attachments.length > 0 && (
-        <div className={styles.attachments} aria-label="Reference images">
-          {attachments.map((img) => (
-            <div key={img.id} className={styles.attachment}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.previewUrl} alt={img.name} className={styles.attachmentThumb} />
-              <button
-                type="button"
-                className={styles.attachmentRemove}
-                onClick={() => removeAttachment(img.id)}
-                disabled={running}
-                aria-label={`Remove ${img.name}`}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {attachError && <p className={styles.attachError}>{attachError}</p>}
-
-      <div className={styles.inputRow}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          multiple
-          className={styles.fileInput}
-          onChange={(e) => void handlePickImages(e.target.files)}
-          disabled={running || attachments.length >= maxPromptImages()}
-        />
-        <button
-          type="button"
-          className={styles.attachBtn}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={running || attachments.length >= maxPromptImages()}
-          title={`Attach reference image (max ${maxPromptImages()})`}
-          aria-label="Attach reference image"
+      <div className={styles.inputArea}>
+        <div
+          className={`${styles.inputShell} ${isDragging ? styles.inputShellDragging : ""}`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         >
-          Ref
-        </button>
-        <textarea
-          className={styles.input}
-          rows={1}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={running}
-          placeholder={
-            canRefine
-              ? "Refine the dashboard — describe changes or attach a reference screenshot"
-              : "Describe your dashboard — layout, metrics, colors — or attach a reference screenshot"
-          }
-        />
-        <button type="submit" className={styles.sendBtn} disabled={!canSend}>
-          {running ? <span className={styles.sendSpinner} aria-hidden /> : "↑"}
-        </button>
-      </div>
+          {isDragging && !attachDisabled ? (
+            <div className={styles.dropOverlay} aria-hidden>
+              <span className={styles.dropOverlayIcon}>
+                <AttachImageIcon />
+              </span>
+              <span className={styles.dropOverlayText}>Drop images to attach</span>
+            </div>
+          ) : null}
 
-      <p className={styles.hint}>
-        Enter to send · Shift+Enter for new line · Attach up to {maxPromptImages()} reference images (PNG/JPEG/WebP/GIF, 4MB each)
-      </p>
+          {attachments.length > 0 ? (
+            <div className={styles.attachmentStrip} aria-label="Attached images">
+              {attachments.map((img) => (
+                <div key={img.id} className={styles.attachment}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.previewUrl} alt="" className={styles.attachmentThumb} />
+                  <div className={styles.attachmentMeta}>
+                    <span className={styles.attachmentName} title={img.name}>
+                      {img.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.attachmentRemove}
+                    onClick={() => removeAttachment(img.id)}
+                    disabled={running}
+                    aria-label={`Remove ${img.name}`}
+                  >
+                    <RemoveIcon />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className={styles.inputRow}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              multiple
+              className={styles.fileInput}
+              onChange={(e) => void handlePickImages(e.target.files)}
+              disabled={attachDisabled}
+              tabIndex={-1}
+            />
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={attachDisabled}
+              title={
+                attachDisabled && attachments.length >= maxPromptImages()
+                  ? `Maximum ${maxPromptImages()} images attached`
+                  : "Attach images"
+              }
+              aria-label="Attach images"
+            >
+              <AttachImageIcon />
+            </button>
+            <textarea
+              className={styles.input}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={running}
+              placeholder={
+                canRefine
+                  ? "Message the assistant…"
+                  : "Describe your dashboard, or attach reference screenshots"
+              }
+            />
+            <button
+              type="submit"
+              className={`${styles.sendBtn} ${canSend ? styles.sendBtnActive : ""}`}
+              disabled={!canSend}
+              aria-label={running ? "Generating" : "Send message"}
+            >
+              {running ? <span className={styles.sendSpinner} aria-hidden /> : <SendIcon />}
+            </button>
+          </div>
+        </div>
+
+        {attachError ? <p className={styles.attachError}>{attachError}</p> : null}
+
+        <p className={styles.hint}>
+          Enter to send · Shift+Enter for new line · Up to {maxPromptImages()} images · PNG, JPEG, WebP, GIF · 4MB each
+        </p>
+      </div>
     </form>
   );
 }
