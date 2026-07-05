@@ -2,6 +2,7 @@ import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
 import { randomUUID } from "node:crypto";
 import type { GenerateRequest, GenerateSession, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { buildGenerationPrompt, buildRefinePrompt, getArchetypeForSession } from "./promptComposer.js";
+import { buildSdkUserMessage } from "./promptImages.js";
 import { shouldBumpRunIndexForRefine, deriveVariationSeed } from "./designVariation.js";
 import { allocateWidgetName } from "./widgetNaming.js";
 import { createCustomTools } from "./agentTools.js";
@@ -157,12 +158,7 @@ export class WidgetGenerator {
     this.toolDefaults.widgetVersion = widgetVersion;
     this.lastKnownWorkspace = widgetInstanceId;
 
-    const prompt = buildGenerationPrompt(
-      request.prompt,
-      radio,
-      catalog,
-      request.edgeTxVersion,
-      session
+    const promptCtx = session
         ? {
             sessionId: session.id,
             runIndex: session.runIndex ?? 0,
@@ -170,8 +166,22 @@ export class WidgetGenerator {
             assignedWidgetName,
             widgetInstanceId,
             widgetVersion,
+            referenceImageCount: request.images?.length ?? 0,
           }
-        : { sessionId: "cli", assignedWidgetName, widgetInstanceId, widgetVersion }
+        : {
+            sessionId: "cli",
+            assignedWidgetName,
+            widgetInstanceId,
+            widgetVersion,
+            referenceImageCount: request.images?.length ?? 0,
+          };
+
+    const prompt = buildGenerationPrompt(
+      request.prompt,
+      radio,
+      catalog,
+      request.edgeTxVersion,
+      promptCtx
     );
 
     if (session) {
@@ -197,7 +207,7 @@ export class WidgetGenerator {
       version: widgetVersion,
     });
 
-    const run = await agent.send(prompt);
+    const run = await agent.send(buildSdkUserMessage(prompt, request.images));
     callbacks?.onEvent?.({
       type: "status",
       content: `Run started: ${run.id}`,
@@ -250,7 +260,8 @@ export class WidgetGenerator {
     radioId: string,
     widgetName?: string,
     callbacks?: RunCallbacks,
-    session?: GenerateSession
+    session?: GenerateSession,
+    images?: GenerateRequest["images"]
   ): Promise<{
     runId: string;
     status: string;
@@ -307,14 +318,16 @@ export class WidgetGenerator {
             variationSeed: session.variationSeed,
             widgetInstanceId: session.widgetInstanceId,
             widgetVersion: session.widgetVersion,
+            referenceImageCount: images?.length ?? 0,
           }
         : widgetInstanceId
           ? {
               sessionId: "refine",
               widgetInstanceId,
               widgetVersion: this.toolDefaults.widgetVersion,
+              referenceImageCount: images?.length ?? 0,
             }
-          : undefined
+          : { sessionId: "refine", referenceImageCount: images?.length ?? 0 }
     );
 
     if (session) {
@@ -333,7 +346,7 @@ export class WidgetGenerator {
       });
     }
 
-    const run = await agent.send(refinePrompt);
+    const run = await agent.send(buildSdkUserMessage(refinePrompt, images));
 
     const streamed = await streamAgentRun(
       run,

@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { getRepoRoot } from "./knowledge.js";
 import { DEFAULT_MODEL_ID, isAllowedModelId } from "./models.js";
+import { validatePromptImages } from "./promptImages.js";
 
 const PROTOCOLS: TelemetryProtocol[] = ["betaflight", "rotorflight", "generic-crsf"];
 
@@ -23,13 +24,22 @@ export function validateGenerateRequest(
   ok: false;
   error: string;
 } {
-  const prompt = body.prompt?.trim();
-  if (!prompt) {
-    return { ok: false, error: "prompt is required" };
+  const imagesResult = validatePromptImages(body.images);
+  if (!imagesResult.ok) {
+    return imagesResult;
+  }
+
+  const prompt = body.prompt?.trim() ?? "";
+  if (!prompt && imagesResult.images.length === 0) {
+    return { ok: false, error: "prompt or at least one reference image is required" };
   }
   if (prompt.length > 8000) {
     return { ok: false, error: "prompt exceeds maximum length (8000)" };
   }
+
+  const effectivePrompt =
+    prompt ||
+    "Recreate this dashboard using the attached reference image(s) as the primary layout and style guide.";
 
   const radioId = body.radioId ?? "tx15";
   const radioPath = join(getRepoRoot(), "knowledge", "radios", `${radioId}.json`);
@@ -50,11 +60,12 @@ export function validateGenerateRequest(
   return {
     ok: true,
     request: {
-      prompt,
+      prompt: effectivePrompt,
       radioId,
       protocol,
       edgeTxVersion: body.edgeTxVersion,
       modelId,
+      ...(imagesResult.images.length > 0 ? { images: imagesResult.images } : {}),
     },
   };
 }

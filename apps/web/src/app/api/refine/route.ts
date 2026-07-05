@@ -1,4 +1,4 @@
-import { CursorAgentError, getSessionStore, writeWidgetLuaSource } from "@/server/generatorFacade";
+import { CursorAgentError, getSessionStore, validatePromptImages, writeWidgetLuaSource } from "@/server/generatorFacade";
 import { checkApiAuth } from "@/lib/apiSecurity";
 import { getChat } from "@/lib/db/chatStore";
 import { createSseResponse, createSseStream } from "@/lib/sse";
@@ -55,9 +55,32 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const data = body as { sessionId?: string; chatId?: string; prompt?: string };
-  if (!data.sessionId?.trim() || !data.prompt?.trim()) {
-    return Response.json({ error: "sessionId and prompt are required" }, { status: 400 });
+  const data = body as {
+    sessionId?: string;
+    chatId?: string;
+    prompt?: string;
+    images?: unknown;
+  };
+
+  const imagesResult = validatePromptImages(data.images);
+  if (!imagesResult.ok) {
+    return Response.json({ error: imagesResult.error }, { status: 400 });
+  }
+
+  const prompt = data.prompt?.trim() ?? "";
+  if (!prompt && imagesResult.images.length === 0) {
+    return Response.json({ error: "prompt or at least one reference image is required" }, { status: 400 });
+  }
+  if (prompt.length > 8000) {
+    return Response.json({ error: "prompt exceeds maximum length (8000)" }, { status: 400 });
+  }
+
+  const effectivePrompt =
+    prompt ||
+    "Update this dashboard to match the attached reference image(s) as the primary layout and style guide.";
+
+  if (!data.sessionId?.trim()) {
+    return Response.json({ error: "sessionId is required" }, { status: 400 });
   }
 
   const { store, stored, sessionId: effectiveSessionId } = resolveRefineSession(
@@ -77,12 +100,13 @@ export async function POST(request: Request): Promise<Response> {
     try {
       const ctx = { session: stored.session, generator: stored.generator, send };
       const result = await stored.generator.refine(
-        data.prompt!,
+        effectivePrompt,
         stored.session.protocol,
         stored.session.radioId,
         stored.session.widgetName,
         createRunCallbacks(ctx),
-        stored.session
+        stored.session,
+        imagesResult.images.length > 0 ? imagesResult.images : undefined
       );
 
       emitRunCompletion(ctx, result, { action: "refine" });

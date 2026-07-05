@@ -54,6 +54,12 @@ export {
   type ModelCatalogEntry,
 } from "./models.js";
 export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.js";
+export {
+  validatePromptImages,
+  buildSdkUserMessage,
+  MAX_PROMPT_IMAGES,
+  MAX_PROMPT_IMAGE_BYTES,
+} from "./promptImages.js";
 export { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.js";
 export { allocateWidgetName, suggestWidgetName, widgetFolderExists } from "./widgetNaming.js";
 export { WIDGET_NAME_PATTERN } from "./paths.js";

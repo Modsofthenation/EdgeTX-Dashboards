@@ -129,7 +129,7 @@ export function ChatApp() {
             onModelChange={setModelId}
             onEdgeTxChange={setEdgeTxVersion}
             onRadioChange={setRadioId}
-            onSend={(prompt) => void sendMessage(prompt)}
+            onSend={(prompt, images) => void sendMessage(prompt, { images })}
           />
         </div>
 

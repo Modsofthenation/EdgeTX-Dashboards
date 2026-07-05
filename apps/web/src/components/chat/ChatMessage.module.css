@@ -42,6 +42,21 @@
   box-shadow: 0 4px 20px var(--accent-glow);
 }
 
+.userImages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.userImageThumb {
+  width: 5rem;
+  height: 5rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
 .avatar {
   flex-shrink: 0;
   width: 2rem;

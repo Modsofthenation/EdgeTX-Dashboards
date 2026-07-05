@@ -16,6 +16,9 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
   const tools = useMemo(() => collectToolEntries(lines), [lines]);
   const lastLine = lines[lines.length - 1];
   const showLiveTool = !!isStreaming && lastLine?.type === "tool" && tools.length > 0;
+  const activeTool = tools[tools.length - 1];
+  const toolInProgress = showLiveTool && !!activeTool && !activeTool.failed;
+  const showThinkingDots = !!isStreaming && !toolInProgress;
 
   const renderedEntries = useMemo(
     () =>
@@ -39,7 +42,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
 
   const hasVisibleContent = renderedEntries.some(Boolean) || showLiveTool;
 
-  if (!hasVisibleContent && isStreaming) {
+  if (!hasVisibleContent && showThinkingDots) {
     return (
       <div className={styles.thinking}>
         <span className={styles.dot} />
@@ -73,7 +76,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
         );
       })}
       {showLiveTool ? <ToolActivityStream tools={tools} isStreaming /> : null}
-      {isStreaming ? (
+      {showThinkingDots ? (
         <div className={styles.thinking} aria-label="Generating">
           <span className={styles.dot} />
           <span className={styles.dot} />

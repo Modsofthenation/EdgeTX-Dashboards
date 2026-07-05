@@ -37,17 +37,29 @@ export interface TelemetryCatalog {
   setupNotes?: string[];
 }
 
+/** Reference image attached to a generate/refine prompt (raw base64, no data-URL prefix). */
+export interface PromptImage {
+  data: string;
+  mimeType: string;
+  name?: string;
+}
+
+export const MAX_PROMPT_IMAGES = 4;
+export const MAX_PROMPT_IMAGE_BYTES = 4 * 1024 * 1024;
+
 export interface GenerateRequest {
   prompt: string;
   radioId: string;
   protocol: TelemetryProtocol;
   edgeTxVersion?: string;
   modelId?: string;
+  images?: PromptImage[];
 }
 
 export interface RefineRequest {
   sessionId: string;
   prompt: string;
+  images?: PromptImage[];
 }
 
 export interface ValidationIssue {

@@ -143,6 +143,19 @@ describe("validateGenerateRequest", () => {
     const r = validateGenerateRequest({ prompt: "x", protocol: "invalid" as never });
     assert.equal(r.ok, false);
   });
+
+  it("accepts image-only request with default prompt", () => {
+    const r = validateGenerateRequest({
+      prompt: "",
+      radioId: "tx15",
+      protocol: "betaflight",
+      images: [{ data: Buffer.from("png").toString("base64"), mimeType: "image/png" }],
+    });
+    assert.equal(r.ok, true);
+    if (!r.ok) return;
+    assert.match(r.request.prompt, /reference image/i);
+    assert.equal(r.request.images?.length, 1);
+  });
 });
 
 describe("renderInstallMd", () => {

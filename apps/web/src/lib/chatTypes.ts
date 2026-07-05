@@ -90,10 +90,17 @@ export interface StoredChat {
   artifactVersions: WidgetVersionEntry[];
 }
 
+export interface ChatMessageImage {
+  mimeType: string;
+  name?: string;
+  previewUrl: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  images?: ChatMessageImage[];
   lines?: StreamLine[];
   isStreaming?: boolean;
   widget?: WidgetSnapshot;
@@ -111,8 +118,13 @@ function newId(): string {
   return crypto.randomUUID();
 }
 
-export function createUserMessage(content: string): ChatMessage {
-  return { id: newId(), role: "user", content };
+export function createUserMessage(content: string, images?: ChatMessageImage[]): ChatMessage {
+  return {
+    id: newId(),
+    role: "user",
+    content,
+    ...(images?.length ? { images } : {}),
+  };
 }
 
 export function createAssistantPlaceholder(): ChatMessage {

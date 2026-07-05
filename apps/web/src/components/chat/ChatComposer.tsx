@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { ChatModel } from "@/lib/chatModels";
 import {
@@ -9,6 +9,11 @@ import {
   type RadioCatalogEntry,
 } from "@/lib/radioCatalog";
 import { PROTOCOL_BADGE_LABELS } from "@/lib/protocolLabels";
+import {
+  maxPromptImages,
+  readPromptImageFile,
+  type PendingPromptImage,
+} from "@/lib/promptImages";
 import styles from "./ChatComposer.module.css";
 
 interface ChatComposerProps {
@@ -25,7 +30,7 @@ interface ChatComposerProps {
   onModelChange: (modelId: string) => void;
   onEdgeTxChange: (version: string) => void;
   onRadioChange: (radioId: string) => void;
-  onSend: (prompt: string) => void;
+  onSend: (prompt: string, images?: PendingPromptImage[]) => void;
 }
 
 export function ChatComposer({
@@ -45,15 +50,20 @@ export function ChatComposer({
   onSend,
 }: ChatComposerProps) {
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<PendingPromptImage[]>([]);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedRadio = radios.find((r) => r.id === radioId);
   const radioGroups = groupRadiosByLayout(radios);
+  const canSend = !running && (input.trim().length > 0 || attachments.length > 0);
 
   const submit = () => {
-    const trimmed = input.trim();
-    if (!trimmed || running) return;
-    onSend(trimmed);
+    if (!canSend) return;
+    onSend(input.trim(), attachments.length > 0 ? attachments : undefined);
     setInput("");
+    setAttachments([]);
+    setAttachError(null);
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -66,6 +76,31 @@ export function ChatComposer({
       e.preventDefault();
       submit();
     }
+  };
+
+  const handlePickImages = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setAttachError(null);
+
+    const remaining = maxPromptImages() - attachments.length;
+    if (remaining <= 0) {
+      setAttachError(`At most ${maxPromptImages()} reference images`);
+      return;
+    }
+
+    const picked = Array.from(files).slice(0, remaining);
+    try {
+      const next = await Promise.all(picked.map((file) => readPromptImageFile(file)));
+      setAttachments((prev) => [...prev, ...next]);
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : "Could not read image");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((img) => img.id !== id));
   };
 
   const settingsLocked = running || canRefine;
@@ -158,7 +193,48 @@ export function ChatComposer({
         </span>
       </div>
 
+      {attachments.length > 0 && (
+        <div className={styles.attachments} aria-label="Reference images">
+          {attachments.map((img) => (
+            <div key={img.id} className={styles.attachment}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.previewUrl} alt={img.name} className={styles.attachmentThumb} />
+              <button
+                type="button"
+                className={styles.attachmentRemove}
+                onClick={() => removeAttachment(img.id)}
+                disabled={running}
+                aria-label={`Remove ${img.name}`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {attachError && <p className={styles.attachError}>{attachError}</p>}
+
       <div className={styles.inputRow}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          multiple
+          className={styles.fileInput}
+          onChange={(e) => void handlePickImages(e.target.files)}
+          disabled={running || attachments.length >= maxPromptImages()}
+        />
+        <button
+          type="button"
+          className={styles.attachBtn}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={running || attachments.length >= maxPromptImages()}
+          title={`Attach reference image (max ${maxPromptImages()})`}
+          aria-label="Attach reference image"
+        >
+          Ref
+        </button>
         <textarea
           className={styles.input}
           rows={1}
@@ -168,16 +244,18 @@ export function ChatComposer({
           disabled={running}
           placeholder={
             canRefine
-              ? "Refine the dashboard — e.g. switch to a strip layout or add a flight logger tool"
-              : "Describe your EdgeTX dashboard — layout, metrics, optional tools (battery selector, logger)…"
+              ? "Refine the dashboard — describe changes or attach a reference screenshot"
+              : "Describe your dashboard — layout, metrics, colors — or attach a reference screenshot"
           }
         />
-        <button type="submit" className={styles.sendBtn} disabled={running || !input.trim()}>
+        <button type="submit" className={styles.sendBtn} disabled={!canSend}>
           {running ? <span className={styles.sendSpinner} aria-hidden /> : "↑"}
         </button>
       </div>
 
-      <p className={styles.hint}>Enter to send · Shift+Enter for new line</p>
+      <p className={styles.hint}>
+        Enter to send · Shift+Enter for new line · Attach up to {maxPromptImages()} reference images (PNG/JPEG/WebP/GIF, 4MB each)
+      </p>
     </form>
   );
 }

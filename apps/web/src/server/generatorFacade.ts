@@ -27,6 +27,7 @@ import {
   sanitizeWidgetInstanceId,
   sanitizeWidgetName,
   validateGenerateRequest,
+  validatePromptImages,
   validateWidgetForRelease,
   WidgetValidationError,
 } from "@widget-gen/generator";
@@ -39,6 +40,7 @@ export {
   getSessionStore,
   MAX_ACTIVE_SESSIONS,
   validateGenerateRequest,
+  validatePromptImages,
   isTelemetryProtocol,
   WidgetValidationError,
   isWidgetInstanceId,

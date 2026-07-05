@@ -10,6 +10,7 @@ import {
   readThemePalettesGuide,
   readExampleSnippet,
   loadTelemetryCatalog,
+  loadRadioProfile,
   readRoundedCornersGuide,
 } from "./knowledge.js";
 import { wantsRoundedCorners } from "./roundedCorners.js";
@@ -26,6 +27,7 @@ import {
   deriveVariationSeed,
 } from "./designVariation.js";
 import { setActiveLayoutArchetype } from "./variationContext.js";
+import { buildReferenceImagesSection } from "./promptImages.js";
 
 export interface PromptBuildContext {
   sessionId: string;
@@ -34,6 +36,8 @@ export interface PromptBuildContext {
   assignedWidgetName?: string;
   widgetInstanceId?: string;
   widgetVersion?: number;
+  /** Number of reference images attached to the user message. */
+  referenceImageCount?: number;
 }
 
 function resolveVariation(ctx: PromptBuildContext): number {
@@ -128,6 +132,7 @@ export function buildGenerationPrompt(
     : "";
 
   const widgetFolder = ctx?.widgetInstanceId ?? ctx?.assignedWidgetName ?? "<uuid>";
+  const referenceImagesSection = buildReferenceImagesSection(ctx?.referenceImageCount ?? 0, radio.name);
 
   return `You are generating an EdgeTX Lua **full-screen dashboard** (widget script) for ${radio.name}.
 
@@ -136,6 +141,8 @@ Primary goal: a **clean, modern, readable** dashboard tailored to the user's req
 ## User request (layout and metrics — must still obey the selected protocol below)
 
 ${userPrompt}
+
+${referenceImagesSection ? `\n${referenceImagesSection}\n` : ""}
 
 ${buildTelemetrySection(catalog)}
 
@@ -247,12 +254,18 @@ export function buildRefinePrompt(
   const companionGuide = readCompanionScriptsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
+  const referenceImagesSection = buildReferenceImagesSection(
+    ctx?.referenceImageCount ?? 0,
+    loadRadioProfile(radioId).name
+  );
 
   return `Refine the existing EdgeTX dashboard${widgetName ? ` (display name "${widgetName}")` : ""}${ctx?.widgetInstanceId ? ` in workspace \`${ctx.widgetInstanceId}\` (v${ctx.widgetVersion ?? 0})` : ""}.
 
 ## User refinement request
 
 ${userPrompt}
+
+${referenceImagesSection ? `\n${referenceImagesSection}\n` : ""}
 
 ${buildTelemetrySection(catalog)}
 

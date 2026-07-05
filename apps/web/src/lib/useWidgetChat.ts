@@ -29,11 +29,13 @@ import {
   fetchWidgetSource,
   patchAssistant,
   type ChatMessage,
+  type ChatMessageImage,
   type ChatSendOptions,
   type ChatSummary,
   type WidgetSnapshot,
   type WidgetVersionEntry,
 } from "@/lib/chatTypes";
+import { toPromptImages, type PendingPromptImage } from "@/lib/promptImages";
 import {
   commitVersionSnapshot,
   buildVersionTimeline,
@@ -323,9 +325,10 @@ export function useWidgetChat() {
   );
 
   const sendMessage = useCallback(
-    async (prompt: string, options?: Partial<ChatSendOptions>) => {
+    async (prompt: string, options?: Partial<ChatSendOptions> & { images?: PendingPromptImage[] }) => {
       const trimmed = prompt.trim();
-      if (!trimmed || running) return;
+      const pendingImages = options?.images ?? [];
+      if ((!trimmed && pendingImages.length === 0) || running) return;
 
       const proto = options?.protocol ?? protocol;
       const model = options?.modelId ?? modelId;
@@ -336,7 +339,16 @@ export function useWidgetChat() {
       setModelId(model);
       setRadioId(radio);
 
-      const userMessage = createUserMessage(trimmed);
+      const messageImages: ChatMessageImage[] | undefined =
+        pendingImages.length > 0
+          ? pendingImages.map((img) => ({
+              mimeType: img.mimeType,
+              name: img.name,
+              previewUrl: img.previewUrl,
+            }))
+          : undefined;
+
+      const userMessage = createUserMessage(trimmed, messageImages);
       const assistantMessage = createAssistantPlaceholder();
       const assistantId = assistantMessage.id;
 
@@ -400,15 +412,17 @@ export function useWidgetChat() {
       setArtifactLoading(true);
 
       if (!isRefine) {
-        await ensureChat(trimmed, proto, model, edgeTx, radio);
+        await ensureChat(trimmed || "Reference image dashboard", proto, model, edgeTx, radio);
       }
 
+      const apiImages = pendingImages.length > 0 ? toPromptImages(pendingImages) : undefined;
       const url = isRefine ? "/api/refine" : "/api/generate";
       const body = isRefine
         ? {
             sessionId: sessionIdRef.current,
             chatId: chatIdRef.current,
             prompt: trimmed,
+            ...(apiImages ? { images: apiImages } : {}),
           }
         : {
             prompt: trimmed,
@@ -416,6 +430,7 @@ export function useWidgetChat() {
             protocol: proto,
             edgeTxVersion: edgeTx,
             modelId: model,
+            ...(apiImages ? { images: apiImages } : {}),
           };
 
       let validated = false;

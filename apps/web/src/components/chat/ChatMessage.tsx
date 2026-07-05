@@ -13,7 +13,22 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ message }: Ch
   if (message.role === "user") {
     return (
       <div className={`${styles.row} ${styles.userRow}`}>
-        <div className={styles.userBubble}>{message.content}</div>
+        <div className={styles.userBubble}>
+          {message.content ? <div>{message.content}</div> : null}
+          {message.images && message.images.length > 0 && (
+            <div className={styles.userImages}>
+              {message.images.map((img, index) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${img.previewUrl}-${index}`}
+                  src={img.previewUrl}
+                  alt={img.name ?? "Reference image"}
+                  className={styles.userImageThumb}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
