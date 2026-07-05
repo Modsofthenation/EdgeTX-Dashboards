@@ -69,6 +69,36 @@ describe("SqliteChatRepository", () => {
     assert.equal(repo.getChat(created.id), null);
   });
 
+  it("preserves stored lua when update sends artifact without source", () => {
+    const chat = repo.createChat({
+      title: "test",
+      protocol: "betaflight",
+      modelId: "m1",
+      edgeTxVersion: "2.11.0",
+    });
+
+    repo.updateChat(chat.id, {
+      artifact: {
+        name: "BfFltLogk7",
+        luaSource: "local name = 'BfFltLogk7'",
+        validated: true,
+        validationIssues: [],
+      },
+    });
+
+    repo.updateChat(chat.id, {
+      artifact: {
+        name: "BfFltLogk7",
+        luaSource: null,
+        validated: false,
+        validationIssues: [],
+      },
+    });
+
+    assert.equal(repo.getChat(chat.id)?.artifact?.luaSource, "local name = 'BfFltLogk7'");
+    assert.equal(repo.getChat(chat.id)?.artifact?.validated, true);
+  });
+
   it("excludes streaming messages from persistence", () => {
     const chat = repo.createChat({
       title: "test",

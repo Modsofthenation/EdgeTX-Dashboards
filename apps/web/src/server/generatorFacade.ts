@@ -2,7 +2,7 @@
  * Narrow server seam for web API routes → @widget-gen/generator.
  * Import generator symbols here only — not from individual route files.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CursorAgentError,
@@ -10,6 +10,7 @@ import {
   FALLBACK_MODELS,
   findLatestWidgetName,
   getDefaultModelId,
+  getGeneratedDir,
   getLayoutProfileId,
   getRepoRoot,
   getSessionStore,
@@ -97,6 +98,13 @@ export function readWidgetLuaSource(name: string): { source: string; name: strin
   const path = getWidgetLuaPath(safeName);
   if (!existsSync(path)) return null;
   return { source: readFileSync(path, "utf-8"), name: safeName };
+}
+
+/** Write chat snapshot back to generated/ before refine (each chat may share a widget folder name). */
+export function writeWidgetLuaSource(name: string, source: string): void {
+  const safeName = sanitizeWidgetName(name);
+  mkdirSync(getGeneratedDir(safeName), { recursive: true });
+  writeFileSync(getWidgetLuaPath(safeName), source, "utf-8");
 }
 
 export async function readOrBuildWidgetZip(

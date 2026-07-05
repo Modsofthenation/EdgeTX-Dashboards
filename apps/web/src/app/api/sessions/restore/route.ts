@@ -1,4 +1,4 @@
-import { getSessionStore } from "@/server/generatorFacade";
+import { getSessionStore, writeWidgetLuaSource } from "@/server/generatorFacade";
 import { checkApiAuth } from "@/lib/apiSecurity";
 import { getChat, updateChat } from "@/lib/db/chatStore";
 
@@ -28,6 +28,10 @@ export async function POST(request: Request): Promise<Response> {
 
   if (!chat.widgetName) {
     return Response.json({ error: "Chat has no widget to restore" }, { status: 400 });
+  }
+
+  if (chat.artifact?.luaSource) {
+    writeWidgetLuaSource(chat.widgetName, chat.artifact.luaSource);
   }
 
   const store = getSessionStore();

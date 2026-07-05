@@ -296,7 +296,7 @@ export class SqliteChatRepository implements ChatRepository {
       this.replaceMessages(id, persistable);
     }
 
-    if (input.artifact) {
+    if (input.artifact?.luaSource) {
       this.upsertArtifact(id, input.artifact);
     }
 

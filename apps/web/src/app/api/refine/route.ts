@@ -1,4 +1,4 @@
-import { CursorAgentError, getSessionStore } from "@/server/generatorFacade";
+import { CursorAgentError, getSessionStore, writeWidgetLuaSource } from "@/server/generatorFacade";
 import { checkApiAuth } from "@/lib/apiSecurity";
 import { getChat } from "@/lib/db/chatStore";
 import { createSseResponse, createSseStream } from "@/lib/sse";
@@ -15,6 +15,9 @@ function resolveRefineSession(sessionId: string, chatId?: string) {
   if (!stored && chatId) {
     const chat = getChat(chatId);
     if (chat?.widgetName) {
+      if (chat.artifact?.luaSource) {
+        writeWidgetLuaSource(chat.widgetName, chat.artifact.luaSource);
+      }
       const restored = store.restoreSession({
         id: chat.sessionId ?? sessionId,
         radioId: chat.radioId,

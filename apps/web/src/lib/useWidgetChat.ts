@@ -100,11 +100,13 @@ export function useWidgetChat() {
 
   const persistChat = useCallback(
     async (id: string) => {
+      const snapshot = artifactRef.current;
       await syncChatRecord(id, {
         sessionId: sessionIdRef.current,
         widgetName: widgetNameRef.current,
         messages: messagesRef.current,
-        artifact: artifactRef.current,
+        artifact:
+          snapshot?.luaSource != null && snapshot.luaSource.length > 0 ? snapshot : undefined,
       });
       await refreshHistory();
     },
@@ -168,11 +170,14 @@ export function useWidgetChat() {
       name: string,
       validated?: boolean,
       issues?: ValidationIssue[],
-      session?: string | null
+      session?: string | null,
+      forChatId?: string | null
     ) => {
       const generation = ++fetchGenerationRef.current;
+      const expectedChatId = forChatId ?? chatIdRef.current;
       const fetched = await fetchWidgetSource(session ?? sessionIdRef.current, name);
       if (generation !== fetchGenerationRef.current) return;
+      if (expectedChatId !== chatIdRef.current) return;
       if (!fetched) {
         setArtifactLoading(false);
         return;
@@ -382,8 +387,16 @@ export function useWidgetChat() {
             const finalIssues = data.validationIssues ?? validationIssues;
             if (name) {
               widgetNameRef.current = name;
-              void loadArtifact(name, finalValidated, finalIssues);
             }
+            setArtifactTracked((prev) =>
+              prev && name && prev.name === name
+                ? {
+                    ...prev,
+                    validated: finalValidated,
+                    validationIssues: finalIssues,
+                  }
+                : prev
+            );
 
             flushStreamDraft();
             setMessagesTracked((prev) =>
@@ -411,15 +424,26 @@ export function useWidgetChat() {
           );
         }
       } finally {
+        if (fetchDebounceRef.current) {
+          clearTimeout(fetchDebounceRef.current);
+          fetchDebounceRef.current = null;
+        }
         flushStreamDraft();
         setRunning(false);
+        const activeChatId = chatIdRef.current;
         if (widgetNameRef.current) {
-          await loadArtifact(widgetNameRef.current, validated, validationIssues);
+          await loadArtifact(
+            widgetNameRef.current,
+            validated,
+            validationIssues,
+            sessionIdRef.current,
+            activeChatId
+          );
         } else {
           setArtifactLoading(false);
         }
-        if (chatIdRef.current) {
-          await persistChat(chatIdRef.current);
+        if (activeChatId) {
+          await persistChat(activeChatId);
         }
       }
     },
@@ -448,9 +472,17 @@ export function useWidgetChat() {
     async (id: string) => {
       if (running) return;
 
+      const outgoingId = chatIdRef.current;
+      if (outgoingId && outgoingId !== id) {
+        if (fetchDebounceRef.current) {
+          clearTimeout(fetchDebounceRef.current);
+          fetchDebounceRef.current = null;
+        }
+        await persistChat(outgoingId);
+      }
+
       const loadGen = ++chatLoadGenRef.current;
       abortRef.current?.abort();
-      if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
       fetchGenerationRef.current += 1;
 
       setArtifactLoading(true);
@@ -474,6 +506,7 @@ export function useWidgetChat() {
       const activeSessionId = chat.sessionId;
       if (widgetNameRef.current) {
         const restored = await restoreGeneratorSession(chat.id);
+        if (loadGen !== chatLoadGenRef.current) return;
         if (restored?.sessionId) {
           setSessionId(restored.sessionId);
           sessionIdRef.current = restored.sessionId;
@@ -486,13 +519,11 @@ export function useWidgetChat() {
         sessionIdRef.current = activeSessionId;
       }
 
+      // Each chat keeps its own Lua snapshot — never load from shared generated/ when a snapshot exists.
       if (chat.artifact?.luaSource) {
-        const targetName = chat.widgetName ?? chat.artifact.name;
-        if (chat.artifact.name === targetName) {
-          setArtifactTracked(chat.artifact);
-          setArtifactLoading(false);
-          return;
-        }
+        setArtifactTracked(chat.artifact);
+        setArtifactLoading(false);
+        return;
       }
 
       if (chat.widgetName ?? chat.artifact?.name) {
@@ -500,7 +531,8 @@ export function useWidgetChat() {
           chat.widgetName ?? chat.artifact!.name,
           chat.artifact?.validated,
           chat.artifact?.validationIssues,
-          sessionIdRef.current
+          sessionIdRef.current,
+          chat.id
         );
         if (loadGen === chatLoadGenRef.current && chatIdRef.current === chat.id) {
           await persistChat(chat.id);
