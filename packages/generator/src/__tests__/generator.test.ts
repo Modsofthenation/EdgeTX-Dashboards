@@ -10,6 +10,8 @@ import { loadRadioProfile, loadTelemetryCatalog } from "../knowledge.js";
 import { validateGenerateRequest } from "../requestValidate.js";
 import { findLatestWidgetName } from "../widgetResolve.js";
 import { validateWidgetForRelease } from "../validationPipeline.js";
+import { suggestWidgetName, allocateWidgetName } from "../widgetNaming.js";
+import { WIDGET_NAME_PATTERN } from "../paths.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..", "..", "..");
@@ -176,5 +178,34 @@ describe("findLatestWidgetName", () => {
   it("returns undefined when no generated widgets", () => {
     const name = findLatestWidgetName();
     assert.ok(name === undefined || typeof name === "string");
+  });
+});
+
+describe("widgetNaming", () => {
+  it("builds descriptive names within EdgeTX limits", () => {
+    const name = suggestWidgetName("betaflight flight logger with timer", "betaflight", 42);
+    assert.ok(name.startsWith("Bf"));
+    assert.match(name, /FltLog|Timer/);
+    assert.ok(name.length <= 10);
+    assert.ok(WIDGET_NAME_PATTERN.test(name));
+  });
+
+  it("uses rotorflight prefix for heli prompts", () => {
+    const name = suggestWidgetName("heli GPS headspeed dashboard", "rotorflight", 7);
+    assert.ok(name.startsWith("Rf"));
+    assert.ok(WIDGET_NAME_PATTERN.test(name));
+  });
+
+  it("is deterministic for the same seed and prompt", () => {
+    const a = suggestWidgetName("battery and link monitor", "generic-crsf", 99);
+    const b = suggestWidgetName("battery and link monitor", "generic-crsf", 99);
+    assert.equal(a, b);
+  });
+
+  it("skips names already present under generated/", () => {
+    const first = suggestWidgetName("gps altitude dashboard", "betaflight", 1);
+    const second = allocateWidgetName("gps altitude dashboard", "betaflight", 1, (n) => n === first);
+    assert.notEqual(first, second);
+    assert.ok(WIDGET_NAME_PATTERN.test(second));
   });
 });

@@ -40,5 +40,6 @@ export {
 } from "./models.js";
 export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.js";
 export { findLatestWidgetName } from "./widgetResolve.js";
+export { allocateWidgetName, suggestWidgetName, widgetFolderExists } from "./widgetNaming.js";
 export { WIDGET_NAME_PATTERN } from "./paths.js";
 export { assertNodeVersion } from "./nodeVersion.js";

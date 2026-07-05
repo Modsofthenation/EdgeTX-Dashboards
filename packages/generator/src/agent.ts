@@ -2,6 +2,7 @@ import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
 import type { GenerateRequest, GenerateSession, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import { buildGenerationPrompt, buildRefinePrompt, getArchetypeForSession } from "./promptComposer.js";
 import { shouldBumpRunIndexForRefine, deriveVariationSeed } from "./designVariation.js";
+import { allocateWidgetName } from "./widgetNaming.js";
 import { createCustomTools } from "./agentTools.js";
 import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge.js";
 import { findLatestWidgetName } from "./widgetResolve.js";
@@ -115,6 +116,21 @@ export class WidgetGenerator {
     const agent = await this.ensureAgent();
     const radio = loadRadioProfile(request.radioId);
     const catalog = loadTelemetryCatalog(request.protocol);
+
+    const variationSeed =
+      session?.variationSeed ??
+      deriveVariationSeed(session?.id ?? request.prompt, session?.runIndex ?? 0);
+
+    let assignedWidgetName = session?.widgetName;
+    if (!assignedWidgetName) {
+      assignedWidgetName = allocateWidgetName(request.prompt, request.protocol, variationSeed);
+      if (session) {
+        session.widgetName = assignedWidgetName;
+      }
+      this.toolDefaults.widgetName = assignedWidgetName;
+      this.lastKnownWidget = assignedWidgetName;
+    }
+
     const prompt = buildGenerationPrompt(
       request.prompt,
       radio,
@@ -125,8 +141,9 @@ export class WidgetGenerator {
             sessionId: session.id,
             runIndex: session.runIndex ?? 0,
             variationSeed: session.variationSeed,
+            assignedWidgetName,
           }
-        : undefined
+        : { sessionId: "cli", assignedWidgetName }
     );
 
     if (session) {
@@ -143,9 +160,10 @@ export class WidgetGenerator {
 
     callbacks?.onEvent?.({
       type: "status",
-      content: "Starting generation...",
+      content: `Starting generation (widget: ${assignedWidgetName})...`,
       agentId: agent.agentId,
     });
+    callbacks?.onWidgetName?.(assignedWidgetName);
 
     const run = await agent.send(prompt);
     callbacks?.onEvent?.({

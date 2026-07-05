@@ -11,6 +11,7 @@ import { getActiveLayoutArchetype } from "./variationContext.js";
 export interface ToolSessionDefaults {
   protocol?: TelemetryProtocol;
   radioId?: string;
+  widgetName?: string;
 }
 
 function resolveToolProtocol(
@@ -48,6 +49,17 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
       execute(args) {
         try {
           const widgetName = sanitizeWidgetName(String(args.widgetName));
+          if (defaults?.widgetName && widgetName !== defaults.widgetName) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Wrong widget name "${widgetName}". Use the assigned name "${defaults.widgetName}" for this session.`,
+                },
+              ],
+              isError: true,
+            };
+          }
           const protocol = resolveToolProtocol(args, defaults);
           const radioId = String(args.radioId ?? defaults?.radioId ?? "tx15");
           const layoutArchetype = (args.layoutArchetype as LayoutArchetypeId | undefined) ??

@@ -28,6 +28,7 @@ export interface PromptBuildContext {
   sessionId: string;
   runIndex?: number;
   variationSeed?: number;
+  assignedWidgetName?: string;
 }
 
 function resolveVariation(ctx: PromptBuildContext): number {
@@ -106,6 +107,19 @@ export function buildGenerationPrompt(
     ? `\n## API / typography snippet (do NOT copy coordinates or layout)\n\n\`\`\`lua\n${exampleSnippet}\n\`\`\`\n`
     : "";
 
+  const assignedNameSection = ctx?.assignedWidgetName
+    ? `\n## Assigned dashboard name (mandatory — do not invent a different name)
+
+The server assigned **\`${ctx.assignedWidgetName}\`** — a unique name derived from the user's request (protocol prefix + topic hint + random suffix).
+
+- Write the dashboard to \`generated/${ctx.assignedWidgetName}/main.lua\`.
+- Set \`local name = "${ctx.assignedWidgetName}"\` and \`return { name = name, ... }\`.
+- Use **exactly** \`${ctx.assignedWidgetName}\` in validateWidget, writeInstallGuide, and packageWidget.
+- Do not rename or pick an alternative — duplicate names break installs on the radio SD card.\n`
+    : "";
+
+  const widgetFolder = ctx?.assignedWidgetName ?? "<Name>";
+
   return `You are generating an EdgeTX Lua **full-screen dashboard** (widget script) for ${radio.name}.
 
 Primary goal: a **clean, modern, readable** dashboard tailored to the user's request — not a copy of a fixed template.
@@ -157,7 +171,7 @@ ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling —
 ${companionGuide}
 
 ${modelImageGuide ? `\n## Model image (user requested — include ShowModel option + placeholder)\n${modelImageGuide}` : ""}
-
+${assignedNameSection}
 ## Hard rules
 
 ${rules}
@@ -165,11 +179,9 @@ ${starterSection}${exampleSection}
 
 ## Your tasks
 
-1. Choose a dashboard name (max 10 chars, no spaces) that fits the use case.
+${ctx?.assignedWidgetName ? `1. Use the assigned dashboard name \`${ctx.assignedWidgetName}\` (see above).\n\n2. Write the main dashboard to \`generated/${ctx.assignedWidgetName}/main.lua\`.` : "1. Choose a dashboard name (max 10 chars, no spaces) that fits the use case.\n\n2. Write the main dashboard to `generated/<Name>/main.lua`."}
 
-2. Write the main dashboard to \`generated/<Name>/main.lua\`.
-
-3. If the user requested battery selection, flight logging, log viewing, or similar: add companion scripts under \`generated/<Name>/tools/\` and/or \`generated/<Name>/telemetry/\` per the companion-scripts guide.
+3. If the user requested battery selection, flight logging, log viewing, or similar: add companion scripts under \`generated/${widgetFolder}/tools/\` and/or \`generated/${widgetFolder}/telemetry/\` per the companion-scripts guide.
 
 4. Start main.lua with edgetx-dev-kit annotations:
 
@@ -186,7 +198,7 @@ ${starterSection}${exampleSection}
 
 6. Cache telemetry with getSourceIndex() in create().
 
-7. Call validateWidget with dashboard name, protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true.
+7. Call validateWidget with dashboard name "${widgetFolder}", protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true.
 
 8. Only after valid: true, call writeInstallGuide (radioId "${radio.id}") — INSTALL.md must document the dashboard **and every companion script** with SD card paths.
 
