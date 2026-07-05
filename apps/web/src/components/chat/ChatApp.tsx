@@ -200,10 +200,9 @@ function ArtifactAside({
       label="Dashboard"
       collapsed={artifactCollapsed}
       onToggle={onToggleArtifact}
+      deferContentMount
     >
-      {!artifactCollapsed ? (
-        <ExpandedArtifactPanel onToggleArtifact={onToggleArtifact} />
-      ) : null}
+      <ExpandedArtifactPanel onToggleArtifact={onToggleArtifact} />
     </CollapsibleAside>
   );
 }

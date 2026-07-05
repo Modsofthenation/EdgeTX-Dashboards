@@ -6,7 +6,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.28s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.wrap.transitioning {
+  will-change: width;
 }
 
 .left {
@@ -32,16 +36,72 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.2s ease 0.04s;
+}
+
+.innerReady {
   opacity: 1;
-  transition: opacity 0.15s ease;
 }
 
 .collapsed .inner {
-  opacity: 0;
   pointer-events: none;
   position: absolute;
   inset: 0;
   visibility: hidden;
+}
+
+.skeleton {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  opacity: 1;
+}
+
+.skeletonBar {
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: panelSkeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonBlock {
+  flex: 1;
+  min-height: 8rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: panelSkeletonShimmer 1.4s ease-in-out infinite;
+  animation-delay: 0.12s;
+}
+
+.skeletonBlockShort {
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@keyframes panelSkeletonShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 .rail {
@@ -53,9 +113,10 @@
   width: 100%;
   padding: 0.75rem 0.35rem;
   border: none;
-  background: rgba(7, 8, 12, 0.85);
+  background: var(--bg-elevated);
   color: var(--muted);
   cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .rail:hover {
@@ -87,6 +148,7 @@
   color: var(--muted);
   cursor: pointer;
   flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .headerToggle:hover {
@@ -99,6 +161,21 @@
   transform: rotate(180deg);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .wrap {
+    transition: none;
+  }
+
+  .inner {
+    transition: none;
+  }
+
+  .skeletonBar,
+  .skeletonBlock {
+    animation: none;
+  }
+}
+
 @media (max-width: 960px) {
   .wrap {
     width: 100% !important;
@@ -107,6 +184,11 @@
     border-right: none !important;
     border-left: none !important;
     border-bottom: 1px solid var(--border);
+    transition: max-height 0.28s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .wrap.transitioning {
+    will-change: max-height;
   }
 
   .collapsed {

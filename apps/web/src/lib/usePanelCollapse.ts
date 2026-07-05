@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 const STORAGE_KEY = "etx-panel-collapse";
 
@@ -36,26 +36,31 @@ function writeStored(state: PanelCollapseState) {
 
 export function usePanelCollapse() {
   const [state, setState] = useState<PanelCollapseState>(DEFAULT);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     setState(readStored());
   }, []);
 
   const toggleHistory = useCallback(() => {
-    setState((prev) => {
-      const next = { ...prev, history: !prev.history };
-      writeStored(next);
-      return next;
+    startTransition(() => {
+      setState((prev) => {
+        const next = { ...prev, history: !prev.history };
+        writeStored(next);
+        return next;
+      });
     });
-  }, []);
+  }, [startTransition]);
 
   const toggleArtifact = useCallback(() => {
-    setState((prev) => {
-      const next = { ...prev, artifact: !prev.artifact };
-      writeStored(next);
-      return next;
+    startTransition(() => {
+      setState((prev) => {
+        const next = { ...prev, artifact: !prev.artifact };
+        writeStored(next);
+        return next;
+      });
     });
-  }, []);
+  }, [startTransition]);
 
   return {
     historyCollapsed: state.history,
