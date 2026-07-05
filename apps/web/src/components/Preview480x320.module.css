@@ -13,10 +13,12 @@
   border: none;
   box-shadow: none;
   backdrop-filter: none;
-  flex: 1;
+  width: 100%;
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .compactTabs {
@@ -84,17 +86,15 @@
 .frameWrapCompact {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   width: 100%;
+  align-items: center;
 }
 
 .deviceCompact {
   width: 100%;
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
   padding: 0.5rem;
   background: linear-gradient(180deg, #1a1d26 0%, #0f1118 100%);
   border-radius: var(--radius-md);
@@ -104,17 +104,15 @@
 .frameCompact {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   width: 100%;
+  align-items: center;
   gap: 0.5rem;
 }
 
 .screenCompact {
   position: relative;
-  flex: 1;
-  min-height: 8rem;
   width: 100%;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +159,6 @@
 .screen {
   position: relative;
   width: 100%;
-  aspect-ratio: 480 / 320;
   display: flex;
   align-items: center;
   justify-content: center;

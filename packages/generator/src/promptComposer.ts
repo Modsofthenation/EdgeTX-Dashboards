@@ -1,88 +1,85 @@
-import { readFileSync } from "node:fs";
-
 import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
 
 import {
-
-  getRepoRoot,
-
   readRules,
-
   readTemplate,
-
-  readDesignGuide,
-
+  readDesignGuideForArchetype,
   readRotorflightStyleGuide,
-
   readCompanionScriptsGuide,
-
+  readExampleSnippet,
 } from "./knowledge.js";
-
-import { suggestLayoutArchetype } from "./layoutArchetype.js";
+import {
+  suggestLayoutArchetype,
+  readLayoutArchetypesGuide,
+  EXAMPLE_BY_ARCHETYPE,
+  shouldIncludeCardStarter,
+  type LayoutArchetypeId,
+} from "./layoutArchetype.js";
 import { detectVisualStyle } from "./visualStyle.js";
+import {
+  buildCreativeBrief,
+  deriveVariationSeed,
+} from "./designVariation.js";
+import { setActiveLayoutArchetype } from "./variationContext.js";
 
+export interface PromptBuildContext {
+  sessionId: string;
+  runIndex?: number;
+  variationSeed?: number;
+}
 
+function resolveVariation(ctx: PromptBuildContext): number {
+  if (ctx.variationSeed !== undefined) return ctx.variationSeed;
+  return deriveVariationSeed(ctx.sessionId, ctx.runIndex ?? 0);
+}
 
 export function buildGenerationPrompt(
-
   userPrompt: string,
-
   radio: RadioProfile,
-
   catalog: TelemetryCatalog,
-
-  edgeTxVersion?: string
-
+  edgeTxVersion?: string,
+  ctx?: PromptBuildContext
 ): string {
+  const sessionId = ctx?.sessionId ?? "default";
+  const runIndex = ctx?.runIndex ?? 0;
+  const seed = resolveVariation({ sessionId, runIndex, variationSeed: ctx?.variationSeed });
 
+  const archetype = suggestLayoutArchetype(userPrompt, catalog.protocol, seed);
+  setActiveLayoutArchetype(archetype.id);
+
+  const visualStyle = detectVisualStyle(userPrompt, seed);
+  const brief = buildCreativeBrief(seed, archetype, catalog.protocol, userPrompt);
+  const designGuide = readDesignGuideForArchetype(radio.id, archetype.id);
+  const archetypeMenu = readLayoutArchetypesGuide();
+  const rotorflightGuide =
+    archetype.id === "heli-rotorflight" ? readRotorflightStyleGuide() : "";
+  const companionGuide = readCompanionScriptsGuide();
   const rules = readRules();
 
-  const designGuide = readDesignGuide(radio.id);
+  const exampleFile = EXAMPLE_BY_ARCHETYPE[archetype.id];
+  const exampleSnippet = readExampleSnippet(exampleFile);
 
-  const rotorflightGuide =
+  const starterSection = shouldIncludeCardStarter(archetype.id)
+    ? `\n## Starter template (card layout reference — vary metrics and proportions per creative brief)\n\n\`\`\`lua\n${readTemplate("dashboard-starter.lua")}\n\`\`\`\n`
+    : "";
 
-    catalog.protocol === "rotorflight" ? readRotorflightStyleGuide() : "";
-
-  const companionGuide = readCompanionScriptsGuide();
-
-  const archetype = suggestLayoutArchetype(userPrompt, catalog.protocol);
-  const visualStyle = detectVisualStyle(userPrompt);
-
-  const starter = readTemplate("dashboard-starter.lua");
-
-  const exampleFile =
-
-    catalog.protocol === "rotorflight"
-
-      ? "tx15-rotorflight-heli.lua"
-
-      : "tx15-minimal-dashboard.lua";
-
-  const example = readFileSync(`${getRepoRoot()}/examples/${exampleFile}`, "utf-8");
-
-
+  const exampleSection = exampleSnippet
+    ? `\n## API / typography snippet (do NOT copy coordinates or layout)\n\n\`\`\`lua\n${exampleSnippet}\n\`\`\`\n`
+    : "";
 
   return `You are generating an EdgeTX Lua **full-screen dashboard** (widget script) for ${radio.name}.
 
-
-
 Primary goal: a **clean, modern, readable** dashboard tailored to the user's request — not a copy of a fixed template.
-
-
 
 ## User request (follow this closely — layout and metrics must reflect it)
 
 ${userPrompt}
 
-
-
-## Recommended layout archetype for this request
+## Recommended layout archetype (suggested default — switch if user intent fits another)
 
 **${archetype.title}** (\`${archetype.id}\`)
 
 ${archetype.summary}
-
-
 
 Layout direction:
 
@@ -90,77 +87,46 @@ ${archetype.layoutNotes}
 
 ${archetype.companionScripts ? `\nCompanion scripts expected:\n${archetype.companionScripts}` : ""}
 
+${brief.markdown}
+
 ${visualStyle.promptNotes ? `\n${visualStyle.promptNotes}\n` : ""}
 
-**Variety rule:** Do NOT default to the same two-column grey card grid unless the user explicitly asked for it or the archetype is \`card-grid\`. Different prompts must produce visibly different layouts and color treatments.
+**Variety rule:** Do NOT default to the same two-column grey card grid unless the user explicitly asked for it or the archetype is \`card-grid\`. Different prompts and run seeds must produce visibly different layouts and color treatments.
 
+## Layout archetype menu (pick the best fit for the user request)
 
+${archetypeMenu}
 
 ## Target radio
 
 ${JSON.stringify(radio, null, 2)}
 
-
-
 ## Telemetry protocol: ${catalog.label}
 
 Use ONLY sensor names from the ${catalog.protocol} catalog. Call listTelemetrySensors before writing telemetry code.
-
-
 
 Setup notes:
 
 ${(catalog.setupNotes ?? []).map((n) => `- ${n}`).join("\n")}
 
-
-
 ## EdgeTX version target
 
 ${edgeTxVersion ?? radio.edgeTxMin}+
-
-
 
 ## Visual design (mandatory)
 
 ${designGuide}
 
-${rotorflightGuide ? `\n## Rotorflight heli patterns (DBK / TX15 community reference)\n${rotorflightGuide}` : ""}
-
-
+${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling — layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
 ## Companion scripts (when user asks for tools, loggers, selectors)
 
 ${companionGuide}
 
-
-
 ## Hard rules
 
 ${rules}
-
-
-
-## Starter template (structural reference only — adapt layout to archetype + user request)
-
-\`\`\`lua
-
-${starter}
-
-\`\`\`
-
-
-
-## Quality reference (spacing/typography bar — do not clone layout unless archetype matches)
-
-${visualStyle.vibrant ? "For this request, treat the example as **typography/spacing reference only** — use a different layout and vibrant colors.\n\n" : ""}
-
-\`\`\`lua
-
-${example}
-
-\`\`\`
-
-
+${starterSection}${exampleSection}
 
 ## Your tasks
 
@@ -173,102 +139,101 @@ ${example}
 4. Start main.lua with edgetx-dev-kit annotations:
 
    \`\`\`lua
-
    ---@type WidgetScript
-
    ---@simulate Layout1x1 zone=0
-
    \`\`\`
 
-5. Build UI for archetype **${archetype.id}**:
+5. Build UI for archetype **${archetype.id}** per the creative brief:
 
    - Cache ALL display strings as locals before drawText
-
    - Put all \`lcd.drawText\`, \`lcd.drawFilledRectangle\`, and \`lcd.drawRectangle\` calls **directly in refresh()** (web preview parses these)
-
    - Use LCD_W and LCD_H on ${radio.name} (${radio.lcdW}x${radio.lcdH})
 
 6. Cache telemetry with getSourceIndex() in create().
 
-7. Call validateWidget with dashboard name, protocol "${catalog.protocol}", and radioId "${radio.id}". Fix ALL errors AND visual-design warnings until valid: true.
+7. Call validateWidget with dashboard name, protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true.
 
 8. Only after valid: true, call writeInstallGuide (radioId "${radio.id}") — INSTALL.md must document the dashboard **and every companion script** with SD card paths.
 
 9. Only after valid: true, call packageWidget (radioId "${radio.id}") — zip includes WIDGETS/ and SCRIPTS/ paths.
 
-10. Summarize in markdown: chosen archetype, layout sections, sensors used, companion scripts (if any), and condensed install steps from INSTALL.md.`;
-
+10. Summarize in markdown: chosen archetype, creative brief choices, layout sections, sensors used, companion scripts (if any), and condensed install steps from INSTALL.md.`;
 }
 
-
-
 export function buildRefinePrompt(
-
   userPrompt: string,
-
   widgetName?: string,
-
   radioId = "tx15",
-
-  protocol?: TelemetryProtocol
-
+  protocol?: TelemetryProtocol,
+  ctx?: PromptBuildContext
 ): string {
+  const sessionId = ctx?.sessionId ?? "default";
+  const runIndex = ctx?.runIndex ?? 0;
+  const seed = resolveVariation({ sessionId, runIndex, variationSeed: ctx?.variationSeed });
 
-  const designGuide = readDesignGuide(radioId);
+  const archetype = suggestLayoutArchetype(userPrompt, protocol ?? "generic-crsf", seed);
+  setActiveLayoutArchetype(archetype.id);
 
-  const rotorflightGuide = protocol === "rotorflight" ? readRotorflightStyleGuide() : "";
-
+  const visualStyle = detectVisualStyle(userPrompt, seed);
+  const brief = buildCreativeBrief(seed, archetype, protocol ?? "generic-crsf", userPrompt);
+  const designGuide = readDesignGuideForArchetype(radioId, archetype.id);
+  const rotorflightGuide =
+    archetype.id === "heli-rotorflight" ? readRotorflightStyleGuide() : "";
   const companionGuide = readCompanionScriptsGuide();
 
-  const archetype = suggestLayoutArchetype(userPrompt, protocol ?? "generic-crsf");
-  const visualStyle = detectVisualStyle(userPrompt);
-
   return `Refine the existing EdgeTX dashboard${widgetName ? ` "${widgetName}"` : ""}.
-
-
 
 ## User refinement request
 
 ${userPrompt}
 
+${brief.markdown}
+
 ${visualStyle.promptNotes ? `\n${visualStyle.promptNotes}\n` : ""}
-
-
 
 ## Layout direction (if refinement changes structure)
 
-**${archetype.title}** — ${archetype.summary}
+**${archetype.title}** (\`${archetype.id}\`) — ${archetype.summary}
 
-
+${archetype.layoutNotes}
 
 ## Visual design standards
 
 ${designGuide}
 
-${rotorflightGuide ? `\n## Rotorflight heli patterns (DBK reference)\n${rotorflightGuide}` : ""}
-
-
+${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
 ## Companion scripts
 
 ${companionGuide}
 
-
-
 Keep the dashboard clean and distinct from generic templates. All lcd.* draws must stay directly in refresh().
-
-
 
 ## Tasks
 
 1. Edit files under generated/ as needed (main.lua + any tools/telemetry companions).
 
-2. Run validateWidget with protocol and radioId until valid: true. Fix visual-design warnings too.
+2. Run validateWidget with protocol, radioId, and layoutArchetype "${archetype.id}" until valid: true. Fix archetype-relevant visual-design warnings.
 
 3. Only after valid: true, run writeInstallGuide (must list all files + install steps) and packageWidget again.
 
 4. Summarize changes made, including install instructions for any new companion scripts.`;
-
 }
 
+export function resolvePromptContext(
+  sessionId: string,
+  runIndex = 0,
+  variationSeed?: number
+): PromptBuildContext {
+  const seed = variationSeed ?? deriveVariationSeed(sessionId, runIndex);
+  return { sessionId, runIndex, variationSeed: seed };
+}
 
+export function getArchetypeForSession(
+  userPrompt: string,
+  protocol: TelemetryProtocol,
+  ctx: PromptBuildContext
+): LayoutArchetypeId {
+  const seed = resolveVariation(ctx);
+  return suggestLayoutArchetype(userPrompt, protocol, seed).id;
+}

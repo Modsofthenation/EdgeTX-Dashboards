@@ -1,4 +1,5 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
+import { hashString } from "./designVariation.js";
 
 export type LayoutArchetypeId =
   | "card-grid"
@@ -52,7 +53,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     title: "Rotorflight heli board",
     summary: "Heli-specific: link blocks, battery, headspeed hero, motor temps, current/power footer.",
     layoutNotes:
-      "Follow rotorflight DBK patterns: 5-block RQLY, hero HSpd/RPM, motor row, Cur/Pwr footer. Distinct from generic card grid.",
+      "Follow rotorflight DBK telemetry idioms (RQLY blocks, HSpd/RPM hero, Cur/Pwr footer) but vary layout per creative brief — not a fixed two-card clone.",
   },
   "telemetry-dense": {
     id: "telemetry-dense",
@@ -81,17 +82,25 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
   },
 };
 
-function hashPrompt(prompt: string): number {
-  let h = 0;
-  for (let i = 0; i < prompt.length; i++) {
-    h = (h * 31 + prompt.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
+const CARD_GRID_ARCHETYPES = new Set<LayoutArchetypeId>(["card-grid", "heli-rotorflight"]);
+
+export function usesCardGridRecipe(archetypeId: LayoutArchetypeId): boolean {
+  return CARD_GRID_ARCHETYPES.has(archetypeId);
+}
+
+function hashPrompt(prompt: string, seed = 0): number {
+  return hashString(`${prompt}:${seed}`);
+}
+
+function pickFromPool(pool: LayoutArchetypeId[], prompt: string, seed: number): LayoutArchetypeHint {
+  const idx = hashPrompt(prompt, seed) % pool.length;
+  return ARCHETYPES[pool[idx]];
 }
 
 export function suggestLayoutArchetype(
   userPrompt: string,
-  protocol: TelemetryProtocol
+  protocol: TelemetryProtocol,
+  seed = 0
 ): LayoutArchetypeHint {
   const p = userPrompt.toLowerCase();
 
@@ -113,14 +122,14 @@ export function suggestLayoutArchetype(
   if (/dense|everything|all sensors|data screen/.test(p)) {
     return ARCHETYPES["telemetry-dense"];
   }
-  if (
-    protocol === "rotorflight" ||
-    /heli|rotorflight|headspeed|goblin|logo|tail/.test(p)
-  ) {
-    // Vibrant/color requests should not default to the grey DBK card clone.
+
+  const heliKeywords = /heli|rotorflight|headspeed|goblin|logo|tail|dbk|hspd|rpm/.test(p);
+  const explicitHeliBoard = /heli dashboard|dbk|rotorflight board/.test(p);
+
+  if (heliKeywords || explicitHeliBoard) {
     if (/vibrant|colorful|colourful|neon|bright|bold color|saturated|lively/.test(p)) {
-      const idx = hashPrompt(userPrompt) % 3;
       const vibrantHeli: LayoutArchetypeId[] = ["strip-board", "hero-minimal", "telemetry-dense"];
+      const idx = hashPrompt(userPrompt, seed) % vibrantHeli.length;
       return {
         ...ARCHETYPES[vibrantHeli[idx]],
         layoutNotes:
@@ -131,6 +140,17 @@ export function suggestLayoutArchetype(
     return ARCHETYPES["heli-rotorflight"];
   }
 
+  if (protocol === "rotorflight") {
+    const rotorflightPool: LayoutArchetypeId[] = [
+      "strip-board",
+      "hero-minimal",
+      "telemetry-dense",
+      "card-grid",
+      "heli-rotorflight",
+    ];
+    return pickFromPool(rotorflightPool, userPrompt, seed);
+  }
+
   const fallbacks: LayoutArchetypeId[] = [
     "card-grid",
     "strip-board",
@@ -138,8 +158,7 @@ export function suggestLayoutArchetype(
     "telemetry-dense",
     "quad-overview",
   ];
-  const idx = hashPrompt(userPrompt) % fallbacks.length;
-  return ARCHETYPES[fallbacks[idx]];
+  return pickFromPool(fallbacks, userPrompt, seed);
 }
 
 export function readLayoutArchetypesGuide(): string {
@@ -151,4 +170,26 @@ export function readLayoutArchetypesGuide(): string {
         }`
     )
     .join("\n\n");
+}
+
+export const EXAMPLE_BY_ARCHETYPE: Record<LayoutArchetypeId, string> = {
+  "card-grid": "tx15-minimal-dashboard.lua",
+  "heli-rotorflight": "tx15-rotorflight-heli.lua",
+  "hero-minimal": "tx15-hero-minimal.lua",
+  "strip-board": "tx15-strip-board.lua",
+  "telemetry-dense": "tx15-telemetry-dense.lua",
+  "quad-overview": "tx15-quad-overview.lua",
+  "flight-logger-suite": "tx15-minimal-dashboard.lua",
+  "battery-tool-suite": "tx15-minimal-dashboard.lua",
+};
+
+const NON_CARD_STARTER_ARCHETYPES = new Set<LayoutArchetypeId>([
+  "hero-minimal",
+  "strip-board",
+  "telemetry-dense",
+  "quad-overview",
+]);
+
+export function shouldIncludeCardStarter(archetypeId: LayoutArchetypeId): boolean {
+  return !NON_CARD_STARTER_ARCHETYPES.has(archetypeId);
 }

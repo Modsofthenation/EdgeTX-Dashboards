@@ -45,7 +45,8 @@ export async function POST(request: Request): Promise<Response> {
         stored.session.protocol,
         stored.session.radioId,
         stored.session.widgetName,
-        createRunCallbacks(ctx)
+        createRunCallbacks(ctx),
+        stored.session
       );
 
       emitRunCompletion(ctx, result, { action: "refine" });

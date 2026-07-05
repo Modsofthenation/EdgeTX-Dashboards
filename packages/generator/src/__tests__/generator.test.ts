@@ -87,8 +87,12 @@ local function refresh(widget, event, touchState)
 end
 return { name = "Clutter", create = function() return {} end, refresh = refresh }
 `;
-    const result = validateWidgetLua(cluttered);
-    assert.ok(result.issues.some((i) => i.message.includes("card panels")));
+    const result = validateWidgetLua(cluttered, { layoutArchetype: "card-grid" });
+    assert.ok(
+      result.issues.some(
+        (i) => i.message.includes("grouped regions") || i.message.includes("Stacked top-left")
+      )
+    );
   });
 });
 

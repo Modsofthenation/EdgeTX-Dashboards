@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { MarkdownContent } from "./MarkdownContent";
 import { TodoPanel, ToolActivityStream } from "./ToolActivity";
-import { collectToolEntries, formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
+import { collectToolEntries, displayStreamTextEntry, formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
 interface AssistantStreamProps {
@@ -17,7 +17,29 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
   const lastLine = lines[lines.length - 1];
   const showLiveTool = !!isStreaming && lastLine?.type === "tool" && tools.length > 0;
 
-  if (entries.length === 0 && isStreaming) {
+  const renderedEntries = useMemo(
+    () =>
+      entries.map((entry, i) => {
+        if (entry.kind === "text") {
+          const displayText = displayStreamTextEntry(entry.text ?? "", i, entries, lines, !!isStreaming);
+          if (!displayText.trim()) return null;
+          return { kind: "text" as const, key: i, displayText };
+        }
+
+        if (entry.kind === "tools") return null;
+
+        if (entry.kind === "todo" && entry.todos?.length) {
+          return { kind: "todo" as const, key: i, entry };
+        }
+
+        return { kind: "event" as const, key: i, entry };
+      }),
+    [entries, lines, isStreaming]
+  );
+
+  const hasVisibleContent = renderedEntries.some(Boolean) || showLiveTool;
+
+  if (!hasVisibleContent && isStreaming) {
     return (
       <div className={styles.thinking}>
         <span className={styles.dot} />
@@ -29,40 +51,28 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
 
   return (
     <div className={styles.stream}>
-      {entries.map((entry, i) => {
-        if (entry.kind === "text") {
-          if (isStreaming) {
-            return (
-              <p key={i} className={styles.prose}>
-                {entry.text}
-              </p>
-            );
-          }
-          return <MarkdownContent key={i}>{entry.text ?? ""}</MarkdownContent>;
+      {renderedEntries.map((item) => {
+        if (!item) return null;
+
+        if (item.kind === "text") {
+          return <MarkdownContent key={item.key}>{item.displayText}</MarkdownContent>;
         }
 
-        if (entry.kind === "tools") {
-          return null;
+        if (item.kind === "todo") {
+          return (
+            <TodoPanel key={item.key} title={item.entry.title} todos={item.entry.todos!} />
+          );
         }
 
-        if (entry.kind === "todo" && entry.todos?.length) {
-          return <TodoPanel key={i} title={entry.title} todos={entry.todos} />;
-        }
-
-        const line = entry.line!;
+        const line = item.entry.line!;
         return (
-          <div key={i} className={`${styles.event} ${styles[line.type]}`}>
+          <div key={item.key} className={`${styles.event} ${styles[line.type]}`}>
             <span className={styles.badge}>{line.type}</span>
             <span>{formatEventContent(line.type, line.content)}</span>
           </div>
         );
       })}
       {showLiveTool ? <ToolActivityStream tools={tools} isStreaming /> : null}
-      {isStreaming && entries.length > 0 && (
-        <span className={styles.cursor} aria-hidden>
-          ▍
-        </span>
-      )}
     </div>
   );
 }

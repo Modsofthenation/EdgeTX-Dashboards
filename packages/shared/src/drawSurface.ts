@@ -4,7 +4,9 @@ export interface DrawSurfaceAnalysis {
   refreshBody: string;
   drawTextCount: number;
   hasFilledRectangle: boolean;
+  filledRectangleCount: number;
   hasSmlSize: boolean;
+  hasDblSize: boolean;
   stackedTopLeftWithoutPanels: boolean;
 }
 
@@ -77,8 +79,10 @@ function skipLuaString(source: string, start: number): number {
 export function analyzeDrawSurface(source: string): DrawSurfaceAnalysis {
   const refreshBody = extractRefreshBody(source);
   const drawTextCount = (refreshBody.match(/lcd\.drawText/g) ?? []).length;
-  const hasFilledRectangle = /lcd\.drawFilledRectangle/.test(refreshBody);
+  const filledRectangleCount = (refreshBody.match(/lcd\.drawFilledRectangle/g) ?? []).length;
+  const hasFilledRectangle = filledRectangleCount > 0;
   const hasSmlSize = /SMLSIZE/.test(refreshBody);
+  const hasDblSize = /DBLSIZE/.test(refreshBody);
   const stackedTopLeftWithoutPanels =
     /lcd\.drawText\s*\(\s*4\s*,\s*4/.test(refreshBody) &&
     drawTextCount >= 5 &&
@@ -88,7 +92,9 @@ export function analyzeDrawSurface(source: string): DrawSurfaceAnalysis {
     refreshBody,
     drawTextCount,
     hasFilledRectangle,
+    filledRectangleCount,
     hasSmlSize,
+    hasDblSize,
     stackedTopLeftWithoutPanels,
   };
 }

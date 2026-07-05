@@ -92,6 +92,41 @@ export function readRules(): string {
   return readFileSync(path, "utf-8");
 }
 
+export function readLayoutPrinciples(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "layout-principles.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
+export function readCardGridRecipe(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "tx15-card-grid-recipe.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
+export function readDesignGuideForArchetype(
+  radioId = DEFAULT_RADIO_ID,
+  archetypeId?: string
+): string {
+  const principles = readLayoutPrinciples();
+  const cardArchetypes = new Set(["card-grid", "heli-rotorflight"]);
+  if (archetypeId && cardArchetypes.has(archetypeId)) {
+    const recipe = readCardGridRecipe();
+    return [principles, recipe].filter(Boolean).join("\n\n");
+  }
+
+  if (principles) return principles;
+
+  return readDesignGuide(radioId);
+}
+
+export function readExampleSnippet(exampleFile: string, maxLines = 55): string {
+  const path = join(getRepoRoot(), "examples", exampleFile);
+  if (!existsSync(path)) return "";
+  const lines = readFileSync(path, "utf-8").split(/\r?\n/);
+  return lines.slice(0, maxLines).join("\n");
+}
+
 export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
   const radio = loadRadioProfile(radioId);
   const layoutKey = getLayoutProfileId(radio);

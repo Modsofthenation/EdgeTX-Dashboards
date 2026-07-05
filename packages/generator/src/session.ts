@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { GenerateSession, TelemetryProtocol } from "@widget-gen/shared";
 import { WidgetGenerator } from "./agent.js";
+import { deriveVariationSeed } from "./designVariation.js";
 
 const SESSION_TTL_MS = 60 * 60 * 1000;
 export const MAX_ACTIVE_SESSIONS = 10;
@@ -33,6 +34,8 @@ export class SessionStore {
       protocol,
       modelId,
       createdAt: Date.now(),
+      runIndex: 0,
+      variationSeed: deriveVariationSeed(id, 0),
     };
     this.sessions.set(id, { session, generator, busy: false });
     return session;

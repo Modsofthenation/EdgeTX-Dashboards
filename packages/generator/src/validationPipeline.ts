@@ -23,6 +23,7 @@ export interface ValidateForReleaseOptions {
   /** When true (default), inject ---@type / ---@simulate via workspace before validating. */
   ensureAnnotations?: boolean;
   workspace?: typeof defaultWorkspace;
+  layoutArchetype?: import("./layoutArchetype.js").LayoutArchetypeId;
 }
 
 /** Pure validation on source string (no I/O). */
@@ -50,7 +51,12 @@ export function validateWidgetForRelease(
 ): ValidationResult {
   const radioId = options?.radioId ?? "tx15";
   const workspace = options?.workspace ?? defaultWorkspace;
-  const ctx = buildReleaseValidationContext(protocol, radioId, options?.strictTelemetry ?? true);
+  const ctx = buildReleaseValidationContext(
+    protocol,
+    radioId,
+    options?.strictTelemetry ?? true,
+    options?.layoutArchetype
+  );
 
   if (!workspace.exists(widgetName)) {
     return {

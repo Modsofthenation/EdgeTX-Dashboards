@@ -33,15 +33,15 @@ Optional: `options`, `update`, `background`.
 
 Generated widgets must look **clean and professional** on a 480×320 TX15 screen.
 
-- **Card panels** — Group metrics in `drawFilledRectangle` + `drawRectangle` boxes on a dark background.
-- **12px grid** — Margins and gaps of 12px; header bar ~40px; footer status strip ~28px.
-- **Typography hierarchy** — SMLSIZE labels, MIDSIZE values, at most one DBLSIZE hero metric.
+- **Grouped regions** — Organize metrics in visual regions appropriate to the layout archetype (card panels, vertical strips, horizontal bands, or hero + corners) on a dark background.
+- **12px grid** — Margins and gaps of 12px; header bar ~40px when used; footer status strip ~28px when used.
+- **Typography hierarchy** — SMLSIZE labels, MIDSIZE values, at most one DBLSIZE hero metric (required for hero-minimal).
 - **Label above value** — Not a wall of inline `"Label 12.3 unit"` strings.
-- **2 accent colors max** — e.g. GREEN for link, YELLOW for battery; GREY/WHITE for structure.
+- **Accent colors** — Follow the creative brief palette; avoid flat grey-only layouts.
 - **4–8 metrics** per screen; hide extras behind BOOL options.
 - **Direct `lcd.*` in `refresh()`** — Required for web preview; no opaque draw helpers.
 
-See `knowledge/design/tx15-dashboard-ui.md` for the full layout template and anti-patterns.
+See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-recipe.md` only for card-grid archetypes.
 
 ## Telemetry
 

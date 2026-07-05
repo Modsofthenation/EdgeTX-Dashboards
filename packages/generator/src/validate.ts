@@ -1,6 +1,9 @@
 import type { SimulateLayoutProfile, ValidationIssue, ValidationResult } from "@widget-gen/shared";
 import { analyzeDrawSurface } from "@widget-gen/shared";
 import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.js";
+import type { LayoutArchetypeId } from "./layoutArchetype.js";
+import { getActiveLayoutArchetype } from "./variationContext.js";
+
 export interface ValidateWidgetOptions {
   maxOptions?: number;
   knownSensors?: string[];
@@ -10,6 +13,8 @@ export interface ValidateWidgetOptions {
   simulateProfile?: SimulateLayoutProfile;
   /** When true, missing dev-kit annotations are errors (default before download). */
   strictDevKit?: boolean;
+  /** Layout archetype for archetype-scoped visual warnings. */
+  layoutArchetype?: LayoutArchetypeId;
 }
 
 const FORBIDDEN_PATTERNS = [
@@ -39,16 +44,44 @@ export function extractUsedTelemetrySensors(source: string): Set<string> {
   return used;
 }
 
-function validateVisualDesign(source: string, issues: ValidationIssue[]): void {
-  const { refreshBody, drawTextCount, hasFilledRectangle, hasSmlSize, stackedTopLeftWithoutPanels } =
-    analyzeDrawSurface(source);
+function validateVisualDesign(source: string, issues: ValidationIssue[], layoutArchetype?: LayoutArchetypeId): void {
+  const {
+    refreshBody,
+    drawTextCount,
+    hasFilledRectangle,
+    filledRectangleCount,
+    hasSmlSize,
+    hasDblSize,
+    stackedTopLeftWithoutPanels,
+  } = analyzeDrawSurface(source);
 
-  if (!hasFilledRectangle) {
-    issues.push({
-      severity: "warning",
-      message:
-        "No card panels — use lcd.drawFilledRectangle + lcd.drawRectangle for grouped metrics",
-    });
+  const archetype = layoutArchetype ?? getActiveLayoutArchetype();
+  const cardLike = new Set<LayoutArchetypeId>(["card-grid", "heli-rotorflight", "quad-overview"]);
+  const bandLike = new Set<LayoutArchetypeId>(["strip-board", "telemetry-dense"]);
+
+  if (archetype === "hero-minimal") {
+    if (!hasDblSize) {
+      issues.push({
+        severity: "warning",
+        message: "Hero-minimal layout — use one DBLSIZE hero metric",
+      });
+    }
+  } else if (bandLike.has(archetype ?? "card-grid")) {
+    if (filledRectangleCount < 2) {
+      issues.push({
+        severity: "warning",
+        message:
+          "Strip/dense layout — use at least 2 horizontal or vertical bands (drawFilledRectangle dividers or column backgrounds)",
+      });
+    }
+  } else if (!archetype || cardLike.has(archetype) || archetype === "flight-logger-suite" || archetype === "battery-tool-suite") {
+    if (!hasFilledRectangle) {
+      issues.push({
+        severity: "warning",
+        message:
+          "No grouped regions — use lcd.drawFilledRectangle + lcd.drawRectangle for metric panels or bands",
+      });
+    }
   }
 
   if (drawTextCount > 22) {
@@ -69,7 +102,7 @@ function validateVisualDesign(source: string, issues: ValidationIssue[]): void {
     issues.push({
       severity: "warning",
       message:
-        "Stacked top-left text without panels — use 12px grid and card layout per design guide",
+        "Stacked top-left text without structure — use grid alignment and grouped regions per archetype",
     });
   }
 
@@ -225,7 +258,7 @@ export function validateWidgetLua(
     });
   }
 
-  validateVisualDesign(source, issues);
+  validateVisualDesign(source, issues, options?.layoutArchetype);
 
   if (options?.knownSensors?.length) {
     validateTelemetry(source, options.knownSensors, options.strictTelemetry ?? false, issues);

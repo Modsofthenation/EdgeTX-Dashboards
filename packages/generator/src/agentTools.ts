@@ -5,12 +5,14 @@ import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.js";
 import { validateWidgetForRelease } from "./validationPipeline.js";
 import { getWidgetLuaPath, packageWidget, writeInstallMd } from "./package.js";
 import { sanitizeWidgetName } from "./paths.js";
+import type { LayoutArchetypeId } from "./layoutArchetype.js";
+import { getActiveLayoutArchetype } from "./variationContext.js";
 
 export function createCustomTools(): Record<string, SDKCustomTool> {
   return {
     validateWidget: {
       description:
-        "Validate an EdgeTX Lua widget before download. Runs static checks (structure, name, forbidden APIs), constraint checks (options, telemetry catalog), and visual-design warnings (card layout, text density). Must pass before packaging.",
+        "Validate an EdgeTX Lua widget before download. Runs static checks, telemetry catalog validation, and archetype-scoped visual-design warnings (card panels for card-grid/heli, bands for strip/dense, DBLSIZE hero for hero-minimal). Must pass before packaging.",
       inputSchema: {
         type: "object",
         properties: {
@@ -21,6 +23,11 @@ export function createCustomTools(): Record<string, SDKCustomTool> {
             description: "Telemetry protocol for sensor validation",
           },
           radioId: { type: "string", description: "Radio profile id (default tx15)" },
+          layoutArchetype: {
+            type: "string",
+            description:
+              "Layout archetype id (card-grid, hero-minimal, strip-board, etc.) for visual-design rules",
+          },
         },
         required: ["widgetName"],
       },
@@ -29,6 +36,8 @@ export function createCustomTools(): Record<string, SDKCustomTool> {
           const widgetName = sanitizeWidgetName(String(args.widgetName));
           const protocol = (args.protocol as TelemetryProtocol) ?? "generic-crsf";
           const radioId = String(args.radioId ?? "tx15");
+          const layoutArchetype = (args.layoutArchetype as LayoutArchetypeId | undefined) ??
+            getActiveLayoutArchetype();
           const path = getWidgetLuaPath(widgetName);
           if (!existsSync(path)) {
             return { content: [{ type: "text", text: `File not found for widget: ${widgetName}` }], isError: true };
@@ -36,6 +45,7 @@ export function createCustomTools(): Record<string, SDKCustomTool> {
           const result = validateWidgetForRelease(widgetName, protocol, {
             radioId,
             strictTelemetry: true,
+            layoutArchetype,
           });
           return JSON.stringify(result, null, 2);
         } catch (err) {

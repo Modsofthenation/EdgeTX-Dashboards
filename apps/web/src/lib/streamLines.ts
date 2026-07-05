@@ -121,6 +121,42 @@ export function collectToolEntries(lines: StreamLine[]): ToolChipEntry[] {
   return entries;
 }
 
+/** Markdown-safe text to show while streaming — hides the in-flight tail. */
+export function visibleStreamingText(text: string, isStreaming: boolean): string {
+  if (!isStreaming) return text;
+
+  const lastBreak = text.lastIndexOf("\n\n");
+  if (lastBreak === -1) return "";
+
+  return text.slice(0, lastBreak);
+}
+
+/** Resolve assistant text visibility for a grouped stream entry. */
+export function displayStreamTextEntry(
+  text: string,
+  entryIndex: number,
+  entries: LogEntry[],
+  lines: StreamLine[],
+  isStreaming: boolean
+): string {
+  if (!isStreaming) return text;
+
+  const lastLine = lines[lines.length - 1];
+  if (lastLine?.type !== "text") return text;
+
+  let lastTextIndex = -1;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].kind === "text") {
+      lastTextIndex = i;
+      break;
+    }
+  }
+
+  if (entryIndex !== lastTextIndex) return text;
+
+  return visibleStreamingText(text, true);
+}
+
 /** Group consecutive tool lines into chip rows for display. */
 export function groupStreamLines(lines: StreamLine[]): LogEntry[] {
   const entries: LogEntry[] = [];

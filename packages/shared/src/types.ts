@@ -91,4 +91,9 @@ export interface GenerateSession {
   widgetName?: string;
   validated?: boolean;
   validationIssues?: ValidationIssue[];
+  /** Per-session seed for layout/color variety across runs. */
+  variationSeed?: number;
+  /** Incremented on refinements that change layout intent. */
+  runIndex?: number;
+  layoutArchetypeId?: string;
 }

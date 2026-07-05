@@ -55,7 +55,7 @@ export async function POST(request: Request): Promise<Response> {
       session.agentId = stored.generator.agentId ?? "";
 
       const ctx = { session, generator: stored.generator, send };
-      const result = await stored.generator.generate(validated.request, createRunCallbacks(ctx));
+      const result = await stored.generator.generate(validated.request, createRunCallbacks(ctx), session);
 
       emitRunCompletion(ctx, result, { action: "generate" });
     } catch (err) {

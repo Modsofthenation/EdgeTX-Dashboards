@@ -76,7 +76,7 @@ export function Preview480x320({
 
       const scaleX = cw / lcdW;
       const scaleY = ch / lcdH;
-      const scale = Math.min(scaleX, scaleY);
+      const scale = Math.min(scaleX, scaleY, 1);
       const drawW = Math.floor(lcdW * scale);
       const drawH = Math.floor(lcdH * scale);
 
@@ -105,6 +105,15 @@ export function Preview480x320({
       previewDims.zoneH < lcdH ||
       previewDims.zoneX > 0 ||
       previewDims.zoneY > 0);
+
+  const screenStyle = {
+    aspectRatio: `${lcdW} / ${lcdH}`,
+    maxWidth: lcdW,
+  } as const;
+
+  const compactFrameStyle = {
+    maxWidth: lcdW + 16,
+  } as const;
 
   return (
     <div className={variant === "compact" ? styles.panelCompact : styles.panel}>
@@ -155,7 +164,10 @@ export function Preview480x320({
 
       {tab === "preview" ? (
         <div className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}>
-          <div className={variant === "compact" ? styles.frameCompact : styles.frame}>
+          <div
+            className={variant === "compact" ? styles.frameCompact : styles.frame}
+            style={variant === "compact" ? compactFrameStyle : undefined}
+          >
             <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
               {variant === "default" && (
                 <div className={styles.deviceLabel}>{radioName ?? "EdgeTX Radio"}</div>
@@ -163,6 +175,7 @@ export function Preview480x320({
               <div
                 className={variant === "compact" ? styles.screenCompact : styles.screen}
                 ref={containerRef}
+                style={screenStyle}
               >
                 {!luaSource ? (
                   <div className={styles.placeholder}>

@@ -1,6 +1,7 @@
 import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
-import type { GenerateRequest, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.js";
+import type { GenerateRequest, GenerateSession, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
+import { buildGenerationPrompt, buildRefinePrompt, getArchetypeForSession } from "./promptComposer.js";
+import { shouldBumpRunIndexForRefine, deriveVariationSeed } from "./designVariation.js";
 import { createCustomTools } from "./agentTools.js";
 import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge.js";
 import { findLatestWidgetName } from "./widgetResolve.js";
@@ -96,7 +97,8 @@ export class WidgetGenerator {
 
   async generate(
     request: GenerateRequest,
-    callbacks?: RunCallbacks
+    callbacks?: RunCallbacks,
+    session?: GenerateSession
   ): Promise<{
     runId: string;
     agentId: string;
@@ -114,8 +116,27 @@ export class WidgetGenerator {
       request.prompt,
       radio,
       catalog,
-      request.edgeTxVersion
+      request.edgeTxVersion,
+      session
+        ? {
+            sessionId: session.id,
+            runIndex: session.runIndex ?? 0,
+            variationSeed: session.variationSeed,
+          }
+        : undefined
     );
+
+    if (session) {
+      session.layoutArchetypeId = getArchetypeForSession(
+        request.prompt,
+        request.protocol,
+        {
+          sessionId: session.id,
+          runIndex: session.runIndex ?? 0,
+          variationSeed: session.variationSeed,
+        }
+      );
+    }
 
     callbacks?.onEvent?.({
       type: "status",
@@ -172,7 +193,8 @@ export class WidgetGenerator {
     protocol: TelemetryProtocol,
     radioId: string,
     widgetName?: string,
-    callbacks?: RunCallbacks
+    callbacks?: RunCallbacks,
+    session?: GenerateSession
   ): Promise<{
     runId: string;
     status: string;
@@ -182,7 +204,35 @@ export class WidgetGenerator {
     validationIssues?: ValidationIssue[];
   }> {
     const agent = await this.ensureAgent();
-    const run = await agent.send(buildRefinePrompt(prompt, widgetName, radioId, protocol));
+
+    if (session && shouldBumpRunIndexForRefine(prompt)) {
+      session.runIndex = (session.runIndex ?? 0) + 1;
+      session.variationSeed = deriveVariationSeed(session.id, session.runIndex);
+    }
+
+    const refinePrompt = buildRefinePrompt(
+      prompt,
+      widgetName,
+      radioId,
+      protocol,
+      session
+        ? {
+            sessionId: session.id,
+            runIndex: session.runIndex ?? 0,
+            variationSeed: session.variationSeed,
+          }
+        : undefined
+    );
+
+    if (session) {
+      session.layoutArchetypeId = getArchetypeForSession(prompt, protocol, {
+        sessionId: session.id,
+        runIndex: session.runIndex ?? 0,
+        variationSeed: session.variationSeed,
+      });
+    }
+
+    const run = await agent.send(refinePrompt);
 
     const streamed = await streamAgentRun(
       run,
