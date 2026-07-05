@@ -374,7 +374,7 @@
 
 .radioSimFullscreenMeta {
   font-size: 0.8125rem;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .radioSimFullscreenClose {
@@ -415,7 +415,7 @@
 .radioSimFullscreenHint {
   margin: 0;
   font-size: 0.75rem;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .radioSimInlineRunning {
@@ -457,7 +457,7 @@
   flex-direction: column;
   align-items: center;
   padding: 0.75rem 1rem 1rem;
-  background: rgba(6, 8, 12, 0.98);
+  background: radial-gradient(ellipse 120% 80% at 50% 20%, #2a3142 0%, #12151c 55%, #08090d 100%);
   backdrop-filter: blur(8px);
   overflow: auto;
 }
@@ -475,11 +475,39 @@
 .radioSimInteractiveBody {
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   width: min(1200px, 100%);
   min-height: 0;
   overflow: auto;
+  padding: 0.5rem 0 1rem;
+}
+
+/* Brighter sim theme scoped to the stage — overrides @edgetx/simulator-ui dark :root vars */
+.radioSimInteractiveStage {
+  --sim-bg: #252b38;
+  --sim-card: #3a4256;
+  --sim-card-border: #525d73;
+  --sim-surface: #323948;
+  --sim-border: #525d73;
+  --sim-border-light: #6b7589;
+  --sim-text: #c8d0e0;
+  --sim-text-dim: #9aa3b5;
+  --sim-text-dimmer: #7a8499;
+  --sim-text-bright: #eef1f6;
+  --sim-accent: #5eb0ff;
+  --sim-accent-dim: rgba(94, 176, 255, 0.18);
+  --sim-success: #34d399;
+  --sim-danger: #f87171;
+
+  padding: 1.25rem 1.75rem 1.5rem;
+  background: linear-gradient(165deg, #454f65 0%, #353d50 45%, #2a3142 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 28px 56px rgba(0, 0, 0, 0.55),
+    0 0 100px rgba(94, 176, 255, 0.1);
 }
 
 .radioSimMessage {

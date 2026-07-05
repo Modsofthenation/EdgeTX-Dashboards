@@ -217,15 +217,17 @@ export function RadioSimPreview({
               </button>
             </div>
             <div className={styles.radioSimInteractiveBody}>
-              <SimulatorThemeProvider theme="dark">
-                <Simulator
-                  radio={radioProfile}
-                  frameData={frameData}
-                  simState={simState}
-                  keyboardMode={keyboardMode}
-                  onInput={stableSendInput}
-                />
-              </SimulatorThemeProvider>
+              <div className={styles.radioSimInteractiveStage}>
+                <SimulatorThemeProvider theme="dark">
+                  <Simulator
+                    radio={radioProfile}
+                    frameData={frameData}
+                    simState={simState}
+                    keyboardMode={keyboardMode}
+                    onInput={stableSendInput}
+                  />
+                </SimulatorThemeProvider>
+              </div>
             </div>
             <p className={styles.radioSimFullscreenHint}>
               Double-tap widget for fullscreen · Esc to close · Arrow keys = rotary encoder
