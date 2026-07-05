@@ -84,33 +84,17 @@ Do **not** paint a solid `drawFilledCircle` at `rOut` behind the ring — it hid
 
 Center the gauge in the **left column** (~50–52% of width); place the power/attitude card in the right column with `cardX = heroW + pad`.
 
-**Inside the ring:** exactly **two CENTER-aligned lines** — DBLSIZE value, then SMLSIZE unit on the next row (fixed Y offsets, no horizontal suffix):
+**Inside the ring:** two CENTER lines from a centered block — see `tx15-text-layout.md`:
 
 ```lua
-lcd.drawFilledCircle(gaugeCx, gaugeCy, rIn - 4, BLACK)
-lcd.drawText(gaugeCx, gaugeCy - 14, voltsStr, DBLSIZE + CENTER + ORANGE)
-lcd.drawText(gaugeCx, gaugeCy + 10, "V", SMLSIZE + CENTER + LIGHTGREY)
+local gaugeBlockH = LH.DBL + LH.GAP + LH.SML
+local yVolt = gaugeCy - math.floor(gaugeBlockH / 2)
+local yVUnit = yVolt + LH.DBL + LH.GAP
+lcd.drawText(gaugeCx, yVolt, voltsStr, DBLSIZE + CENTER + ORANGE)
+lcd.drawText(gaugeCx, yVUnit, "V", SMLSIZE + CENTER + LIGHTGREY)
 ```
 
-**Card metrics (POWER / USED):** each field is **three rows** at the same `valX` with fixed strides (+16, +16, +18):
-
-```lua
-local y0 = cardY + 10
-local yPowerVal = y0 + 16
-local yPowerUnit = yPowerVal + 16
-local yUsedLbl = yPowerUnit + 18
-local yUsedVal = yUsedLbl + 16
-local yUsedUnit = yUsedVal + 16
-
-lcd.drawText(valX, y0, "POWER", SMLSIZE + LIGHTGREY)
-lcd.drawText(valX, yPowerVal, ampsStr, MIDSIZE + CYAN)
-lcd.drawText(valX, yPowerUnit, "A", SMLSIZE + LIGHTGREY)
-lcd.drawText(valX, yUsedLbl, "USED", SMLSIZE + LIGHTGREY)
-lcd.drawText(valX, yUsedVal, capaStr, MIDSIZE + ORANGE)
-lcd.drawText(valX, yUsedUnit, "mAh", SMLSIZE + LIGHTGREY)
-```
-
-Do **not** use `#str * charW` unit positioning or `unitY = valueY + 4` — overlaps on TX15.
+**Card metrics:** accumulate `y` with `LH.SML` / `LH.MID` / `LH.GAP` / `LH.SEC`; share `yPowerVal`, `yPowerUnit`, `yUsedVal`, `yUsedUnit` with the attitude column.
 
 ## Layout proportions (TX15 480×320)
 

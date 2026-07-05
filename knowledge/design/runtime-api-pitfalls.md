@@ -69,27 +69,29 @@ local BG_DIM = 10
 lcd.drawFilledRectangle(0, bodyY, w, bodyH, BLACK, BG_DIM)
 ```
 
-## Unit labels — fixed row strides (no suffix math)
+## Unit labels — height-aware rows (mandatory)
 
-EdgeTX has **no text-width API**. Do **not** position units with `#str * charW` or on the same row as `valueY + 4` — values overlap on radio.
+EdgeTX has **no text-width API**. Use `LH` line heights and accumulate `y` — see `tx15-text-layout.md`.
 
 ```lua
+-- WRONG — flat pixel steps ignore font height
+local yPowerVal = y0 + 16
+
 -- WRONG — overlaps digits
 lcd.drawText(x, y, ampsStr, MIDSIZE + CYAN)
 lcd.drawText(x + math.floor(#ampsStr * 9) + 4, y + 4, "A", SMLSIZE + LIGHTGREY)
 
--- RIGHT — label, value, unit on separate rows (+16 / +16 / +18 strides)
-local y0 = cardY + 10
-lcd.drawText(x, y0, "POWER", SMLSIZE + LIGHTGREY)
-lcd.drawText(x, y0 + 16, ampsStr, MIDSIZE + CYAN)
-lcd.drawText(x, y0 + 32, "A", SMLSIZE + LIGHTGREY)
-
--- Gauge: two CENTER lines only
-lcd.drawText(cx, cy - 14, voltsStr, DBLSIZE + CENTER + ORANGE)
-lcd.drawText(cx, cy + 10, "V", SMLSIZE + CENTER + LIGHTGREY)
+-- RIGHT
+local LH = { SML = 12, MID = 18, DBL = 26, GAP = 4, SEC = 8 }
+local y = cardY + 10
+local yPowerLbl = y
+y = y + LH.SML + LH.GAP
+local yPowerVal = y
+y = y + LH.MID + LH.GAP
+local yPowerUnit = y
+lcd.drawText(x, yPowerVal, ampsStr, MIDSIZE + CYAN)
+lcd.drawText(x, yPowerUnit, "A", SMLSIZE + LIGHTGREY)
 ```
-
-See `tx15-dashboard-ui.md` stride table and `model-hero-dashboard.md`.
 
 ## math.deg — not available on EdgeTX Lua
 

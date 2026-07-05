@@ -34,24 +34,17 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 ## Typography
 
-| Role | Flag | Use for |
-|------|------|---------|
-| Hero | `DBLSIZE` | One main number (e.g. battery voltage, altitude) |
-| Primary | `MIDSIZE` | Section values, link quality % |
-| Label | `SMLSIZE` | Field names, units, footer |
+| Role | Flag | Line height (`LH`) |
+|------|------|---------------------|
+| Hero | `DBLSIZE` | `LH.DBL` = 26px |
+| Primary | `MIDSIZE` | `LH.MID` = 18px |
+| Label / unit | `SMLSIZE` | `LH.SML` = 12px |
 
-- **Label → value → unit** — Use **fixed vertical strides** (no `#str * charW` suffix math — EdgeTX has no text-width API and it overlaps on radio):
+**Mandatory:** use height-aware stacking per `knowledge/design/tx15-text-layout.md` — define `local LH = { SML = 12, MID = 18, DBL = 26, GAP = 4, SEC = 8 }` and accumulate `y` inside each container. Never use flat `y + 16` steps or `#str * charW` unit placement.
 
-| Step | Stride | Example |
-|------|--------|---------|
-| SMLSIZE label → MIDSIZE value | **+16px** | `yVal = yLbl + 16` |
-| MIDSIZE value → SMLSIZE unit | **+16px** | `yUnit = yVal + 16` |
-| unit → next section label | **+18px** | `yNextLbl = yUnit + 18` |
-| DBLSIZE value → SMLSIZE unit (gauge, both CENTER) | value at `cy - 14`, unit at `cy + 10` | two lines only |
-
-- **Same `x` for label, value, and unit** (LEFT align in cards). **CENTER** both lines in a rotary gauge.
-- **Never** place unit at `valueY + 4` on the same row or use `#valueStr * charW` — causes overlap.
-- **Minimum vertical spacing** — Never stack two MIDSIZE/DBLSIZE lines closer than **16px** apart (line tops).
+- **Label → value → unit:** `y = y + LH.SML + LH.GAP` then `y = y + LH.MID + LH.GAP` etc.
+- **Aligned columns:** one shared list of `yPowerVal`, `yPowerUnit`, … for left and right `drawText` calls.
+- **Gauge center:** `blockH = LH.DBL + LH.GAP + LH.SML`, center block vertically in the inner disc.
 - Avoid more than **2 DBLSIZE** strings on screen.
 
 ## Web preview compatibility

@@ -7,6 +7,9 @@ local name = "TXModelHr"
 
 local MODEL_IMG = "/MODELS/model.png"
 
+-- TX15 lcd.drawText line heights (px) — knowledge/design/tx15-text-layout.md
+local LH = { SML = 12, MID = 18, DBL = 26, GAP = 4, SEC = 8 }
+
 local options = {
   { "ShowModel", BOOL, 1 },
   { "ShowLink", BOOL, 1 },
@@ -183,14 +186,17 @@ local function refresh(widget, event, touchState)
 
   lcd.drawFilledRectangle(0, 0, w, headerH, widget.C_CARD)
   lcd.drawFilledRectangle(pad, headerH - 2, w - pad * 2, 2, MAGENTA)
-  lcd.drawText(pad, 12, "TINYWHOOP", MIDSIZE + MAGENTA)
-  lcd.drawText(w - pad, 14, "BF CRSF", SMLSIZE + RIGHT + CYAN)
+  local titleY = math.floor((headerH - LH.MID) / 2)
+  local subY = math.floor((headerH - LH.SML) / 2)
+  lcd.drawText(pad, titleY, "TINYWHOOP", MIDSIZE + MAGENTA)
+  lcd.drawText(w - pad, subY, "BF CRSF", SMLSIZE + RIGHT + CYAN)
 
   local topBarH = 30
   local topBarY = contentTop
   local barW = math.floor((w - pad * 3) / 2)
   local leftBarX = pad
   local rightBarX = pad * 2 + barW
+  local barInset = 4
 
   if widget.options.ShowLink == 1 then
     lcd.drawFilledRectangle(leftBarX, topBarY + crSm, barW, topBarH - 2 * crSm, widget.C_CARD)
@@ -200,11 +206,11 @@ local function refresh(widget, event, touchState)
     lcd.drawFilledCircle(leftBarX + crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
     lcd.drawFilledCircle(leftBarX + barW - crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
 
-    lcd.drawText(leftBarX + 8, topBarY + 4, "LINK", SMLSIZE + LIGHTGREY)
-    lcd.drawText(leftBarX + barW - 8, topBarY + 4, rqlyStr, SMLSIZE + RIGHT + CYAN)
+    lcd.drawText(leftBarX + 8, topBarY + barInset, "LINK", SMLSIZE + LIGHTGREY)
+    lcd.drawText(leftBarX + barW - 8, topBarY + barInset, rqlyStr, SMLSIZE + RIGHT + CYAN)
 
     local trackX = leftBarX + 8
-    local trackY = topBarY + 18
+    local trackY = topBarY + barInset + LH.SML + LH.GAP
     local trackW = barW - 16
     local trackH = 8
     lcd.drawFilledRectangle(trackX, trackY, trackW, trackH, GREY)
@@ -221,11 +227,11 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledCircle(rightBarX + crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
   lcd.drawFilledCircle(rightBarX + barW - crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
 
-  lcd.drawText(rightBarX + 8, topBarY + 4, "BATT", SMLSIZE + LIGHTGREY)
-  lcd.drawText(rightBarX + barW - 8, topBarY + 4, batPctStr, SMLSIZE + RIGHT + ORANGE)
+  lcd.drawText(rightBarX + 8, topBarY + barInset, "BATT", SMLSIZE + LIGHTGREY)
+  lcd.drawText(rightBarX + barW - 8, topBarY + barInset, batPctStr, SMLSIZE + RIGHT + ORANGE)
 
   local battTrackX = rightBarX + 8
-  local battTrackY = topBarY + 18
+  local battTrackY = topBarY + barInset + LH.SML + LH.GAP
   local battTrackW = barW - 16
   local battTrackH = 8
   lcd.drawFilledRectangle(battTrackX, battTrackY, battTrackW, battTrackH, GREY)
@@ -273,8 +279,11 @@ local function refresh(widget, event, touchState)
 
   lcd.drawFilledCircle(gaugeCx, gaugeCy, rIn - 4, BLACK)
 
-  lcd.drawText(gaugeCx, gaugeCy - 14, voltsStr, DBLSIZE + CENTER + ORANGE)
-  lcd.drawText(gaugeCx, gaugeCy + 10, "V", SMLSIZE + CENTER + LIGHTGREY)
+  local gaugeBlockH = LH.DBL + LH.GAP + LH.SML
+  local yVolt = gaugeCy - math.floor(gaugeBlockH / 2)
+  local yVUnit = yVolt + LH.DBL + LH.GAP
+  lcd.drawText(gaugeCx, yVolt, voltsStr, DBLSIZE + CENTER + ORANGE)
+  lcd.drawText(gaugeCx, yVUnit, "V", SMLSIZE + CENTER + LIGHTGREY)
 
   local cardX = heroW + pad
   local cardW = w - cardX - pad
@@ -291,26 +300,33 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledRectangle(cardX, cardY, cardW, 2, MAGENTA)
 
   local valX = cardX + 12
-  local y0 = cardY + 10
-  local yPowerVal = y0 + 16
-  local yPowerUnit = yPowerVal + 16
-  local yUsedLbl = yPowerUnit + 18
-  local yUsedVal = yUsedLbl + 16
-  local yUsedUnit = yUsedVal + 16
+  local attX = cardX + cardW - 12
+  local y = cardY + 10
 
-  lcd.drawText(valX, y0, "POWER", SMLSIZE + LIGHTGREY)
+  local yPowerLbl = y
+  y = y + LH.SML + LH.GAP
+  local yPowerVal = y
+  y = y + LH.MID + LH.GAP
+  local yPowerUnit = y
+  y = y + LH.SML + LH.SEC
+  local yUsedLbl = y
+  y = y + LH.SML + LH.GAP
+  local yUsedVal = y
+  y = y + LH.MID + LH.GAP
+  local yUsedUnit = y
+
+  lcd.drawText(valX, yPowerLbl, "POWER", SMLSIZE + LIGHTGREY)
   lcd.drawText(valX, yPowerVal, ampsStr, MIDSIZE + CYAN)
   lcd.drawText(valX, yPowerUnit, "A", SMLSIZE + LIGHTGREY)
-
   lcd.drawText(valX, yUsedLbl, "USED", SMLSIZE + LIGHTGREY)
   lcd.drawText(valX, yUsedVal, capaStr, MIDSIZE + ORANGE)
   lcd.drawText(valX, yUsedUnit, "mAh", SMLSIZE + LIGHTGREY)
 
   if widget.options.ShowAtt == 1 then
-    lcd.drawText(cardX + cardW - 12, yPowerVal, rollStr, MIDSIZE + RIGHT + WHITE)
-    lcd.drawText(cardX + cardW - 12, yPowerUnit, "R", SMLSIZE + RIGHT + LIGHTGREY)
-    lcd.drawText(cardX + cardW - 12, yUsedVal, ptchStr, MIDSIZE + RIGHT + WHITE)
-    lcd.drawText(cardX + cardW - 12, yUsedUnit, "P", SMLSIZE + RIGHT + LIGHTGREY)
+    lcd.drawText(attX, yPowerVal, rollStr, MIDSIZE + RIGHT + WHITE)
+    lcd.drawText(attX, yPowerUnit, "R", SMLSIZE + RIGHT + LIGHTGREY)
+    lcd.drawText(attX, yUsedVal, ptchStr, MIDSIZE + RIGHT + WHITE)
+    lcd.drawText(attX, yUsedUnit, "P", SMLSIZE + RIGHT + LIGHTGREY)
   end
 
   if widget.options.ShowGPS == 1 then
@@ -323,16 +339,20 @@ local function refresh(widget, event, touchState)
     lcd.drawFilledCircle(gpsX + crSm, gpsY + gpsH - crSm, crSm, widget.C_CARD)
     lcd.drawFilledCircle(gpsX + gpsW - crSm, gpsY + gpsH - crSm, crSm, widget.C_CARD)
 
-    lcd.drawText(gpsX + 12, gpsY + 6, "ALT", SMLSIZE + GREY)
-    lcd.drawText(gpsX + 12, gpsY + 20, altStr, MIDSIZE + WHITE)
-    lcd.drawText(gpsX + 12, gpsY + 36, "m", SMLSIZE + GREY)
+    local yGps = gpsY + 6
+    local yGpsVal = yGps + LH.SML + LH.GAP
+    local yGpsUnit = yGpsVal + LH.MID + LH.GAP
 
-    lcd.drawText(gpsX + 168, gpsY + 6, "SPD", SMLSIZE + GREY)
-    lcd.drawText(gpsX + 168, gpsY + 20, gspdStr, MIDSIZE + WHITE)
-    lcd.drawText(gpsX + 168, gpsY + 36, "km/h", SMLSIZE + GREY)
+    lcd.drawText(gpsX + 12, yGps, "ALT", SMLSIZE + LIGHTGREY)
+    lcd.drawText(gpsX + 12, yGpsVal, altStr, MIDSIZE + WHITE)
+    lcd.drawText(gpsX + 12, yGpsUnit, "m", SMLSIZE + LIGHTGREY)
 
-    lcd.drawText(gpsX + 324, gpsY + 6, "SATS", SMLSIZE + GREY)
-    lcd.drawText(gpsX + 324, gpsY + 20, satsStr, MIDSIZE + CYAN)
+    lcd.drawText(gpsX + 168, yGps, "SPD", SMLSIZE + LIGHTGREY)
+    lcd.drawText(gpsX + 168, yGpsVal, gspdStr, MIDSIZE + WHITE)
+    lcd.drawText(gpsX + 168, yGpsUnit, "km/h", SMLSIZE + LIGHTGREY)
+
+    lcd.drawText(gpsX + 324, yGps, "SATS", SMLSIZE + LIGHTGREY)
+    lcd.drawText(gpsX + 324, yGpsVal, satsStr, MIDSIZE + CYAN)
   end
 
   lcd.drawFilledRectangle(0, h - footerH, w, footerH, widget.C_CARD)
@@ -346,10 +366,11 @@ local function refresh(widget, event, touchState)
   end
 
   lcd.drawFilledRectangle(pad, h - footerH + 6, 72, 16, DARKGREY)
-  lcd.drawText(pad + 36, h - footerH + 8, statusLabel, SMLSIZE + CENTER + statusColor)
+  local footerTextY = h - footerH + math.floor((footerH - LH.SML) / 2)
+  lcd.drawText(pad + 36, footerTextY, statusLabel, SMLSIZE + CENTER + statusColor)
 
-  lcd.drawText(pad + 84, h - footerH + 8, "TRSS " .. trssStr, SMLSIZE + GREY)
-  lcd.drawText(w - pad, h - footerH + 8, fmStr, SMLSIZE + RIGHT + ORANGE)
+  lcd.drawText(pad + 84, footerTextY, "TRSS " .. trssStr, SMLSIZE + GREY)
+  lcd.drawText(w - pad, footerTextY, fmStr, SMLSIZE + RIGHT + ORANGE)
 end
 
 return {

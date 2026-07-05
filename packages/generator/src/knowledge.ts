@@ -169,6 +169,12 @@ export function readModelHeroDashboardGuide(): string {
   return readFileSync(path, "utf-8");
 }
 
+export function readTextLayoutGuide(): string {
+  const path = join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
 export function readRuntimeApiPitfallsGuide(): string {
   const path = join(getRepoRoot(), "knowledge", "design", "runtime-api-pitfalls.md");
   if (!existsSync(path)) return "";

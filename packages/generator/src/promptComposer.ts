@@ -8,6 +8,7 @@ import {
   readCompanionScriptsGuide,
   readModelImageGuide,
   readModelHeroDashboardGuide,
+  readTextLayoutGuide,
   readRuntimeApiPitfallsGuide,
   readThemePalettesGuide,
   readExampleSnippet,
@@ -117,6 +118,7 @@ export function buildGenerationPrompt(
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
   const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
+  const textLayoutGuide = readTextLayoutGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
   const rules = readRules();
@@ -211,6 +213,10 @@ ${modelHeroGuide ? `\n## Model-background + hero gauge layout (mandatory for thi
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
 ${runtimeApiPitfalls}
+
+## TX15 text layout (mandatory — height-aware stacking in cards and gauges)
+
+${textLayoutGuide}
 ${assignedNameSection}
 ## Hard rules
 
@@ -279,6 +285,7 @@ export function buildRefinePrompt(
   const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
   const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
+  const textLayoutGuide = readTextLayoutGuide();
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
     loadRadioProfile(radioId).name
@@ -327,6 +334,10 @@ ${modelHeroGuide ? `\n## Model-background + hero gauge layout (apply to refineme
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
 ${runtimeApiPitfalls}
+
+## TX15 text layout (mandatory — height-aware stacking)
+
+${textLayoutGuide}
 
 Keep the dashboard clean and distinct from generic templates. All lcd.* draws must stay directly in refresh().
 

@@ -131,7 +131,7 @@ describe("validateUnitSuffixPositioning", () => {
   });
 
   it("accepts fixed stride row layout", () => {
-    const source = `local yPowerUnit = yPowerVal + 16
+    const source = `local yPowerUnit = yPowerVal + LH.MID + LH.GAP
 lcd.drawText(valX, yPowerUnit, "A", SMLSIZE + LIGHTGREY)`;
     assert.deepEqual(validateUnitSuffixPositioning(source), []);
   });
