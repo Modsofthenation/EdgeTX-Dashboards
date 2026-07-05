@@ -209,7 +209,7 @@ function ArtifactAside({
 
 function ExpandedArtifactPanel({ onToggleArtifact }: { onToggleArtifact: () => void }) {
   const { chatId, running } = useChatSession();
-  const { protocol, layoutProfileId, selectedRadio } = useSessionSettings();
+  const { protocol, layoutProfileId, selectedRadio, edgeTxVersion } = useSessionSettings();
   const {
     artifact,
     artifactVersions,
@@ -234,6 +234,7 @@ function ExpandedArtifactPanel({ onToggleArtifact }: { onToggleArtifact: () => v
       artifactLoading={artifactLoading}
       layoutProfileId={layoutProfileId}
       radioName={selectedRadio?.name ?? null}
+      edgeTxVersion={edgeTxVersion}
       panelCollapsed={false}
       onTogglePanel={onToggleArtifact}
     />

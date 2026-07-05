@@ -34,8 +34,10 @@ const DEFAULT_STATE: RadioSimState = {
 /** Frames to stream CRSF before first widget load (~200ms at 60 Hz). */
 export const WIDGET_LAUNCH_DELAY_FRAMES = 12;
 
-const FULLSCREEN_WAIT_FRAMES = 10;
+const FULLSCREEN_WAIT_FRAMES = 30;
+const FULLSCREEN_RETRY_WAIT_FRAMES = 15;
 const FULLSCREEN_TAP_GAP_FRAMES = 3;
+const FULLSCREEN_MAX_ATTEMPTS = 2;
 
 type FullscreenTapGesture = {
   x: number;
@@ -43,6 +45,7 @@ type FullscreenTapGesture = {
   /** 0=wait, 1=down, 2=up+gap, 3=down, 4=up */
   step: number;
   counter: number;
+  attempt: number;
 };
 
 export class SimRuntime {
@@ -59,6 +62,7 @@ export class SimRuntime {
   private state: RadioSimState = { ...DEFAULT_STATE };
   private callbacks: SimRuntimeCallbacks;
   private paused = false;
+  private edgeTxVersion = "2.11.0";
 
   constructor(
     private wasmUrl: string,
@@ -112,7 +116,11 @@ export class SimRuntime {
     source?: string;
     zone?: WidgetSimulateZone;
     mock?: MockTelemetryValues;
+    edgeTxVersion?: string;
   }): Promise<void> {
+    if (options?.edgeTxVersion) {
+      this.edgeTxVersion = options.edgeTxVersion;
+    }
     this.setState({ phase: "loading-wasm", progress: 5, status: "Loading firmware…" });
 
     try {
@@ -145,7 +153,11 @@ export class SimRuntime {
       ex.simuInit();
       this.runner.setFatfsPaths("/", "/");
       (ex as ExtendedSimulatorExports).simuCreateDefaults?.();
-      await deploySimModel(this.runner, this.layoutPlanFrom(options?.source, options?.zone));
+      await deploySimModel(
+        this.runner,
+        this.layoutPlanFrom(options?.source, options?.zone),
+        this.edgeTxVersion
+      );
       ex.simuStart(0);
 
       this.loopRunning = true;
@@ -165,13 +177,20 @@ export class SimRuntime {
     await this.deployWidget(source);
     const runner = this.runner;
     if (runner) {
-      await deploySimModel(runner, this.layoutPlanFrom(source, zone));
+      await deploySimModel(runner, this.layoutPlanFrom(source, zone), this.edgeTxVersion);
     }
     this.pendingWidget = { source, zone };
   }
 
   setMockTelemetry(mock: MockTelemetryValues): void {
     this.mock = mock;
+  }
+
+  /** Manual fallback: replay widget fullscreen double-tap on the 480×320 LCD. */
+  requestEnterWidgetFullscreen(): void {
+    const zone = this.pendingWidget?.zone;
+    if (!zone?.enterFullscreen) return;
+    this.beginFullscreenTap(zone);
   }
 
   pause(): void {
@@ -273,6 +292,26 @@ export class SimRuntime {
     this.modelBackup = null;
   }
 
+  private fullscreenTapCoords(zone: WidgetSimulateZone): { x: number; y: number } {
+    if (zone.fullscreenTapX != null && zone.fullscreenTapY != null) {
+      return { x: zone.fullscreenTapX, y: zone.fullscreenTapY };
+    }
+    const x = Math.floor((zone.zoneX ?? 0) + (zone.zoneW ?? 480) / 2);
+    const y = Math.floor((zone.zoneY ?? 0) + (zone.zoneH ?? 320) / 2);
+    return { x, y };
+  }
+
+  private beginFullscreenTap(zone: WidgetSimulateZone): void {
+    const { x, y } = this.fullscreenTapCoords(zone);
+    this.fullscreenTap = {
+      x,
+      y,
+      step: 0,
+      counter: FULLSCREEN_WAIT_FRAMES,
+      attempt: 0,
+    };
+  }
+
   private launchWidget(source: string, zone?: WidgetSimulateZone): void {
     const ex = this.getExports() as NonNullable<WasmRunner["exports"]> & ExtendedSimulatorExports;
     const plan = planWidgetDeploy(source);
@@ -307,15 +346,18 @@ export class SimRuntime {
     }
 
     if (zone?.enterFullscreen) {
-      const x = Math.floor((zone.zoneX ?? 0) + (zone.zoneW ?? 480) / 2);
-      const y = Math.floor((zone.zoneY ?? 0) + (zone.zoneH ?? 320) / 2);
-      this.fullscreenTap = {
-        x,
-        y,
-        step: 0,
-        counter: FULLSCREEN_WAIT_FRAMES,
-      };
+      this.beginFullscreenTap(zone);
     }
+  }
+
+  private finishFullscreenTap(ex: ExtendedSimulatorExports): void {
+    ex.simuTouchUp?.();
+    const w = ex.simuLcdGetWidth?.() ?? 0;
+    const h = ex.simuLcdGetHeight?.() ?? 0;
+    this.callbacks.onLog?.(
+      `Radio sim: widget fullscreen tap done · LCD ${w}×${h}${w === 480 && h === 320 ? " (full)" : ""}`
+    );
+    this.fullscreenTap = null;
   }
 
   private advanceFullscreenTap(ex: ExtendedSimulatorExports): void {
@@ -349,8 +391,17 @@ export class SimRuntime {
         gesture.step = 5;
         break;
       default:
-        ex.simuTouchUp();
-        this.fullscreenTap = null;
+        if (gesture.attempt + 1 < FULLSCREEN_MAX_ATTEMPTS) {
+          gesture.attempt += 1;
+          gesture.step = 0;
+          gesture.counter = FULLSCREEN_RETRY_WAIT_FRAMES;
+          ex.simuTouchUp();
+          this.callbacks.onLog?.(
+            `Radio sim: retrying widget fullscreen double-tap (${gesture.attempt + 1}/${FULLSCREEN_MAX_ATTEMPTS})`
+          );
+        } else {
+          this.finishFullscreenTap(ex);
+        }
         break;
     }
   }

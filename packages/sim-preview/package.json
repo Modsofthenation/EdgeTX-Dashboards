@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test dist/__tests__/virtualSd.test.js dist/__tests__/telemetryBridge.test.js dist/__tests__/wasmImportPatch.test.js dist/__tests__/handleInput.test.js dist/__tests__/simModel.test.js",
+    "test": "npm run build && node --test dist/__tests__/virtualSd.test.js dist/__tests__/telemetryBridge.test.js dist/__tests__/wasmImportPatch.test.js dist/__tests__/handleInput.test.js dist/__tests__/simModel.test.js dist/__tests__/drawAnnulusFixture.test.js",
     "test:wasm": "npm run build && node --test dist/__tests__/simRuntimeHarness.test.js"
   },
   "dependencies": {

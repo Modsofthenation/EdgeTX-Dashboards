@@ -9,6 +9,7 @@ import {
   type RadioCatalogEntry,
 } from "@/lib/radioCatalog";
 import { PROTOCOL_BADGE_LABELS } from "@/lib/protocolLabels";
+import { EDGE_TX_VERSION_OPTIONS } from "@/lib/edgeTxVersions";
 import {
   maxPromptImages,
   readPromptImageFile,
@@ -254,8 +255,11 @@ export const ChatComposer = memo(function ChatComposer({
             onChange={(e) => onEdgeTxChange(e.target.value)}
             disabled={settingsLocked}
           >
-            <option value="2.11.0">2.11+</option>
-            <option value="2.10.0">2.10</option>
+            {EDGE_TX_VERSION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
 

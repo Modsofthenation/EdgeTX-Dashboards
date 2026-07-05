@@ -32,4 +32,9 @@ describe("simModel", () => {
     const baseOnly = buildSimModelYaml();
     assert.doesNotMatch(baseOnly, /screenData:/);
   });
+
+  it("buildSimModelYaml uses requested EdgeTX semver", () => {
+    const yaml = buildSimModelYaml(undefined, "2.12.0");
+    assert.match(yaml, /^semver: 2\.12\.0$/m);
+  });
 });

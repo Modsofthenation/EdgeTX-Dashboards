@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
+import { EDGE_TX_VERSION_OPTIONS, DEFAULT_EDGE_TX_VERSION } from "@/lib/edgeTxVersions";
 import styles from "./PromptForm.module.css";
 
 interface PromptFormProps {
@@ -17,7 +18,7 @@ export function PromptForm({ onGenerate, onRefine, running, canRefine }: PromptF
   );
   const [refinePrompt, setRefinePrompt] = useState("");
   const [protocol, setProtocol] = useState<TelemetryProtocol>("betaflight");
-  const [edgeTxVersion, setEdgeTxVersion] = useState("2.11.0");
+  const [edgeTxVersion, setEdgeTxVersion] = useState(DEFAULT_EDGE_TX_VERSION);
 
   return (
     <div className={styles.form}>
@@ -63,8 +64,11 @@ export function PromptForm({ onGenerate, onRefine, running, canRefine }: PromptF
             onChange={(e) => setEdgeTxVersion(e.target.value)}
             disabled={running}
           >
-            <option value="2.11.0">2.11+</option>
-            <option value="2.10.0">2.10</option>
+            {EDGE_TX_VERSION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
       </div>

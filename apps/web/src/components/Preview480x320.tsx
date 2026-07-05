@@ -1,25 +1,17 @@
 "use client";
 
-import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
 import { BASE_MOCK, tickMock } from "@/lib/mockTelemetry";
 import { isChatScrolling } from "@/lib/chatScrollPause";
-import {
-  parseLuaToDrawCommandsStatic,
-  applyMockToCommands,
-  renderPreviewCommands,
-  getLastPreviewParseMeta,
-} from "@/lib/luaPreviewEngine";
 import { RadioSimPreview } from "@/components/RadioSimPreview";
 import styles from "./Preview480x320.module.css";
-
-const DEFAULT_LCD_W = 480;
-const DEFAULT_LCD_H = 320;
 
 interface Preview480x320Props {
   luaSource: string | null;
   widgetName: string | null;
   layoutProfileId?: string;
+  edgeTxVersion?: string;
   radioName?: string | null;
   live?: boolean;
   variant?: "default" | "compact";
@@ -29,19 +21,18 @@ export const Preview480x320 = memo(function Preview480x320({
   luaSource,
   widgetName,
   layoutProfileId = "tx15",
+  edgeTxVersion = "2.11.0",
   radioName,
   live = true,
   variant = "default",
 }: Preview480x320Props) {
-  const [tab, setTab] = useState<"preview" | "radioSim" | "source">("preview");
+  const [tab, setTab] = useState<"preview" | "source">("preview");
   const [tick, setTick] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastCanvasSizeRef = useRef({ w: 0, h: 0 });
+  const [interactiveControls, setInteractiveControls] = useState<{ openInteractive: () => void } | null>(
+    null
+  );
 
   const mock = useMemo(() => (live ? tickMock(BASE_MOCK, tick) : BASE_MOCK), [live, tick]);
-  const deferredMock = useDeferredValue(mock);
-  const deferredLuaSource = useDeferredValue(luaSource);
 
   const layoutProfile = useMemo(() => {
     try {
@@ -59,40 +50,8 @@ export const Preview480x320 = memo(function Preview480x320({
     [luaSource, layoutProfile]
   );
 
-  const staticParse = useMemo(() => {
-    if (!deferredLuaSource) return null;
-    return parseLuaToDrawCommandsStatic(deferredLuaSource);
-  }, [deferredLuaSource]);
-
-  const commands = useMemo(() => {
-    if (!deferredLuaSource || !staticParse) return [];
-    try {
-      return applyMockToCommands(staticParse, deferredLuaSource, deferredMock);
-    } catch {
-      return [];
-    }
-  }, [deferredLuaSource, staticParse, deferredMock]);
-
-  const parseMeta = useMemo(() => {
-    if (!luaSource) return null;
-    return getLastPreviewParseMeta();
-  }, [luaSource, mock, commands]);
-
-  const previewHealthMessage = useMemo(() => {
-    if (!parseMeta) return null;
-    const parts: string[] = [];
-    if (parseMeta.skippedTextCount > 0) {
-      parts.push(`${parseMeta.skippedTextCount} text label(s) could not be evaluated`);
-    }
-    if (parseMeta.zeroCoordCount > 0) {
-      parts.push(`${parseMeta.zeroCoordCount} draw call(s) resolved to (0, y)`);
-    }
-    if (parseMeta.warnings.length > 0) {
-      parts.push(parseMeta.warnings[0]);
-    }
-    if (parts.length === 0) return null;
-    return `Preview approximation: ${parts.join("; ")}. Layout may differ on radio.`;
-  }, [parseMeta]);
+  const displayW = previewDims?.zoneW ?? lcdW;
+  const displayH = previewDims?.zoneH ?? lcdH;
 
   useEffect(() => {
     if (!live || !luaSource) return;
@@ -103,61 +62,17 @@ export const Preview480x320 = memo(function Preview480x320({
     return () => clearInterval(id);
   }, [live, luaSource]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container || tab !== "preview" || !luaSource) return;
-
-    const paint = () => {
-      if (isChatScrolling()) return;
-      const cw = container.clientWidth;
-      const ch = container.clientHeight;
-      if (cw <= 0 || ch <= 0) return;
-
-      const scaleX = cw / lcdW;
-      const scaleY = ch / lcdH;
-      const scale = Math.min(scaleX, scaleY, 1);
-      const drawW = Math.floor(lcdW * scale);
-      const drawH = Math.floor(lcdH * scale);
-
-      const last = lastCanvasSizeRef.current;
-      if (last.w !== drawW || last.h !== drawH) {
-        canvas.width = drawW;
-        canvas.height = drawH;
-        lastCanvasSizeRef.current = { w: drawW, h: drawH };
-      }
-      canvas.style.width = `${drawW}px`;
-      canvas.style.height = `${drawH}px`;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.imageSmoothingEnabled = false;
-      renderPreviewCommands(ctx, commands, scale, lcdW, lcdH);
-    };
-
-    const observer = new ResizeObserver(paint);
-    observer.observe(container);
-    paint();
-
-    return () => observer.disconnect();
-  }, [commands, tab, lcdW, lcdH, luaSource]);
-
-  const showZoneOverlay =
-    previewDims &&
-    (previewDims.zoneW < lcdW ||
-      previewDims.zoneH < lcdH ||
-      previewDims.zoneX > 0 ||
-      previewDims.zoneY > 0);
-
   const screenStyle = {
-    aspectRatio: `${lcdW} / ${lcdH}`,
-    maxWidth: lcdW,
+    aspectRatio: `${displayW} / ${displayH}`,
+    maxWidth: displayW,
   } as const;
 
   const compactFrameStyle = {
-    maxWidth: lcdW + 16,
+    maxWidth: displayW + 16,
   } as const;
+
+  const simActive = !!luaSource && tab !== "source";
+  const firmwareLabel = edgeTxVersion.replace(/\.0$/, "");
 
   return (
     <div className={variant === "compact" ? styles.panelCompact : styles.panel}>
@@ -172,14 +87,6 @@ export const Preview480x320 = memo(function Preview480x320({
               onClick={() => setTab("preview")}
             >
               Preview
-            </button>
-            <button
-              role="tab"
-              aria-selected={tab === "radioSim"}
-              className={tab === "radioSim" ? styles.tabActive : styles.tab}
-              onClick={() => setTab("radioSim")}
-            >
-              Radio sim
             </button>
             <button
               role="tab"
@@ -205,14 +112,6 @@ export const Preview480x320 = memo(function Preview480x320({
           </button>
           <button
             role="tab"
-            aria-selected={tab === "radioSim"}
-            className={tab === "radioSim" ? styles.tabActive : styles.tab}
-            onClick={() => setTab("radioSim")}
-          >
-            Sim
-          </button>
-          <button
-            role="tab"
             aria-selected={tab === "source"}
             className={tab === "source" ? styles.tabActive : styles.tab}
             onClick={() => setTab("source")}
@@ -222,100 +121,79 @@ export const Preview480x320 = memo(function Preview480x320({
         </div>
       )}
 
-      {tab === "preview" || tab === "radioSim" ? (
-        <div className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}>
-          <div
-            className={variant === "compact" ? styles.frameCompact : styles.frame}
-            style={variant === "compact" ? compactFrameStyle : undefined}
-          >
-            <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
-              {variant === "default" && (
-                <div className={styles.deviceLabel}>{radioName ?? "EdgeTX Radio"}</div>
-              )}
-              <div
-                className={variant === "compact" ? styles.screenCompact : styles.screen}
-                ref={containerRef}
-                style={screenStyle}
-              >
-                {!luaSource ? (
-                  <div className={styles.placeholder}>
-                    <span className={styles.placeholderIcon} aria-hidden>
-                      ◫
-                    </span>
-                    <span>Generate a widget to preview on the TX15 display</span>
-                  </div>
-                ) : tab === "radioSim" ? (
-                  <RadioSimPreview
-                    luaSource={luaSource}
-                    layoutProfileId={layoutProfileId}
-                    mock={mock}
-                    live={live}
-                    active={tab === "radioSim"}
-                  />
-                ) : (
-                  <>
-                    <canvas ref={canvasRef} className={styles.canvas} aria-label="Widget preview" />
-                    {showZoneOverlay && previewDims && (
-                      <div
-                        className={styles.region}
-                        style={{
-                          left: `${(previewDims.zoneX / lcdW) * 100}%`,
-                          top: `${(previewDims.zoneY / lcdH) * 100}%`,
-                          width: `${(previewDims.zoneW / lcdW) * 100}%`,
-                          height: `${(previewDims.zoneH / lcdH) * 100}%`,
-                        }}
-                        aria-hidden
-                      >
-                        <span>
-                          {previewDims.layout} z{previewDims.zone}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-            <div className={styles.footer}>
-              <span className={styles.meta}>{lcdW} × {lcdH}</span>
-              {previewDims && (
-                <span className={styles.meta}>
-                  {previewDims.layout} · zone {previewDims.zone}
-                </span>
-              )}
-              {luaSource && live && tab === "preview" && (
-                <span className={styles.liveBadge}>Live mock data</span>
-              )}
-              {luaSource && tab === "radioSim" && (
-                <span className={styles.liveBadge}>EdgeTX WASM</span>
+      <div
+        className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}
+        style={{ display: tab === "source" ? "none" : undefined }}
+        aria-hidden={tab === "source"}
+      >
+        <div
+          className={variant === "compact" ? styles.frameCompact : styles.frame}
+          style={variant === "compact" ? compactFrameStyle : undefined}
+        >
+          <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
+            {variant === "default" && (
+              <div className={styles.deviceLabel}>{radioName ?? "EdgeTX Radio"}</div>
+            )}
+            <div
+              className={variant === "compact" ? styles.screenCompact : styles.screen}
+              style={screenStyle}
+            >
+              {!luaSource ? (
+                <div className={styles.placeholder}>
+                  <span className={styles.placeholderIcon} aria-hidden>
+                    ◫
+                  </span>
+                  <span>Generate a widget to preview on the TX15 display</span>
+                </div>
+              ) : (
+                <RadioSimPreview
+                  luaSource={luaSource}
+                  layoutProfileId={layoutProfileId}
+                  edgeTxVersion={edgeTxVersion}
+                  mock={mock}
+                  live={live}
+                  active={simActive}
+                  onInteractiveControls={setInteractiveControls}
+                />
               )}
             </div>
-            {tab === "preview" && luaSource && (
-              <p className={styles.previewDisclaimer}>
-                Lightweight preview — layout and telemetry may not match the radio exactly. Use{" "}
-                <button type="button" className={styles.previewDisclaimerLink} onClick={() => setTab("radioSim")}>
-                  Radio sim
-                </button>{" "}
-                for real EdgeTX firmware behavior.
-              </p>
+          </div>
+          <div className={styles.footer}>
+            <span className={styles.meta}>
+              {displayW} × {displayH}
+            </span>
+            {previewDims && (
+              <span className={styles.meta}>
+                {previewDims.layout} · zone {previewDims.zone}
+              </span>
             )}
-            {tab === "preview" && luaSource && commands.length === 0 && (
-              <p className={styles.hint}>
-                Could not parse draw commands. Preview works best with direct lcd.drawText and
-                lcd.drawFilledRectangle calls in refresh().
-              </p>
-            )}
-            {tab === "preview" && luaSource && commands.length > 0 && previewHealthMessage && (
-              <p className={styles.hint}>{previewHealthMessage}</p>
-            )}
-            {tab === "radioSim" && luaSource && (
-              <p className={styles.hintMuted}>
-                Radio sim runs real EdgeTX 2.11 firmware with live mock CRSF telemetry. First load may
-                take several seconds.
-              </p>
+            {luaSource && (
+              <span className={styles.liveBadge}>
+                EdgeTX {firmwareLabel} WASM{live ? " · live mock" : ""}
+              </span>
             )}
           </div>
+          {interactiveControls && (
+            <div className={styles.simActionsRow}>
+              <button
+                type="button"
+                className={styles.radioSimInlineOpen}
+                onClick={interactiveControls.openInteractive}
+              >
+                Open interactive sim
+              </button>
+            </div>
+          )}
+          {luaSource && (
+            <p className={styles.hintMuted}>
+              EdgeTX {firmwareLabel} WASM preview — same output as on the radio. First load may take
+              several seconds. Use interactive sim for touch, keys, and sticks (Esc to close).
+            </p>
+          )}
         </div>
-      ) : (
+      </div>
+
+      {tab === "source" && (
         <pre className={variant === "compact" ? styles.sourceCompact : styles.source}>
           {luaSource ?? "// Lua source will appear here after generation"}
         </pre>

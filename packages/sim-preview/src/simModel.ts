@@ -21,6 +21,7 @@ export interface SimWidgetLayoutPlan {
 export const SIM_TELEMETRY_SENSOR_LABELS = [
   "RQLY",
   "TRSS",
+  "TQLY",
   "RxBt",
   "Bat%",
   "Curr",
@@ -228,6 +229,25 @@ telemetrySensors:
   2:
     type: TYPE_CUSTOM
     id1:
+      id: 20
+      subId: 0
+    id2:
+      instance: 8
+    label: TQLY
+    unit: 13
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 0
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  3:
+    type: TYPE_CUSTOM
+    id1:
       id: 8
       subId: 0
     id2:
@@ -244,7 +264,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  3:
+  4:
     type: TYPE_CUSTOM
     id1:
       id: 8
@@ -263,7 +283,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  4:
+  5:
     type: TYPE_CUSTOM
     id1:
       id: 8
@@ -282,7 +302,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  5:
+  6:
     type: TYPE_CUSTOM
     id1:
       id: 8
@@ -301,7 +321,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  6:
+  7:
     type: TYPE_CUSTOM
     id1:
       id: 2
@@ -320,7 +340,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  7:
+  8:
     type: TYPE_CUSTOM
     id1:
       id: 2
@@ -339,7 +359,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  8:
+  9:
     type: TYPE_CUSTOM
     id1:
       id: 2
@@ -358,7 +378,7 @@ telemetrySensors:
       custom:
         ratio: 0
         offset: 0
-  9:
+  10:
     type: TYPE_CUSTOM
     id1:
       id: 33
@@ -401,8 +421,11 @@ view: ${SIM_CUSTOM_SCREEN_VIEW}`;
 }
 
 /** CRSF model YAML, optionally with pre-assigned dashboard widget in screen 0. */
-export function buildSimModelYaml(layoutPlan?: SimWidgetLayoutPlan): string {
-  const base = SIM_MODEL1_YML.trimEnd();
+export function buildSimModelYaml(
+  layoutPlan?: SimWidgetLayoutPlan,
+  edgeTxVersion = "2.11.0"
+): string {
+  const base = SIM_MODEL1_YML.trimEnd().replace(/^semver: .*$/m, `semver: ${edgeTxVersion}`);
   if (!layoutPlan) return `${base}\n`;
   return `${base}\n${buildScreenDataYaml(
     layoutPlan.layoutId,
@@ -436,9 +459,10 @@ export async function patchRadioInternalCrsf(fs: SimFsWriter): Promise<void> {
 /** Overwrite default model1.yml with CRSF + optional dashboard widget assignment. */
 export async function deploySimModel(
   fs: SimFsWriter,
-  layoutPlan?: SimWidgetLayoutPlan
+  layoutPlan?: SimWidgetLayoutPlan,
+  edgeTxVersion = "2.11.0"
 ): Promise<void> {
-  const yaml = buildSimModelYaml(layoutPlan);
+  const yaml = buildSimModelYaml(layoutPlan, edgeTxVersion);
   await fs.fsWriteFile(SIM_MODEL1_PATH, toArrayBuffer(new TextEncoder().encode(yaml)));
   await patchRadioInternalCrsf(fs);
 }

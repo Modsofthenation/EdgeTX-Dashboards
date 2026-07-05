@@ -11,6 +11,7 @@ describe("telemetryBridge", () => {
     assert.equal(link[0], 0xc8);
     assert.equal(link[2], 0x14);
     assert.equal(link[5], 92);
+    assert.equal(link[11], 88);
 
     const battery = frames[1];
     assert.equal(battery[2], 0x08);

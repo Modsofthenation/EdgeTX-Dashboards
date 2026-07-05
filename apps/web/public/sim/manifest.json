@@ -1,11 +1,11 @@
 {
-  "version": "2.11",
+  "defaultVersion": "2.11.0",
   "source": "https://ypwfws8ckruh03m1.public.blob.vercel-storage.com/wasm",
-  "syncedAt": "2026-07-05T03:03:19.885Z",
-  "radios": {
-    "tx15": {
-      "name": "RadioMaster TX15",
-      "wasm": "edgetx-tx15-simulator.wasm",
+  "syncedAt": "2026-07-05T06:14:55.062Z",
+  "versions": {
+    "2.11.0": {
+      "label": "2.11",
+      "wasm": "edgetx-tx15-2-11-simulator.wasm",
       "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
       "size": 5303067,
       "display": {
@@ -13,6 +13,31 @@
         "h": 320,
         "depth": 16
       }
+    },
+    "2.12.0": {
+      "label": "2.12",
+      "wasm": "edgetx-tx15-2-12-simulator.wasm",
+      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
+      "size": 5303067,
+      "display": {
+        "w": 480,
+        "h": 320,
+        "depth": 16
+      },
+      "aliasOf": "2.11.0"
+    }
+  },
+  "radios": {
+    "tx15": {
+      "name": "RadioMaster TX15",
+      "wasm": "edgetx-tx15-simulator.wasm",
+      "display": {
+        "w": 480,
+        "h": 320,
+        "depth": 16
+      },
+      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
+      "size": 5303067
     }
   }
 }

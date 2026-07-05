@@ -12,7 +12,7 @@
 
 
 
-Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in a Web Worker, using `@edgetx/simulator-ui` `WasmRunner` (same stack as [EdgeTX Dev Kit](https://github.com/JeffreyChix/edgetx-dev-kit)). Fast regex preview remains the default.
+Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in a Web Worker, using `@edgetx/simulator-ui` `WasmRunner` (same stack as [EdgeTX Dev Kit](https://github.com/JeffreyChix/edgetx-dev-kit)). **Preview tab** shows the live WASM framebuffer (cropped to `@simulate` zone); **Radio sim tab** opens the interactive overlay.
 
 
 
@@ -42,6 +42,10 @@ Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in 
 
 
 
+**Pinned build:** EdgeTX **2.11** — sha256 `23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5` (5303067 bytes). As of 2026-07-05, the blob host serves the same file for `EDGETX_WASM_VERSION=2.12`; no newer TX15 WASM was available to pin.
+
+
+
 ## Boot sequence (mirrors Dev Kit)
 
 
@@ -58,7 +62,24 @@ Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in 
 
 6. Inject CRSF telemetry each tick via `simuSendTelemetry(mod, 2, …)` (extra bursts while priming before widget load)
 
-7. Interactive overlay auto-opens when boot completes. User input (touch, keys, sticks, switches) forwarded from `@edgetx/simulator-ui` `Simulator` → worker → `SimRuntime.handleInput()` → WASM exports. Full-LCD `@simulate` zones auto double-tap for widget fullscreen; partial zones stay in layout view.
+7. Interactive overlay auto-opens when boot completes. User input (touch, keys, sticks, switches) forwarded from `@edgetx/simulator-ui` `Simulator` → worker → `SimRuntime.handleInput()` → WASM exports. Full-LCD `@simulate` zones auto double-tap for widget fullscreen (30-frame wait, up to 2 attempts, touch at LCD center 240×160); partial zones use zone rect center on the 480×320 framebuffer. Manual **Enter widget fullscreen** button replays the gesture.
+
+
+
+## Preview vs Radio sim (LCD API parity)
+
+
+
+| API | Preview (regex) | Radio sim (WASM) |
+|-----|-----------------|------------------|
+| drawFilledRect / drawLine / drawArc | Approximate | Native |
+| drawAnnulus / drawGauge | Approximate | Native **after widget fullscreen**; pinned EdgeTX 2.11 |
+| drawBitmap | Placeholder | Native PNG from virtual SD (`MODELS/model.png`, 56×40 grey) |
+| getValue / getSourceIndex | Mock | CRSF + model sensors (incl. TQLY downlink LQ) |
+
+
+
+Manual QA: load `packages/sim-preview/src/__tests__/fixtures/drawAnnulusQa.lua` or a widget like `BfFltLoglk` in Radio sim and confirm the center annulus renders after fullscreen.
 
 
 

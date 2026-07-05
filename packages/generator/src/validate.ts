@@ -1,6 +1,7 @@
 import type { SimulateLayoutProfile, ValidationIssue, ValidationResult } from "@widget-gen/shared";
 import { analyzeDrawSurface } from "@widget-gen/shared";
 import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.js";
+import { validateLcdApiUsage } from "./lcdApiValidate.js";
 import type { LayoutArchetypeId } from "./layoutArchetype.js";
 import { getActiveLayoutArchetype } from "./variationContext.js";
 
@@ -274,6 +275,8 @@ export function validateWidgetLua(
     }
     issues.push(...validateStubApiCalls(source));
   }
+
+  issues.push(...validateLcdApiUsage(source));
 
   const errors = issues.filter((i) => i.severity === "error");
   return { valid: errors.length === 0, widgetName, issues };

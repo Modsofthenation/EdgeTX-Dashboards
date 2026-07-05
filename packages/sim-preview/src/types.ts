@@ -1,6 +1,7 @@
 /** Mock telemetry shape shared with apps/web mockTelemetry.ts */
 export interface MockTelemetryValues {
   RQLY: number;
+  TQLY: number;
   "1RSS": number;
   "2RSS": number;
   RxBt: number;
@@ -58,6 +59,10 @@ export interface WidgetSimulateZone {
   zoneY?: number;
   zoneW?: number;
   zoneH?: number;
+  /** Full-framebuffer touch X for fullscreen double-tap (480×320 coords). */
+  fullscreenTapX?: number;
+  /** Full-framebuffer touch Y for fullscreen double-tap (480×320 coords). */
+  fullscreenTapY?: number;
 }
 
 /** Input messages mirroring EdgeTX Dev Kit simulatorHost.handleInput */
@@ -77,6 +82,7 @@ export type SimWorkerRequest =
       type: "init";
       wasmUrl: string;
       radioKey: string;
+      edgeTxVersion?: string;
       source?: string;
       zone?: WidgetSimulateZone;
       mock?: MockTelemetryValues;
@@ -86,6 +92,7 @@ export type SimWorkerRequest =
   | { type: "input"; msg: SimInputMessage }
   | { type: "pause" }
   | { type: "resume" }
+  | { type: "enterWidgetFullscreen" }
   | { type: "dispose" };
 
 /** Messages from sim worker → main thread */
@@ -101,4 +108,6 @@ export interface ExtendedSimulatorExports {
   simuTouchDown?: (x: number, y: number) => void;
   simuTouchUp?: () => void;
   simuCreateDefaults?: () => void;
+  simuLcdGetWidth?: () => number;
+  simuLcdGetHeight?: () => number;
 }

@@ -34,7 +34,7 @@ if (!simOnly) {
   runScript("Sync EdgeTX LuaLS stubs", "sync-edgetx-stubs.mjs");
 }
 
-runScript("Sync EdgeTX WASM firmware (TX15)", "sync-edgetx-wasm.mjs");
+runScript("Ensure EdgeTX WASM firmware (TX15)", "ensure-edgetx-wasm.mjs");
 
 if (simOnly) {
   run("Build @widget-gen/sim-preview", npmCmd, ["run", "build", "-w", "@widget-gen/sim-preview"]);

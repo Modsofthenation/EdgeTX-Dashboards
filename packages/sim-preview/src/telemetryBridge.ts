@@ -52,7 +52,7 @@ function buildLinkFrame(mock: MockTelemetryValues): number[] {
   buf[8] = 4;
   buf[9] = txPowerIndex(mock.TPWR) & 0xff;
   buf[10] = rssiToCrsf(mock["1RSS"] + 5);
-  buf[11] = Math.round(mock.RQLY) & 0xff;
+  buf[11] = Math.round(mock.TQLY) & 0xff;
   buf[12] = 12;
   return Array.from(buf);
 }
@@ -159,6 +159,7 @@ export function injectTelemetryFrames(
 
 export const BASE_MOCK_TELEMETRY: MockTelemetryValues = {
   RQLY: 92,
+  TQLY: 88,
   "1RSS": -67,
   "2RSS": -70,
   RxBt: 16.2,

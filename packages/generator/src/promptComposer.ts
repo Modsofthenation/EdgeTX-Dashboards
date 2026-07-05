@@ -214,6 +214,7 @@ ${ctx?.assignedWidgetName ? `1. Use display name \`${ctx.assignedWidgetName}\` a
 
    - Cache ALL display strings as locals before drawText
    - Put all \`lcd.drawText\`, \`lcd.drawFilledRectangle\`, and \`lcd.drawRectangle\` calls **directly in refresh()** (web preview parses these)
+   - **\`lcd.drawLine(x1,y1,x2,y2,SOLID,color)\`** — 5th arg is line pattern (\`SOLID\`/\`DOTTED\`), not color (WASM crashes if color is 5th arg)
    - Use LCD_W and LCD_H on ${radio.name} (${radio.lcdW}x${radio.lcdH})
 
 6. Cache telemetry with getSourceIndex() in create().

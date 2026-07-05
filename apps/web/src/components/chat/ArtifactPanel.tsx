@@ -21,6 +21,7 @@ interface ArtifactPanelProps {
   artifactLoading?: boolean;
   layoutProfileId?: string;
   radioName?: string | null;
+  edgeTxVersion?: string;
   panelCollapsed?: boolean;
   onTogglePanel?: () => void;
 }
@@ -38,6 +39,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   artifactLoading = false,
   layoutProfileId = "tx15",
   radioName,
+  edgeTxVersion = "2.11.0",
   panelCollapsed = false,
   onTogglePanel,
 }: ArtifactPanelProps) {
@@ -133,6 +135,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               luaSource={artifact?.luaSource ?? null}
               widgetName={artifact?.name ?? null}
               layoutProfileId={layoutProfileId}
+              edgeTxVersion={edgeTxVersion}
               radioName={radioName}
               live={!showPreviewLoader}
               variant="compact"

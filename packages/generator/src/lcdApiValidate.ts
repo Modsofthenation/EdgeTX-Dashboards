@@ -1,0 +1,164 @@
+import type { ValidationIssue } from "@widget-gen/shared";
+import { extractRefreshBody } from "@widget-gen/shared";
+
+const DRAW_LINE_PATTERN = /^(SOLID|DOTTED|\d+)$/;
+
+/** Split a Lua argument list on top-level commas. */
+export function splitTopLevelArgs(argsSource: string): string[] {
+  const args: string[] = [];
+  let depth = 0;
+  let current = "";
+
+  for (let i = 0; i < argsSource.length; i++) {
+    const ch = argsSource[i];
+
+    if (ch === "-" && argsSource[i + 1] === "-") {
+      const nl = argsSource.indexOf("\n", i);
+      i = nl === -1 ? argsSource.length - 1 : nl;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      let j = i + 1;
+      while (j < argsSource.length) {
+        if (argsSource[j] === "\\") {
+          j += 2;
+          continue;
+        }
+        if (argsSource[j] === ch) break;
+        j++;
+      }
+      current += argsSource.slice(i, j + 1);
+      i = j;
+      continue;
+    }
+
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+
+    if (ch === "," && depth === 0) {
+      args.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += ch;
+  }
+
+  if (current.trim()) args.push(current.trim());
+  return args;
+}
+
+/** Extract inner argument strings for lcd.<method>(...) calls in source. */
+export function extractLcdCallArgStrings(source: string, method: string): string[] {
+  const calls: string[] = [];
+  const needle = `lcd.${method}(`;
+  let index = 0;
+
+  while (index < source.length) {
+    const start = source.indexOf(needle, index);
+    if (start === -1) break;
+
+    let i = start + needle.length;
+    let depth = 1;
+    let argsStart = i;
+
+    while (i < source.length && depth > 0) {
+      const ch = source[i];
+      if (ch === "-" && source[i + 1] === "-") {
+        const nl = source.indexOf("\n", i);
+        i = nl === -1 ? source.length : nl + 1;
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        i = skipQuoted(source, i) + 1;
+        continue;
+      }
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      i++;
+    }
+
+    if (depth === 0) {
+      calls.push(source.slice(argsStart, i - 1));
+    }
+    index = i;
+  }
+
+  return calls;
+}
+
+function skipQuoted(source: string, start: number): number {
+  const quote = source[start];
+  let i = start + 1;
+  while (i < source.length) {
+    if (source[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (source[i] === quote) return i;
+    i++;
+  }
+  return source.length - 1;
+}
+
+function looksLikeColorArg(arg: string): boolean {
+  const trimmed = arg.trim();
+  if (!trimmed) return false;
+  if (DRAW_LINE_PATTERN.test(trimmed)) return false;
+  if (/^(WHITE|BLACK|GREY|GRAY|RED|GREEN|BLUE|CYAN|YELLOW|ORANGE|MAGENTA|LIME|LIGHTGREY|DARKGREY)$/i.test(trimmed)) {
+    return true;
+  }
+  if (/^widget\.C_/.test(trimmed)) return true;
+  if (/^lcd\.RGB\s*\(/.test(trimmed)) return true;
+  if (/^(heroColor|accentCol|linkColor|battColor|armColor|armFill|C_[A-Z_]+)$/.test(trimmed)) return true;
+  if (/\+/.test(trimmed) && /(WHITE|CYAN|RIGHT|SMLSIZE|MIDSIZE|DBLSIZE|GREEN|RED|YELLOW|ORANGE|MAGENTA|LIME)/.test(trimmed)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * EdgeTX lcd.drawLine signature: (x1, y1, x2, y2, pattern, [flags]).
+ * Color belongs in flags (6th arg), not pattern (5th).
+ */
+export function validateLcdDrawLineCalls(source: string): ValidationIssue[] {
+  const refreshBody = extractRefreshBody(source);
+  const issues: ValidationIssue[] = [];
+
+  for (const argsSource of extractLcdCallArgStrings(refreshBody, "drawLine")) {
+    const args = splitTopLevelArgs(argsSource);
+    if (args.length <= 4) {
+      issues.push({
+        severity: "error",
+        message:
+          "lcd.drawLine() requires at least 5 arguments (x1, y1, x2, y2, pattern) — use lcd.drawLine(x1, y1, x2, y2, SOLID, color)",
+      });
+      continue;
+    }
+
+    const patternArg = args[4];
+    if (DRAW_LINE_PATTERN.test(patternArg)) continue;
+
+    if (looksLikeColorArg(patternArg)) {
+      issues.push({
+        severity: "error",
+        message:
+          "lcd.drawLine() 5th argument must be SOLID or DOTTED (line pattern), not color — use lcd.drawLine(x1, y1, x2, y2, SOLID, colorFlags)",
+      });
+      continue;
+    }
+
+    issues.push({
+      severity: "error",
+      message:
+        "lcd.drawLine() 5th argument must be SOLID or DOTTED — color belongs in the optional 6th flags argument",
+    });
+  }
+
+  return issues;
+}
+
+export function validateLcdApiUsage(source: string): ValidationIssue[] {
+  return validateLcdDrawLineCalls(source);
+}

@@ -41,8 +41,11 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
                 source: msg.source,
                 zone: msg.zone,
                 mock: msg.mock ?? currentMock ?? undefined,
+                edgeTxVersion: msg.edgeTxVersion,
               }
-            : undefined
+            : msg.edgeTxVersion
+              ? { edgeTxVersion: msg.edgeTxVersion }
+              : undefined
         );
         if (currentMock) {
           runtime.setMockTelemetry(currentMock);
@@ -70,6 +73,10 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
       }
       case "resume": {
         runtime?.resume();
+        break;
+      }
+      case "enterWidgetFullscreen": {
+        runtime?.requestEnterWidgetFullscreen();
         break;
       }
       case "dispose": {

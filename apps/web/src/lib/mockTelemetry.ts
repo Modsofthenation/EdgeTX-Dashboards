@@ -1,5 +1,6 @@
 export interface MockTelemetry {
   RQLY: number;
+  TQLY: number;
   "1RSS": number;
   "2RSS": number;
   RxBt: number;
@@ -26,6 +27,7 @@ export interface MockTelemetry {
 
 export const BASE_MOCK: MockTelemetry = {
   RQLY: 92,
+  TQLY: 88,
   "1RSS": -67,
   "2RSS": -70,
   RxBt: 16.2,
@@ -56,6 +58,7 @@ export function tickMock(base: MockTelemetry, tick: number): MockTelemetry {
   return {
     ...base,
     RQLY: Math.round(clamp(base.RQLY + wave * 4, 60, 100)),
+    TQLY: Math.round(clamp(base.TQLY + wave * 3, 55, 100)),
     "1RSS": Math.round(base["1RSS"] + wave * 2),
     RxBt: round1(base.RxBt + wave * 0.05),
     Curr: round1(base.Curr + wave * 1.2),

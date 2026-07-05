@@ -56,6 +56,7 @@ See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-r
 ## Drawing
 
 - Use `lcd.*` drawing functions only (drawText, drawRectangle, drawFilledRectangle, drawFilledCircle, drawLine, drawGauge, drawCircle, drawArc, drawAnnulus, drawBitmap, etc.).
+- **`lcd.drawLine(x1, y1, x2, y2, pattern, [flags])`** — 5th arg is **`SOLID` or `DOTTED`**, not color. Put color in the 6th `flags` argument: `lcd.drawLine(x1, y1, x2, y2, SOLID, C_BORDER)`.
 - **Rounded panels:** Use `drawFilledCircle` + inset `drawFilledRectangle` bars and optional `drawArc`/`drawLine` borders per `knowledge/design/rounded-card-panels.md`. Do **not** use LVGL for rounded cards unless the user explicitly opts out of web preview.
 - Use EdgeTX literal colors (WHITE, CYAN, LIME, LIGHTGREY, …) or `lcd.RGB(r,g,b)` locals defined in `create()`. See `knowledge/design/edgetx-theme-palettes.md`.
 - Do **not** call `lcd.setColor(COLOR_THEME_*, …)` — it changes the whole radio UI.
@@ -84,6 +85,7 @@ Generated widgets must pass `validateWidget` with `valid: true` before packaging
 - Telemetry sensor names must exist in the selected protocol catalog
 - `---@type WidgetScript` and `---@simulate` annotations (EdgeTX Dev Kit)
 - `lcd.*` / `lvgl.*` calls must match EdgeTX 2.11 stubs when synced
+- **`lcd.drawLine`:** 5th argument must be `SOLID` or `DOTTED`; color goes in 6th flags arg (validator rejects color-as-5th-arg — causes WASM runtime errors)
 
 ## Dev-kit annotations
 

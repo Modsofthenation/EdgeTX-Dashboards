@@ -6,7 +6,8 @@ import dynamic from "next/dynamic";
 import { resolvePreviewDimensions, getSimulateLayoutProfile, isFullLcdSimulateZone } from "@widget-gen/shared";
 import type { MockTelemetryValues, SimFrameData, SimKeyboardMode } from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
-import { useRadioSim, type FrameSubscriber } from "@/lib/radioSim/useRadioSim";
+import { useRadioSim } from "@/lib/radioSim/useRadioSim";
+import { SimFrameCanvas } from "@/components/SimFrameCanvas";
 import styles from "./Preview480x320.module.css";
 
 const SimulatorThemeProvider = dynamic(
@@ -22,39 +23,44 @@ const Simulator = dynamic(
 interface RadioSimPreviewProps {
   luaSource: string;
   layoutProfileId?: string;
+  edgeTxVersion?: string;
   mock: MockTelemetryValues;
   live?: boolean;
+  /** Keep WASM worker alive (pause when false). */
   active: boolean;
+  /** Called when interactive sim can be opened (running) or unavailable. */
+  onInteractiveControls?: (controls: { openInteractive: () => void } | null) => void;
 }
 
 function SimInteractiveOverlay({
   radioProfile,
   previewDims,
+  frame,
   live,
   running,
   simState,
   keyboardMode,
+  firmwareLabel,
+  firmwareNote,
+  showFullscreenButton,
+  onEnterFullscreen,
   onClose,
   onInput,
-  subscribeFrames,
 }: {
   radioProfile: RadioProfile;
   previewDims: ReturnType<typeof resolvePreviewDimensions>;
+  frame: SimFrameData | null;
   live: boolean;
   running: boolean;
   simState: { loading: boolean; error: string | null; progress: number; status: string };
   keyboardMode: SimKeyboardMode;
+  firmwareLabel: string;
+  firmwareNote?: string | null;
+  showFullscreenButton: boolean;
+  onEnterFullscreen: () => void;
   onClose: () => void;
   onInput: (msg: object) => void;
-  subscribeFrames: (subscriber: FrameSubscriber | null) => void;
 }) {
-  const [frame, setFrame] = useState<SimFrameData | null>(null);
-
-  useEffect(() => {
-    subscribeFrames((next) => setFrame(next));
-    return () => subscribeFrames(null);
-  }, [subscribeFrames]);
-
   const frameData = useMemo(() => {
     if (!frame) return null;
     return {
@@ -84,10 +90,20 @@ function SimInteractiveOverlay({
     >
       <div className={styles.radioSimInteractiveBar}>
         <span className={styles.radioSimFullscreenMeta}>
-          {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX WASM · {previewDims.layout} z
+          {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX {firmwareLabel} WASM · {previewDims.layout} z
           {previewDims.zone}
+          {firmwareNote ? <span className={styles.radioSimLiveTag}> · {firmwareNote}</span> : null}
           {live && running && <span className={styles.radioSimLiveTag}> · Live mock telemetry</span>}
         </span>
+        {showFullscreenButton && (
+          <button
+            type="button"
+            className={styles.radioSimInlineOpen}
+            onClick={onEnterFullscreen}
+          >
+            Enter widget fullscreen
+          </button>
+        )}
         <button type="button" className={styles.radioSimFullscreenClose} onClick={onClose}>
           Close
         </button>
@@ -116,12 +132,15 @@ function SimInteractiveOverlay({
 export function RadioSimPreview({
   luaSource,
   layoutProfileId = "tx15",
+  edgeTxVersion = "2.11.0",
   mock,
   live = true,
   active,
+  onInteractiveControls,
 }: RadioSimPreviewProps) {
   const {
     state,
+    firmware,
     wasmSizeMb,
     keyboardMode,
     init,
@@ -130,12 +149,15 @@ export function RadioSimPreview({
     sendInput,
     pause,
     resume,
+    enterWidgetFullscreen,
     subscribeFrames,
     dispose,
   } = useRadioSim();
   const startedRef = useRef(false);
   const loadedSourceRef = useRef<string | null>(null);
+  const loadedFirmwareRef = useRef<string | null>(null);
   const sendInputRef = useRef(sendInput);
+  const [frame, setFrame] = useState<SimFrameData | null>(null);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [radioProfile, setRadioProfile] = useState<RadioProfile | null>(null);
 
@@ -154,6 +176,11 @@ export function RadioSimPreview({
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    subscribeFrames((next) => setFrame(next));
+    return () => subscribeFrames(null);
+  }, [subscribeFrames]);
 
   const layoutProfile = useMemo(() => {
     try {
@@ -177,15 +204,41 @@ export function RadioSimPreview({
       zoneY: previewDims.zoneY,
       zoneW: previewDims.zoneW,
       zoneH: previewDims.zoneH,
+      fullscreenTapX: isFullLcdSimulateZone(previewDims)
+        ? Math.floor(previewDims.lcdW / 2)
+        : Math.floor(previewDims.zoneX + previewDims.zoneW / 2),
+      fullscreenTapY: isFullLcdSimulateZone(previewDims)
+        ? Math.floor(previewDims.lcdH / 2)
+        : Math.floor(previewDims.zoneY + previewDims.zoneH / 2),
     }),
     [previewDims]
   );
 
+  const frameZone = useMemo(
+    () => ({
+      zoneX: previewDims.zoneX,
+      zoneY: previewDims.zoneY,
+      zoneW: previewDims.zoneW,
+      zoneH: previewDims.zoneH,
+    }),
+    [previewDims]
+  );
+
+  const openInteractive = useCallback(() => setOverlayOpen(true), []);
+
   useEffect(() => {
+    if (!onInteractiveControls) return;
     if (active && state.phase === "running") {
-      setOverlayOpen(true);
+      onInteractiveControls({ openInteractive });
+    } else {
+      onInteractiveControls(null);
     }
-  }, [active, state.phase]);
+    return () => onInteractiveControls(null);
+  }, [active, state.phase, openInteractive, onInteractiveControls]);
+
+  useEffect(() => {
+    if (!active) setOverlayOpen(false);
+  }, [active]);
 
   const simState = useMemo(
     () => ({
@@ -197,30 +250,46 @@ export function RadioSimPreview({
     [state]
   );
 
+  const firmwareLabel = firmware?.label ?? edgeTxVersion.replace(/\.0$/, "");
+  const firmwareNote = useMemo(() => {
+    if (!firmware) return null;
+    if (firmware.aliasOf) return `uses ${firmware.aliasOf.replace(/\.0$/, "")} firmware`;
+    if (firmware.fallback) return "nearest available firmware";
+    return null;
+  }, [firmware]);
+
   useEffect(() => {
     if (!active) {
       pause();
-      setOverlayOpen(false);
       return;
     }
 
     resume();
-    if (!startedRef.current) {
-      startedRef.current = true;
-      loadedSourceRef.current = luaSource;
-      init({
-        source: luaSource,
-        zone: simZone,
-        mock,
-      });
+
+    const firmwareChanged = loadedFirmwareRef.current !== edgeTxVersion;
+    if (startedRef.current && !firmwareChanged) return;
+
+    if (startedRef.current && firmwareChanged) {
+      dispose();
     }
-  }, [active, init, pause, resume, luaSource, simZone, mock]);
+
+    startedRef.current = true;
+    loadedFirmwareRef.current = edgeTxVersion;
+    loadedSourceRef.current = luaSource;
+    void init({
+      source: luaSource,
+      zone: simZone,
+      mock,
+      edgeTxVersion,
+    });
+  }, [active, edgeTxVersion, luaSource, simZone, init, pause, resume, dispose]);
 
   useEffect(() => {
     return () => {
       dispose();
       startedRef.current = false;
       loadedSourceRef.current = null;
+      loadedFirmwareRef.current = null;
     };
   }, [dispose]);
 
@@ -238,63 +307,63 @@ export function RadioSimPreview({
 
   if (state.phase === "error") {
     return (
-      <div className={styles.radioSimMessage}>
-        <p>Radio sim unavailable: {state.error}</p>
-        <p className={styles.hint}>
-          Run <code>npm run setup:sim</code>, restart the dev server, and hard-refresh. Or use{" "}
-          <a href="https://github.com/JeffreyChix/edgetx-dev-kit" target="_blank" rel="noreferrer">
-            EdgeTX Dev Kit
-          </a>{" "}
-          in VS Code.
-        </p>
+      <div className={styles.simPreviewRoot}>
+        <div className={styles.radioSimMessage}>
+          <p>EdgeTX preview unavailable: {state.error}</p>
+          <p className={styles.hint}>
+            Restart the dev server (<code>npm run dev</code>) to auto-download firmware, then
+            hard-refresh. Or use{" "}
+            <a href="https://github.com/JeffreyChix/edgetx-dev-kit" target="_blank" rel="noreferrer">
+              EdgeTX Dev Kit
+            </a>{" "}
+            in VS Code.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (state.phase === "idle" || state.phase === "loading-wasm" || state.phase === "booting") {
     return (
-      <div className={styles.radioSimMessage}>
-        <p>{state.status || "Loading Radio sim…"}</p>
-        {wasmSizeMb != null && (
-          <p className={styles.hint}>
-            First load downloads ~{wasmSizeMb} MB of EdgeTX firmware (cached by the browser).
-          </p>
-        )}
-        {state.progress > 0 && (
-          <div className={styles.radioSimProgress} aria-hidden>
-            <div className={styles.radioSimProgressBar} style={{ width: `${state.progress}%` }} />
-          </div>
-        )}
+      <div className={styles.simPreviewRoot}>
+        <div className={styles.radioSimMessage}>
+          <p>{state.status || "Booting EdgeTX preview…"}</p>
+          {wasmSizeMb != null && (
+            <p className={styles.hint}>
+              First load downloads ~{wasmSizeMb} MB of EdgeTX firmware (cached by the browser).
+            </p>
+          )}
+          {state.progress > 0 && (
+            <div className={styles.radioSimProgress} aria-hidden>
+              <div className={styles.radioSimProgressBar} style={{ width: `${state.progress}%` }} />
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className={styles.radioSimInlineRunning}>
-        <p className={styles.radioSimInlineStatus}>EdgeTX simulator running</p>
-        <button
-          type="button"
-          className={styles.radioSimInlineOpen}
-          onClick={() => setOverlayOpen(true)}
-        >
-          Open interactive sim
-        </button>
-      </div>
+    <div className={styles.simPreviewRoot}>
+      <SimFrameCanvas frame={frame} zone={frameZone} />
 
       {overlayOpen && radioProfile && (
         <SimInteractiveOverlay
           radioProfile={radioProfile}
           previewDims={previewDims}
+          frame={frame}
           live={live}
           running={state.phase === "running"}
           simState={simState}
           keyboardMode={keyboardMode}
+          firmwareLabel={firmwareLabel}
+          firmwareNote={firmwareNote}
+          showFullscreenButton={simZone.enterFullscreen === true}
+          onEnterFullscreen={enterWidgetFullscreen}
           onClose={() => setOverlayOpen(false)}
           onInput={stableSendInput}
-          subscribeFrames={subscribeFrames}
         />
       )}
-    </>
+    </div>
   );
 }

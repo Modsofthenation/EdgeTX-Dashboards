@@ -29,10 +29,10 @@ Draw **fill before border and text**. Cache `cr` as a local in `refresh()` (or s
 Outline color `C_BORDER`, same `cr`:
 
 ```lua
-lcd.drawLine(x + cr, y, x + w - cr, y, C_BORDER)
-lcd.drawLine(x + cr, y + h - 1, x + w - cr, y + h - 1, C_BORDER)
-lcd.drawLine(x, y + cr, x, y + h - cr, C_BORDER)
-lcd.drawLine(x + w - 1, y + cr, x + w - 1, y + h - cr, C_BORDER)
+lcd.drawLine(x + cr, y, x + w - cr, y, SOLID, C_BORDER)
+lcd.drawLine(x + cr, y + h - 1, x + w - cr, y + h - 1, SOLID, C_BORDER)
+lcd.drawLine(x, y + cr, x, y + h - cr, SOLID, C_BORDER)
+lcd.drawLine(x + w - 1, y + cr, x + w - 1, y + h - cr, SOLID, C_BORDER)
 lcd.drawArc(x + cr, y + cr, cr, 180, 270, C_BORDER)
 lcd.drawArc(x + w - cr, y + cr, cr, 270, 360, C_BORDER)
 lcd.drawArc(x + cr, y + h - cr, cr, 90, 180, C_BORDER)

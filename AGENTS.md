@@ -15,7 +15,7 @@ An **EdgeTX Lua dashboard generator** for **RadioMaster TX15** (480×320). Users
 ```bash
 npm install
 npm run setup          # recommended: stubs + WASM + patch + build
-npm run setup:sim      # Radio sim only: WASM + patch + sim-preview build
+npm run setup:sim      # Radio sim only: WASM (if missing) + patch + sim-preview build
 npm run build          # shared → sim-preview → generator → web (order matters)
 npm test               # unit tests (shared, sim-preview, generator, web preview)
 npm run test:wasm      # optional: after npm run sync-wasm
@@ -23,7 +23,7 @@ npm run typecheck      # all workspaces
 npm run dev            # web UI at http://localhost:3000 (needs CURSOR_API_KEY)
 npm run generate -- --protocol betaflight "prompt"
 npm run sync-stubs     # fetch stubs/2.11/ if missing
-npm run sync-wasm      # fetch TX15 WASM firmware for Radio sim tab
+npm run sync-wasm      # force re-download TX15 WASM (normally automatic on install/dev)
 ```
 
 **Requires:** Node **22.13+**, `CURSOR_API_KEY` for generation.
@@ -40,7 +40,7 @@ npm run sync-wasm      # fetch TX15 WASM firmware for Radio sim tab
 | `templates/` | `dashboard-starter.lua`, `INSTALL.md.tpl` |
 | `examples/` | Gold-standard reference widget (`tx15-minimal-dashboard.lua`) |
 | `stubs/2.11/` | EdgeTX LuaLS stubs (committed; refresh via `npm run sync-stubs`) |
-| `apps/web/public/sim/` | EdgeTX WASM firmware for Radio sim (refresh via `npm run sync-wasm`) |
+| `apps/web/public/sim/` | EdgeTX WASM firmware for Radio sim (auto-fetched on `npm install` / `npm run dev`; force refresh via `npm run sync-wasm`) |
 | `generated/` | **Gitignored** — agent-written widgets |
 | `dist-output/` | **Gitignored** — packaged zips |
 | `.cursor/rules/edgetx-lua.md` | Lua widget rules injected into generation prompts |
@@ -115,11 +115,10 @@ Warnings do not block download; errors do. Download returns **HTTP 422** when in
 
 ## Working on the web UI
 
-- **Preview tab:** `apps/web/src/lib/luaPreviewEngine.ts` (regex; direct `lcd.*` in `refresh()` only)
-- **Radio sim tab:** Interactive EdgeTX WASM sim — auto-loads the generated widget into the `@simulate` zone on boot (`simModel` `screenData` + `simuLoadWidgetByLayout`), then auto-opens the interactive overlay. `packages/sim-preview` (`SimRuntime.handleInput`), `apps/web/src/workers/edgetxSim.worker.ts`, `@edgetx/simulator-ui` `Simulator` in `RadioSimPreview.tsx`. Touch/keys/sticks forward to firmware; full-LCD zones auto double-tap for widget fullscreen.
+- **Preview tab:** EdgeTX WASM framebuffer (cropped to `@simulate` zone) via `SimFrameCanvas` + `paintSimFrame.ts`. **Open interactive sim** button below the preview opens the full `@edgetx/simulator-ui` overlay (touch/keys/sticks).
 - Mock telemetry: `apps/web/src/lib/mockTelemetry.ts` (shared with CRSF bridge in sim-preview)
 - Optional API auth: `GENERATOR_API_SECRET` (see `.env.example`)
-- Radio sim firmware: `npm run sync-wasm` → `apps/web/public/sim/`
+- Radio sim firmware: auto-downloaded by `scripts/ensure-edgetx-wasm.mjs` on postinstall and `npm run dev` → `apps/web/public/sim/`. Manual refresh: `npm run sync-wasm`. Set `SKIP_WASM_SYNC=1` to skip fetch (e.g. CI without sim).
 
 ## Security
 

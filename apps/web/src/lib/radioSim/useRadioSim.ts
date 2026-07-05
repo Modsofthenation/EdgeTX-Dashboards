@@ -10,6 +10,13 @@ import type {
   SimWorkerResponse,
   WidgetSimulateZone,
 } from "@widget-gen/sim-preview";
+import { DEFAULT_EDGE_TX_VERSION } from "@/lib/edgeTxVersions";
+import {
+  resolveSimFirmware,
+  type SimFirmwareResolution,
+  type SimManifest,
+} from "@/lib/radioSim/simFirmware";
+import { resolveReachableWasmUrl } from "@/lib/radioSim/resolveWasmUrl";
 
 const DEFAULT_STATE: RadioSimState = {
   phase: "idle",
@@ -23,23 +30,37 @@ const FRAME_MIN_INTERVAL_MS = 33;
 
 export type FrameSubscriber = (frame: SimFrameData) => void;
 
+export type RadioSimInitOptions = {
+  source: string;
+  zone?: WidgetSimulateZone;
+  mock?: MockTelemetryValues;
+  edgeTxVersion?: string;
+};
+
+let manifestPromise: Promise<SimManifest> | null = null;
+
+function fetchSimManifest(): Promise<SimManifest> {
+  if (!manifestPromise) {
+    manifestPromise = fetch("/sim/manifest.json")
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load sim manifest (${response.status})`);
+        return response.json() as Promise<SimManifest>;
+      })
+      .catch((err) => {
+        manifestPromise = null;
+        throw err;
+      });
+  }
+  return manifestPromise;
+}
+
 export function useRadioSim() {
   const workerRef = useRef<Worker | null>(null);
   const frameRef = useRef<SimFrameData | null>(null);
   const frameSubscriberRef = useRef<FrameSubscriber | null>(null);
   const lastFrameCommitRef = useRef(0);
   const [state, setState] = useState<RadioSimState>(DEFAULT_STATE);
-  const [wasmSizeMb, setWasmSizeMb] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch("/sim/manifest.json")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((manifest) => {
-        const size = manifest?.radios?.tx15?.size;
-        if (typeof size === "number") setWasmSizeMb(Math.round((size / 1024 / 1024) * 10) / 10);
-      })
-      .catch(() => {});
-  }, []);
+  const [firmware, setFirmware] = useState<SimFirmwareResolution | null>(null);
 
   const ensureWorker = useCallback(() => {
     if (workerRef.current) return workerRef.current;
@@ -74,18 +95,32 @@ export function useRadioSim() {
   }, []);
 
   const init = useCallback(
-    (widget?: { source: string; zone?: WidgetSimulateZone; mock?: MockTelemetryValues }) => {
+    async (widget?: RadioSimInitOptions) => {
       const worker = ensureWorker();
-      setState({ phase: "loading-wasm", progress: 0, status: "Starting…", error: null, keyboardMode: "none" });
-      const req: SimWorkerRequest = {
-        type: "init",
-        wasmUrl: "/sim/edgetx-tx15-simulator.wasm",
-        radioKey: "tx15",
-        source: widget?.source,
-        zone: widget?.zone,
-        mock: widget?.mock,
-      };
-      worker.postMessage(req);
+      const edgeTxVersion = widget?.edgeTxVersion ?? DEFAULT_EDGE_TX_VERSION;
+      setState({ phase: "loading-wasm", progress: 0, status: "Resolving firmware…", error: null, keyboardMode: "none" });
+
+      try {
+        const manifest = await fetchSimManifest();
+        const resolved = resolveSimFirmware(manifest, edgeTxVersion);
+        const wasmUrl = await resolveReachableWasmUrl(resolved, manifest);
+        setFirmware(resolved);
+        setState({ phase: "loading-wasm", progress: 0, status: "Starting…", error: null, keyboardMode: "none" });
+
+        const req: SimWorkerRequest = {
+          type: "init",
+          wasmUrl,
+          radioKey: "tx15",
+          edgeTxVersion: resolved.effectiveVersion,
+          source: widget?.source,
+          zone: widget?.zone,
+          mock: widget?.mock,
+        };
+        worker.postMessage(req);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setState({ phase: "error", progress: 0, status: "Error", error: message, keyboardMode: "none" });
+      }
     },
     [ensureWorker]
   );
@@ -117,12 +152,14 @@ export function useRadioSim() {
 
   const pause = useCallback(() => {
     workerRef.current?.postMessage({ type: "pause" } satisfies SimWorkerRequest);
-    frameSubscriberRef.current = null;
-    lastFrameCommitRef.current = 0;
   }, []);
 
   const resume = useCallback(() => {
     workerRef.current?.postMessage({ type: "resume" } satisfies SimWorkerRequest);
+  }, []);
+
+  const enterWidgetFullscreen = useCallback(() => {
+    workerRef.current?.postMessage({ type: "enterWidgetFullscreen" } satisfies SimWorkerRequest);
   }, []);
 
   const subscribeFrames = useCallback((subscriber: FrameSubscriber | null) => {
@@ -140,11 +177,16 @@ export function useRadioSim() {
     frameRef.current = null;
     frameSubscriberRef.current = null;
     lastFrameCommitRef.current = 0;
+    setFirmware(null);
     setState(DEFAULT_STATE);
   }, []);
 
+  const wasmSizeMb =
+    firmware?.size != null ? Math.round((firmware.size / 1024 / 1024) * 10) / 10 : null;
+
   return {
     state,
+    firmware,
     wasmSizeMb,
     keyboardMode: state.keyboardMode,
     init,
@@ -153,6 +195,7 @@ export function useRadioSim() {
     sendInput,
     pause,
     resume,
+    enterWidgetFullscreen,
     subscribeFrames,
     dispose,
   };
