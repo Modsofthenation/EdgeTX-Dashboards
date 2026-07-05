@@ -200,7 +200,7 @@ local function refresh(widget, event, touchState)
     lcd.drawFilledCircle(leftBarX + crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
     lcd.drawFilledCircle(leftBarX + barW - crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
 
-    lcd.drawText(leftBarX + 8, topBarY + 4, "LINK", SMLSIZE + GREY)
+    lcd.drawText(leftBarX + 8, topBarY + 4, "LINK", SMLSIZE + LIGHTGREY)
     lcd.drawText(leftBarX + barW - 8, topBarY + 4, rqlyStr, SMLSIZE + RIGHT + CYAN)
 
     local trackX = leftBarX + 8
@@ -221,7 +221,7 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledCircle(rightBarX + crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
   lcd.drawFilledCircle(rightBarX + barW - crSm, topBarY + topBarH - crSm, crSm, widget.C_CARD)
 
-  lcd.drawText(rightBarX + 8, topBarY + 4, "BATT", SMLSIZE + GREY)
+  lcd.drawText(rightBarX + 8, topBarY + 4, "BATT", SMLSIZE + LIGHTGREY)
   lcd.drawText(rightBarX + barW - 8, topBarY + 4, batPctStr, SMLSIZE + RIGHT + ORANGE)
 
   local battTrackX = rightBarX + 8
@@ -249,33 +249,37 @@ local function refresh(widget, event, touchState)
   local heroW = math.floor(w * 0.52)
   local gaugeCx = math.floor(heroW / 2)
   local gaugeCy = mainTop + math.floor(mainH / 2)
-  local rOut = 54
   local rIn = 42
+  local rOut = 56
   local startA = 135
   local span = 270
   local trackEndA = startA + span
   local valA = startA + span * (batPctVal / 100)
 
-  lcd.drawFilledCircle(gaugeCx, gaugeCy, rOut + 2, DARKGREY)
   if trackEndA > 360 then
-    lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, 360, GREY)
-    lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, 0, trackEndA - 360, GREY)
+    lcd.drawAnnulus(gaugeCx, gaugeCy, rIn, rOut, startA, 360, GREY)
+    lcd.drawAnnulus(gaugeCx, gaugeCy, rIn, rOut, 0, trackEndA - 360, GREY)
   else
-    lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, trackEndA, GREY)
+    lcd.drawAnnulus(gaugeCx, gaugeCy, rIn, rOut, startA, trackEndA, GREY)
   end
   if batPctVal > 0 then
     if valA > 360 then
-      lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, 360, ORANGE)
-      lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, 0, valA - 360, ORANGE)
+      lcd.drawAnnulus(gaugeCx, gaugeCy, rIn, rOut, startA, 360, ORANGE)
+      lcd.drawAnnulus(gaugeCx, gaugeCy, rIn, rOut, 0, valA - 360, ORANGE)
     else
-      lcd.drawAnnulus(gaugeCx, gaugeCy, rOut, rIn, startA, valA, ORANGE)
+      lcd.drawAnnulus(gaugeCx, gaugeCy, rIn, rOut, startA, valA, ORANGE)
     end
   end
 
+  lcd.drawFilledCircle(gaugeCx, gaugeCy, rIn - 4, BLACK)
+
   lcd.drawText(gaugeCx, gaugeCy - 18, voltsStr, DBLSIZE + CENTER + ORANGE)
-  lcd.drawText(gaugeCx, gaugeCy + 2, "V", SMLSIZE + CENTER + GREY)
-  lcd.drawText(gaugeCx, gaugeCy + 20, capaStr, MIDSIZE + CENTER + WHITE)
-  lcd.drawText(gaugeCx, gaugeCy + 38, "mAh", SMLSIZE + CENTER + GREY)
+  lcd.drawText(gaugeCx, gaugeCy + 2, "V", SMLSIZE + CENTER + LIGHTGREY)
+  lcd.drawText(gaugeCx, gaugeCy + 18, capaStr, MIDSIZE + CENTER + WHITE)
+  lcd.drawText(gaugeCx, gaugeCy + 34, "mAh", SMLSIZE + CENTER + LIGHTGREY)
+  if batPctVal > 0 then
+    lcd.drawText(gaugeCx, gaugeCy + 50, batPctStr, SMLSIZE + CENTER + ORANGE)
+  end
 
   local cardX = heroW + pad
   local cardW = w - cardX - pad
@@ -289,28 +293,21 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledCircle(cardX + cr, cardY + cardH - cr, cr, widget.C_CARD)
   lcd.drawFilledCircle(cardX + cardW - cr, cardY + cardH - cr, cr, widget.C_CARD)
 
-  lcd.drawLine(cardX + cr, cardY, cardX + cardW - cr, cardY, SOLID, widget.C_BORDER)
-  lcd.drawLine(cardX + cr, cardY + cardH - 1, cardX + cardW - cr, cardY + cardH - 1, SOLID, widget.C_BORDER)
-  lcd.drawLine(cardX, cardY + cr, cardX, cardY + cardH - cr, SOLID, widget.C_BORDER)
-  lcd.drawLine(cardX + cardW - 1, cardY + cr, cardX + cardW - 1, cardY + cardH - cr, SOLID, widget.C_BORDER)
-  lcd.drawArc(cardX + cr, cardY + cr, cr, 270, 360, widget.C_BORDER)
-  lcd.drawArc(cardX + cardW - cr, cardY + cr, cr, 0, 90, widget.C_BORDER)
-  lcd.drawArc(cardX + cardW - cr, cardY + cardH - cr, cr, 90, 180, widget.C_BORDER)
-  lcd.drawArc(cardX + cr, cardY + cardH - cr, cr, 180, 270, widget.C_BORDER)
+  lcd.drawFilledRectangle(cardX, cardY, cardW, 2, MAGENTA)
 
-  lcd.drawText(cardX + 12, cardY + 10, "POWER", SMLSIZE + GREY)
+  lcd.drawText(cardX + 12, cardY + 10, "POWER", SMLSIZE + LIGHTGREY)
   lcd.drawText(cardX + 12, cardY + 26, ampsStr, MIDSIZE + CYAN)
-  lcd.drawText(cardX + 12, cardY + 46, "A", SMLSIZE + GREY)
+  lcd.drawText(cardX + 12, cardY + 46, "A", SMLSIZE + LIGHTGREY)
 
-  lcd.drawText(cardX + 12, cardY + 68, "USED", SMLSIZE + GREY)
+  lcd.drawText(cardX + 12, cardY + 68, "USED", SMLSIZE + LIGHTGREY)
   lcd.drawText(cardX + 12, cardY + 84, capaStr, MIDSIZE + ORANGE)
-  lcd.drawText(cardX + 12, cardY + 104, "mAh", SMLSIZE + GREY)
+  lcd.drawText(cardX + 12, cardY + 104, "mAh", SMLSIZE + LIGHTGREY)
 
   if widget.options.ShowAtt == 1 then
     lcd.drawText(cardX + cardW - 12, cardY + 26, rollStr, MIDSIZE + RIGHT + WHITE)
-    lcd.drawText(cardX + cardW - 12, cardY + 42, "R", SMLSIZE + RIGHT + GREY)
+    lcd.drawText(cardX + cardW - 12, cardY + 42, "R", SMLSIZE + RIGHT + LIGHTGREY)
     lcd.drawText(cardX + cardW - 12, cardY + 68, ptchStr, MIDSIZE + RIGHT + WHITE)
-    lcd.drawText(cardX + cardW - 12, cardY + 84, "P", SMLSIZE + RIGHT + GREY)
+    lcd.drawText(cardX + cardW - 12, cardY + 84, "P", SMLSIZE + RIGHT + LIGHTGREY)
   end
 
   if widget.options.ShowGPS == 1 then

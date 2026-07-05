@@ -277,12 +277,52 @@ export function validateRoundedPanelArcCalls(source: string): ValidationIssue[] 
   return issues;
 }
 
+/**
+ * drawAnnulus: r1 = inner (smaller), r2 = outer (larger). Swapped radii draw nothing on radio.
+ */
+export function validateDrawAnnulusRadiusOrder(source: string): ValidationIssue[] {
+  if (!source.includes("drawAnnulus")) return [];
+
+  const issues: ValidationIssue[] = [];
+
+  for (const argsSource of extractCallArgStrings(source, "lcd", "drawAnnulus")) {
+    const args = splitTopLevelArgs(argsSource);
+    if (args.length < 4) continue;
+
+    const r1 = args[2].trim();
+    const r2 = args[3].trim();
+
+    if (/rOut|r_outer|outer/i.test(r1) && /rIn|r_inner|inner/i.test(r2)) {
+      issues.push({
+        severity: "error",
+        message:
+          "lcd.drawAnnulus(x, y, r1, r2, ...) — r1 must be inner (smaller), r2 outer (larger); use drawAnnulus(cx, cy, rIn, rOut, ...)",
+      });
+      break;
+    }
+
+    const n1 = Number(r1);
+    const n2 = Number(r2);
+    if (Number.isFinite(n1) && Number.isFinite(n2) && n1 > n2) {
+      issues.push({
+        severity: "error",
+        message:
+          "lcd.drawAnnulus radii appear reversed (first > second) — r1 must be inner radius, r2 outer radius",
+      });
+      break;
+    }
+  }
+
+  return issues;
+}
+
 export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
   return [
     ...validateLcdDrawLineCalls(source),
     ...validateBitmapGetSizeCalls(source),
     ...validateGlobalGetSizeCalls(source),
     ...validateRoundedPanelArcCalls(source),
+    ...validateDrawAnnulusRadiusOrder(source),
   ];
 }
 

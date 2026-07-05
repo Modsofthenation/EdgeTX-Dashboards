@@ -10,8 +10,8 @@ end
 local function refresh()
   lcd.clear()
   lcd.drawFilledRectangle(0, 0, 480, 320, GREY)
-  lcd.drawAnnulus(240, 160, 72, 52, 0, 270, CYAN, 0)
-  lcd.drawAnnulus(240, 160, 72, 52, 270, 90, DARKGREY, 0)
+  lcd.drawAnnulus(240, 160, 52, 72, 0, 270, CYAN)
+  lcd.drawAnnulus(240, 160, 52, 72, 270, 90, DARKGREY)
   lcd.drawText(188, 152, "ANNULUS QA", SMLSIZE + WHITE)
 end
 

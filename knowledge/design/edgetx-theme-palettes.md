@@ -111,12 +111,17 @@ local span = 270
 local trackEndA = startA + span
 local valA = startA + span * (pct / 100)
 
-lcd.drawFilledCircle(cx, cy, rOut + 2, DARKGREY)
+local rIn, rOut = 42, 56
+local startA = 135
+local span = 270
+local trackEndA = startA + span
+local valA = startA + span * (pct / 100)
+
 if trackEndA > 360 then
-  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, 360, GREY)
-  lcd.drawAnnulus(cx, cy, rOut, rIn, 0, trackEndA - 360, GREY)
+  lcd.drawAnnulus(cx, cy, rIn, rOut, startA, 360, GREY)
+  lcd.drawAnnulus(cx, cy, rIn, rOut, 0, trackEndA - 360, GREY)
 else
-  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, trackEndA, GREY)
+  lcd.drawAnnulus(cx, cy, rIn, rOut, startA, trackEndA, GREY)
 end
 -- Apply the same split when valA > 360 for the fill color
 lcd.drawText(cx, cy - 6, pctStr, MIDSIZE + CENTER + WHITE)

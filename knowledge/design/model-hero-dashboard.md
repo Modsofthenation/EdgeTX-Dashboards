@@ -39,7 +39,18 @@ Dim overlay: `local BG_DIM = 10` in `create()`, reuse in `refresh()`.
 
 ## Rotary battery gauge (`drawAnnulus`)
 
-**Angles:** same as `drawArc` — `0°` = up, clockwise (`90°` = right, `180°` = down).
+**Radius order (critical):** `lcd.drawAnnulus(x, y, r1, r2, start, end, color)` — **`r1` = inner (smaller), `r2` = outer (larger)**. EdgeTX C++ uses `internalRadius, externalRadius`. Passing `rOut, rIn` draws nothing; you only see a `drawFilledCircle` backdrop.
+
+```lua
+local rIn = 42
+local rOut = 56
+-- WRONG — ring invisible on radio
+lcd.drawAnnulus(cx, cy, rOut, rIn, startA, endA, GREY)
+-- RIGHT
+lcd.drawAnnulus(cx, cy, rIn, rOut, startA, endA, GREY)
+```
+
+**Angles:** `0°` = up, clockwise (`90°` = right, `180°` = down).
 
 - Default arc: **270° sweep** opening at the bottom — `startA = 135`, full track ends at `startA + 270` (405° ≡ 45°).
 - On some radios, `endAngle > 360` does not render — **split the track** (all `lcd.drawAnnulus` calls must be **directly in `refresh()`**, not inside helpers — web preview requirement):
@@ -52,20 +63,24 @@ local valA = startA + span * (batPct / 100)
 
 lcd.drawFilledCircle(cx, cy, rOut + 2, DARKGREY)
 if trackEndA > 360 then
-  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, 360, GREY)
-  lcd.drawAnnulus(cx, cy, rOut, rIn, 0, trackEndA - 360, GREY)
+  lcd.drawAnnulus(cx, cy, rIn, rOut, startA, 360, GREY)
+  lcd.drawAnnulus(cx, cy, rIn, rOut, 0, trackEndA - 360, GREY)
 else
-  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, trackEndA, GREY)
+  lcd.drawAnnulus(cx, cy, rIn, rOut, startA, trackEndA, GREY)
 end
 if batPct > 0 then
   if valA > 360 then
-    lcd.drawAnnulus(cx, cy, rOut, rIn, startA, 360, ORANGE)
-    lcd.drawAnnulus(cx, cy, rOut, rIn, 0, valA - 360, ORANGE)
+    lcd.drawAnnulus(cx, cy, rIn, rOut, startA, 360, ORANGE)
+    lcd.drawAnnulus(cx, cy, rIn, rOut, 0, valA - 360, ORANGE)
   else
-    lcd.drawAnnulus(cx, cy, rOut, rIn, startA, valA, ORANGE)
+    lcd.drawAnnulus(cx, cy, rIn, rOut, startA, valA, ORANGE)
   end
 end
 ```
+
+Do **not** paint a solid `drawFilledCircle` at `rOut` behind the ring — it hides the gauge when annulus fails. Use a small inner disc only (`rIn - 4`, `BLACK`) **after** the annulus for text contrast.
+
+**Side card borders:** skip `drawLine`/`drawArc` on rounded cards over busy backgrounds — corner hooks are visible. Prefer fill-only panel + **2px top accent stripe** (`lcd.drawFilledRectangle(cardX, cardY, cardW, 2, MAGENTA)`).
 
 Center the gauge in the **left column** (~50–52% of width); place the power/attitude card in the right column with `cardX = heroW + pad`.
 

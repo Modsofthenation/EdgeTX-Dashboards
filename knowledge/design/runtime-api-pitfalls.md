@@ -82,6 +82,18 @@ local rollDeg = math.floor(roll + 0.5)
 -- If values look like radians (|v| <= 2), use: math.floor(roll * 57.3 + 0.5)
 ```
 
+## lcd.drawAnnulus — inner radius first
+
+**Signature:** `lcd.drawAnnulus(x, y, r1, r2, start, end [, flags])` where **`r1` = inner (smaller)** and **`r2` = outer (larger)**.
+
+```lua
+-- WRONG — ring invisible; only a filled backdrop circle shows
+lcd.drawAnnulus(cx, cy, rOut, rIn, 135, 405, GREY)
+
+-- RIGHT
+lcd.drawAnnulus(cx, cy, rIn, rOut, 135, 405, GREY)
+```
+
 ## lcd.drawAnnulus — angles > 360°
 
 Same angle convention as `drawArc` (`0°` = up, clockwise). A 270° arc from `startA = 135` ends at `405°`. Some radios skip arcs when `endAngle > 360` — **split** into two calls (`startA`→`360`, then `0`→remainder). See `model-hero-dashboard.md`.

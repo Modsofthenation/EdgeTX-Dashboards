@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateRoundedPanelArcCalls } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateDrawAnnulusRadiusOrder, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateRoundedPanelArcCalls } from "../lcdApiValidate.js";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -95,5 +95,29 @@ end`;
   it("ignores Bitmap.getSize (handled separately)", () => {
     const source = `local w, h = Bitmap.getSize(modelBmp)`;
     assert.deepEqual(validateGlobalGetSizeCalls(source), []);
+  });
+});
+
+describe("validateDrawAnnulusRadiusOrder", () => {
+  it("rejects rOut, rIn argument order", () => {
+    const source = `local function refresh()
+  lcd.drawAnnulus(cx, cy, rOut, rIn, 135, 360, GREY)
+end`;
+    const issues = validateDrawAnnulusRadiusOrder(source);
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].message, /rIn, rOut/);
+  });
+
+  it("accepts rIn, rOut argument order", () => {
+    const source = `local function refresh()
+  lcd.drawAnnulus(cx, cy, rIn, rOut, 135, 360, GREY)
+end`;
+    assert.deepEqual(validateDrawAnnulusRadiusOrder(source), []);
+  });
+
+  it("rejects numeric radii when first > second", () => {
+    const source = `lcd.drawAnnulus(120, 140, 54, 42, 0, 270, GREY)`;
+    const issues = validateDrawAnnulusRadiusOrder(source);
+    assert.equal(issues.length, 1);
   });
 });
