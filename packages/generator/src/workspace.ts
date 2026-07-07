@@ -1,4 +1,5 @@
-import { readFileSync, existsSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import type { SimulateLayoutProfile } from "@widget-gen/shared";
 import { ensureDevKitAnnotations } from "@widget-gen/shared";
 import { loadSimulateLayoutProfile } from "./knowledge.js";
@@ -60,6 +61,20 @@ export class WidgetWorkspace {
   prepareForRadio(workspaceKey: string, radioId: string): ReadWidgetResult {
     const profile = loadSimulateLayoutProfile(radioId);
     return this.prepareSource(workspaceKey, profile);
+  }
+
+  writeSource(workspaceKey: string, source: string): ReadWidgetResult {
+    let path: string;
+    try {
+      path = getWidgetLuaPathForKey(workspaceKey);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { ok: false, message: msg };
+    }
+
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, source, "utf-8");
+    return { ok: true, source, mutated: true };
   }
 }
 

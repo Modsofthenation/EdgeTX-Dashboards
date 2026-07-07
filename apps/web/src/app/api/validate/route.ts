@@ -4,6 +4,7 @@ import {
   isTelemetryProtocol,
   sanitizeWidgetName,
   validateWidgetRelease,
+  validateWidgetSource,
 } from "@/server/generatorFacade";
 
 export const runtime = "nodejs";
@@ -45,5 +46,31 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const result = validateWidgetRelease(safeName, protocol, radioId);
+  return Response.json(result);
+}
+
+export async function POST(request: Request): Promise<Response> {
+  const authErr = checkApiAuth(request);
+  if (authErr) return authErr;
+
+  let body: { source?: string; protocol?: string; radioId?: string };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const source = body.source?.trim();
+  if (!source) {
+    return Response.json({ error: "source is required" }, { status: 400 });
+  }
+
+  const protocol = body.protocol ?? "betaflight";
+  if (!isTelemetryProtocol(protocol)) {
+    return Response.json({ error: "Invalid protocol" }, { status: 400 });
+  }
+
+  const radioId = body.radioId ?? "tx15";
+  const result = validateWidgetSource(source, protocol, { radioId, strictTelemetry: true });
   return Response.json(result);
 }

@@ -1,5 +1,11 @@
 import { checkApiAuth } from "@/lib/apiSecurity";
-import { readWidgetLuaSource, resolveWidgetWorkspaceFromSession } from "@/server/generatorFacade";
+import {
+  isTelemetryProtocol,
+  readWidgetLuaSource,
+  resolveWidgetWorkspaceFromSession,
+  validateWidgetSource,
+  writeWidgetLuaSource,
+} from "@/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,4 +49,60 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   return new Response(widget.source, { headers });
+}
+
+export async function PUT(request: Request): Promise<Response> {
+  const authErr = checkApiAuth(request);
+  if (authErr) return authErr;
+
+  let body: {
+    source?: string;
+    sessionId?: string;
+    instanceId?: string;
+    name?: string;
+    protocol?: string;
+    radioId?: string;
+  };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const source = body.source?.trim();
+  if (!source) {
+    return Response.json({ error: "source is required" }, { status: 400 });
+  }
+
+  const resolved = resolveWidgetWorkspaceFromSession(
+    body.sessionId ?? null,
+    body.instanceId ?? null,
+    body.name ?? null
+  );
+  if (resolved.pending || !resolved.workspaceKey) {
+    return Response.json({ error: "Workspace not found" }, { status: 404 });
+  }
+
+  const protocol = body.protocol ?? "betaflight";
+  if (!isTelemetryProtocol(protocol)) {
+    return Response.json({ error: "Invalid protocol" }, { status: 400 });
+  }
+
+  const radioId = body.radioId ?? "tx15";
+  const validation = validateWidgetSource(source, protocol, { radioId, strictTelemetry: true });
+
+  if (!validation.valid) {
+    return Response.json(
+      { valid: false, issues: validation.issues, error: "Validation failed" },
+      { status: 422 }
+    );
+  }
+
+  writeWidgetLuaSource(resolved.workspaceKey, source);
+
+  return Response.json({
+    valid: true,
+    issues: validation.issues,
+    workspaceKey: resolved.workspaceKey,
+  });
 }

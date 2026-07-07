@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
+import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
@@ -166,6 +167,17 @@ export const ArtifactPanel = memo(function ArtifactPanel({
           {artifact && (
             <>
               <div className={styles.actions}>
+                <Link
+                  href={`/editor?${new URLSearchParams({
+                    ...(sessionId ? { sessionId } : {}),
+                    ...(artifact.instanceId
+                      ? { instanceId: artifact.instanceId }
+                      : { name: artifact.name }),
+                  }).toString()}`}
+                  className={styles.editLayoutBtn}
+                >
+                  Edit layout
+                </Link>
                 <button
                   type="button"
                   className={styles.downloadBtn}

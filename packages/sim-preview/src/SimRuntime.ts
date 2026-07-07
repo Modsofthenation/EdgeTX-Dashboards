@@ -63,6 +63,9 @@ export class SimRuntime {
   private callbacks: SimRuntimeCallbacks;
   private paused = false;
   private edgeTxVersion = "2.11.0";
+  /** Coalesces rapid hot-reloads (e.g. editor drag) into one FS write at a time. */
+  private loadWidgetChain: Promise<void> = Promise.resolve();
+  private loadWidgetPending: { source: string; zone?: WidgetSimulateZone } | null = null;
 
   constructor(
     private wasmUrl: string,
@@ -171,15 +174,39 @@ export class SimRuntime {
   }
 
   async loadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
-    this.scriptLaunched = false;
+    this.loadWidgetPending = { source, zone };
+    this.loadWidgetChain = this.loadWidgetChain.then(() => this.flushPendingLoadWidget());
+    await this.loadWidgetChain;
+  }
+
+  private async flushPendingLoadWidget(): Promise<void> {
+    while (this.loadWidgetPending) {
+      const pending = this.loadWidgetPending;
+      this.loadWidgetPending = null;
+      await this.applyLoadWidget(pending.source, pending.zone);
+    }
+  }
+
+  private async applyLoadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
     this.fullscreenTap = null;
-    this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
     await this.deployWidget(source);
     const runner = this.runner;
     if (runner) {
       await deploySimModel(runner, this.layoutPlanFrom(source, zone), this.edgeTxVersion);
     }
     this.pendingWidget = { source, zone };
+
+    // Hot reload: firmware is already running — relaunch widget immediately so
+    // refresh() picks up the rewritten main.lua (waiting 12 frames is first-boot only).
+    if (runner && this.loopRunning) {
+      this.scriptLaunched = true;
+      this.widgetLaunchDelayFrames = 0;
+      this.launchWidget(source, zone);
+      return;
+    }
+
+    this.scriptLaunched = false;
+    this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
   }
 
   setMockTelemetry(mock: MockTelemetryValues): void {
@@ -207,6 +234,8 @@ export class SimRuntime {
     this.scriptLaunched = false;
     this.pendingWidget = null;
     this.fullscreenTap = null;
+    this.loadWidgetPending = null;
+    this.loadWidgetChain = Promise.resolve();
     if (this.runner) {
       await this.restoreModels();
       this.runner.stopSim();

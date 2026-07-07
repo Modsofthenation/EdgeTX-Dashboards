@@ -175,6 +175,28 @@
 .actions {
   margin-top: 0.65rem;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.editLayoutBtn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface);
+  text-decoration: none;
+}
+
+.editLayoutBtn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
 }
 
 .downloadBtn {

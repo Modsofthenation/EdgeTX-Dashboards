@@ -29,6 +29,7 @@ import {
   validateGenerateRequest,
   validatePromptImages,
   validateWidgetForRelease,
+  validateWidgetSource,
   WidgetValidationError,
 } from "@widget-gen/generator";
 
@@ -45,6 +46,7 @@ export {
   WidgetValidationError,
   isWidgetInstanceId,
   sanitizeWidgetInstanceId,
+  validateWidgetSource,
 };
 
 export function getDataDirectory(): string {

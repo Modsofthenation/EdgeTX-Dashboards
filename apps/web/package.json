@@ -14,10 +14,12 @@
     "test:stream": "npx --yes tsx --test src/lib/__tests__/generationStreamClient.test.ts",
     "test:chat": "npx --yes tsx --test src/lib/db/__tests__/chatStore.test.ts",
     "test:sim-firmware": "npx --yes tsx --test src/lib/__tests__/simFirmware.test.ts",
-    "test": "npm run test:preview && npm run test:versions && npm run test:stream && npm run test:chat && npm run test:sim-firmware"
+    "test:editor": "npx --yes tsx --test src/lib/__tests__/editorSmoke.test.ts",
+    "test": "npm run test:preview && npm run test:versions && npm run test:stream && npm run test:chat && npm run test:sim-firmware && npm run test:editor"
   },
   "dependencies": {
     "@edgetx/simulator-ui": "^0.1.0",
+    "@widget-gen/editor-core": "*",
     "@widget-gen/generator": "*",
     "@widget-gen/layout-verify": "*",
     "@widget-gen/shared": "*",

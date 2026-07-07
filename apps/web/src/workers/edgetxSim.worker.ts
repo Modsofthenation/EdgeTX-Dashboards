@@ -54,8 +54,13 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
       }
       case "loadWidget": {
         if (!runtime) throw new Error("Simulator not initialized");
-        await runtime.loadWidget(msg.source, msg.zone);
-        if (currentMock) runtime.setMockTelemetry(currentMock);
+        try {
+          await runtime.loadWidget(msg.source, msg.zone);
+          if (currentMock) runtime.setMockTelemetry(currentMock);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          post({ type: "log", text: `Widget reload failed: ${message}` });
+        }
         break;
       }
       case "setMock": {
