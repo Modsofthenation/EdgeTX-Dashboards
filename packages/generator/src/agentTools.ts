@@ -142,7 +142,7 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
 
     listTelemetrySensors: {
       description:
-        "List validated telemetry sensor names for a protocol. Use only these names in getValue/getSourceIndex calls.",
+        "Optional: list telemetry sensors filtered by category. Prefer the sensor catalog already inlined in the generation prompt.",
       inputSchema: {
         type: "object",
         properties: {
@@ -165,12 +165,17 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           category === "all"
             ? catalog.sensors
             : catalog.sensors.filter((s) => s.category === category);
-        return JSON.stringify({ protocol: catalog.label, sensors, setupNotes: catalog.setupNotes }, null, 2);
+        // Compact payload — names + units only (prompt already has the full list).
+        return JSON.stringify({
+          protocol: catalog.protocol,
+          sensors: sensors.map((s) => ({ name: s.name, unit: s.unit, category: s.category })),
+        });
       },
     },
 
     queryEdgeTxDocs: {
-      description: "Query the EdgeTX Lua documentation via GitBook ask API.",
+      description:
+        "Query EdgeTX Lua docs only when a specific API signature is unclear. Prefer runtime-api-pitfalls already in the prompt — avoid this tool on the happy path.",
       inputSchema: {
         type: "object",
         properties: {
@@ -195,7 +200,7 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
 
     packageWidget: {
       description:
-        "Package a generated dashboard into a zip for SD card deployment (WIDGETS/<displayName>/main.lua plus any SCRIPTS/TOOLS or SCRIPTS/TELEMETRY companions).",
+        "Optional: package a validated dashboard into a zip. Prefer letting the server package after validateWidget succeeds — only call this if you need an immediate zip mid-session.",
       inputSchema: {
         type: "object",
         properties: {
@@ -224,7 +229,7 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
 
     writeInstallGuide: {
       description:
-        "Generate INSTALL.md for a dashboard (and companion scripts if present) based on protocol and radio profile.",
+        "Optional: write INSTALL.md. Prefer letting the server generate the install guide during packaging after validateWidget succeeds.",
       inputSchema: {
         type: "object",
         properties: {

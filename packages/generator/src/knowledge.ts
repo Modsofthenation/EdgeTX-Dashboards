@@ -36,12 +36,33 @@ export function getRepoRoot(): string {
   );
 }
 
+const textFileCache = new Map<string, string>();
+const radioCache = new Map<string, RadioProfile>();
+const catalogCache = new Map<TelemetryProtocol, TelemetryCatalog>();
+
+function readCachedText(path: string): string {
+  const hit = textFileCache.get(path);
+  if (hit !== undefined) return hit;
+  const text = readFileSync(path, "utf-8");
+  textFileCache.set(path, text);
+  return text;
+}
+
+function readCachedTextIfExists(path: string): string {
+  if (!existsSync(path)) return "";
+  return readCachedText(path);
+}
+
 export function loadRadioProfile(radioId: string): RadioProfile {
+  const cached = radioCache.get(radioId);
+  if (cached) return cached;
   const path = join(getRepoRoot(), "knowledge", "radios", `${radioId}.json`);
   if (!existsSync(path)) {
     throw new Error(`Radio profile not found: ${radioId}`);
   }
-  return JSON.parse(readFileSync(path, "utf-8")) as RadioProfile;
+  const profile = JSON.parse(readCachedText(path)) as RadioProfile;
+  radioCache.set(radioId, profile);
+  return profile;
 }
 
 /** Layout profile key used for simulate zones and preview (defaults to radio id). */
@@ -74,34 +95,36 @@ const PROTOCOL_FILES: Record<TelemetryProtocol, string> = {
 };
 
 export function loadTelemetryCatalog(protocol: TelemetryProtocol): TelemetryCatalog {
+  const cached = catalogCache.get(protocol);
+  if (cached) return cached;
   const filename = PROTOCOL_FILES[protocol];
   const path = join(getRepoRoot(), "knowledge", "telemetry", filename);
   if (!existsSync(path)) {
     throw new Error(`Telemetry catalog not found: ${protocol}`);
   }
-  return JSON.parse(readFileSync(path, "utf-8")) as TelemetryCatalog;
+  const catalog = JSON.parse(readCachedText(path)) as TelemetryCatalog;
+  catalogCache.set(protocol, catalog);
+  return catalog;
 }
 
 export function readTemplate(name: string): string {
   const path = join(getRepoRoot(), "templates", name);
-  return readFileSync(path, "utf-8");
+  return readCachedText(path);
 }
 
 export function readRules(): string {
   const path = join(getRepoRoot(), ".cursor", "rules", "edgetx-lua.md");
-  return readFileSync(path, "utf-8");
+  return readCachedText(path);
 }
 
 export function readLayoutPrinciples(): string {
   const path = join(getRepoRoot(), "knowledge", "design", "layout-principles.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(path);
 }
 
 export function readCardGridRecipe(): string {
   const path = join(getRepoRoot(), "knowledge", "design", "tx15-card-grid-recipe.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(path);
 }
 
 export function readDesignGuideForArchetype(
@@ -123,7 +146,7 @@ export function readDesignGuideForArchetype(
 export function readExampleSnippet(exampleFile: string, maxLines = 55): string {
   const path = join(getRepoRoot(), "examples", exampleFile);
   if (!existsSync(path)) return "";
-  const lines = readFileSync(path, "utf-8").split(/\r?\n/);
+  const lines = readCachedText(path).split(/\r?\n/);
   return lines.slice(0, maxLines).join("\n");
 }
 
@@ -145,9 +168,7 @@ export function readExampleSnippetForArchetype(exampleFile: string): string {
 }
 
 export function readLayoutReservedRectsGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "layout-reserved-rects.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "layout-reserved-rects.md"));
 }
 
 export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
@@ -160,60 +181,43 @@ export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
   ];
 
   for (const path of candidates) {
-    if (existsSync(path)) {
-      return readFileSync(path, "utf-8");
-    }
+    const text = readCachedTextIfExists(path);
+    if (text) return text;
   }
 
   return "";
 }
 
 export function readRotorflightStyleGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "rotorflight-dbk-patterns.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "rotorflight-dbk-patterns.md"));
 }
 
 export function readCompanionScriptsGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "companion-scripts.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "companion-scripts.md"));
 }
 
 export function readModelImageGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "model-image.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "model-image.md"));
 }
 
 export function readModelHeroDashboardGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "model-hero-dashboard.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "model-hero-dashboard.md"));
 }
 
 export function readTextLayoutGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md"));
 }
 
 export function readRuntimeApiPitfallsGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "runtime-api-pitfalls.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "runtime-api-pitfalls.md"));
 }
 
 export function readThemePalettesGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "edgetx-theme-palettes.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "edgetx-theme-palettes.md"));
 }
 
 export function readRoundedCornersGuide(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "rounded-card-panels.md");
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8");
+  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "rounded-card-panels.md"));
 }
 
 export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {

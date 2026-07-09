@@ -54,7 +54,8 @@ export class WidgetGenerator {
       model: { id: modelId },
       local: {
         cwd: this.repoRoot,
-        settingSources: ["project"],
+        // Rules are inlined in generation/refine prompts — avoid double-loading project rules.
+        settingSources: [],
         customTools: createCustomTools(this.toolDefaults),
         ...(store ? { store } : {}),
         ...(sandboxEnabled ? { sandboxOptions: { enabled: true } } : {}),

@@ -157,7 +157,8 @@ export async function finalizeWidgetRun(
   }
 
   try {
-    await packageWidget(workspaceKey, protocol, { radioId });
+    // Validation already ran above — skip the duplicate assert inside packageWidget.
+    await packageWidget(workspaceKey, protocol, { radioId, skipValidation: true });
     if (isWidgetInstanceId(workspaceKey)) {
       const meta = readWidgetInstanceMeta(workspaceKey);
       if (meta) archiveWidgetVersion(workspaceKey, meta.version);

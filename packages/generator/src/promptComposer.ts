@@ -22,7 +22,6 @@ import {
 import { wantsRoundedCorners } from "./roundedCorners.js";
 import {
   suggestLayoutArchetype,
-  readLayoutArchetypesGuide,
   EXAMPLE_BY_ARCHETYPE,
   shouldIncludeCardStarter,
   type LayoutArchetypeId,
@@ -54,6 +53,18 @@ function resolveVariation(ctx: PromptBuildContext): number {
   return deriveVariationSeed(ctx.sessionId, ctx.runIndex ?? 0);
 }
 
+function formatSensorCatalogInline(catalog: TelemetryCatalog): string {
+  const byCategory = new Map<string, string[]>();
+  for (const s of catalog.sensors) {
+    const list = byCategory.get(s.category) ?? [];
+    list.push(s.unit ? `${s.name} (${s.unit})` : s.name);
+    byCategory.set(s.category, list);
+  }
+  return [...byCategory.entries()]
+    .map(([cat, names]) => `- **${cat}:** ${names.join(", ")}`)
+    .join("\n");
+}
+
 function buildProtocolLockSection(catalog: TelemetryCatalog): string {
   const firmwareHint =
     catalog.protocol === "betaflight"
@@ -66,10 +77,13 @@ function buildProtocolLockSection(catalog: TelemetryCatalog): string {
 
 The user selected **${catalog.label}** (\`${catalog.protocol}\`) in the generator UI.
 
-- Call \`listTelemetrySensors\` with protocol \`"${catalog.protocol}"\` before writing telemetry code.
-- Use **only** sensor names from that catalog — validation rejects unknown sensors.
+- Use **only** sensor names from the catalog below — validation rejects unknown sensors. Do **not** call \`listTelemetrySensors\` unless you need a filtered subset.
 - If the user's prompt mentions another firmware (heli, rotorflight, betaflight, etc.), **ignore the firmware hint** and keep the selected protocol.
-- ${firmwareHint}`;
+- ${firmwareHint}
+
+### Allowed sensors (\`${catalog.protocol}\`)
+
+${formatSensorCatalogInline(catalog)}`;
 }
 
 function buildTelemetrySection(catalog: TelemetryCatalog): string {
@@ -126,7 +140,6 @@ export function buildGenerationPrompt(
   const visualStyle = detectVisualStyle(userPrompt, seed);
   const brief = buildCreativeBrief(seed, archetype, catalog.protocol, userPrompt);
   const designGuide = readDesignGuideForArchetype(radio.id, archetype.id);
-  const archetypeMenu = readLayoutArchetypesGuide();
   const rotorflightGuide =
     catalog.protocol === "rotorflight" && archetype.id === "heli-rotorflight"
       ? readRotorflightStyleGuide()
@@ -168,7 +181,7 @@ export function buildGenerationPrompt(
 
 - Write the dashboard to \`generated/${ctx.widgetInstanceId ?? "<uuid>"}/main.lua\` — **never** use the display name as the folder.
 - Set \`local name = "${ctx.assignedWidgetName}"\` and \`return { name = name, ... }\`.
-- Call validateWidget, writeInstallGuide, and packageWidget with **widgetInstanceId** \`${ctx.widgetInstanceId ?? "<uuid>"}\` (not the display name).
+- Call validateWidget with **widgetInstanceId** \`${ctx.widgetInstanceId ?? "<uuid>"}\` (not the display name). Install guide + zip packaging run automatically after validation.
 - The display name may match another widget; the workspace UUID is what keeps this chat isolated.\n`
     : "";
 
@@ -205,13 +218,9 @@ ${visualStyle.promptNotes ? `\n${visualStyle.promptNotes}\n` : ""}
 
 **Variety rule:** Do NOT default to the same two-column grey card grid unless the user explicitly asked for it or the archetype is \`card-grid\`. Different prompts and run seeds must produce visibly different layouts and color treatments.
 
-## Layout archetype menu (pick the best fit for the user request)
-
-${archetypeMenu}
-
 ## Target radio
 
-${JSON.stringify(radio, null, 2)}
+${JSON.stringify({ id: radio.id, name: radio.name, lcdW: radio.lcdW, lcdH: radio.lcdH, edgeTxMin: radio.edgeTxMin }, null, 2)}
 
 ## EdgeTX version target
 
@@ -275,15 +284,11 @@ ${ctx?.assignedWidgetName ? `1. Use display name \`${ctx.assignedWidgetName}\` a
    - **\`Bitmap.getSize(bitmap)\`** — pass the handle from \`Bitmap.open()\`, never the SD path string (\`create()\` crash)
    - Use LCD_W and LCD_H on ${radio.name} (${radio.lcdW}x${radio.lcdH})
 
-6. Cache telemetry with getSourceIndex() in create().
+6. Cache telemetry with getSourceIndex() in create() using **only** sensors from the catalog above.
 
-7. Call validateWidget with widgetInstanceId "${widgetFolder}", protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true.
+7. Call validateWidget with widgetInstanceId "${widgetFolder}", protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true. Do **not** call writeInstallGuide or packageWidget — the server packages after validation.
 
-8. Only after valid: true, call writeInstallGuide (radioId "${radio.id}") — INSTALL.md must document the dashboard **and every companion script** with SD card paths.
-
-9. Only after valid: true, call packageWidget (radioId "${radio.id}") — zip includes WIDGETS/ and SCRIPTS/ paths.
-
-10. Summarize in markdown: chosen archetype, creative brief choices, layout sections, sensors used, companion scripts (if any), and condensed install steps from INSTALL.md.`;
+8. Summarize in markdown: chosen archetype, creative brief choices, layout sections, sensors used, companion scripts (if any), and brief SD-card install steps (WIDGETS/<name>/).`;
 }
 
 export function buildRefinePrompt(
@@ -387,11 +392,9 @@ Keep the dashboard clean and distinct from generic templates. All lcd.* draws mu
 
 1. Edit files under \`generated/${ctx?.widgetInstanceId ?? "<uuid>"}/\` as needed (main.lua + any tools/telemetry companions). Start from the **current widget source** above when provided; otherwise read main.lua from the workspace folder.
 
-2. Run validateWidget with widgetInstanceId "${ctx?.widgetInstanceId ?? "<uuid>"}", protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix **all errors** (including runtime API pitfalls: drawLine pattern arg, Bitmap.getSize handle) and archetype-relevant visual-design warnings.
+2. Run validateWidget with widgetInstanceId "${ctx?.widgetInstanceId ?? "<uuid>"}", protocol "${resolvedProtocol}", radioId "${radioId}", and layoutArchetype "${archetype.id}" until valid: true. Fix **all errors** (including runtime API pitfalls: drawLine pattern arg, Bitmap.getSize handle) and archetype-relevant visual-design warnings. Do **not** call writeInstallGuide or packageWidget — the server packages after validation.
 
-3. Only after valid: true, run writeInstallGuide with protocol "${resolvedProtocol}" (must list all files + install steps) and packageWidget with protocol "${resolvedProtocol}" again.
-
-4. Summarize changes made, including install instructions for any new companion scripts.`;
+3. Summarize changes made, including install instructions for any new companion scripts.`;
 }
 
 export function resolvePromptContext(

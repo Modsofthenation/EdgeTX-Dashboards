@@ -93,7 +93,7 @@ export function renderInstallMd(
 export async function packageWidget(
   workspaceKey: string,
   protocol: TelemetryProtocol,
-  options?: { radioId?: string; version?: number }
+  options?: { radioId?: string; version?: number; skipValidation?: boolean }
 ): Promise<{ zipPath: string; widgetDir: string; widgetName: string; instanceId?: string }> {
   const radioId = options?.radioId ?? "tx15";
   const version = options?.version;
@@ -120,11 +120,13 @@ export async function packageWidget(
     }
     source = prepared.source;
 
-    assertValidForRelease(workspaceKey, protocol, {
-      radioId,
-      strictTelemetry: true,
-      ensureAnnotations: false,
-    });
+    if (!options?.skipValidation) {
+      assertValidForRelease(workspaceKey, protocol, {
+        radioId,
+        strictTelemetry: true,
+        ensureAnnotations: false,
+      });
+    }
   }
 
   const displayName = resolveDisplayName(workspaceKey);
@@ -151,7 +153,7 @@ export async function packageWidget(
 
   await new Promise<void>((resolve, reject) => {
     const output = createWriteStream(zipPath);
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    const archive = archiver("zip", { zlib: { level: 1 } });
 
     output.on("close", () => resolve());
     archive.on("error", reject);
