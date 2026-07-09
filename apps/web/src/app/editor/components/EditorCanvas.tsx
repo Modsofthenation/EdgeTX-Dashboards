@@ -2,57 +2,52 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSimulateLayoutProfile, resolvePreviewDimensions } from "@widget-gen/shared";
-import { EditorSimPreview } from "./EditorSimPreview";
-import { SelectionOverlay, type CanvasLayout } from "./SelectionOverlay";
-import type { EditorElement } from "@widget-gen/editor-core";
+import type { DocumentRecord, ZoneOffset, BoundingBox } from "@widget-gen/editor-core";
+import { computeCanvasLayout, type CanvasLayout } from "../lib/canvasLayout";
+import { EditorPreviewCanvas } from "./EditorPreviewCanvas";
+import { RecordSelectionOverlay } from "./RecordSelectionOverlay";
 import styles from "../editor.module.css";
 
 interface EditorCanvasProps {
-  luaSource: string;
-  simReady?: boolean;
-  simFlushNonce: number;
-  elements: EditorElement[];
+  source: string;
+  records: DocumentRecord[];
+  zone: ZoneOffset;
   selectedIds: string[];
   onSelect: (ids: string[]) => void;
-  onElementsChange: (updater: (elements: EditorElement[]) => EditorElement[]) => void;
-  onInteractionEnd?: () => void;
+  onTranslate: (ids: string[], dx: number, dy: number) => void;
+  onResize: (id: string, box: BoundingBox) => void;
+  showSnapGuides?: boolean;
+  scenarioId?: string;
 }
 
 export function EditorCanvas({
-  luaSource,
-  simReady = true,
-  simFlushNonce,
-  elements,
+  source,
+  records,
+  zone,
   selectedIds,
   onSelect,
-  onElementsChange,
-  onInteractionEnd,
+  onTranslate,
+  onResize,
+  showSnapGuides = false,
+  scenarioId = "editor-preview",
 }: EditorCanvasProps) {
-  const stageRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
 
   const previewDims = useMemo(() => {
     try {
-      return resolvePreviewDimensions(luaSource, getSimulateLayoutProfile("tx15"));
+      return resolvePreviewDimensions(source, getSimulateLayoutProfile("tx15"));
     } catch {
-      return resolvePreviewDimensions(luaSource, getSimulateLayoutProfile("tx15"));
+      return resolvePreviewDimensions("", getSimulateLayoutProfile("tx15"));
     }
-  }, [luaSource]);
+  }, [source]);
 
   const updateLayout = useCallback(() => {
     const frame = frameRef.current;
     if (!frame) return;
-    const cw = frame.clientWidth;
-    const ch = frame.clientHeight;
-    const zoneW = previewDims.zoneW;
-    const zoneH = previewDims.zoneH;
-    const scale = Math.min(cw / zoneW, ch / zoneH, 1);
-    const drawW = zoneW * scale;
-    const drawH = zoneH * scale;
-    const offsetX = (cw - drawW) / 2;
-    const offsetY = (ch - drawH) / 2;
-    setLayout({ scale, offsetX, offsetY, drawW, drawH, zoneW, zoneH });
+    setLayout(
+      computeCanvasLayout(frame.clientWidth, frame.clientHeight, previewDims.zoneW, previewDims.zoneH)
+    );
   }, [previewDims.zoneH, previewDims.zoneW]);
 
   useEffect(() => {
@@ -65,17 +60,31 @@ export function EditorCanvas({
   }, [updateLayout]);
 
   return (
-    <div className={styles.canvasStage} ref={stageRef}>
+    <div className={styles.canvasStage}>
       <div className={styles.simWrapper} ref={frameRef}>
-        <EditorSimPreview luaSource={luaSource} simReady={simReady} flushNonce={simFlushNonce} />
-        <SelectionOverlay
-          elements={elements}
+        <EditorPreviewCanvas source={source} zone={zone} layout={layout} scenarioId={scenarioId} />
+        {showSnapGuides && layout ? (
+          <div
+            className={styles.snapGrid}
+            style={{
+              left: layout.offsetX,
+              top: layout.offsetY,
+              width: layout.drawW,
+              height: layout.drawH,
+              backgroundSize: `${12 * layout.scale}px ${12 * layout.scale}px`,
+            }}
+            aria-hidden
+          />
+        ) : null}
+        <RecordSelectionOverlay
+          records={records}
           selectedIds={selectedIds}
           layout={layout}
+          zone={zone}
           frameRef={frameRef}
           onSelect={onSelect}
-          onElementsChange={onElementsChange}
-          onInteractionEnd={onInteractionEnd}
+          onTranslate={onTranslate}
+          onResize={onResize}
         />
       </div>
       <div className={styles.canvasMeta}>
@@ -87,7 +96,7 @@ export function EditorCanvas({
           {previewDims.layout} z{previewDims.zone}
         </span>
         <span className={styles.canvasHint}>·</span>
-        <span className={styles.canvasHint}>Shift+click multi-select · 12px snap</span>
+        <span className={styles.canvasHint}>Canvas preview · Shift+click multi-select</span>
       </div>
     </div>
   );

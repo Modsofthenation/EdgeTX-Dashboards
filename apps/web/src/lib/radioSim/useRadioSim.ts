@@ -59,6 +59,10 @@ export function useRadioSim() {
   const frameRef = useRef<SimFrameData | null>(null);
   const frameSubscriberRef = useRef<FrameSubscriber | null>(null);
   const lastFrameCommitRef = useRef(0);
+  const nextLoadRequestIdRef = useRef(1);
+  const pendingLoadRef = useRef(
+    new Map<number, { resolve: () => void; reject: (err: Error) => void }>()
+  );
   const [state, setState] = useState<RadioSimState>(DEFAULT_STATE);
   const [firmware, setFirmware] = useState<SimFirmwareResolution | null>(null);
 
@@ -79,6 +83,16 @@ export function useRadioSim() {
       }
       if (msg.type === "error") {
         setState({ phase: "error", progress: 0, status: "Error", error: msg.message, keyboardMode: "none" });
+      }
+      if (msg.type === "loadWidgetResult") {
+        const pending = pendingLoadRef.current.get(msg.requestId);
+        if (!pending) return;
+        pendingLoadRef.current.delete(msg.requestId);
+        if (msg.ok) {
+          pending.resolve();
+        } else {
+          pending.reject(new Error(msg.error));
+        }
       }
     };
     worker.onerror = () => {
@@ -128,8 +142,12 @@ export function useRadioSim() {
   const loadWidget = useCallback(
     (source: string, zone?: WidgetSimulateZone) => {
       const worker = ensureWorker();
-      const req: SimWorkerRequest = { type: "loadWidget", source, zone };
-      worker.postMessage(req);
+      const requestId = nextLoadRequestIdRef.current++;
+      const req: SimWorkerRequest = { type: "loadWidget", source, zone, requestId };
+      return new Promise<void>((resolve, reject) => {
+        pendingLoadRef.current.set(requestId, { resolve, reject });
+        worker.postMessage(req);
+      });
     },
     [ensureWorker]
   );
@@ -171,6 +189,10 @@ export function useRadioSim() {
   }, []);
 
   const dispose = useCallback(() => {
+    for (const pending of pendingLoadRef.current.values()) {
+      pending.reject(new Error("Simulator disposed"));
+    }
+    pendingLoadRef.current.clear();
     workerRef.current?.postMessage({ type: "dispose" } satisfies SimWorkerRequest);
     workerRef.current?.terminate();
     workerRef.current = null;

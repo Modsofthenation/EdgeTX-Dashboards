@@ -10,17 +10,46 @@ export interface DrawSurfaceAnalysis {
   stackedTopLeftWithoutPanels: boolean;
 }
 
-const REFRESH_SIG = /local\s+function\s+refresh\s*\([^)]*\)/;
+/** `local function refresh(...)` or `refresh = function(...)` */
+const REFRESH_SIG =
+  /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/;
 const BLOCK_OPEN = new Set(["function", "if", "for", "while", "repeat"]);
 
-/** Extract the body of `local function refresh(...) ... end`, balancing nested blocks. */
-export function extractRefreshBody(source: string): string {
+function findRefreshSignature(source: string): { index: number; length: number } | null {
   const sigMatch = source.match(REFRESH_SIG);
-  if (!sigMatch || sigMatch.index === undefined) return source;
+  if (!sigMatch || sigMatch.index === undefined) return null;
+  return { index: sigMatch.index, length: sigMatch[0].length };
+}
 
-  const bodyStart = sigMatch.index + sigMatch[0].length;
+/** Extract the body of refresh(), balancing nested blocks. Supports both signature forms. */
+export function extractRefreshBody(source: string): string {
+  const sig = findRefreshSignature(source);
+  if (!sig) return source;
+
+  const bodyStart = sig.index + sig.length;
   const bodyEnd = findBalancedFunctionEnd(source, bodyStart);
   return source.slice(bodyStart, bodyEnd).trim();
+}
+
+/** Character index of the matching `end` that closes refresh() (start of `end`). */
+export function findRefreshBodyEndIndex(source: string): number {
+  const sig = findRefreshSignature(source);
+  if (!sig) return source.length;
+  const bodyStart = sig.index + sig.length;
+  return findBalancedFunctionEnd(source, bodyStart);
+}
+
+/** 1-based line number of the first line inside refresh(). */
+export function findRefreshBodyStartLine(source: string): number {
+  const sig = findRefreshSignature(source);
+  if (!sig) return 1;
+  const bodyStart = sig.index + sig.length;
+  const prefix = source.slice(0, bodyStart);
+  let line = (prefix.match(/\n/g)?.length ?? 0) + 1;
+  if (source[bodyStart] === "\r" || source[bodyStart] === "\n") {
+    line += 1;
+  }
+  return line;
 }
 
 function findBalancedFunctionEnd(source: string, bodyStart: number): number {

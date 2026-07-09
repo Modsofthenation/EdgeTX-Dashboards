@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ElementKind } from "@widget-gen/editor-core";
-import { ELEMENT_CATALOG } from "../elementMeta";
+import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
 import styles from "../editor.module.css";
 
 interface InsertMenuProps {
-  onInsert: (kind: ElementKind) => void;
+  onInsert: (kind: InsertDrawKind) => void;
 }
 
 export function InsertMenu({ onInsert }: InsertMenuProps) {
@@ -67,7 +66,7 @@ export function InsertMenu({ onInsert }: InsertMenuProps) {
         role="menu"
         style={{ top: menuPos.top, left: menuPos.left }}
       >
-        {ELEMENT_CATALOG.map(({ kind, label, shortLabel, description }) => (
+        {DRAW_KIND_CATALOG.map(({ kind, label, shortLabel, description }) => (
           <button
             key={kind}
             type="button"

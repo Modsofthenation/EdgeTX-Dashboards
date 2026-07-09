@@ -2,8 +2,10 @@ import type { BoundingBox, DrawRecord } from "./types.js";
 
 /** TX15 character widths (px/char) — knowledge/design/tx15-text-layout.md */
 const CHAR_W: Record<number, number> = {
-  10: 6,
   12: 6,
+  18: 9,
+  26: 12,
+  10: 6,
   14: 9,
   20: 12,
 };

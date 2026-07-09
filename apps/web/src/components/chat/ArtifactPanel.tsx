@@ -5,9 +5,37 @@ import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
+import { InstallGuidePanel } from "../InstallGuidePanel";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import { ArtifactVersionSelect } from "./ArtifactVersionSelect";
 import styles from "./ArtifactPanel.module.css";
+
+function InstallGuideInline({
+  protocol,
+  widgetName,
+}: {
+  protocol: TelemetryProtocol;
+  widgetName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={styles.installWrap}>
+      <button
+        type="button"
+        className={styles.installToggle}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        {open ? "Hide install guide" : "Install on radio"}
+      </button>
+      {open ? (
+        <div className={styles.installBody}>
+          <InstallGuidePanel protocol={protocol} widgetName={widgetName} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 interface ArtifactPanelProps {
   chatId: string | null;
@@ -156,12 +184,25 @@ export const ArtifactPanel = memo(function ArtifactPanel({
             )}
           </div>
 
-          {artifact && !artifact.validated && errors.length > 0 && (
-            <ul className={styles.errors}>
-              {errors.slice(0, 5).map((issue, i) => (
-                <li key={i}>{issue.message}</li>
-              ))}
-            </ul>
+          {artifact && !artifact.validated && (
+            <div className={styles.downloadGate}>
+              <p className={styles.downloadGateTitle}>Download blocked until validation passes</p>
+              {errors.length > 0 ? (
+                <ul className={styles.errors}>
+                  {errors.slice(0, 5).map((issue, i) => (
+                    <li key={i}>{issue.message}</li>
+                  ))}
+                  {errors.length > 5 && (
+                    <li>…and {errors.length - 5} more error(s)</li>
+                  )}
+                </ul>
+              ) : (
+                <p className={styles.downloadGateHint}>
+                  Ask the assistant to fix validation issues, or open Edit layout to adjust the
+                  source.
+                </p>
+              )}
+            </div>
           )}
 
           {artifact && (
@@ -173,6 +214,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                     ...(artifact.instanceId
                       ? { instanceId: artifact.instanceId }
                       : { name: artifact.name }),
+                    protocol,
                   }).toString()}`}
                   className={styles.editLayoutBtn}
                 >
@@ -182,6 +224,11 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                   type="button"
                   className={styles.downloadBtn}
                   disabled={!artifact.validated || downloading || showPreviewLoader}
+                  title={
+                    !artifact.validated
+                      ? "Fix validation errors before downloading"
+                      : undefined
+                  }
                   onClick={() => void handleDownload()}
                 >
                   {downloading
@@ -194,6 +241,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 Extract to <code>WIDGETS/{artifact.name}/</code> on your radio SD card. INSTALL.md is
                 inside the zip.
               </p>
+              <InstallGuideInline protocol={protocol} widgetName={artifact.name} />
             </>
           )}
         </>

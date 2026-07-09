@@ -154,7 +154,9 @@ export function RadioSimPreview({
     dispose,
   } = useRadioSim();
   const startedRef = useRef(false);
-  const loadedSourceRef = useRef<string | null>(null);
+  const desiredSourceRef = useRef(luaSource);
+  const mockRef = useRef(mock);
+  const appliedSourceRef = useRef<string | null>(null);
   const loadedFirmwareRef = useRef<string | null>(null);
   const sendInputRef = useRef(sendInput);
   const [frame, setFrame] = useState<SimFrameData | null>(null);
@@ -223,6 +225,7 @@ export function RadioSimPreview({
     }),
     [previewDims]
   );
+  mockRef.current = mock;
 
   const openInteractive = useCallback(() => setOverlayOpen(true), []);
 
@@ -271,24 +274,28 @@ export function RadioSimPreview({
 
     if (startedRef.current && firmwareChanged) {
       dispose();
+      appliedSourceRef.current = null;
     }
 
     startedRef.current = true;
     loadedFirmwareRef.current = edgeTxVersion;
-    loadedSourceRef.current = luaSource;
+    desiredSourceRef.current = desiredSourceRef.current || luaSource;
+    // Reconcile once after running; don't trust init source application as final.
+    appliedSourceRef.current = null;
     void init({
-      source: luaSource,
+      source: desiredSourceRef.current,
       zone: simZone,
-      mock,
+      mock: mockRef.current,
       edgeTxVersion,
     });
-  }, [active, edgeTxVersion, luaSource, simZone, init, pause, resume, dispose]);
+  }, [active, edgeTxVersion, simZone, init, pause, resume, dispose]);
 
   useEffect(() => {
     return () => {
       dispose();
       startedRef.current = false;
-      loadedSourceRef.current = null;
+      desiredSourceRef.current = "";
+      appliedSourceRef.current = null;
       loadedFirmwareRef.current = null;
     };
   }, [dispose]);
@@ -300,23 +307,25 @@ export function RadioSimPreview({
 
   useEffect(() => {
     if (!active || state.phase !== "running") return;
-    if (loadedSourceRef.current === luaSource) return;
-    loadedSourceRef.current = luaSource;
-    loadWidget(luaSource, simZone);
+    desiredSourceRef.current = luaSource;
+    if (appliedSourceRef.current === desiredSourceRef.current) return;
+    void loadWidget(desiredSourceRef.current, simZone)
+      .then(() => {
+        appliedSourceRef.current = desiredSourceRef.current;
+      })
+      .catch(() => {
+        // keep desired source; next running/source transition retries.
+      });
   }, [active, state.phase, luaSource, loadWidget, simZone]);
 
   if (state.phase === "error") {
     return (
       <div className={styles.simPreviewRoot}>
         <div className={styles.radioSimMessage}>
-          <p>EdgeTX preview unavailable: {state.error}</p>
+          <p>Radio preview unavailable: {state.error}</p>
           <p className={styles.hint}>
-            Restart the dev server (<code>npm run dev</code>) to auto-download firmware, then
-            hard-refresh. Or use{" "}
-            <a href="https://github.com/JeffreyChix/edgetx-dev-kit" target="_blank" rel="noreferrer">
-              EdgeTX Dev Kit
-            </a>{" "}
-            in VS Code.
+            The EdgeTX firmware may still be downloading, or the sim worker crashed. Hard-refresh the
+            page. If this persists, run <code>npm run setup:sim</code> then restart the app.
           </p>
         </div>
       </div>
@@ -327,10 +336,13 @@ export function RadioSimPreview({
     return (
       <div className={styles.simPreviewRoot}>
         <div className={styles.radioSimMessage}>
-          <p>{state.status || "Booting EdgeTX preview…"}</p>
+          <div className={styles.radioSimBrand} aria-hidden>
+            ETX
+          </div>
+          <p>{state.status || "Booting EdgeTX radio preview…"}</p>
           {wasmSizeMb != null && (
             <p className={styles.hint}>
-              First load downloads ~{wasmSizeMb} MB of EdgeTX firmware (cached by the browser).
+              First load downloads ~{wasmSizeMb} MB of firmware (cached afterward).
             </p>
           )}
           {state.progress > 0 && (

@@ -10,9 +10,16 @@ interface SimFrameCanvasProps {
   frame: SimFrameData | null;
   zone: SimFrameZone;
   className?: string;
+  /** Keep paint active even while chat list is scrolling. */
+  ignoreChatScrollPause?: boolean;
 }
 
-export function SimFrameCanvas({ frame, zone, className }: SimFrameCanvasProps) {
+export function SimFrameCanvas({
+  frame,
+  zone,
+  className,
+  ignoreChatScrollPause = false,
+}: SimFrameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
@@ -31,7 +38,7 @@ export function SimFrameCanvas({ frame, zone, className }: SimFrameCanvasProps) 
     if (!canvas || !container || !scratch || !frame) return;
 
     const paint = () => {
-      if (isChatScrolling()) return;
+      if (!ignoreChatScrollPause && isChatScrolling()) return;
 
       const cw = container.clientWidth;
       const ch = container.clientHeight;
@@ -70,7 +77,7 @@ export function SimFrameCanvas({ frame, zone, className }: SimFrameCanvasProps) 
     paint();
 
     return () => observer.disconnect();
-  }, [frame, zone]);
+  }, [frame, zone, ignoreChatScrollPause]);
 
   return (
     <div ref={containerRef} className={styles.simFrameContainer}>

@@ -99,6 +99,7 @@ export const ChatComposer = memo(function ChatComposer({
   const [attachments, setAttachments] = useState<PendingPromptImage[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
 
@@ -190,90 +191,131 @@ export const ChatComposer = memo(function ChatComposer({
       ? [{ id: modelId, label: modelId }, ...models]
       : models;
 
+  const showSettings = settingsOpen || canRefine;
+
   return (
     <form className={styles.composer} onSubmit={handleSubmit}>
       <div className={styles.toolbar}>
-        <label className={styles.selectWrap}>
-          <span className={styles.selectLabel}>Radio</span>
-          <select
-            className={styles.select}
-            value={radioId}
-            onChange={(e) => onRadioChange(e.target.value)}
-            disabled={settingsLocked}
-            title={settingsLocked ? "Radio is locked for this chat session" : undefined}
-          >
-            {[...radioGroups.entries()].map(([layoutKey, group]) => (
-              <optgroup key={layoutKey} label={LAYOUT_GROUP_LABELS[layoutKey] ?? layoutKey}>
-                {group.map((radio) => (
-                  <option key={radio.id} value={radio.id}>
-                    {radio.name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-
-        <label className={styles.selectWrap}>
-          <span className={styles.selectLabel}>Model</span>
-          <select
-            className={styles.select}
-            value={modelId}
-            onChange={(e) => onModelChange(e.target.value)}
-            disabled={settingsLocked || modelsLoading || models.length === 0}
-            title={settingsLocked ? "Model is locked for this chat session" : undefined}
-          >
-            {modelsLoading && <option value={modelId}>Loading models…</option>}
-            {!modelsLoading &&
-              modelOptions.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.label}
-                </option>
-              ))}
-          </select>
-        </label>
-
-        <label className={styles.selectWrap}>
-          <span className={styles.selectLabel}>Protocol</span>
-          <select
-            className={styles.select}
-            value={protocol}
-            onChange={(e) => onProtocolChange(e.target.value as TelemetryProtocol)}
-            disabled={settingsLocked}
-          >
-            <option value="betaflight">Betaflight</option>
-            <option value="rotorflight">Rotorflight</option>
-            <option value="generic-crsf">Generic CRSF</option>
-          </select>
-        </label>
-
-        <label className={styles.selectWrap}>
-          <span className={styles.selectLabel}>EdgeTX</span>
-          <select
-            className={styles.select}
-            value={edgeTxVersion}
-            onChange={(e) => onEdgeTxChange(e.target.value)}
-            disabled={settingsLocked}
-          >
-            {EDGE_TX_VERSION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {selectedRadio && (
-          <span className={styles.metaChip}>
-            {selectedRadio.lcdW}×{selectedRadio.lcdH}
-            {selectedRadio.touch ? " · touch" : ""}
+        <button
+          type="button"
+          className={styles.settingsToggle}
+          onClick={() => setSettingsOpen((o) => !o)}
+          aria-expanded={showSettings}
+        >
+          Settings
+          <span className={styles.settingsChevron} aria-hidden>
+            {showSettings ? "▾" : "▸"}
           </span>
+        </button>
+
+        {!showSettings && (
+          <>
+            {selectedRadio && (
+              <span className={styles.metaChip}>
+                {selectedRadio.lcdW}×{selectedRadio.lcdH}
+                {selectedRadio.touch ? " · touch" : ""}
+              </span>
+            )}
+            <span className={styles.protocolChip}>
+              {PROTOCOL_BADGE_LABELS[protocol]}
+            </span>
+          </>
         )}
 
-        <span className={styles.protocolChip} title={settingsLocked ? "Protocol is locked for this chat session" : undefined}>
-          {PROTOCOL_BADGE_LABELS[protocol]}
-          {settingsLocked ? " · locked" : ""}
-        </span>
+        {showSettings && (
+          <>
+            <label className={styles.selectWrap}>
+              <span className={styles.selectLabel}>Radio</span>
+              <select
+                className={styles.select}
+                value={radioId}
+                onChange={(e) => onRadioChange(e.target.value)}
+                disabled={settingsLocked}
+                title={settingsLocked ? "Radio is locked for this chat session" : undefined}
+              >
+                {[...radioGroups.entries()].map(([layoutKey, group]) => (
+                  <optgroup key={layoutKey} label={LAYOUT_GROUP_LABELS[layoutKey] ?? layoutKey}>
+                    {group.map((radio) => (
+                      <option key={radio.id} value={radio.id}>
+                        {radio.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+
+            <label className={styles.selectWrap}>
+              <span className={styles.selectLabel}>Model</span>
+              <select
+                className={styles.select}
+                value={modelId}
+                onChange={(e) => onModelChange(e.target.value)}
+                disabled={settingsLocked || modelsLoading || models.length === 0}
+                title={settingsLocked ? "Model is locked for this chat session" : undefined}
+              >
+                {modelsLoading && <option value={modelId}>Loading models…</option>}
+                {!modelsLoading &&
+                  modelOptions.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <label className={styles.selectWrap}>
+              <span className={styles.selectLabel}>Protocol</span>
+              <select
+                className={styles.select}
+                value={protocol}
+                onChange={(e) => onProtocolChange(e.target.value as TelemetryProtocol)}
+                disabled={settingsLocked}
+              >
+                <option value="betaflight">Betaflight</option>
+                <option value="rotorflight">Rotorflight</option>
+                <option value="generic-crsf">Generic CRSF</option>
+              </select>
+            </label>
+
+            <label className={styles.selectWrap}>
+              <span className={styles.selectLabel}>EdgeTX</span>
+              <select
+                className={styles.select}
+                value={edgeTxVersion}
+                onChange={(e) => onEdgeTxChange(e.target.value)}
+                disabled={settingsLocked}
+              >
+                {EDGE_TX_VERSION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {selectedRadio && (
+              <span className={styles.metaChip}>
+                {selectedRadio.lcdW}×{selectedRadio.lcdH}
+                {selectedRadio.touch ? " · touch" : ""}
+              </span>
+            )}
+
+            <span
+              className={styles.protocolChip}
+              title={settingsLocked ? "Protocol is locked for this chat session" : undefined}
+            >
+              {PROTOCOL_BADGE_LABELS[protocol]}
+              {settingsLocked ? " · locked" : ""}
+            </span>
+
+            {canRefine && (
+              <span className={styles.refineHint}>
+                Settings locked — refine this dashboard or start a new chat to change radio/protocol.
+              </span>
+            )}
+          </>
+        )}
       </div>
 
       <div className={styles.inputArea}>

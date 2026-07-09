@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test dist/__tests__/roundTrip.test.js"
+    "test": "npm run build && node --test dist/__tests__/roundTrip.test.js dist/__tests__/luaDocument.test.js dist/__tests__/telemetryBinding.test.js"
   },
   "dependencies": {
     "@widget-gen/layout-verify": "*",

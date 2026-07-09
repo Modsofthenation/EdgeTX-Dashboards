@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { extractRefreshBody } from "../drawSurface.js";
+import { extractRefreshBody, findRefreshBodyEndIndex } from "../drawSurface.js";
 
 describe("extractRefreshBody", () => {
   it("extracts full body with nested if/end blocks", () => {
@@ -19,5 +19,22 @@ describe("extractRefreshBody", () => {
     const body = extractRefreshBody(source);
     assert.ok(body.includes('lcd.drawText(3, 4, "after-if")'));
     assert.ok(body.includes('lcd.drawText(1, 2, "inner")'));
+  });
+
+  it("extracts refresh = function(...) form", () => {
+    const source = [
+      "refresh = function(widget)",
+      "  lcd.clear(BLACK)",
+      '  lcd.drawText(4, 4, "hi")',
+      "end",
+      "return { refresh = refresh }",
+    ].join("\n");
+
+    const body = extractRefreshBody(source);
+    assert.ok(body.includes("lcd.clear(BLACK)"));
+    assert.ok(body.includes('lcd.drawText(4, 4, "hi")'));
+    const endIdx = findRefreshBodyEndIndex(source);
+    assert.ok(endIdx > 0);
+    assert.equal(source.slice(endIdx, endIdx + 3), "end");
   });
 });

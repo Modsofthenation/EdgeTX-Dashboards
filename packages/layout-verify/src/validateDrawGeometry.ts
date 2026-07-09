@@ -7,7 +7,7 @@ import type { LayoutScenario } from "./types.js";
 
 export interface ValidateDrawGeometryOptions {
   scenario?: LayoutScenario;
-  /** When true, overlap hits are errors (gauge layouts). */
+  /** When true, overlap hits and skipped text are errors (gauge layouts). */
   strict?: boolean;
   lcdW?: number;
   lcdH?: number;
@@ -22,21 +22,23 @@ export function validateDrawGeometry(
 
   const issues: ValidationIssue[] = [];
 
-  if (!isInterpretationReliable(records)) {
+  if (skippedTextCount > 0) {
     issues.push({
-      severity: "warning",
+      severity: options.strict ? "error" : "warning",
+      message: `Layout verify: ${skippedTextCount} drawText call(s) could not be evaluated statically`,
+    });
+  }
+
+  // Annulus-only reliability for overlap; skipped text already reported above.
+  if (!isInterpretationReliable(records, 0)) {
+    issues.push({
+      severity: options.strict ? "error" : "warning",
       message:
         "Layout verify: gauge positions could not be fully resolved statically — overlap check skipped",
     });
     return issues;
   }
 
-  if (skippedTextCount > 0) {
-    issues.push({
-      severity: "warning",
-      message: `Layout verify: ${skippedTextCount} drawText call(s) could not be evaluated statically`,
-    });
-  }
   for (const w of warnings.slice(0, 3)) {
     issues.push({ severity: "warning", message: `Layout verify: ${w}` });
   }
@@ -64,7 +66,8 @@ export function verifyLayoutNoOverlap(
   source: string,
   scenario: LayoutScenario = DEFAULT_LAYOUT_SCENARIO
 ): boolean {
-  const { records } = interpretWidgetLayout(source, scenario);
-  if (!isInterpretationReliable(records)) return true;
+  const { records, skippedTextCount } = interpretWidgetLayout(source, scenario);
+  if (skippedTextCount > 0) return false;
+  if (!isInterpretationReliable(records, 0)) return true;
   return findOverlaps(records).length === 0;
 }

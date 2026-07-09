@@ -1,19 +1,33 @@
 "use client";
 
-import type { ElementKind } from "@widget-gen/editor-core";
+import type { TelemetryProtocol } from "@widget-gen/shared";
+import type { InsertDrawKind } from "../elementMeta";
 import { InsertMenu } from "./InsertMenu";
 import styles from "../editor.module.css";
+
+const SCENARIOS = [
+  { id: "editor-preview", label: "Armed flight" },
+  { id: "disarmed", label: "Disarmed" },
+  { id: "low-battery", label: "Low battery" },
+  { id: "weak-link", label: "Weak link" },
+  { id: "gps-lost", label: "GPS lost" },
+] as const;
 
 interface EditorToolbarProps {
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  onAdd: (kind: ElementKind) => void;
+  onAdd: (kind: InsertDrawKind) => void;
   onSave: () => void;
   onValidate: () => void;
   saving: boolean;
   valid: boolean | null;
+  protocol: TelemetryProtocol;
+  onProtocolChange: (protocol: TelemetryProtocol) => void;
+  onVerifySim: () => void;
+  previewScenarioId: string;
+  onPreviewScenarioChange: (id: string) => void;
 }
 
 export function EditorToolbar({
@@ -26,6 +40,11 @@ export function EditorToolbar({
   onValidate,
   saving,
   valid,
+  protocol,
+  onProtocolChange,
+  onVerifySim,
+  previewScenarioId,
+  onPreviewScenarioChange,
 }: EditorToolbarProps) {
   return (
     <div className={styles.toolbar}>
@@ -84,6 +103,33 @@ export function EditorToolbar({
         <div className={styles.toolbarDivider} aria-hidden />
 
         <InsertMenu onInsert={onAdd} />
+
+        <label className={styles.toolbarSelect}>
+          <span className={styles.toolbarSelectLabel}>Protocol</span>
+          <select
+            value={protocol}
+            onChange={(e) => onProtocolChange(e.target.value as TelemetryProtocol)}
+          >
+            <option value="betaflight">Betaflight</option>
+            <option value="rotorflight">Rotorflight</option>
+            <option value="generic-crsf">Generic CRSF</option>
+          </select>
+        </label>
+
+        <label className={styles.toolbarSelect}>
+          <span className={styles.toolbarSelectLabel}>Scenario</span>
+          <select
+            value={previewScenarioId}
+            onChange={(e) => onPreviewScenarioChange(e.target.value)}
+            title="Mock telemetry scenario (canvas + sim)"
+          >
+            {SCENARIOS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className={styles.toolbarRight}>
@@ -93,6 +139,9 @@ export function EditorToolbar({
         {valid === false && (
           <span className={`${styles.statusPill} ${styles.statusPillErr}`}>Invalid</span>
         )}
+        <button type="button" className={styles.secondaryBtn} onClick={onVerifySim}>
+          Verify in sim
+        </button>
         <button type="button" className={styles.secondaryBtn} onClick={onValidate}>
           Validate
         </button>
@@ -101,6 +150,7 @@ export function EditorToolbar({
           className={styles.primaryBtn}
           onClick={onSave}
           disabled={saving || valid === false}
+          title={valid === false ? "Fix validation errors before saving" : undefined}
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -108,5 +158,3 @@ export function EditorToolbar({
     </div>
   );
 }
-
-export type { ElementKind };

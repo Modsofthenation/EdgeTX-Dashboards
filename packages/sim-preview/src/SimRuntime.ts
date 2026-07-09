@@ -175,7 +175,10 @@ export class SimRuntime {
 
   async loadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
     this.loadWidgetPending = { source, zone };
-    this.loadWidgetChain = this.loadWidgetChain.then(() => this.flushPendingLoadWidget());
+    // Recover the queue after failures so one rejected reload never bricks future updates.
+    this.loadWidgetChain = this.loadWidgetChain
+      .catch(() => undefined)
+      .then(() => this.flushPendingLoadWidget());
     await this.loadWidgetChain;
   }
 
@@ -189,11 +192,17 @@ export class SimRuntime {
 
   private async applyLoadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
     this.fullscreenTap = null;
-    await this.deployWidget(source);
     const runner = this.runner;
-    if (runner) {
-      await deploySimModel(runner, this.layoutPlanFrom(source, zone), this.edgeTxVersion);
+    // Runtime not ready yet: store desired widget and let init/loop pick it up.
+    if (!runner) {
+      this.pendingWidget = { source, zone };
+      this.scriptLaunched = false;
+      this.widgetLaunchDelayFrames = WIDGET_LAUNCH_DELAY_FRAMES;
+      return;
     }
+
+    await this.deployWidget(source);
+    await deploySimModel(runner, this.layoutPlanFrom(source, zone), this.edgeTxVersion);
     this.pendingWidget = { source, zone };
 
     // Hot reload: firmware is already running — relaunch widget immediately so

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   useArtifactPanel,
   useChatMessages,
@@ -26,7 +26,18 @@ export function ChatApp() {
 }
 
 function ChatAppLayout() {
-  const { historyCollapsed, artifactCollapsed, toggleHistory, toggleArtifact } = usePanelCollapse();
+  const { historyCollapsed, artifactCollapsed, toggleHistory, toggleArtifact, expandArtifact } =
+    usePanelCollapse();
+  const { artifact } = useArtifactPanel();
+  const prevHadArtifact = useRef(false);
+
+  useEffect(() => {
+    const hasArtifact = Boolean(artifact?.luaSource);
+    if (hasArtifact && !prevHadArtifact.current) {
+      expandArtifact();
+    }
+    prevHadArtifact.current = hasArtifact;
+  }, [artifact?.luaSource, expandArtifact]);
 
   return (
     <div className={styles.shell}>
@@ -134,7 +145,17 @@ function ChatHistoryAside({
 function ChatMessageListSection() {
   const { messages, scrollRevision } = useChatMessages();
   const { running, sendMessage } = useChatSession();
+  const { artifact } = useArtifactPanel();
   const handleSuggestion = useCallback((text: string) => void sendMessage(text), [sendMessage]);
+  const handleRetry = useCallback(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg?.role === "user" && (msg.content.trim() || msg.images?.length)) {
+        void sendMessage(msg.content);
+        return;
+      }
+    }
+  }, [messages, sendMessage]);
 
   return (
     <ChatMessageList
@@ -142,6 +163,8 @@ function ChatMessageListSection() {
       scrollRevision={scrollRevision}
       running={running}
       onSuggestion={handleSuggestion}
+      dashboardReadyCue={Boolean(artifact?.luaSource) && !running}
+      onRetry={handleRetry}
     />
   );
 }

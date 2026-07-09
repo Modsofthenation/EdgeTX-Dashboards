@@ -24,11 +24,104 @@
 }
 
 .emptyText {
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1.25rem;
   max-width: 32rem;
   color: var(--text-secondary);
   font-size: 0.9375rem;
   line-height: 1.6;
+}
+
+.steps {
+  list-style: none;
+  margin: 0 auto 1.75rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.25rem;
+  max-width: 36rem;
+}
+
+.steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  max-width: 11rem;
+}
+
+.steps strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stepNum {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
+}
+
+.galleryTitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0 auto 1.5rem;
+  max-width: 34rem;
+  width: 100%;
+}
+
+.galleryCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.galleryCard:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.galleryCard:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.galleryCardTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.galleryCardArchetype {
+  font-size: 0.625rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .suggestions {
@@ -59,4 +152,21 @@
 .suggestion:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.readyCue {
+  max-width: 52rem;
+  margin: 0.5rem auto 1.25rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: var(--success-glow);
+  color: var(--success);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.readyCue strong {
+  font-weight: 700;
+  color: inherit;
 }

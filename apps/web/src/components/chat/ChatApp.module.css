@@ -173,15 +173,42 @@
 
   .body {
     flex-direction: column;
+    position: relative;
   }
 
   .subtitle {
     display: none;
+  }
+
+  /* Sticky bottom-sheet artifact so preview isn't buried above the fold */
+  .body > :last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    order: 3;
+    max-height: min(55vh, 420px);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .chatColumn {
+    order: 2;
+    flex: 1 1 auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .body > :first-child {
+    order: 1;
   }
 }
 
 @media (max-width: 640px) {
   .title {
     font-size: 0.875rem;
+  }
+
+  .body > :last-child {
+    max-height: min(48vh, 360px);
   }
 }

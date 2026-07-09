@@ -94,3 +94,35 @@
   line-height: 1.65;
   color: var(--text);
 }
+
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.errorText {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #fecaca;
+}
+
+.retryBtn {
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecaca;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.retryBtn:hover {
+  background: rgba(248, 113, 113, 0.25);
+}

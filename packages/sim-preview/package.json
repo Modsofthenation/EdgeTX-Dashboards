@@ -15,11 +15,12 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test dist/__tests__/virtualSd.test.js dist/__tests__/telemetryBridge.test.js dist/__tests__/wasmImportPatch.test.js dist/__tests__/handleInput.test.js dist/__tests__/simModel.test.js dist/__tests__/drawAnnulusFixture.test.js",
+    "test": "npm run build && node --test dist/__tests__/virtualSd.test.js dist/__tests__/telemetryBridge.test.js dist/__tests__/wasmImportPatch.test.js dist/__tests__/handleInput.test.js dist/__tests__/simModel.test.js dist/__tests__/drawAnnulusFixture.test.js dist/__tests__/loadWidgetQueue.test.js dist/__tests__/simRuntimeHarness.test.js",
     "test:wasm": "npm run build && node --test dist/__tests__/simRuntimeHarness.test.js"
   },
   "dependencies": {
     "@edgetx/simulator-ui": "^0.1.0",
+    "@widget-gen/layout-verify": "*",
     "@widget-gen/shared": "*"
   },
   "devDependencies": {

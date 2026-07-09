@@ -13,6 +13,22 @@ export type DrawKind =
   | "arc"
   | "annulus";
 
+/** Character span of one lcd.* call argument within its source line (0-based, end exclusive). */
+export interface ArgSpan {
+  start: number;
+  end: number;
+}
+
+/** Anchors a draw record to its originating lcd.* source line for in-place patching. */
+export interface DrawSourceRef {
+  /** 1-based line number in the full Lua source file */
+  sourceLine: number;
+  /** lcd method name, e.g. drawText */
+  method: string;
+  /** Argument spans within the source line text */
+  args: ArgSpan[];
+}
+
 export interface DrawRecord {
   kind: DrawKind;
   color?: string;
@@ -33,8 +49,10 @@ export interface DrawRecord {
   x2?: number;
   y2?: number;
   placeholder?: "model";
-  /** Original lcd.* line when available */
+  /** Original lcd.* line when available (1-based, full file) */
   sourceLine?: number;
+  /** Source anchors for surgical line patching */
+  sourceRef?: DrawSourceRef;
 }
 
 export interface BoundingBox {
@@ -49,6 +67,8 @@ export interface LayoutScenario {
   mock: MockTelemetry;
   options?: Record<string, 0 | 1>;
   armed?: boolean;
+  /** Simulated widget.flightSecs for timer display in static preview */
+  flightSecs?: number;
 }
 
 export interface InterpretResult {

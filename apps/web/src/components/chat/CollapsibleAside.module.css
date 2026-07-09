@@ -180,10 +180,11 @@
   .wrap {
     width: 100% !important;
     height: auto;
-    max-height: none;
+    max-height: min(55vh, 420px);
     border-right: none !important;
     border-left: none !important;
-    border-bottom: 1px solid var(--border);
+    border-bottom: none;
+    border-top: 1px solid var(--border);
     transition: max-height 0.28s cubic-bezier(0.33, 1, 0.68, 1);
   }
 
@@ -208,5 +209,10 @@
   .railLabel {
     writing-mode: horizontal-tb;
     transform: none;
+  }
+
+  .inner {
+    overflow: auto;
+    max-height: calc(min(55vh, 420px) - 0.25rem);
   }
 }

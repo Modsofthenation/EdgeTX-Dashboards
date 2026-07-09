@@ -77,12 +77,15 @@ export function resetStubApiCache(): void {
 
 const STUB_CHECK_MODULES = ["lcd", "model", "bitmap", "lvgl"] as const;
 
-export function validateStubApiCalls(source: string): ValidationIssue[] {
+export function validateStubApiCalls(
+  source: string,
+  options: { strict?: boolean } = {}
+): ValidationIssue[] {
   const index = loadStubApiIndex();
   if (!index) {
     return [
       {
-        severity: "warning",
+        severity: options.strict ? "error" : "warning",
         message:
           "EdgeTX stubs not found — run npm run sync-stubs for stub-aware API checks",
       },

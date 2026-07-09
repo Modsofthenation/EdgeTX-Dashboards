@@ -9,6 +9,7 @@ import {
 
 let runtime: SimRuntime | null = null;
 let currentMock: MockTelemetryValues | null = null;
+let commandQueue: Promise<void> = Promise.resolve();
 
 function post(msg: SimWorkerResponse, transfer?: Transferable[]): void {
   self.postMessage(msg, transfer ?? []);
@@ -16,7 +17,16 @@ function post(msg: SimWorkerResponse, transfer?: Transferable[]): void {
 
 self.onmessage = (event: MessageEvent<SimWorkerRequest>) => {
   const msg = event.data;
-  void handleMessage(msg);
+  commandQueue = commandQueue
+    .then(() => handleMessage(msg))
+    .catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
+      post({
+        type: "state",
+        state: { phase: "error", progress: 0, status: "Error", error: message, keyboardMode: "none" },
+      });
+      post({ type: "error", message });
+    });
 };
 
 async function handleMessage(msg: SimWorkerRequest): Promise<void> {
@@ -57,9 +67,11 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         try {
           await runtime.loadWidget(msg.source, msg.zone);
           if (currentMock) runtime.setMockTelemetry(currentMock);
+          post({ type: "loadWidgetResult", requestId: msg.requestId, ok: true });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           post({ type: "log", text: `Widget reload failed: ${message}` });
+          post({ type: "loadWidgetResult", requestId: msg.requestId, ok: false, error: message });
         }
         break;
       }

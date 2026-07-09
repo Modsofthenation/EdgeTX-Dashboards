@@ -87,7 +87,7 @@ export type SimWorkerRequest =
       zone?: WidgetSimulateZone;
       mock?: MockTelemetryValues;
     }
-  | { type: "loadWidget"; source: string; zone?: WidgetSimulateZone }
+  | { type: "loadWidget"; source: string; zone?: WidgetSimulateZone; requestId: number }
   | { type: "setMock"; mock: MockTelemetryValues }
   | { type: "input"; msg: SimInputMessage }
   | { type: "pause" }
@@ -100,7 +100,9 @@ export type SimWorkerResponse =
   | { type: "state"; state: RadioSimState }
   | { type: "frame"; frame: SimFrameData }
   | { type: "log"; text: string }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "loadWidgetResult"; requestId: number; ok: true }
+  | { type: "loadWidgetResult"; requestId: number; ok: false; error: string };
 
 export interface ExtendedSimulatorExports {
   simuLoadWidget?: (namePtr: number) => void;

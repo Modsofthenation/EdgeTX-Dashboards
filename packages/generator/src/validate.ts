@@ -1,5 +1,9 @@
 import type { SimulateLayoutProfile, ValidationIssue, ValidationResult } from "@widget-gen/shared";
-import { analyzeDrawSurface } from "@widget-gen/shared";
+import {
+  analyzeDrawSurface,
+  extractRefreshBody,
+  findRefreshBodyEndIndex,
+} from "@widget-gen/shared";
 import {
   validateDrawGeometry,
   DEFAULT_LAYOUT_SCENARIO,
@@ -48,6 +52,32 @@ export function extractUsedTelemetrySensors(source: string): Set<string> {
     }
   }
   return used;
+}
+
+function validateLcdOnlyInRefresh(source: string, issues: ValidationIssue[]): void {
+  const body = extractRefreshBody(source);
+  if (!body || body.length < 8) return;
+
+  const sig = source.match(
+    /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/
+  );
+  if (!sig || sig.index === undefined) return;
+  const bodyStart = sig.index + sig[0].length;
+  const bodyEnd = findRefreshBodyEndIndex(source);
+
+  const drawCall = /\blcd\.draw\w*\s*\(/g;
+  for (const match of source.matchAll(drawCall)) {
+    const idx = match.index ?? -1;
+    if (idx < 0) continue;
+    if (idx < bodyStart || idx >= bodyEnd) {
+      issues.push({
+        severity: "error",
+        message:
+          "lcd.draw* calls must be directly inside refresh() — web preview and the canvas editor require this",
+      });
+      return;
+    }
+  }
 }
 
 function validateLayoutGeometry(
@@ -286,6 +316,7 @@ export function validateWidgetLua(
 
   validateReturnTable(source, issues);
   validateFunctions(source, issues);
+  validateLcdOnlyInRefresh(source, issues);
   const widgetName = validateWidgetName(source, issues);
   validateOptions(source, options?.maxOptions ?? 10, issues);
 
@@ -310,7 +341,7 @@ export function validateWidgetLua(
         issues.push(issue);
       }
     }
-    issues.push(...validateStubApiCalls(source));
+    issues.push(...validateStubApiCalls(source, { strict: options.strictDevKit === true }));
   }
 
   issues.push(...validateLcdApiUsage(source));

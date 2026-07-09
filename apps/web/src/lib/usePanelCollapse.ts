@@ -9,7 +9,8 @@ type PanelCollapseState = {
   artifact: boolean;
 };
 
-const DEFAULT: PanelCollapseState = { history: false, artifact: true };
+/** Artifact panel starts expanded so preview/download are visible on first visit. */
+const DEFAULT: PanelCollapseState = { history: false, artifact: false };
 
 function readStored(): PanelCollapseState {
   if (typeof window === "undefined") return DEFAULT;
@@ -18,8 +19,8 @@ function readStored(): PanelCollapseState {
     if (!raw) return DEFAULT;
     const parsed = JSON.parse(raw) as Partial<PanelCollapseState>;
     return {
-      history: parsed.history ?? false,
-      artifact: parsed.artifact ?? true,
+      history: parsed.history ?? DEFAULT.history,
+      artifact: parsed.artifact ?? DEFAULT.artifact,
     };
   } catch {
     return DEFAULT;
@@ -62,10 +63,22 @@ export function usePanelCollapse() {
     });
   }, [startTransition]);
 
+  const expandArtifact = useCallback(() => {
+    startTransition(() => {
+      setState((prev) => {
+        if (!prev.artifact) return prev;
+        const next = { ...prev, artifact: false };
+        writeStored(next);
+        return next;
+      });
+    });
+  }, [startTransition]);
+
   return {
     historyCollapsed: state.history,
     artifactCollapsed: state.artifact,
     toggleHistory,
     toggleArtifact,
+    expandArtifact,
   };
 }

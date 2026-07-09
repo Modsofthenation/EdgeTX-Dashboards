@@ -112,6 +112,28 @@ export function pointInBox(px: number, py: number, box: BoundingBox): boolean {
   return px >= box.x && px <= box.x + box.w && py >= box.y && py <= box.y + box.h;
 }
 
+function hitTargetBox(el: EditorElement, box: BoundingBox): BoundingBox {
+  // Small text/lines are hard to select at 1:1 scale, so widen hit area only.
+  const basePad = el.kind === "line" ? 8 : 5;
+  let x = box.x - basePad;
+  let y = box.y - basePad;
+  let w = box.w + basePad * 2;
+  let h = box.h + basePad * 2;
+
+  const minW = el.kind === "line" ? 18 : el.kind === "text" ? 28 : 12;
+  const minH = el.kind === "line" ? 18 : el.kind === "text" ? 18 : 12;
+  if (w < minW) {
+    x -= (minW - w) / 2;
+    w = minW;
+  }
+  if (h < minH) {
+    y -= (minH - h) / 2;
+    h = minH;
+  }
+
+  return { x, y, w, h };
+}
+
 /** Hit-test elements top-to-bottom (last drawn = first hit). */
 export function hitTestElements(
   elements: EditorElement[],
@@ -124,7 +146,8 @@ export function hitTestElements(
     const el = elements[i];
     if (!el.visible) continue;
     const box = bboxForElement(el, lcdW, lcdH);
-    if (box && pointInBox(px, py, box)) return el.id;
+    if (!box) continue;
+    if (pointInBox(px, py, hitTargetBox(el, box))) return el.id;
   }
   return null;
 }

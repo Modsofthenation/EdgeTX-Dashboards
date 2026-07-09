@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/lib/chatTypes";
 import { markChatScrolling } from "@/lib/chatScrollPause";
+import { TEMPLATE_GALLERY } from "@/lib/templateGallery";
 import { ChatMessageBubble } from "./ChatMessage";
 import styles from "./ChatMessageList.module.css";
 
@@ -11,6 +12,8 @@ interface ChatMessageListProps {
   scrollRevision: number;
   running: boolean;
   onSuggestion: (text: string) => void;
+  dashboardReadyCue?: boolean;
+  onRetry?: () => void;
 }
 
 export function ChatMessageList({
@@ -18,6 +21,8 @@ export function ChatMessageList({
   scrollRevision,
   running,
   onSuggestion,
+  dashboardReadyCue = false,
+  onRetry,
 }: ChatMessageListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
@@ -59,22 +64,53 @@ export function ChatMessageList({
             preview in the panel on the right. Ask for companion tools (battery selector, flight
             logger) when you need them.
           </p>
-          <div className={styles.suggestions}>
-            {[
-              "Minimal quad dashboard: large timer, battery bar, and RSSI strip",
-              "Rotorflight heli board with headspeed hero and motor temps",
-              "Dense CRSF telemetry grid with link, GPS, and attitude",
-              "Battery dashboard plus a TOOLS script to select 4S/6S pack",
-              "Flight logger telemetry script with last-flight summary on the dashboard",
-            ].map((text) => (
+          <ol className={styles.steps} aria-label="How it works">
+            <li>
+              <span className={styles.stepNum}>1</span>
+              <span>
+                <strong>Describe</strong> the telemetry and layout you want
+              </span>
+            </li>
+            <li>
+              <span className={styles.stepNum}>2</span>
+              <span>
+                <strong>Preview</strong> validates in the Dashboard panel
+              </span>
+            </li>
+            <li>
+              <span className={styles.stepNum}>3</span>
+              <span>
+                <strong>Download</strong> the zip for your radio SD card
+              </span>
+            </li>
+          </ol>
+
+          <h3 className={styles.galleryTitle}>Start from a template</h3>
+          <div className={styles.gallery}>
+            {TEMPLATE_GALLERY.map((item) => (
               <button
-                key={text}
+                key={item.id}
+                type="button"
+                className={styles.galleryCard}
+                disabled={running}
+                onClick={() => onSuggestion(item.prompt)}
+              >
+                <span className={styles.galleryCardTitle}>{item.title}</span>
+                <span className={styles.galleryCardArchetype}>{item.archetype}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.suggestions}>
+            {TEMPLATE_GALLERY.map((item) => (
+              <button
+                key={`s-${item.id}`}
                 type="button"
                 className={styles.suggestion}
                 disabled={running}
-                onClick={() => onSuggestion(text)}
+                onClick={() => onSuggestion(item.prompt)}
               >
-                {text}
+                {item.prompt}
               </button>
             ))}
           </div>
@@ -82,8 +118,19 @@ export function ChatMessageList({
       )}
 
       {messages.map((message) => (
-        <ChatMessageBubble key={message.id} message={message} />
+        <ChatMessageBubble
+          key={message.id}
+          message={message}
+          onRetry={message.error && !running ? onRetry : undefined}
+        />
       ))}
+
+      {dashboardReadyCue && messages.length > 0 && (
+        <div className={styles.readyCue} role="status">
+          Dashboard ready — preview and download are in the <strong>Dashboard</strong> panel on the
+          right.
+        </div>
+      )}
     </div>
   );
 }

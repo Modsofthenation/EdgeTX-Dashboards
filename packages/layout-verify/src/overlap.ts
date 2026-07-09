@@ -49,9 +49,14 @@ function shouldSkipAnnulusText(annulus: DrawRecord, textBox: BoundingBox): boole
   // Satellite labels below the gauge disc
   if (center.y > cy + inner * 0.4) return true;
 
-  // Side satellites beside the lower ring
   const dx = Math.abs(center.x - cx);
-  if (dx > inner * 0.85 && center.y > cy - inner * 0.3) return true;
+  const dy = center.y - cy;
+
+  // Side / upper-side strip labels (e.g. capacity "850"/"mAh" beside whoop gauge).
+  // Keep text sitting on the top of the ring (small |dy|, moderate dx) as a real hit.
+  if (dx > inner * 0.7 && dy > -inner * 1.1 && dy < inner * 0.5) {
+    if (dy < -inner * 0.25 || dx > inner * 0.85) return true;
+  }
 
   return false;
 }
@@ -96,20 +101,22 @@ export function findOverlaps(
       const boxB = boxes[j];
       if (!boxB || boxB.w <= 0 || boxB.h <= 0) continue;
 
-      if (!shouldCheckPair(records[i], records[j], boxA, boxB)) continue;
+      if (!shouldCheckPair(records[i]!, records[j]!, boxA, boxB)) continue;
       if (!boxesOverlap(boxA, boxB)) continue;
 
       const intersection = intersectBoxes(boxA, boxB);
       if (!intersection) continue;
 
-      if (records[i].kind === "text" && records[j].kind === "text") {
+      if (records[i]!.kind === "text" && records[j]!.kind === "text") {
         const area = intersection.w * intersection.h;
         if (area < 48) continue;
+        // Adjacent SMLSIZE rows often share a few pixels of bbox height — not a real collision.
+        if (intersection.h < 6) continue;
       }
 
       hits.push({
-        a: records[i],
-        b: records[j],
+        a: records[i]!,
+        b: records[j]!,
         aIndex: i,
         bIndex: j,
         intersection,
