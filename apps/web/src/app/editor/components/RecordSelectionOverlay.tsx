@@ -25,6 +25,8 @@ interface RecordSelectionOverlayProps {
   onSelect: (ids: string[]) => void;
   onTranslate: (ids: string[], dx: number, dy: number) => void;
   onResize: (id: string, box: BoundingBox) => void;
+  onGestureStart?: () => void;
+  onGestureEnd?: () => void;
 }
 
 function screenToZone(
@@ -50,6 +52,8 @@ export function RecordSelectionOverlay({
   onSelect,
   onTranslate,
   onResize,
+  onGestureStart,
+  onGestureEnd,
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<{
     mode: "move" | "resize";
@@ -59,7 +63,14 @@ export function RecordSelectionOverlay({
     startBox?: BoundingBox;
     recordIds: string[];
     shiftKey: boolean;
+    moved: boolean;
   } | null>(null);
+
+  const finishGesture = useCallback(() => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    onGestureEnd?.();
+  }, [onGestureEnd]);
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent) => {
@@ -79,12 +90,14 @@ export function RecordSelectionOverlay({
             : [hit.id!];
         onSelect(nextIds);
 
+        onGestureStart?.();
         dragRef.current = {
           mode: "move",
           startX: pointer.x,
           startY: pointer.y,
           recordIds: nextIds,
           shiftKey: event.shiftKey,
+          moved: false,
         };
         (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
         return;
@@ -92,7 +105,15 @@ export function RecordSelectionOverlay({
 
       if (!event.shiftKey) onSelect([]);
     },
-    [records, layout, onSelect, selectedIds, frameRef, zone],
+    [
+      records,
+      layout,
+      onSelect,
+      selectedIds,
+      frameRef,
+      zone,
+      onGestureStart,
+    ],
   );
 
   const onPointerMove = useCallback(
@@ -115,6 +136,7 @@ export function RecordSelectionOverlay({
         onTranslate(drag.recordIds, sdx, sdy);
         drag.startX += sdx;
         drag.startY += sdy;
+        drag.moved = true;
         return;
       }
 
@@ -132,14 +154,15 @@ export function RecordSelectionOverlay({
           snap,
         );
         onResize(drag.recordIds[0]!, box);
+        drag.moved = true;
       }
     },
     [layout, onTranslate, onResize, frameRef],
   );
 
   const onPointerUp = useCallback(() => {
-    dragRef.current = null;
-  }, []);
+    finishGesture();
+  }, [finishGesture]);
 
   const onResizeStart = useCallback(
     (
@@ -150,6 +173,7 @@ export function RecordSelectionOverlay({
       if (!layout) return;
       const box = bboxForRecordInZone(record, zone);
       if (!box) return;
+      onGestureStart?.();
       dragRef.current = {
         mode: "resize",
         handle,
@@ -158,10 +182,11 @@ export function RecordSelectionOverlay({
         startBox: box,
         recordIds: [record.id],
         shiftKey: event.shiftKey,
+        moved: false,
       };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [layout, zone],
+    [layout, zone, onGestureStart],
   );
 
   if (!layout) return null;
@@ -175,7 +200,7 @@ export function RecordSelectionOverlay({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
+      onPointerCancel={onPointerUp}
     >
       {records.map((record) => {
         const box = bboxForRecordInZone(record, zone);

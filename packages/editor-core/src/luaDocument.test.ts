@@ -12,8 +12,9 @@ import {
   patchRecordArgs,
   translateRecord,
   removeRecordLine,
-  insertDrawLine,
-  patchWidgetName,
+  removeRecordLines,
+  remapRecordIdsAfterLineRemoval,
+  insertDrawLineWithId,
 } from "./luaDocument.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -94,10 +95,44 @@ test("removeRecordLine deletes anchored line", () => {
   assert.ok(!interpretDocument(after).some((r) => r.text === "TX15 Dash"));
 });
 
-test("insertDrawLine appends inside refresh body", () => {
-  const starter = patchWidgetName(goldExample, "Test");
-  const after = insertDrawLine(starter, "text");
-  assert.match(after, /lcd\.drawText\(12, 12, "Text"/);
-  const records = interpretDocument(after);
-  assert.ok(records.some((r) => r.kind === "text" && r.text === "Text"));
+test("patchRecordArgs applies multi-arg patches without corrupting later spans", () => {
+  const zone = zoneFor(goldExample);
+  const records = interpretDocument(goldExample);
+  const title = records.find(
+    (r) => r.kind === "text" && r.text === "TX15 Dash",
+  );
+  assert.ok(title);
+  // pad (3 chars) → 24 (2 chars) while also rewriting y — classic span-shift bug.
+  const patched = translateRecord(goldExample, title!, 12, 0, zone);
+  const line = patched.split("\n")[title!.sourceLine! - 1]!;
+  assert.match(line, /lcd\.drawText\(24,\s*12,\s*"TX15 Dash"/);
+  const after = interpretDocument(patched).find((r) => r.id === title!.id);
+  assert.equal(after?.x, 24);
+  assert.equal(after?.y, 12);
+  assert.equal(after?.text, "TX15 Dash");
+});
+
+test("removeRecordLines deletes multiple lines without shifting targets", () => {
+  const records = interpretDocument(goldExample);
+  const texts = records.filter((r) => r.kind === "text").slice(0, 3);
+  assert.equal(texts.length, 3);
+  const after = removeRecordLines(goldExample, texts);
+  const remaining = interpretDocument(after);
+  for (const t of texts) {
+    assert.ok(!remaining.some((r) => r.text === t.text && r.kind === "text"));
+  }
+});
+
+test("remapRecordIdsAfterLineRemoval shifts later L-ids", () => {
+  assert.deepEqual(remapRecordIdsAfterLineRemoval(["L10", "L12", "L15"], [12]), [
+    "L10",
+    "L14",
+  ]);
+});
+
+test("insertDrawLineWithId returns the new record id", () => {
+  const { source, insertedId } = insertDrawLineWithId(goldExample, "rect");
+  assert.ok(insertedId);
+  const rec = interpretDocument(source).find((r) => r.id === insertedId);
+  assert.equal(rec?.kind, "rect");
 });

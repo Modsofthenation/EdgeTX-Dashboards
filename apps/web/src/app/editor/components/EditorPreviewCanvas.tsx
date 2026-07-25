@@ -47,8 +47,8 @@ export function EditorPreviewCanvas({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const cw = host.clientWidth;
-    const ch = host.clientHeight;
+    const cw = Math.max(1, host.clientWidth || Math.round(layout.drawW + layout.offsetX * 2));
+    const ch = Math.max(1, host.clientHeight || Math.round(layout.drawH + layout.offsetY * 2));
     canvas.width = cw;
     canvas.height = ch;
 
