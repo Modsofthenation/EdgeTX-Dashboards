@@ -32,6 +32,19 @@ describe("bboxForRecord", () => {
     assert.equal(box!.x, 82);
   });
 
+  it("sizes MIDSIZE text with EdgeTX char advances", () => {
+    const box = bboxForRecord({
+      kind: "text",
+      x: 12,
+      y: 10,
+      text: "name",
+      fontSize: 18,
+    });
+    assert.ok(box);
+    assert.equal(box!.w, 36);
+    assert.equal(box!.h, 18);
+  });
+
   it("detects overlapping rects", () => {
     const a = bboxForRecord({ kind: "filledRect", x: 0, y: 0, w: 100, h: 50 })!;
     const b = bboxForRecord({

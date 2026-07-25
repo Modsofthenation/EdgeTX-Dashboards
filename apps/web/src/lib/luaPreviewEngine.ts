@@ -1,4 +1,5 @@
 import type { PreviewDrawCommand } from "@widget-gen/layout-verify";
+import { edgeTxTextSize } from "@widget-gen/layout-verify";
 
 export {
   parseLuaToDrawCommands,
@@ -14,8 +15,45 @@ export {
   type EdgeColor,
 } from "@widget-gen/layout-verify";
 
+export { edgeTxTextSize };
+
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
+}
+
+/**
+ * Preview text metrics matching `bold ${fontSize}px monospace` with top baseline.
+ * Prefer live measureText when a 2D context is available; otherwise fall back to
+ * the EdgeTX advance table (SML=6 / MID=9 / DBL=12).
+ */
+export function measurePreviewText(
+  text: string,
+  fontSize: number,
+  ctx?: CanvasRenderingContext2D | null,
+): { w: number; h: number } {
+  if (ctx) {
+    ctx.font = `bold ${fontSize}px monospace`;
+    const measured = ctx.measureText(text).width;
+    return { w: Math.max(1, measured), h: fontSize };
+  }
+  return edgeTxTextSize(text, fontSize);
+}
+
+/** Draw text with EdgeTX top-left origin; width matches measurePreviewText. */
+function fillPreviewText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  fontSize: number,
+  align: "left" | "center" | "right",
+): void {
+  ctx.font = `bold ${fontSize}px monospace`;
+  ctx.textBaseline = "top";
+  ctx.textAlign = align;
+  ctx.fillText(text, x, y);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
 }
 
 export function renderPreviewCommands(
@@ -53,23 +91,13 @@ export function renderPreviewCommands(
         break;
       case "text": {
         ctx.fillStyle = cmd.color ?? "#ffffff";
-        ctx.font = `bold ${cmd.fontSize ?? 12}px monospace`;
         const fontSize = cmd.fontSize ?? 12;
         const text = cmd.text ?? "";
-        const align = cmd.textAlign ?? "left";
-        const textY = (cmd.y ?? 0) + fontSize;
-        const textX = cmd.x ?? 0;
-        if (align === "center") {
-          ctx.textAlign = "center";
-          ctx.fillText(text, textX, textY);
-        } else if (align === "right") {
-          ctx.textAlign = "right";
-          ctx.fillText(text, textX, textY);
-        } else {
-          ctx.textAlign = "left";
-          ctx.fillText(text, textX, textY);
-        }
-        ctx.textAlign = "left";
+        const align =
+          cmd.textAlign === "center" || cmd.textAlign === "right"
+            ? cmd.textAlign
+            : "left";
+        fillPreviewText(ctx, text, cmd.x ?? 0, cmd.y ?? 0, fontSize, align);
         break;
       }
       case "bitmap": {

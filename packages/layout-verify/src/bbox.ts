@@ -10,8 +10,20 @@ const CHAR_W: Record<number, number> = {
   20: 12,
 };
 
-function charWidth(fontSize: number): number {
-  return CHAR_W[fontSize] ?? 6;
+/** EdgeTX fixed advance for a font size (SML=6, MID=9, DBL=12). */
+export function edgeTxCharWidth(fontSize: number): number {
+  return CHAR_W[fontSize] ?? Math.max(1, Math.round(fontSize * 0.5));
+}
+
+/** EdgeTX text footprint used by overlap checks and the editor selection overlay. */
+export function edgeTxTextSize(
+  text: string,
+  fontSize: number,
+): { w: number; h: number } {
+  return {
+    w: Math.max(1, text.length * edgeTxCharWidth(fontSize)),
+    h: fontSize,
+  };
 }
 
 export function bboxForRecord(
@@ -36,8 +48,7 @@ export function bboxForRecord(
     case "text": {
       const fontSize = record.fontSize ?? 12;
       const text = record.text ?? "";
-      const w = Math.max(1, text.length * charWidth(fontSize));
-      const h = fontSize;
+      const { w, h } = edgeTxTextSize(text, fontSize);
       let x = record.x ?? 0;
       const y = record.y ?? 0;
       const align = record.textAlign ?? "left";

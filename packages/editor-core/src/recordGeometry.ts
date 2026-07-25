@@ -2,6 +2,11 @@ import { bboxForRecord, type DrawRecord } from "@widget-gen/layout-verify";
 import type { DocumentRecord, ZoneOffset } from "./luaDocument.ts";
 import { snapToGrid, type BoundingBox, type ResizeHandle } from "./geometry.ts";
 
+export type TextSizeFn = (
+  text: string,
+  fontSize: number,
+) => { w: number; h: number };
+
 /** Shift LCD-space record coords into zone-relative space for hit-testing and overlay. */
 export function recordInZone(record: DrawRecord, zone: ZoneOffset): DrawRecord {
   const shifted: DrawRecord = { ...record };
@@ -12,12 +17,40 @@ export function recordInZone(record: DrawRecord, zone: ZoneOffset): DrawRecord {
   return shifted;
 }
 
+function textBBox(
+  record: DrawRecord,
+  measureText?: TextSizeFn,
+): BoundingBox | null {
+  const fontSize = record.fontSize ?? 12;
+  const text = record.text ?? "";
+  const size = measureText
+    ? measureText(text, fontSize)
+    : { w: Math.max(1, text.length * Math.round(fontSize * 0.5)), h: fontSize };
+  let x = record.x ?? 0;
+  const y = record.y ?? 0;
+  const align = record.textAlign ?? "left";
+  if (align === "center") x -= size.w / 2;
+  else if (align === "right") x -= size.w;
+  // Small pad so antialiased glyph ink stays inside the outline.
+  const padX = 1;
+  const padY = 1;
+  return {
+    x: x - padX,
+    y: y - padY,
+    w: size.w + padX * 2,
+    h: size.h + padY * 2,
+  };
+}
+
 export function bboxForRecordInZone(
   record: DrawRecord,
   zone: ZoneOffset,
+  measureText?: TextSizeFn,
 ): BoundingBox | null {
   if (record.kind === "clear") return null;
-  return bboxForRecord(recordInZone(record, zone), zone.zoneW, zone.zoneH);
+  const shifted = recordInZone(record, zone);
+  if (shifted.kind === "text") return textBBox(shifted, measureText);
+  return bboxForRecord(shifted, zone.zoneW, zone.zoneH);
 }
 
 function hitTargetBox(box: BoundingBox, minSize = 12): BoundingBox {
@@ -41,11 +74,12 @@ export function hitTestRecords(
   x: number,
   y: number,
   zone: ZoneOffset,
+  measureText?: TextSizeFn,
 ): DocumentRecord | null {
   for (let i = records.length - 1; i >= 0; i--) {
     const record = records[i]!;
     if (record.kind === "clear") continue;
-    const box = bboxForRecordInZone(record, zone);
+    const box = bboxForRecordInZone(record, zone, measureText);
     if (!box) continue;
     const target =
       record.kind === "text" || record.kind === "line"

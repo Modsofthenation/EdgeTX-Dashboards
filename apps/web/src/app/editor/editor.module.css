@@ -693,15 +693,17 @@
 }
 
 .previewHost {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .previewCanvas {
   display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 .loadingPreview {
@@ -731,6 +733,7 @@
 
 .selectionBox {
   position: absolute;
+  box-sizing: border-box;
   border: 1px dashed rgba(255, 255, 255, 0.25);
   pointer-events: none;
   border-radius: 2px;
