@@ -1,4 +1,5 @@
 import type { PreviewDrawCommand } from "@widget-gen/layout-verify";
+import { edgeTxTextSize } from "@widget-gen/layout-verify";
 
 export {
   parseLuaToDrawCommands,
@@ -16,6 +17,39 @@ export {
 
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
+}
+
+/** Draw text using EdgeTX top-left origin and fixed char advances so selection bboxes match. */
+function fillEdgeTxText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  fontSize: number,
+  align: "left" | "center" | "right",
+): void {
+  const { w: targetW } = edgeTxTextSize(text, fontSize);
+  ctx.font = `bold ${fontSize}px monospace`;
+  ctx.textBaseline = "top";
+  const measured = ctx.measureText(text).width || 1;
+  const sx = targetW / measured;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(sx, 1);
+  if (align === "center") {
+    ctx.textAlign = "center";
+    ctx.fillText(text, 0, 0);
+  } else if (align === "right") {
+    ctx.textAlign = "right";
+    ctx.fillText(text, 0, 0);
+  } else {
+    ctx.textAlign = "left";
+    ctx.fillText(text, 0, 0);
+  }
+  ctx.restore();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
 }
 
 export function renderPreviewCommands(
@@ -53,23 +87,13 @@ export function renderPreviewCommands(
         break;
       case "text": {
         ctx.fillStyle = cmd.color ?? "#ffffff";
-        ctx.font = `bold ${cmd.fontSize ?? 12}px monospace`;
         const fontSize = cmd.fontSize ?? 12;
         const text = cmd.text ?? "";
-        const align = cmd.textAlign ?? "left";
-        const textY = (cmd.y ?? 0) + fontSize;
-        const textX = cmd.x ?? 0;
-        if (align === "center") {
-          ctx.textAlign = "center";
-          ctx.fillText(text, textX, textY);
-        } else if (align === "right") {
-          ctx.textAlign = "right";
-          ctx.fillText(text, textX, textY);
-        } else {
-          ctx.textAlign = "left";
-          ctx.fillText(text, textX, textY);
-        }
-        ctx.textAlign = "left";
+        const align =
+          cmd.textAlign === "center" || cmd.textAlign === "right"
+            ? cmd.textAlign
+            : "left";
+        fillEdgeTxText(ctx, text, cmd.x ?? 0, cmd.y ?? 0, fontSize, align);
         break;
       }
       case "bitmap": {

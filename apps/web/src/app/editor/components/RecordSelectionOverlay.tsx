@@ -203,21 +203,22 @@ export function RecordSelectionOverlay({
       onPointerCancel={onPointerUp}
     >
       {records.map((record) => {
+        const selected = selectedIds.includes(record.id);
+        if (!selected) return null;
         const box = bboxForRecordInZone(record, zone);
         if (!box) return null;
-        const selected = selectedIds.includes(record.id);
         const left = offsetX + box.x * scale;
         const top = offsetY + box.y * scale;
-        const width = box.w * scale;
-        const height = box.h * scale;
+        const width = Math.max(1, box.w * scale);
+        const height = Math.max(1, box.h * scale);
 
         return (
           <div key={record.id}>
             <div
-              className={`${styles.selectionBox} ${selected ? styles.selectionBoxActive : ""}`}
+              className={`${styles.selectionBox} ${styles.selectionBoxActive}`}
               style={{ left, top, width, height }}
             />
-            {selected && isRectLike(record) && (
+            {isRectLike(record) && (
               <TransformHandles
                 box={box}
                 scale={scale}
