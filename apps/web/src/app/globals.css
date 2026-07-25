@@ -1,38 +1,42 @@
 :root {
-  --bg: #07080c;
-  --bg-elevated: #0d0f14;
-  --surface: rgba(18, 22, 32, 0.72);
-  --surface-solid: #121620;
-  --surface-hover: rgba(28, 34, 48, 0.9);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #f1f5f9;
-  --text-secondary: #94a3b8;
+  /* Cool light instrument bench — dark LCD canvas stays separate */
+  --bg: #eef1f4;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-hover: #f3f5f7;
+  --border: rgba(15, 23, 42, 0.1);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
   --muted: #64748b;
-  --accent: #3b82f6;
-  --accent-bright: #60a5fa;
-  --accent-glow: rgba(59, 130, 246, 0.35);
-  --accent-hover: #2563eb;
-  --cyan: #22d3ee;
-  --success: #34d399;
-  --success-glow: rgba(52, 211, 153, 0.25);
-  --warning: #fbbf24;
-  --error: #f87171;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
-  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
-  --transition: 0.18s ease;
+  --accent: #0f766e;
+  --accent-bright: #0d9488;
+  --accent-glow: rgba(13, 148, 136, 0.22);
+  --accent-hover: #0d5f59;
+  --cyan: #0891b2;
+  --success: #059669;
+  --success-glow: rgba(5, 150, 105, 0.14);
+  --warning: #d97706;
+  --error: #dc2626;
+  --canvas-bg: #0b0d12;
+  --canvas-frame: #151922;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
+  --font-sans: var(--font-outfit), system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  --transition: 0.16s ease;
   --scrollbar-size: 8px;
   --scrollbar-track: transparent;
-  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.22);
-  --scrollbar-thumb-active: rgba(59, 130, 246, 0.5);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
+  --scrollbar-thumb-active: rgba(13, 148, 136, 0.55);
 }
 
 * {
@@ -49,29 +53,32 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  line-height: 1.55;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background:
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(180deg, rgba(13, 148, 136, 0.06) 0%, transparent 28%),
     radial-gradient(
-      ellipse 80% 50% at 50% -20%,
-      rgba(59, 130, 246, 0.18),
-      transparent
+      ellipse 70% 45% at 100% 0%,
+      rgba(8, 145, 178, 0.07),
+      transparent 55%
     ),
-    radial-gradient(
-      ellipse 60% 40% at 100% 0%,
-      rgba(34, 211, 238, 0.08),
-      transparent
-    ),
-    radial-gradient(
-      ellipse 50% 30% at 0% 100%,
-      rgba(59, 130, 246, 0.06),
-      transparent
-    ),
-    var(--bg);
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    24px 24px,
+    24px 24px;
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    0 0;
 }
 
 button,
@@ -86,6 +93,7 @@ button {
   transition:
     background var(--transition),
     border-color var(--transition),
+    color var(--transition),
     transform var(--transition),
     box-shadow var(--transition),
     opacity var(--transition);
@@ -96,13 +104,13 @@ button:active:not(:disabled) {
 }
 
 a {
-  color: var(--accent-bright);
+  color: var(--accent);
   text-decoration: none;
   transition: color var(--transition);
 }
 
 a:hover {
-  color: var(--cyan);
+  color: var(--accent-hover);
 }
 
 code {
@@ -111,12 +119,12 @@ code {
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.35);
+  background: rgba(13, 148, 136, 0.22);
   color: var(--text);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-bright);
   outline-offset: 2px;
 }
 

@@ -61,7 +61,7 @@
 
 .confirmBtn {
   border: 1px solid transparent;
-  background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+  background: var(--accent);
   color: white;
 }
 

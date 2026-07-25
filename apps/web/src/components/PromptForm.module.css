@@ -82,7 +82,7 @@
 }
 
 .primary {
-  background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+  background: var(--accent);
   color: white;
   box-shadow: 0 4px 16px var(--accent-glow);
 }

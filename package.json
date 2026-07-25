@@ -21,7 +21,9 @@
     "reset-chats": "node scripts/reset-chats.mjs",
     "test": "npm run test --workspaces --if-present",
     "test:wasm": "npm run test:wasm --workspace=@widget-gen/sim-preview",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "desktop:dev": "npm run tauri --workspace=@widget-gen/desktop -- dev",
+    "desktop:build": "npm run tauri --workspace=@widget-gen/desktop -- build"
   },
   "engines": {
     "node": ">=22.13.0"

@@ -7,7 +7,7 @@
   max-width: none;
   margin: 0;
   border: none;
-  background: rgba(7, 8, 12, 0.55);
+  background: transparent;
 }
 
 .header {
@@ -41,14 +41,16 @@
 .logo {
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 0.65rem;
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
   font-size: 0.5625rem;
   font-weight: 800;
   line-height: 1;
+  letter-spacing: 0.02em;
   color: white;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
+  background: var(--accent);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 

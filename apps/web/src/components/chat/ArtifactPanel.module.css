@@ -5,7 +5,7 @@
   min-width: 0;
   min-height: 0;
   flex-shrink: 0;
-  background: rgba(7, 8, 12, 0.65);
+  background: var(--bg-elevated);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -93,7 +93,7 @@
   gap: 0.5rem;
   padding: 1.5rem;
   text-align: center;
-  background: rgba(7, 8, 12, 0.82);
+  background: var(--bg);
   backdrop-filter: blur(4px);
   border-radius: var(--radius-md);
   z-index: 2;
