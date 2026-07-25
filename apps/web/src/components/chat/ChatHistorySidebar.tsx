@@ -62,7 +62,7 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
   return (
     <aside className={styles.sidebar}>
       <div className={styles.header}>
-        <h2 className={styles.title}>History</h2>
+        <h2 className={styles.title}>Chats</h2>
         <div className={styles.headerActions}>
           <button
             type="button"
@@ -75,7 +75,7 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
           </button>
           {onTogglePanel && (
             <PanelCollapseButton
-              label="History"
+              label="Chats"
               collapsed={panelCollapsed}
               onToggle={onTogglePanel}
             />

@@ -20,7 +20,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "EdgeTX Dashboards",
   description:
-    "Generate and edit EdgeTX Lua dashboards for RadioMaster TX15 — telemetry, layout editor, and install guides",
+    "Generate, preview, and edit EdgeTX Lua dashboards for TX15 — then download a zip for your radio SD card",
 };
 
 export default function RootLayout({

@@ -34,6 +34,7 @@ import {
   resolvePreviewDimensions,
 } from "@widget-gen/shared";
 import { useRouter } from "next/navigation";
+import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { RecordLayersPanel } from "./components/RecordLayersPanel";
@@ -642,90 +643,95 @@ export function EditorApp() {
     setSimOpen(true);
   }, []);
 
+  const layoutSelfHref = useMemo(() => {
+    const params = new URLSearchParams({ protocol });
+    if (chatId) params.set("chatId", chatId);
+    if (sessionId) params.set("sessionId", sessionId);
+    if (workspaceKey) params.set("instanceId", workspaceKey);
+    else if (meta.name) params.set("name", meta.name);
+    return `/editor?${params.toString()}`;
+  }, [protocol, chatId, sessionId, workspaceKey, meta.name]);
+
+  const subtitle = (
+    <>
+      <span>{meta.name || "Untitled"}</span>
+      <span className={styles.dot} aria-hidden>
+        ·
+      </span>
+      <span>
+        {meta.layout} z{meta.zone}
+      </span>
+      {dirty ? (
+        <>
+          <span className={styles.dot} aria-hidden>
+            ·
+          </span>
+          <span className={styles.unsaved}>Unsaved</span>
+        </>
+      ) : null}
+    </>
+  );
+
   return (
     <div className={styles.editorRoot}>
-      <header className={styles.editorHeader}>
-        <div className={styles.brand}>
-          <Link
-            href={backHref}
-            className={styles.logo}
-            aria-label="Back to generator"
-            onClick={navigateBack}
-          >
-            ETX
-          </Link>
-          <div className={styles.brandCopy}>
-            <h1 className={styles.editorTitle}>Dashboard Editor</h1>
-            <p className={styles.editorSubtitle}>
-              <span>{meta.name || "Untitled"}</span>
-              <span className={styles.dot} aria-hidden>
-                ·
-              </span>
-              <span>
-                {meta.layout} z{meta.zone}
-              </span>
-              {dirty ? (
-                <>
-                  <span className={styles.dot} aria-hidden>
-                    ·
-                  </span>
-                  <span className={styles.unsaved}>Unsaved</span>
-                </>
-              ) : null}
-            </p>
-          </div>
-        </div>
-        <div className={styles.headerActions}>
-          <AppPreferencesButton className={styles.ghostBtn} />
-          <Link
-            href={backHref}
-            className={styles.ghostBtn}
-            onClick={navigateBack}
-          >
-            Back to chat
-          </Link>
-          <button type="button" className={styles.ghostBtn} onClick={openSim}>
-            Run in simulator
-          </button>
-          <button
-            type="button"
-            className={styles.ghostBtn}
-            onClick={() => void handleCopyLua()}
-          >
-            {copyDone ? "Copied" : "Copy Lua"}
-          </button>
-          <button
-            type="button"
-            className={styles.ghostBtn}
-            disabled={downloading || valid === false}
-            title={
-              valid === false
-                ? "Fix validation errors before downloading"
-                : undefined
-            }
-            onClick={() => void handleDownload()}
-          >
-            {downloading ? "Downloading…" : "Download zip"}
-          </button>
-          <button
-            type="button"
-            className={styles.ghostBtn}
-            onClick={() => setPasteOpen(true)}
-          >
-            Import Lua
-          </button>
-          <button
-            type="button"
-            className={styles.ghostBtn}
-            onClick={() => {
-              if (dirty && !window.confirm("Discard unsaved changes?")) return;
-              loadFromSource(createStarterSource(), true);
-            }}
-          >
-            New
-          </button>
-        </div>
-      </header>
+      <AppChrome
+        surface="layout"
+        subtitle={subtitle}
+        layoutHref={layoutSelfHref}
+        actions={
+          <>
+            <AppPreferencesButton className={styles.ghostBtn} />
+            <Link
+              href={backHref}
+              className={styles.ghostBtn}
+              onClick={navigateBack}
+            >
+              Back to Generate
+            </Link>
+            <button type="button" className={styles.ghostBtn} onClick={openSim}>
+              Run in simulator
+            </button>
+            <button
+              type="button"
+              className={styles.ghostBtn}
+              onClick={() => void handleCopyLua()}
+            >
+              {copyDone ? "Copied" : "Copy Lua"}
+            </button>
+            <button
+              type="button"
+              className={styles.ghostBtn}
+              disabled={downloading || valid === false}
+              title={
+                valid === false
+                  ? "Fix validation errors before downloading"
+                  : undefined
+              }
+              onClick={() => void handleDownload()}
+            >
+              {downloading ? "Downloading…" : "Download zip"}
+            </button>
+            <button
+              type="button"
+              className={styles.ghostBtn}
+              onClick={() => setPasteOpen(true)}
+            >
+              Import Lua
+            </button>
+            <button
+              type="button"
+              className={styles.ghostBtn}
+              onClick={() => {
+                if (dirty && !window.confirm("Discard unsaved changes?"))
+                  return;
+                loadFromSource(createStarterSource(), true);
+              }}
+            >
+              New
+            </button>
+          </>
+        }
+      />
 
       {loadError && (
         <div className={styles.bannerStack}>

@@ -237,6 +237,31 @@
   gap: 0.5rem;
 }
 
+.workflow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.workflowStep {
+  color: var(--muted);
+}
+
+.workflowStep[data-done="true"] {
+  color: var(--success);
+}
+
+.workflowSep {
+  opacity: 0.45;
+}
+
 .editLayoutBtn {
   display: block;
   width: 100%;

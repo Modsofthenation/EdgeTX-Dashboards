@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useArtifactPanel,
   useChatMessages,
@@ -10,6 +11,7 @@ import {
 } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
 import { usePanelCollapse } from "~/lib/usePanelCollapse";
+import { AppChrome } from "../AppChrome";
 import { ArtifactPanel } from "./ArtifactPanel";
 import { ChatComposer } from "./ChatComposer";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
@@ -25,12 +27,17 @@ import styles from "./ChatApp.module.css";
 export function ChatApp() {
   return (
     <WidgetChatProvider>
-      <ChatAppLayout />
+      <Suspense fallback={<div className={styles.shell} />}>
+        <ChatAppLayout />
+      </Suspense>
     </WidgetChatProvider>
   );
 }
 
 function ChatAppLayout() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const urlChatId = searchParams.get("chatId");
   const {
     historyCollapsed,
     artifactCollapsed,
@@ -39,7 +46,37 @@ function ChatAppLayout() {
     expandArtifact,
   } = usePanelCollapse();
   const { artifact } = useArtifactPanel();
+  const { chatId, loadChat, startNewChat } = useChatSession();
   const prevHadArtifact = useRef(false);
+  const restoredUrlChat = useRef<string | null>(null);
+
+  // Restore chat from ?chatId= (e.g. returning from Layout editor).
+  useEffect(() => {
+    if (!urlChatId) {
+      restoredUrlChat.current = null;
+      return;
+    }
+    if (urlChatId === chatId) {
+      restoredUrlChat.current = urlChatId;
+      return;
+    }
+    if (restoredUrlChat.current === urlChatId) return;
+    restoredUrlChat.current = urlChatId;
+    void loadChat(urlChatId);
+  }, [urlChatId, chatId, loadChat]);
+
+  // Keep the URL in sync with the active chat so Layout ↔ Generate round-trips.
+  useEffect(() => {
+    if (chatId && urlChatId === chatId) return;
+    if (!chatId && !urlChatId) return;
+    if (chatId) {
+      router.replace(`/?chatId=${encodeURIComponent(chatId)}`, {
+        scroll: false,
+      });
+    } else {
+      router.replace("/", { scroll: false });
+    }
+  }, [chatId, urlChatId, router]);
 
   useEffect(() => {
     const hasArtifact = Boolean(artifact?.luaSource);
@@ -49,14 +86,20 @@ function ChatAppLayout() {
     prevHadArtifact.current = hasArtifact;
   }, [artifact?.luaSource, expandArtifact]);
 
+  const handleNewChat = useCallback(() => {
+    startNewChat();
+    router.replace("/", { scroll: false });
+  }, [startNewChat, router]);
+
   return (
     <div className={styles.shell}>
-      <ChatAppHeader />
+      <ChatAppHeader onNewChat={handleNewChat} />
       <AiSetupBanner />
       <div className={styles.body}>
         <ChatHistoryAside
           historyCollapsed={historyCollapsed}
           onToggleHistory={toggleHistory}
+          onNewChat={handleNewChat}
         />
         <div className={styles.chatColumn}>
           <ChatMessageListSection />
@@ -95,75 +138,85 @@ function AiSetupBanner() {
   );
 }
 
-function ChatAppHeader() {
-  const { running, startNewChat } = useChatSession();
-  const { modelsLoading, selectedModel, modelId, selectedRadio } =
+function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
+  const { running, chatId } = useChatSession();
+  const { artifact, sessionId } = useArtifactPanel();
+  const { modelsLoading, selectedModel, modelId, selectedRadio, protocol } =
     useSessionSettings();
   const activeModelLabel = selectedModel?.label ?? modelId;
 
-  return (
-    <header className={styles.header}>
-      <div className={styles.brand}>
-        <div className={styles.logo} aria-hidden>
-          ETX
-        </div>
-        <div className={styles.brandCopy}>
-          <h1 className={styles.title}>Dashboard Generator</h1>
-          <p className={styles.subtitle}>
-            <span className={styles.subtitleItem}>
-              {modelsLoading ? "Loading models…" : activeModelLabel}
-            </span>
-            <span className={styles.subtitleSep} aria-hidden>
-              ·
-            </span>
-            <span className={styles.subtitleItem}>
-              {selectedRadio?.name ?? "RadioMaster TX15"}
-            </span>
-          </p>
-        </div>
-      </div>
+  const layoutHref = useMemo(() => {
+    if (!artifact?.luaSource) return null;
+    const params = new URLSearchParams({ protocol });
+    if (chatId) params.set("chatId", chatId);
+    if (sessionId) params.set("sessionId", sessionId);
+    if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
+    else if (artifact.name) params.set("name", artifact.name);
+    return `/editor?${params.toString()}`;
+  }, [artifact, chatId, sessionId, protocol]);
 
-      <div className={styles.headerActions}>
-        {running && (
-          <span className={styles.streaming}>
-            <span className={styles.pulse} />
-            Generating
-          </span>
-        )}
-        <AppPreferencesButton className={styles.prefsBtn} />
-        <button
-          type="button"
-          className={styles.newChatBtn}
-          onClick={startNewChat}
-          disabled={running}
-        >
-          New chat
-        </button>
-      </div>
-    </header>
+  const subtitle = (
+    <>
+      <span className={styles.subtitleItem}>
+        {modelsLoading ? "Loading models…" : activeModelLabel}
+      </span>
+      <span className={styles.subtitleSep} aria-hidden>
+        ·
+      </span>
+      <span className={styles.subtitleItem}>
+        {selectedRadio?.name ?? "RadioMaster TX15"}
+      </span>
+    </>
+  );
+
+  return (
+    <AppChrome
+      surface="generate"
+      subtitle={subtitle}
+      layoutHref={layoutHref}
+      layoutDisabledReason="Generate a dashboard first to open Layout"
+      actions={
+        <>
+          {running && (
+            <span className={styles.streaming}>
+              <span className={styles.pulse} />
+              Generating
+            </span>
+          )}
+          <AppPreferencesButton className={styles.prefsBtn} />
+          <button
+            type="button"
+            className={styles.newChatBtn}
+            onClick={onNewChat}
+            disabled={running}
+          >
+            New chat
+          </button>
+        </>
+      }
+    />
   );
 }
 
 function ChatHistoryAside({
   historyCollapsed,
   onToggleHistory,
+  onNewChat,
 }: {
   historyCollapsed: boolean;
   onToggleHistory: () => void;
+  onNewChat: () => void;
 }) {
-  const {
-    chatHistory,
-    chatId,
-    historyLoading,
-    running,
-    loadChat,
-    startNewChat,
-    deleteChat,
-  } = useChatSession();
+  const { chatHistory, chatId, historyLoading, running, loadChat, deleteChat } =
+    useChatSession();
+  const router = useRouter();
 
   const handleSelect = useCallback(
-    (id: string) => void loadChat(id),
-    [loadChat],
+    (id: string) => {
+      void loadChat(id);
+      router.replace(`/?chatId=${encodeURIComponent(id)}`, { scroll: false });
+    },
+    [loadChat, router],
   );
   const handleDelete = useCallback(
     (id: string) => void deleteChat(id),
@@ -173,7 +226,7 @@ function ChatHistoryAside({
   return (
     <CollapsibleAside
       side="left"
-      label="History"
+      label="Chats"
       collapsed={historyCollapsed}
       onToggle={onToggleHistory}
     >
@@ -185,7 +238,7 @@ function ChatHistoryAside({
         panelCollapsed={historyCollapsed}
         onTogglePanel={onToggleHistory}
         onSelect={handleSelect}
-        onNewChat={startNewChat}
+        onNewChat={onNewChat}
         onDelete={handleDelete}
       />
     </CollapsibleAside>
@@ -273,7 +326,7 @@ function ArtifactAside({
   return (
     <CollapsibleAside
       side="right"
-      label="Dashboard"
+      label="Preview"
       collapsed={artifactCollapsed}
       onToggle={onToggleArtifact}
       deferContentMount

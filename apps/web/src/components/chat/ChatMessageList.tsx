@@ -78,11 +78,17 @@ export function ChatMessageList({
             <li>
               <span className={styles.stepNum}>2</span>
               <span>
-                <strong>Preview</strong> validates in the Dashboard panel
+                <strong>Preview</strong> the result in the right panel
               </span>
             </li>
             <li>
               <span className={styles.stepNum}>3</span>
+              <span>
+                <strong>Layout</strong> to tweak placement visually (optional)
+              </span>
+            </li>
+            <li>
+              <span className={styles.stepNum}>4</span>
               <span>
                 <strong>Download</strong> the zip for your radio SD card
               </span>
@@ -133,8 +139,8 @@ export function ChatMessageList({
 
       {dashboardReadyCue && messages.length > 0 && (
         <div className={styles.readyCue} role="status">
-          Dashboard ready — preview and download are in the{" "}
-          <strong>Dashboard</strong> panel on the right.
+          Preview ready — open the <strong>Preview</strong> panel to download,
+          or switch to <strong>Layout</strong> to edit visually.
         </div>
       )}
     </div>
