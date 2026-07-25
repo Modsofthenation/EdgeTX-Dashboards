@@ -189,6 +189,9 @@ export class WidgetGenerator {
     this.toolDefaults.widgetInstanceId = widgetInstanceId;
     this.toolDefaults.widgetName = assignedWidgetName;
     this.toolDefaults.widgetVersion = widgetVersion;
+    this.toolDefaults.protocol = request.protocol;
+    this.toolDefaults.radioId = request.radioId;
+    this.toolDefaults.userPrompt = request.prompt;
     this.lastKnownWorkspace = widgetInstanceId;
 
     const promptCtx = session
@@ -217,16 +220,24 @@ export class WidgetGenerator {
       promptCtx,
     );
 
+    const layoutArchetypeId = getArchetypeForSession(
+      request.prompt,
+      request.protocol,
+      session
+        ? {
+            sessionId: session.id,
+            runIndex: session.runIndex ?? 0,
+            variationSeed: session.variationSeed,
+          }
+        : {
+            sessionId: "cli",
+            runIndex: 0,
+            variationSeed,
+          },
+    );
+    this.toolDefaults.layoutArchetype = layoutArchetypeId;
     if (session) {
-      session.layoutArchetypeId = getArchetypeForSession(
-        request.prompt,
-        request.protocol,
-        {
-          sessionId: session.id,
-          runIndex: session.runIndex ?? 0,
-          variationSeed: session.variationSeed,
-        },
-      );
+      session.layoutArchetypeId = layoutArchetypeId;
     }
 
     callbacks?.onEvent?.({
@@ -263,6 +274,10 @@ export class WidgetGenerator {
         request.protocol,
         request.radioId,
         callbacks,
+        {
+          layoutArchetype: layoutArchetypeId,
+          userPrompt: request.prompt,
+        },
       );
       validated = finalization.validated;
       validationIssues = finalization.validationIssues;
@@ -319,6 +334,9 @@ export class WidgetGenerator {
       this.toolDefaults.widgetInstanceId = widgetInstanceId;
       this.lastKnownWorkspace = widgetInstanceId;
     }
+    this.toolDefaults.protocol = protocol;
+    this.toolDefaults.radioId = radioId;
+    this.toolDefaults.userPrompt = prompt;
 
     if (session) {
       if (widgetInstanceId) {
@@ -379,12 +397,14 @@ export class WidgetGenerator {
             },
     );
 
+    const layoutArchetypeId = getArchetypeForSession(prompt, protocol, {
+      sessionId: session?.id ?? "refine",
+      runIndex: session?.runIndex ?? 0,
+      variationSeed: session?.variationSeed,
+    });
+    this.toolDefaults.layoutArchetype = layoutArchetypeId;
     if (session) {
-      session.layoutArchetypeId = getArchetypeForSession(prompt, protocol, {
-        sessionId: session.id,
-        runIndex: session.runIndex ?? 0,
-        variationSeed: session.variationSeed,
-      });
+      session.layoutArchetypeId = layoutArchetypeId;
     }
 
     if (widgetInstanceId && displayName) {
@@ -412,6 +432,10 @@ export class WidgetGenerator {
         protocol,
         radioId,
         callbacks,
+        {
+          layoutArchetype: layoutArchetypeId,
+          userPrompt: prompt,
+        },
       );
       validated = finalization.validated;
       validationIssues = finalization.validationIssues;

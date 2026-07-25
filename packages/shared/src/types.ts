@@ -66,6 +66,8 @@ export interface ValidationResult {
   valid: boolean;
   widgetName?: string;
   issues: ValidationIssue[];
+  /** Deterministic Lua repairs applied before validation (informational). */
+  autoFixes?: string[];
 }
 
 export type StreamTodoStatus =

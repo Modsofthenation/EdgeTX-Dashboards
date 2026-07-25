@@ -24,25 +24,37 @@ export interface ValidateForReleaseOptions {
   ensureAnnotations?: boolean;
   workspace?: typeof defaultWorkspace;
   layoutArchetype?: import("./layoutArchetype.ts").LayoutArchetypeId;
+  /** User prompt for intent↔sensor coverage checks. */
+  userPrompt?: string;
+  strictIntent?: boolean;
 }
 
 /** Pure validation on source string (no I/O). */
 export function validateWidgetSource(
   source: string,
   protocol: TelemetryProtocol,
-  options?: { radioId?: string; strictTelemetry?: boolean },
+  options?: {
+    radioId?: string;
+    strictTelemetry?: boolean;
+    userPrompt?: string;
+    strictIntent?: boolean;
+  },
 ): ValidationResult {
   const ctx = buildReleaseValidationContext(
     protocol,
     options?.radioId ?? "tx15",
     options?.strictTelemetry ?? true,
   );
-  return validateWidgetLua(source, ctx.validateOptions);
+  return validateWidgetLua(source, {
+    ...ctx.validateOptions,
+    userPrompt: options?.userPrompt,
+    strictIntent: options?.strictIntent,
+  });
 }
 
 /**
  * Full validation pipeline before download/packaging.
- * Workspace adapter handles read/annotate; validator stays pure.
+ * Workspace adapter handles read/annotate/auto-fix; validator stays pure.
  */
 export function validateWidgetForRelease(
   workspaceKey: string,
@@ -82,7 +94,16 @@ export function validateWidgetForRelease(
     };
   }
 
-  return validateWidgetLua(prepared.source, ctx.validateOptions);
+  const result = validateWidgetLua(prepared.source, {
+    ...ctx.validateOptions,
+    userPrompt: options?.userPrompt,
+    strictIntent: options?.strictIntent,
+  });
+
+  if (prepared.ok && prepared.autoFixes?.length) {
+    return { ...result, autoFixes: prepared.autoFixes };
+  }
+  return result;
 }
 
 export function assertValidForRelease(

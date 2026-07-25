@@ -2,6 +2,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { SimulateLayoutProfile } from "@widget-gen/shared";
 import { ensureDevKitAnnotations } from "@widget-gen/shared";
+import { autoFixLua } from "./autoFixLua.ts";
 import { loadSimulateLayoutProfile } from "./knowledge.ts";
 import { getWidgetLuaPathForKey } from "./paths.ts";
 
@@ -9,6 +10,7 @@ export interface WidgetSourceResult {
   ok: true;
   source: string;
   mutated: boolean;
+  autoFixes?: string[];
 }
 
 export interface WidgetSourceError {
@@ -52,13 +54,26 @@ export class WidgetWorkspace {
     if (!read.ok) return read;
 
     const annotated = ensureDevKitAnnotations(read.source, simulateProfile);
-    if (annotated === read.source) {
-      return { ok: true, source: read.source, mutated: false };
+    const fixed = autoFixLua(annotated);
+    const next = fixed.source;
+
+    if (next === read.source) {
+      return {
+        ok: true,
+        source: read.source,
+        mutated: false,
+        autoFixes: fixed.applied.length > 0 ? fixed.applied : undefined,
+      };
     }
 
     const path = getWidgetLuaPathForKey(workspaceKey);
-    writeFileSync(path, annotated, "utf-8");
-    return { ok: true, source: annotated, mutated: true };
+    writeFileSync(path, next, "utf-8");
+    return {
+      ok: true,
+      source: next,
+      mutated: true,
+      autoFixes: fixed.applied.length > 0 ? fixed.applied : undefined,
+    };
   }
 
   prepareForRadio(workspaceKey: string, radioId: string): ReadWidgetResult {

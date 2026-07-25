@@ -16,6 +16,7 @@ import {
 import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.ts";
 import { validateLcdApiUsage } from "./lcdApiValidate.ts";
 import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { validatePromptIntent } from "./promptIntent.ts";
 import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ValidateWidgetOptions {
@@ -29,6 +30,10 @@ export interface ValidateWidgetOptions {
   strictDevKit?: boolean;
   /** Layout archetype for archetype-scoped visual warnings. */
   layoutArchetype?: LayoutArchetypeId;
+  /** Original user prompt — enables high-confidence intent↔sensor coverage checks. */
+  userPrompt?: string;
+  /** When true (default if userPrompt set), missing intent sensors are errors. */
+  strictIntent?: boolean;
 }
 
 const FORBIDDEN_PATTERNS = [
@@ -434,6 +439,15 @@ export function validateWidgetLua(
 
   issues.push(...validateLcdApiUsage(source));
   issues.push(...validateLayoutGeometry(source, options?.layoutArchetype));
+
+  if (options?.userPrompt) {
+    issues.push(
+      ...validatePromptIntent(options.userPrompt, source, {
+        knownSensors: options.knownSensors,
+        strict: options.strictIntent ?? true,
+      }),
+    );
+  }
 
   const errors = issues.filter((i) => i.severity === "error");
   return { valid: errors.length === 0, widgetName, issues };
