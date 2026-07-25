@@ -68,6 +68,7 @@ export function SimVerifyModal({
             mock={scenario.mock}
             active={open}
             live
+            fillHost
             onInteractiveControls={setInteractiveControls}
           />
         </div>
