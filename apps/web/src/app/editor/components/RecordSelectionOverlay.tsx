@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   bboxForRecordInZone,
   hitTestRecords,
@@ -12,6 +12,7 @@ import {
   type ResizeHandle,
   type ZoneOffset,
 } from "@widget-gen/editor-core";
+import { measurePreviewText } from "~/lib/luaPreviewEngine";
 import { TransformHandles } from "./TransformHandles";
 import type { CanvasLayout } from "../lib/canvasLayout";
 import styles from "../editor.module.css";
@@ -65,6 +66,15 @@ export function RecordSelectionOverlay({
     shiftKey: boolean;
     moved: boolean;
   } | null>(null);
+  const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+
+  const measureText = useCallback((text: string, fontSize: number) => {
+    if (!measureCtxRef.current) {
+      const c = document.createElement("canvas");
+      measureCtxRef.current = c.getContext("2d");
+    }
+    return measurePreviewText(text, fontSize, measureCtxRef.current);
+  }, []);
 
   const finishGesture = useCallback(() => {
     if (!dragRef.current) return;
@@ -77,7 +87,13 @@ export function RecordSelectionOverlay({
       if (!layout || !frameRef.current) return;
       const rect = frameRef.current.getBoundingClientRect();
       const pointer = screenToZone(event.clientX, event.clientY, rect, layout);
-      const hit = hitTestRecords(records, pointer.x, pointer.y, zone);
+      const hit = hitTestRecords(
+        records,
+        pointer.x,
+        pointer.y,
+        zone,
+        measureText,
+      );
 
       if (hit) {
         const additive = event.shiftKey;
@@ -113,6 +129,7 @@ export function RecordSelectionOverlay({
       frameRef,
       zone,
       onGestureStart,
+      measureText,
     ],
   );
 
@@ -171,7 +188,7 @@ export function RecordSelectionOverlay({
       record: DocumentRecord,
     ) => {
       if (!layout) return;
-      const box = bboxForRecordInZone(record, zone);
+      const box = bboxForRecordInZone(record, zone, measureText);
       if (!box) return;
       onGestureStart?.();
       dragRef.current = {
@@ -186,8 +203,28 @@ export function RecordSelectionOverlay({
       };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [layout, zone, onGestureStart],
+    [layout, zone, onGestureStart, measureText],
   );
+
+  const selectedBoxes = useMemo(() => {
+    if (!layout) return [];
+    return selectedIds
+      .map((id) => {
+        const record = records.find((r) => r.id === id);
+        if (!record) return null;
+        const box = bboxForRecordInZone(record, zone, measureText);
+        if (!box) return null;
+        return { record, box };
+      })
+      .filter(
+        (
+          row,
+        ): row is {
+          record: DocumentRecord;
+          box: BoundingBox;
+        } => row != null,
+      );
+  }, [layout, selectedIds, records, zone, measureText]);
 
   if (!layout) return null;
 
@@ -202,11 +239,7 @@ export function RecordSelectionOverlay({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {records.map((record) => {
-        const selected = selectedIds.includes(record.id);
-        if (!selected) return null;
-        const box = bboxForRecordInZone(record, zone);
-        if (!box) return null;
+      {selectedBoxes.map(({ record, box }) => {
         const left = offsetX + box.x * scale;
         const top = offsetY + box.y * scale;
         const width = Math.max(1, box.w * scale);

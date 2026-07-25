@@ -15,12 +15,32 @@ export {
   type EdgeColor,
 } from "@widget-gen/layout-verify";
 
+export { edgeTxTextSize };
+
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
 
-/** Draw text using EdgeTX top-left origin and fixed char advances so selection bboxes match. */
-function fillEdgeTxText(
+/**
+ * Preview text metrics matching `bold ${fontSize}px monospace` with top baseline.
+ * Prefer live measureText when a 2D context is available; otherwise fall back to
+ * the EdgeTX advance table (SML=6 / MID=9 / DBL=12).
+ */
+export function measurePreviewText(
+  text: string,
+  fontSize: number,
+  ctx?: CanvasRenderingContext2D | null,
+): { w: number; h: number } {
+  if (ctx) {
+    ctx.font = `bold ${fontSize}px monospace`;
+    const measured = ctx.measureText(text).width;
+    return { w: Math.max(1, measured), h: fontSize };
+  }
+  return edgeTxTextSize(text, fontSize);
+}
+
+/** Draw text with EdgeTX top-left origin; width matches measurePreviewText. */
+function fillPreviewText(
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
@@ -28,26 +48,10 @@ function fillEdgeTxText(
   fontSize: number,
   align: "left" | "center" | "right",
 ): void {
-  const { w: targetW } = edgeTxTextSize(text, fontSize);
   ctx.font = `bold ${fontSize}px monospace`;
   ctx.textBaseline = "top";
-  const measured = ctx.measureText(text).width || 1;
-  const sx = targetW / measured;
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(sx, 1);
-  if (align === "center") {
-    ctx.textAlign = "center";
-    ctx.fillText(text, 0, 0);
-  } else if (align === "right") {
-    ctx.textAlign = "right";
-    ctx.fillText(text, 0, 0);
-  } else {
-    ctx.textAlign = "left";
-    ctx.fillText(text, 0, 0);
-  }
-  ctx.restore();
+  ctx.textAlign = align;
+  ctx.fillText(text, x, y);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 }
@@ -93,7 +97,7 @@ export function renderPreviewCommands(
           cmd.textAlign === "center" || cmd.textAlign === "right"
             ? cmd.textAlign
             : "left";
-        fillEdgeTxText(ctx, text, cmd.x ?? 0, cmd.y ?? 0, fontSize, align);
+        fillPreviewText(ctx, text, cmd.x ?? 0, cmd.y ?? 0, fontSize, align);
         break;
       }
       case "bitmap": {

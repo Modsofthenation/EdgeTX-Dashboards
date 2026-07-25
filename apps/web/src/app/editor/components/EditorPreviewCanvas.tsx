@@ -28,7 +28,6 @@ export function EditorPreviewCanvas({
   scenarioId = "editor-preview",
 }: EditorPreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hostRef = useRef<HTMLDivElement>(null);
 
   const scenario: LayoutScenario = useMemo(
     () => getPreviewScenario(scenarioId),
@@ -42,15 +41,17 @@ export function EditorPreviewCanvas({
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
-    const host = hostRef.current;
-    if (!canvas || !host || !layout) return;
+    if (!canvas || !layout || layout.scale <= 0) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const cw = Math.max(1, host.clientWidth || Math.round(layout.drawW + layout.offsetX * 2));
-    const ch = Math.max(1, host.clientHeight || Math.round(layout.drawH + layout.offsetY * 2));
-    canvas.width = cw;
-    canvas.height = ch;
+    // Bitmap size must match the overlay frame exactly to avoid CSS stretch skew.
+    const cw = Math.max(1, Math.round(layout.drawW + layout.offsetX * 2));
+    const ch = Math.max(1, Math.round(layout.drawH + layout.offsetY * 2));
+    if (canvas.width !== cw || canvas.height !== ch) {
+      canvas.width = cw;
+      canvas.height = ch;
+    }
 
     ctx.clearRect(0, 0, cw, ch);
     ctx.save();
@@ -61,18 +62,23 @@ export function EditorPreviewCanvas({
 
   useEffect(() => {
     paint();
-    const host = hostRef.current;
-    if (!host) return;
-    const observer = new ResizeObserver(paint);
-    observer.observe(host);
-    return () => observer.disconnect();
   }, [paint]);
 
+  if (!layout || layout.scale <= 0) {
+    return <div className={styles.previewHost} aria-hidden />;
+  }
+
+  const frameW = Math.round(layout.drawW + layout.offsetX * 2);
+  const frameH = Math.round(layout.drawH + layout.offsetY * 2);
+
   return (
-    <div ref={hostRef} className={styles.previewHost}>
+    <div className={styles.previewHost}>
       <canvas
         ref={canvasRef}
         className={styles.previewCanvas}
+        width={frameW}
+        height={frameH}
+        style={{ width: frameW, height: frameH }}
         aria-label="Dashboard preview"
       />
     </div>
