@@ -505,6 +505,46 @@ export function validateColorConstants(source: string): ValidationIssue[] {
   return issues;
 }
 
+/**
+ * EdgeTX drawFilledRectangle opacity (6th arg) is 0–15, not 0–255.
+ */
+export function validateFilledRectOpacity(source: string): ValidationIssue[] {
+  if (!source.includes("drawFilledRectangle")) return [];
+
+  const issues: ValidationIssue[] = [];
+  for (const argsSource of extractLcdCallArgStrings(
+    source,
+    "drawFilledRectangle",
+  )) {
+    const args = splitTopLevelArgs(argsSource);
+    if (args.length < 6) continue;
+    const n = Number(args[5].trim());
+    if (Number.isFinite(n) && n > 15) {
+      issues.push({
+        severity: "error",
+        message:
+          "lcd.drawFilledRectangle opacity (6th arg) must be 0–15 on color LCDs (0=transparent, 15=opaque) — not 0–255",
+      });
+      break;
+    }
+  }
+  return issues;
+}
+
+/**
+ * math.deg() is not useful for EdgeTX drawArc degrees — agents often confuse radians.
+ */
+export function validateMathDegUsage(source: string): ValidationIssue[] {
+  if (!/\bmath\.deg\s*\(/.test(source)) return [];
+  return [
+    {
+      severity: "error",
+      message:
+        "math.deg() is not appropriate for EdgeTX lcd.drawArc angles — pass integer degrees (0=up) or math.floor(x + 0.5)",
+    },
+  ];
+}
+
 export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
   return [
     ...validateColorConstants(source),
@@ -519,6 +559,8 @@ export function validateRuntimeApiUsage(source: string): ValidationIssue[] {
     ...validateGaugeSatelliteBudget(source),
     ...validateGaugeStripLayoutPlanning(source),
     ...validateBarsBlockHeightSync(source),
+    ...validateFilledRectOpacity(source),
+    ...validateMathDegUsage(source),
   ];
 }
 

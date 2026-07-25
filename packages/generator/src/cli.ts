@@ -2,21 +2,36 @@
 import { assertNodeVersion } from "./nodeVersion.ts";
 import { WidgetGenerator, CursorAgentError } from "./agent.ts";
 
-async function main(): Promise<void> {
-  assertNodeVersion();
-  const args = process.argv.slice(2);
+const PROTOCOLS = new Set(["betaflight", "rotorflight", "generic-crsf"]);
+
+export interface GenerateCliFlags {
+  radio: string;
+  protocol: "betaflight" | "rotorflight" | "generic-crsf";
+  edgeTx: string;
+  prompt: string;
+}
+
+/**
+ * Parse widget-gen CLI args. Also recovers when nested npm strips `--protocol`
+ * / `--radio` and leaves bare tokens as positionals.
+ */
+export function parseGenerateCliArgs(args: string[]): GenerateCliFlags | null {
   const flags = {
     radio: "tx15",
-    protocol: "betaflight" as "betaflight" | "rotorflight" | "generic-crsf",
+    protocol: "betaflight" as GenerateCliFlags["protocol"],
     edgeTx: "2.11.0",
   };
+  let protocolExplicit = false;
+  let radioExplicit = false;
 
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--radio" && args[i + 1]) {
       flags.radio = args[++i];
+      radioExplicit = true;
     } else if (args[i] === "--protocol" && args[i + 1]) {
-      flags.protocol = args[++i] as typeof flags.protocol;
+      flags.protocol = args[++i] as GenerateCliFlags["protocol"];
+      protocolExplicit = true;
     } else if (args[i] === "--edge-tx" && args[i + 1]) {
       flags.edgeTx = args[++i];
     } else if (!args[i].startsWith("--")) {
@@ -24,8 +39,29 @@ async function main(): Promise<void> {
     }
   }
 
-  const prompt = positional.join(" ");
-  if (!prompt) {
+  // Defense: nested `npm run` sometimes eats `--protocol`/`--radio` and leaves
+  // bare tokens first in the prompt (`rotorflight tx15 …`).
+  if (!protocolExplicit && positional.length > 0 && PROTOCOLS.has(positional[0])) {
+    flags.protocol = positional.shift() as GenerateCliFlags["protocol"];
+  }
+  if (
+    !radioExplicit &&
+    positional.length > 0 &&
+    /^tx\d+/i.test(positional[0])
+  ) {
+    flags.radio = positional.shift()!;
+  }
+
+  const prompt = positional.join(" ").trim();
+  if (!prompt) return null;
+
+  return { ...flags, prompt };
+}
+
+async function main(): Promise<void> {
+  assertNodeVersion();
+  const parsed = parseGenerateCliArgs(process.argv.slice(2));
+  if (!parsed) {
     console.error(`Usage: widget-gen [options] "<prompt>"
 
 Options:
@@ -43,15 +79,15 @@ Requires CURSOR_API_KEY environment variable.`);
     await gen.createAgent();
     console.error(`Agent: ${gen.agentId}`);
     console.error(
-      `Generating widget for ${flags.radio} / ${flags.protocol}...\n`,
+      `Generating widget for ${parsed.radio} / ${parsed.protocol}...\n`,
     );
 
     const result = await gen.generate(
       {
-        prompt,
-        radioId: flags.radio,
-        protocol: flags.protocol,
-        edgeTxVersion: flags.edgeTx,
+        prompt: parsed.prompt,
+        radioId: parsed.radio,
+        protocol: parsed.protocol,
+        edgeTxVersion: parsed.edgeTx,
       },
       {
         onEvent: (ev) => {
@@ -86,7 +122,12 @@ Requires CURSOR_API_KEY environment variable.`);
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const isMain =
+  process.argv[1]?.includes("cli.ts") || process.argv[1]?.endsWith("/cli.js");
+
+if (isMain) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

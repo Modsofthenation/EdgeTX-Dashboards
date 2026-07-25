@@ -16,6 +16,7 @@ import {
 import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.ts";
 import { validateLcdApiUsage } from "./lcdApiValidate.ts";
 import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { validatePromptIntent } from "./promptIntent.ts";
 import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ValidateWidgetOptions {
@@ -29,6 +30,10 @@ export interface ValidateWidgetOptions {
   strictDevKit?: boolean;
   /** Layout archetype for archetype-scoped visual warnings. */
   layoutArchetype?: LayoutArchetypeId;
+  /** Original user prompt — enables high-confidence intent↔sensor coverage checks. */
+  userPrompt?: string;
+  /** When true (default if userPrompt set), missing intent sensors are errors. */
+  strictIntent?: boolean;
 }
 
 const FORBIDDEN_PATTERNS = [
@@ -140,6 +145,23 @@ function validateLayoutGeometry(
   }
 
   return issues;
+}
+
+function validateNoWidgetNameChrome(
+  source: string,
+  widgetName: string | undefined,
+  issues: ValidationIssue[],
+): void {
+  if (!widgetName) return;
+  const literal = new RegExp(
+    `drawText\\([^\\n]*["']${widgetName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`,
+  );
+  if (literal.test(source)) {
+    issues.push({
+      severity: "error",
+      message: `Do not draw the widget name "${widgetName}" as on-screen chrome — use short metric labels (VOLTAGE, LINK, GPS) or omit the title; the radio already shows the widget name in the UI`,
+    });
+  }
 }
 
 function validateVisualDesign(
@@ -395,6 +417,7 @@ export function validateWidgetLua(
   validateLcdOnlyInRefresh(source, issues);
   const widgetName = validateWidgetName(source, issues);
   validateOptions(source, options?.maxOptions ?? 10, issues);
+  validateNoWidgetNameChrome(source, widgetName, issues);
 
   if (!source.includes("getSourceIndex") && !source.includes("cacheSource")) {
     issues.push({
@@ -434,6 +457,15 @@ export function validateWidgetLua(
 
   issues.push(...validateLcdApiUsage(source));
   issues.push(...validateLayoutGeometry(source, options?.layoutArchetype));
+
+  if (options?.userPrompt) {
+    issues.push(
+      ...validatePromptIntent(options.userPrompt, source, {
+        knownSensors: options.knownSensors,
+        strict: options.strictIntent ?? true,
+      }),
+    );
+  }
 
   const errors = issues.filter((i) => i.severity === "error");
   return { valid: errors.length === 0, widgetName, issues };

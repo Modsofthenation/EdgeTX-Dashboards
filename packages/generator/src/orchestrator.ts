@@ -163,10 +163,17 @@ export async function finalizeWidgetRun(
   protocol: TelemetryProtocol,
   radioId: string,
   callbacks?: RunCallbacks,
+  options?: {
+    layoutArchetype?: import("./layoutArchetype.ts").LayoutArchetypeId;
+    userPrompt?: string;
+  },
 ): Promise<{ validated: boolean; validationIssues: ValidationIssue[] }> {
   const validation = validateWidgetForRelease(workspaceKey, protocol, {
     radioId,
     strictTelemetry: true,
+    layoutArchetype: options?.layoutArchetype,
+    userPrompt: options?.userPrompt,
+    strictIntent: true,
   });
 
   if (!validation.valid) {
@@ -179,6 +186,13 @@ export async function finalizeWidgetRun(
       content: `Validation failed — download blocked: ${summary}`,
     });
     return { validated: false, validationIssues: validation.issues };
+  }
+
+  if (validation.autoFixes?.length) {
+    callbacks?.onEvent?.({
+      type: "status",
+      content: `Auto-fixed Lua: ${validation.autoFixes.join("; ")}`,
+    });
   }
 
   try {

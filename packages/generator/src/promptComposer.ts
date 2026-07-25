@@ -272,6 +272,10 @@ ${modelHeroGuide ? `\n## Model-background + hero gauge layout (mandatory for thi
 
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
+- **lcd.drawLine** 5th arg is SOLID/DOTTED, not color — \`lcd.drawLine(x1,y1,x2,y2, SOLID, colorFlags)\`.
+- **Bitmap.getSize** takes the handle from Bitmap.open(), never the path string.
+- **Do not draw the widget display name** (e.g. \`${ctx?.assignedWidgetName ?? "BfDashXX"}\`) via \`lcd.drawText\` — use short metric labels; the radio already shows the widget name.
+- Cover every metric the user asked for with catalog sensors (\`getSourceIndex("HSpd")\` etc.) — validateWidget fails if a high-confidence request (headspeed, GPS sats, ESC temp, …) is missing from Lua.
 ${runtimeApiPitfalls}
 
 ## TX15 text layout (mandatory — height-aware stacking in cards and gauges)
@@ -417,6 +421,10 @@ ${layoutRefSnippet ? `\n## Reserved-rect layout reference (gauge + strip dashboa
 
 ## Runtime API pitfalls (mandatory — validateWidget enforces these)
 
+- **lcd.drawLine** 5th arg is SOLID/DOTTED, not color — \`lcd.drawLine(x1,y1,x2,y2, SOLID, colorFlags)\`.
+- **Bitmap.getSize** takes the handle from Bitmap.open(), never the path string.
+- **Do not draw the widget display name** (e.g. \`${ctx?.assignedWidgetName ?? "BfDashXX"}\`) via \`lcd.drawText\` — use short metric labels; the radio already shows the widget name.
+- Cover every metric the user asked for with catalog sensors (\`getSourceIndex("HSpd")\` etc.) — validateWidget fails if a high-confidence request (headspeed, GPS sats, ESC temp, …) is missing from Lua.
 ${runtimeApiPitfalls}
 
 ## TX15 text layout (mandatory — height-aware stacking)

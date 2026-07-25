@@ -8,7 +8,7 @@
   "scripts": {
     "build": "node scripts/ensure-edgetx-wasm.mjs && npm run build -w @widget-gen/web",
     "dev": "node scripts/ensure-edgetx-wasm.mjs && npm run dev --workspace=@widget-gen/web",
-    "generate": "npm run generate --workspace=@widget-gen/generator",
+    "generate": "npm run generate --workspace=@widget-gen/generator --",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "prettier --write \"**/*.{ts,tsx,mjs,json,md,css}\"",

@@ -22,14 +22,20 @@ export interface ToolSessionDefaults {
   /** EdgeTX radio display name (≤10 chars). */
   widgetName?: string;
   widgetVersion?: number;
+  /** Active layout archetype for this session (avoids process-global races). */
+  layoutArchetype?: LayoutArchetypeId;
+  /** Original user prompt for intent coverage checks. */
+  userPrompt?: string;
 }
 
 function resolveToolProtocol(
   args: Record<string, unknown>,
   defaults?: ToolSessionDefaults,
 ): TelemetryProtocol {
-  if (args.protocol) return args.protocol as TelemetryProtocol;
+  // Session protocol is authoritative — agents must not validate against a
+  // different catalog than the request that started the run.
   if (defaults?.protocol) return defaults.protocol;
+  if (args.protocol) return args.protocol as TelemetryProtocol;
   return "generic-crsf";
 }
 
@@ -111,8 +117,9 @@ export function createCustomTools(
             };
           }
           const protocol = resolveToolProtocol(args, defaults);
-          const radioId = String(args.radioId ?? defaults?.radioId ?? "tx15");
+          const radioId = String(defaults?.radioId ?? args.radioId ?? "tx15");
           const layoutArchetype =
+            defaults?.layoutArchetype ??
             (args.layoutArchetype as LayoutArchetypeId | undefined) ??
             getActiveLayoutArchetype();
           const path = getWidgetLuaPathForKey(workspaceKey);
@@ -145,6 +152,8 @@ export function createCustomTools(
             radioId,
             strictTelemetry: true,
             layoutArchetype,
+            userPrompt: defaults?.userPrompt,
+            strictIntent: true,
           });
           return JSON.stringify(result, null, 2);
         } catch (err) {
@@ -180,7 +189,7 @@ export function createCustomTools(
         required: ["protocol"],
       },
       execute(args) {
-        const protocol = args.protocol as TelemetryProtocol;
+        const protocol = resolveToolProtocol(args, defaults);
         const category = (args.category as TelemetryCategory) ?? "all";
         const catalog = loadTelemetryCatalog(protocol);
         const sensors =
