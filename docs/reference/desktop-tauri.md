@@ -21,18 +21,18 @@ In-app **Preferences** (Generate + Layout headers) covers:
 
 ## CI packages (main)
 
-GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml) builds installers on every push/merge to `main` (path-filtered) and on `workflow_dispatch`:
+GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml) builds installers on **every push/merge to `main`** and on `workflow_dispatch`:
 
-| Runner           | Artifact                                 |
-| ---------------- | ---------------------------------------- |
-| `macos-latest`   | macOS arm64 + x64                        |
-| `ubuntu-22.04`   | Linux x64 (deb/AppImage/rpm as produced) |
-| `windows-latest` | Windows x64                              |
+| Runner           | Artifact               |
+| ---------------- | ---------------------- |
+| `macos-latest`   | macOS arm64 + x64 DMG  |
+| `ubuntu-22.04`   | Linux x64 `.deb`       |
+| `windows-latest` | Windows x64 NSIS + MSI |
 
-Outputs:
+Outputs (from each green run):
 
-- **Actions artifacts** — `edgetx-dashboards-<os>` (30-day retention)
-- **GitHub Release** — prerelease tag `desktop-nightly` (assets refreshed each run)
+- **Actions artifacts** — `edgetx-dashboards-<os>` on the workflow run (30-day retention). Open the run → **Artifacts**.
+- **GitHub Release** — prerelease tag `desktop-nightly` (refreshed after all matrix jobs succeed)
 
 Versioned production releases can be added later via tags such as `desktop-v*`.
 

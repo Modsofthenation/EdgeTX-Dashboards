@@ -1,19 +1,12 @@
 # Build native desktop packages (Windows / Linux / macOS) via Tauri.
-# Runs on pushes to main (including merges) and on demand.
+# Runs on every push to main (including merges) and on demand.
+# Green runs upload downloadable installers as Actions artifacts.
 
 name: Desktop packages
 
 on:
   push:
     branches: [main]
-    paths:
-      - "apps/desktop/**"
-      - "apps/web/**"
-      - "packages/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
 concurrency:
@@ -25,26 +18,30 @@ permissions:
 
 jobs:
   build:
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: macos-latest
-            target: aarch64-apple-darwin
+            rust_target: ""
+            bundles: dmg
             os_name: macos-arm64
           - platform: macos-latest
-            target: x86_64-apple-darwin
+            rust_target: x86_64-apple-darwin
+            bundles: dmg
             os_name: macos-x64
           - platform: ubuntu-22.04
-            target: ""
+            rust_target: ""
+            # AppImage/linuxdeploy is flaky on GHA; ship .deb from CI.
+            bundles: deb
             os_name: linux-x64
           - platform: windows-latest
-            target: ""
+            rust_target: ""
+            bundles: nsis,msi
             os_name: windows-x64
 
     runs-on: ${{ matrix.platform }}
+    name: ${{ matrix.os_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -67,8 +64,10 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      - name: Add Rust cross-compile target
+        if: matrix.rust_target != ''
+        run: rustup target add ${{ matrix.rust_target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -83,35 +82,108 @@ jobs:
         run: npm run sync-wasm
 
       - name: Build desktop packages
-        uses: tauri-apps/tauri-action@v1
+        working-directory: apps/desktop
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Sidecar + Next standalone build
           DESKTOP_BUILD: "1"
           SKIP_WASM_SYNC: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(build --bundles "${{ matrix.bundles }}")
+          if [ -n "${{ matrix.rust_target }}" ]; then
+            args+=(--target "${{ matrix.rust_target }}")
+          fi
+          echo "Running: npm run tauri -- ${args[*]}"
+          npm run tauri -- "${args[@]}"
+
+      - name: Stage installers for upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p desktop-artifacts
+          target_root="apps/desktop/src-tauri/target"
+          if [ -n "${{ matrix.rust_target }}" ]; then
+            bundle_dir="$target_root/${{ matrix.rust_target }}/release/bundle"
+          else
+            bundle_dir="$target_root/release/bundle"
+          fi
+
+          echo "Staging from: $bundle_dir"
+          if [ ! -d "$bundle_dir" ]; then
+            echo "Bundle directory missing"
+            find "$target_root" -maxdepth 4 -type d -name bundle -print || true
+            exit 1
+          fi
+
+          find "$bundle_dir" -type f \( \
+            -name '*.dmg' -o \
+            -name '*.deb' -o \
+            -name '*.rpm' -o \
+            -name '*.AppImage' -o \
+            -name '*.msi' -o \
+            -name '*.exe' \
+          \) -print0 | while IFS= read -r -d '' file; do
+            cp -v "$file" desktop-artifacts/
+          done
+
+          # macOS .app bundles are directories — zip for Actions artifact download.
+          find "$bundle_dir" -type d -name '*.app' -print0 | while IFS= read -r -d '' appdir; do
+            base="$(basename "$appdir")"
+            zip_name="${base%.app}-${{ matrix.os_name }}.app.zip"
+            (cd "$(dirname "$appdir")" && zip -qry "$GITHUB_WORKSPACE/desktop-artifacts/$zip_name" "$base")
+            echo "Zipped $appdir -> desktop-artifacts/$zip_name"
+          done
+
+          echo "Staged artifacts:"
+          ls -lah desktop-artifacts
+          test -n "$(ls -A desktop-artifacts)"
+
+      - name: Upload platform installers
+        uses: actions/upload-artifact@v4
         with:
-          projectPath: apps/desktop
-          tauriScript: npm run tauri --
-          args: ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
-          # Rolling prerelease updated on each main build (same version tag).
-          tagName: desktop-nightly
-          releaseName: Desktop nightly
-          releaseBody: |
+          name: edgetx-dashboards-${{ matrix.os_name }}
+          path: desktop-artifacts/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6
+
+  # Aggregate matrix installers onto the rolling prerelease after all platforms succeed.
+  publish-nightly:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: edgetx-dashboards-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: List release assets
+        run: ls -lah release-assets
+
+      - name: Publish desktop-nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-nightly
+          name: Desktop nightly
+          prerelease: true
+          body: |
             Continuous desktop builds from `main`.
+
+            Download installers from this release, or from the **Actions artifacts**
+            on the corresponding Desktop packages workflow run (exact commit build).
+
+            Platforms: Windows (NSIS/MSI), macOS (DMG arm64 + x64), Linux (deb).
 
             Installers include the Tauri shell plus a Next.js standalone sidecar.
             Runtime still needs **Node.js 22+** on PATH (or `EDGETX_NODE_PATH`).
 
             Commit: ${{ github.sha }}
-          releaseDraft: false
-          prerelease: true
-          includeUpdaterJson: false
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: edgetx-dashboards-${{ matrix.os_name }}
-          path: |
-            apps/desktop/src-tauri/target/${{ matrix.target != '' && format('{0}/', matrix.target) || '' }}release/bundle
-          if-no-files-found: warn
-          retention-days: 30
+          files: release-assets/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
