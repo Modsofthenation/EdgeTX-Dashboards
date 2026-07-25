@@ -12,6 +12,11 @@ interface SimFrameCanvasProps {
   className?: string;
   /** Keep paint active even while chat list is scrolling. */
   ignoreChatScrollPause?: boolean;
+  /**
+   * When true, scale the LCD frame up to fill the container (contain).
+   * Default false keeps native pixel size as the maximum (preview side panels).
+   */
+  allowUpscale?: boolean;
 }
 
 export function SimFrameCanvas({
@@ -19,6 +24,7 @@ export function SimFrameCanvas({
   zone,
   className,
   ignoreChatScrollPause = false,
+  allowUpscale = false,
 }: SimFrameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,9 +52,13 @@ export function SimFrameCanvas({
 
       const scaleX = cw / zone.zoneW;
       const scaleY = ch / zone.zoneH;
-      const scale = Math.min(scaleX, scaleY, 1);
-      const drawW = Math.floor(zone.zoneW * scale);
-      const drawH = Math.floor(zone.zoneH * scale);
+      const scale = Math.min(
+        scaleX,
+        scaleY,
+        allowUpscale ? Number.POSITIVE_INFINITY : 1,
+      );
+      const drawW = Math.max(1, Math.floor(zone.zoneW * scale));
+      const drawH = Math.max(1, Math.floor(zone.zoneH * scale));
 
       const last = lastSizeRef.current;
       if (last.w !== drawW || last.h !== drawH) {
@@ -77,10 +87,15 @@ export function SimFrameCanvas({
     paint();
 
     return () => observer.disconnect();
-  }, [frame, zone, ignoreChatScrollPause]);
+  }, [frame, zone, ignoreChatScrollPause, allowUpscale]);
 
   return (
-    <div ref={containerRef} className={styles.simFrameContainer}>
+    <div
+      ref={containerRef}
+      className={
+        allowUpscale ? styles.simFrameContainerFill : styles.simFrameContainer
+      }
+    >
       <canvas
         ref={canvasRef}
         className={className ?? styles.canvas}

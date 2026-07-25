@@ -36,6 +36,8 @@ interface RadioSimPreviewProps {
   live?: boolean;
   /** Keep WASM worker alive (pause when false). */
   active: boolean;
+  /** Scale the LCD frame up to fill the host (sim modal). */
+  fillHost?: boolean;
   /** Called when interactive sim can be opened (running) or unavailable. */
   onInteractiveControls?: (
     controls: { openInteractive: () => void } | null,
@@ -163,6 +165,7 @@ export function RadioSimPreview({
   mock,
   live = true,
   active,
+  fillHost = false,
   onInteractiveControls,
 }: RadioSimPreviewProps) {
   const {
@@ -350,7 +353,13 @@ export function RadioSimPreview({
 
   if (state.phase === "error") {
     return (
-      <div className={styles.simPreviewRoot}>
+      <div
+        className={
+          fillHost
+            ? `${styles.simPreviewRoot} ${styles.simPreviewFill}`
+            : styles.simPreviewRoot
+        }
+      >
         <div className={styles.radioSimMessage}>
           <p>Radio preview unavailable: {state.error}</p>
           <p className={styles.hint}>
@@ -369,7 +378,13 @@ export function RadioSimPreview({
     state.phase === "booting"
   ) {
     return (
-      <div className={styles.simPreviewRoot}>
+      <div
+        className={
+          fillHost
+            ? `${styles.simPreviewRoot} ${styles.simPreviewFill}`
+            : styles.simPreviewRoot
+        }
+      >
         <div className={styles.radioSimMessage}>
           <div className={styles.radioSimBrand} aria-hidden>
             ETX
@@ -395,8 +410,19 @@ export function RadioSimPreview({
   }
 
   return (
-    <div className={styles.simPreviewRoot}>
-      <SimFrameCanvas frame={frame} zone={frameZone} />
+    <div
+      className={
+        fillHost
+          ? `${styles.simPreviewRoot} ${styles.simPreviewFill}`
+          : styles.simPreviewRoot
+      }
+    >
+      <SimFrameCanvas
+        frame={frame}
+        zone={frameZone}
+        allowUpscale={fillHost}
+        ignoreChatScrollPause={fillHost}
+      />
 
       {overlayOpen && radioProfile && (
         <SimInteractiveOverlay
