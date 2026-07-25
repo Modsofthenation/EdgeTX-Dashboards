@@ -15,7 +15,11 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { ChatMessageList } from "./ChatMessageList";
 import { CollapsibleAside } from "./CollapsibleAside";
-import { AppPreferencesButton } from "~/components/AppPreferences";
+import {
+  AppPreferencesButton,
+  openAppPreferences,
+} from "~/components/AppPreferences";
+import { useOptionalAiSettings } from "~/components/AiSettingsProvider";
 import styles from "./ChatApp.module.css";
 
 export function ChatApp() {
@@ -48,6 +52,7 @@ function ChatAppLayout() {
   return (
     <div className={styles.shell}>
       <ChatAppHeader />
+      <AiSetupBanner />
       <div className={styles.body}>
         <ChatHistoryAside
           historyCollapsed={historyCollapsed}
@@ -62,6 +67,30 @@ function ChatAppLayout() {
           onToggleArtifact={toggleArtifact}
         />
       </div>
+    </div>
+  );
+}
+
+function AiSetupBanner() {
+  const ai = useOptionalAiSettings();
+  if (!ai || ai.statusLoading || ai.ready) return null;
+
+  return (
+    <div className={styles.aiBanner} role="status">
+      <div className={styles.aiBannerCopy}>
+        <strong>AI not configured</strong>
+        <span>
+          Add a Cursor API key in Preferences to generate dashboards, or set{" "}
+          <code>CURSOR_API_KEY</code> on the server.
+        </span>
+      </div>
+      <button
+        type="button"
+        className={styles.aiBannerBtn}
+        onClick={() => openAppPreferences("ai")}
+      >
+        Open AI settings
+      </button>
     </div>
   );
 }

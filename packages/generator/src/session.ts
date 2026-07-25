@@ -20,6 +20,7 @@ export interface RestoreSessionInput {
   widgetName?: string;
   widgetInstanceId?: string;
   widgetVersion?: number;
+  apiKey?: string;
 }
 
 export class SessionStore {
@@ -33,10 +34,11 @@ export class SessionStore {
     radioId: string,
     protocol: TelemetryProtocol,
     modelId = "composer-2.5",
+    apiKey?: string,
   ): GenerateSession {
     this.evictExpired();
     const id = randomUUID();
-    const generator = new WidgetGenerator(undefined, { protocol, radioId });
+    const generator = new WidgetGenerator(apiKey, { protocol, radioId });
     const session: GenerateSession = {
       id,
       agentId: "",
@@ -79,7 +81,7 @@ export class SessionStore {
     }
 
     const modelId = input.modelId ?? "composer-2.5";
-    const generator = new WidgetGenerator(undefined, {
+    const generator = new WidgetGenerator(input.apiKey, {
       protocol: input.protocol,
       radioId: input.radioId,
       widgetName: input.widgetName,

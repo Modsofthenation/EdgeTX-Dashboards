@@ -23,6 +23,7 @@ import {
   type ChatModel,
 } from "~/lib/chatModels";
 import { fetchModelCatalog, findModel } from "~/lib/modelCatalog";
+import { useOptionalAiSettings } from "~/components/AiSettingsProvider";
 import {
   createChatRecord,
   fetchChat,
@@ -63,6 +64,11 @@ function shouldRenderStreamEvent(type: string): boolean {
 }
 
 export function useWidgetChatState() {
+  const aiSettings = useOptionalAiSettings();
+  const apiKey = aiSettings?.apiKey ?? "";
+  const preferredModelId = aiSettings?.preferredModelId ?? "";
+  const authHeaders = aiSettings?.authHeaders;
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatId, setChatId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatSummary[]>([]);
@@ -108,17 +114,35 @@ export function useWidgetChatState() {
   useEffect(() => {
     void refreshHistory().finally(() => setHistoryLoading(false));
     void fetchRadioCatalog().then((catalog) => setRadios(catalog.radios));
-    void fetchModelCatalog()
-      .then((catalog) => {
-        setModels(catalog.models);
-        setModelId((current) =>
-          catalog.models.some((m) => m.id === current)
-            ? current
-            : catalog.defaultId,
-        );
-      })
-      .finally(() => setModelsLoading(false));
   }, [refreshHistory]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setModelsLoading(true);
+    void fetchModelCatalog({ apiKey, force: true })
+      .then((catalog) => {
+        if (cancelled) return;
+        setModels(catalog.models);
+        setModelId((current) => {
+          if (
+            preferredModelId &&
+            catalog.models.some((m) => m.id === preferredModelId)
+          ) {
+            return preferredModelId;
+          }
+          if (catalog.models.some((m) => m.id === current)) {
+            return current;
+          }
+          return catalog.defaultId;
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setModelsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiKey, preferredModelId]);
 
   const selectedRadio = useMemo(
     () => findRadio({ defaultId: DEFAULT_RADIO_ID, radios }, radioId),
@@ -513,7 +537,9 @@ export function useWidgetChatState() {
       try {
         const res = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders
+            ? authHeaders({ "Content-Type": "application/json" })
+            : { "Content-Type": "application/json" },
           body: JSON.stringify(body),
           signal: controller.signal,
         });
@@ -703,6 +729,7 @@ export function useWidgetChatState() {
       setMessagesTracked,
       commitSnapshot,
       setArtifactVersionsTracked,
+      authHeaders,
     ],
   );
 
