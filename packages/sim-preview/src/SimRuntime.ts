@@ -67,11 +67,12 @@ export class SimRuntime {
   private loadWidgetChain: Promise<void> = Promise.resolve();
   private loadWidgetPending: { source: string; zone?: WidgetSimulateZone } | null = null;
 
-  constructor(
-    private wasmUrl: string,
-    private radioKey: string,
-    callbacks: SimRuntimeCallbacks = {}
-  ) {
+  private wasmUrl: string;
+  private radioKey: string;
+
+  constructor(wasmUrl: string, radioKey: string, callbacks: SimRuntimeCallbacks = {}) {
+    this.wasmUrl = wasmUrl;
+    this.radioKey = radioKey;
     this.callbacks = callbacks;
   }
 
