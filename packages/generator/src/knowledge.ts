@@ -12,7 +12,7 @@ function isRepoRoot(dir: string): boolean {
   return existsSync(join(dir, REPO_MARKER));
 }
 
-/** Resolve monorepo root (works from dist/ and when Next.js cwd is apps/web). */
+/** Resolve monorepo root (works when bundled by Next.js and when cwd is apps/web). */
 export function getRepoRoot(): string {
   const envRoot = process.env.WIDGET_GEN_REPO_ROOT;
   if (envRoot) {

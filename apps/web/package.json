@@ -9,13 +9,7 @@
     "start": "next start",
     "clean": "node -e \"require('node:fs').rmSync('.next',{recursive:true,force:true})\"",
     "typecheck": "tsc --noEmit",
-    "test:preview": "npx --yes tsx --test src/lib/__tests__/luaPreviewEngine.test.ts src/lib/__tests__/paintSimFrame.test.ts",
-    "test:versions": "npx --yes tsx --test src/lib/__tests__/artifactVersionHistory.test.ts",
-    "test:stream": "npx --yes tsx --test src/lib/__tests__/generationStreamClient.test.ts",
-    "test:chat": "npx --yes tsx --test src/lib/db/__tests__/chatStore.test.ts",
-    "test:sim-firmware": "npx --yes tsx --test src/lib/__tests__/simFirmware.test.ts",
-    "test:editor": "npx --yes tsx --test src/lib/__tests__/editorSmoke.test.ts",
-    "test": "npm run test:preview && npm run test:versions && npm run test:stream && npm run test:chat && npm run test:sim-firmware && npm run test:editor"
+    "test": "tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@edgetx/simulator-ui": "^0.1.0",
@@ -36,6 +30,7 @@
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "tsx": "^4.23.1",
     "typescript": "^5.8.3"
   }
 }

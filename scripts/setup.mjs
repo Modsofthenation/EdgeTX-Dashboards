@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * One-shot dev setup: patch simulator-ui, sync assets, build workspaces.
+ * One-shot dev setup: patch simulator-ui and sync assets.
  *
- *   npm run setup       — full first-time setup (stubs + WASM + build)
- *   npm run setup:sim   — Radio sim tab only (WASM + patch + sim-preview build)
+ *   npm run setup       — full first-time setup (stubs + WASM + patch)
+ *   npm run setup:sim   — Radio sim tab only (WASM + patch)
  */
 import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
@@ -11,7 +11,6 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const simOnly = process.argv.includes("--sim");
-const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
 
 function run(label, command, args) {
   console.log(`\n▶ ${label}`);
@@ -35,12 +34,6 @@ if (!simOnly) {
 }
 
 runScript("Ensure EdgeTX WASM firmware (TX15)", "ensure-edgetx-wasm.mjs");
-
-if (simOnly) {
-  run("Build @widget-gen/sim-preview", npmCmd, ["run", "build", "-w", "@widget-gen/sim-preview"]);
-} else {
-  run("Build all workspaces", npmCmd, ["run", "build"]);
-}
 
 console.log("\n✓ Setup complete.");
 if (simOnly) {

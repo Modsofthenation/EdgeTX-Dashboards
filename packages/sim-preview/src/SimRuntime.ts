@@ -518,7 +518,10 @@ export class SimRuntime {
       const buf =
         frame.byteOffset === 0 && frame.byteLength === frame.buffer.byteLength
           ? (frame.buffer as ArrayBuffer)
-          : frame.buffer.slice(frame.byteOffset, frame.byteOffset + frame.byteLength);
+          : (frame.buffer.slice(
+              frame.byteOffset,
+              frame.byteOffset + frame.byteLength
+            ) as ArrayBuffer);
       this.callbacks.onFrame?.({ buffer: buf, width: w, height: h, depth });
     }
   }
