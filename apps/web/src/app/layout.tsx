@@ -15,9 +15,9 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EdgeTX Dashboard Generator",
+  title: "EdgeTX Dashboards",
   description:
-    "Generate EdgeTX Lua dashboards for TX15 with AI — telemetry, companion tools, and install guides",
+    "Generate, preview, and edit EdgeTX Lua dashboards for TX15 — then download a zip for your radio SD card",
 };
 
 export default function RootLayout({

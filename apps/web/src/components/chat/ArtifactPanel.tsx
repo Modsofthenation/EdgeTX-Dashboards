@@ -123,15 +123,15 @@ export const ArtifactPanel = memo(function ArtifactPanel({
         <div className={styles.headerMain}>
           {onTogglePanel && (
             <PanelCollapseButton
-              label="Dashboard"
+              label="Preview"
               collapsed={panelCollapsed}
               onToggle={onTogglePanel}
               side="right"
             />
           )}
           <div className={styles.headerText}>
-            <span className={styles.label}>Dashboard</span>
-            <h2 className={styles.name}>{artifact?.name ?? "Output"}</h2>
+            <span className={styles.label}>Preview</span>
+            <h2 className={styles.name}>{artifact?.name ?? "No widget yet"}</h2>
           </div>
         </div>
         {artifact && (
@@ -162,12 +162,11 @@ export const ArtifactPanel = memo(function ArtifactPanel({
           <span className={styles.emptyIcon} aria-hidden>
             ◫
           </span>
-          <h3 className={styles.emptyTitle}>No dashboard yet</h3>
+          <h3 className={styles.emptyTitle}>No preview yet</h3>
           <p className={styles.emptyText}>
-            Your generated dashboard preview and download zip will appear here
-            when the agent writes <code>main.lua</code>. Companion scripts
-            (tools, loggers) are included in the zip with install steps in{" "}
-            <code>INSTALL.md</code>.
+            Describe a dashboard in chat. When the agent writes{" "}
+            <code>main.lua</code>, the radio preview, Layout editor, and
+            download zip show up here.
           </p>
         </div>
       ) : (
@@ -218,8 +217,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 </ul>
               ) : (
                 <p className={styles.downloadGateHint}>
-                  Ask the assistant to fix validation issues, or open Edit
-                  layout to adjust the source.
+                  Ask the assistant to fix validation issues, or open Layout to
+                  adjust the source.
                 </p>
               )}
             </div>
@@ -227,9 +226,28 @@ export const ArtifactPanel = memo(function ArtifactPanel({
 
           {artifact && (
             <>
+              <div className={styles.workflow} aria-label="Next steps">
+                <span className={styles.workflowStep} data-done="true">
+                  Preview
+                </span>
+                <span className={styles.workflowSep} aria-hidden>
+                  →
+                </span>
+                <span className={styles.workflowStep}>Layout</span>
+                <span className={styles.workflowSep} aria-hidden>
+                  →
+                </span>
+                <span
+                  className={styles.workflowStep}
+                  data-done={artifact.validated ? "true" : undefined}
+                >
+                  Download
+                </span>
+              </div>
               <div className={styles.actions}>
                 <Link
                   href={`/editor?${new URLSearchParams({
+                    ...(chatId ? { chatId } : {}),
                     ...(sessionId ? { sessionId } : {}),
                     ...(artifact.instanceId
                       ? { instanceId: artifact.instanceId }
@@ -238,7 +256,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                   }).toString()}`}
                   className={styles.editLayoutBtn}
                 >
-                  Edit layout
+                  Open Layout
                 </Link>
                 <button
                   type="button"
