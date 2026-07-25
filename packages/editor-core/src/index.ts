@@ -5,5 +5,9 @@ export * from "./colors.ts";
 export * from "./ids.ts";
 export * from "./luaDocument.ts";
 export * from "./telemetryBinding.ts";
-export { sceneToLua, createEmptyScene, createDefaultElement } from "./export/sceneToLua.ts";
+export {
+  sceneToLua,
+  createEmptyScene,
+  createDefaultElement,
+} from "./export/sceneToLua.ts";
 export { luaToScene } from "./import/luaToScene.ts";

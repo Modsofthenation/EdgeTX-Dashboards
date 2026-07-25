@@ -32,7 +32,7 @@ export function createStarterSource(): string {
 
 export function interpretDocument(
   source: string,
-  mockOrScenario: MockTelemetry | LayoutScenario = EDITOR_PREVIEW_SCENARIO
+  mockOrScenario: MockTelemetry | LayoutScenario = EDITOR_PREVIEW_SCENARIO,
 ): DocumentRecord[] {
   const records = parseLuaToDrawCommands(source, mockOrScenario);
   return records
@@ -45,7 +45,11 @@ export function getSourceLine(source: string, lineNum: number): string {
   return (lines[lineNum - 1] ?? "").replace(/\r$/, "");
 }
 
-export function replaceSourceLine(source: string, lineNum: number, newLine: string): string {
+export function replaceSourceLine(
+  source: string,
+  lineNum: number,
+  newLine: string,
+): string {
   const lines = source.split("\n");
   if (lineNum < 1 || lineNum > lines.length) return source;
   const hadCr = lines[lineNum - 1]!.endsWith("\r");
@@ -53,7 +57,11 @@ export function replaceSourceLine(source: string, lineNum: number, newLine: stri
   return lines.join("\n");
 }
 
-export function patchArgSpan(line: string, span: { start: number; end: number }, newText: string): string {
+export function patchArgSpan(
+  line: string,
+  span: { start: number; end: number },
+  newText: string,
+): string {
   return line.slice(0, span.start) + newText + line.slice(span.end);
 }
 
@@ -79,7 +87,13 @@ function argMapForRecord(record: DrawRecord): Record<string, number> {
     case "rect":
       return { x: 0, y: 1, w: 2, h: 3, color: 4 };
     case "line":
-      return { x: 0, y: 1, x2: 2, y2: 3, color: record.sourceRef?.args.length === 6 ? 5 : 4 };
+      return {
+        x: 0,
+        y: 1,
+        x2: 2,
+        y2: 3,
+        color: record.sourceRef?.args.length === 6 ? 5 : 4,
+      };
     case "gauge":
       return { x: 0, y: 1, w: 2, h: 3, fill: 4, maxFill: 5, color: 6 };
     case "circle":
@@ -88,7 +102,15 @@ function argMapForRecord(record: DrawRecord): Record<string, number> {
     case "arc":
       return { x: 0, y: 1, r: 2, startAngle: 3, endAngle: 4, color: 5 };
     case "annulus":
-      return { x: 0, y: 1, rIn: 2, rOut: 3, startAngle: 4, endAngle: 5, color: 7 };
+      return {
+        x: 0,
+        y: 1,
+        rIn: 2,
+        rOut: 3,
+        startAngle: 4,
+        endAngle: 5,
+        color: 7,
+      };
     case "bitmap":
       return { x: 1, y: 2 };
     default:
@@ -96,8 +118,13 @@ function argMapForRecord(record: DrawRecord): Record<string, number> {
   }
 }
 
-function formatPatchValue(key: string, value: string | number, _record: DrawRecord): string {
-  if (key === "text" && typeof value === "string") return formatTextLiteral(value);
+function formatPatchValue(
+  key: string,
+  value: string | number,
+  _record: DrawRecord,
+): string {
+  if (key === "text" && typeof value === "string")
+    return formatTextLiteral(value);
   if (key === "flags" && typeof value === "string") return value;
   if (key === "color" && typeof value === "string") return value;
   return String(Math.round(Number(value)));
@@ -108,7 +135,7 @@ export function patchRecordArgs(
   source: string,
   record: DrawRecord,
   patch: ArgPatch,
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): string {
   const ref = record.sourceRef;
   if (!ref) return source;
@@ -140,7 +167,7 @@ export function translateRecord(
   record: DrawRecord,
   dx: number,
   dy: number,
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): string {
   const patch: ArgPatch = {};
   if (record.x != null) patch.x = record.x + dx;
@@ -156,7 +183,7 @@ export function resizeRecord(
   source: string,
   record: DrawRecord,
   box: { x: number; y: number; w: number; h: number },
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): string {
   return patchRecordArgs(
     source,
@@ -167,7 +194,7 @@ export function resizeRecord(
       w: box.w,
       h: box.h,
     },
-    zone
+    zone,
   );
 }
 
@@ -175,11 +202,21 @@ export function setRecordColor(
   source: string,
   record: DrawRecord,
   color: EdgeColor,
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): string {
   if (record.kind === "text") {
-    const flags = record.fontSize && record.fontSize >= 20 ? "DBLSIZE" : record.fontSize && record.fontSize >= 14 ? "MIDSIZE" : "SMLSIZE";
-    return patchRecordArgs(source, record, { flags: `${flags} + ${color}` }, zone);
+    const flags =
+      record.fontSize && record.fontSize >= 20
+        ? "DBLSIZE"
+        : record.fontSize && record.fontSize >= 14
+          ? "MIDSIZE"
+          : "SMLSIZE";
+    return patchRecordArgs(
+      source,
+      record,
+      { flags: `${flags} + ${color}` },
+      zone,
+    );
   }
   return patchRecordArgs(source, record, { color }, zone);
 }
@@ -188,7 +225,7 @@ export function setRecordText(
   source: string,
   record: DrawRecord,
   text: string,
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): string {
   return patchRecordArgs(source, record, { text }, zone);
 }
@@ -215,7 +252,10 @@ export const INSERT_LINE_TEMPLATES: Record<string, string> = {
   bitmap: "lcd.drawBitmap(widget.modelBmp, 12, 48)",
 };
 
-export function insertDrawLine(source: string, kind: keyof typeof INSERT_LINE_TEMPLATES): string {
+export function insertDrawLine(
+  source: string,
+  kind: keyof typeof INSERT_LINE_TEMPLATES,
+): string {
   const template = INSERT_LINE_TEMPLATES[kind];
   if (!template) return source;
   const bodyEnd = findRefreshBodyEndIndex(source);
@@ -227,7 +267,10 @@ export function insertDrawLine(source: string, kind: keyof typeof INSERT_LINE_TE
 export function patchWidgetName(source: string, name: string): string {
   const trimmed = name.slice(0, 10);
   if (/local\s+name\s*=/.test(source)) {
-    return source.replace(/local\s+name\s*=\s*"[^"]*"/, `local name = "${trimmed}"`);
+    return source.replace(
+      /local\s+name\s*=\s*"[^"]*"/,
+      `local name = "${trimmed}"`,
+    );
   }
   return source;
 }

@@ -44,7 +44,10 @@ export class WidgetWorkspace {
     return { ok: true, source: readFileSync(path, "utf-8"), mutated: false };
   }
 
-  prepareSource(workspaceKey: string, simulateProfile: SimulateLayoutProfile): ReadWidgetResult {
+  prepareSource(
+    workspaceKey: string,
+    simulateProfile: SimulateLayoutProfile,
+  ): ReadWidgetResult {
     const read = this.readSource(workspaceKey);
     if (!read.ok) return read;
 

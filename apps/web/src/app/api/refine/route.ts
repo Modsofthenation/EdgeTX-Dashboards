@@ -1,4 +1,10 @@
-import { CursorAgentError, getSessionStore, validatePromptImages, writeWidgetLuaSource, readWidgetLuaSource } from "~/server/generatorFacade";
+import {
+  CursorAgentError,
+  getSessionStore,
+  validatePromptImages,
+  writeWidgetLuaSource,
+  readWidgetLuaSource,
+} from "~/server/generatorFacade";
 import type { RefineHistoryInput } from "@widget-gen/generator";
 import { checkApiAuth } from "~/lib/apiSecurity";
 import { getChat } from "~/lib/db/chatStore";
@@ -31,7 +37,8 @@ function resolveRefineSession(sessionId: string, chatId?: string) {
         protocol: chat.protocol,
         modelId: chat.modelId,
         widgetName: chat.widgetName ?? chat.artifact?.name ?? undefined,
-        widgetInstanceId: chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
+        widgetInstanceId:
+          chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
         widgetVersion: chat.widgetVersion ?? chat.artifact?.version,
       });
       effectiveSessionId = restored.id;
@@ -47,7 +54,10 @@ export async function POST(request: Request): Promise<Response> {
   if (authErr) return authErr;
 
   if (!process.env.CURSOR_API_KEY) {
-    return Response.json({ error: "CURSOR_API_KEY is not configured on the server" }, { status: 500 });
+    return Response.json(
+      { error: "CURSOR_API_KEY is not configured on the server" },
+      { status: 500 },
+    );
   }
 
   let body: unknown;
@@ -71,10 +81,16 @@ export async function POST(request: Request): Promise<Response> {
 
   const prompt = data.prompt?.trim() ?? "";
   if (!prompt && imagesResult.images.length === 0) {
-    return Response.json({ error: "prompt or at least one reference image is required" }, { status: 400 });
+    return Response.json(
+      { error: "prompt or at least one reference image is required" },
+      { status: 400 },
+    );
   }
   if (prompt.length > 8000) {
-    return Response.json({ error: "prompt exceeds maximum length (8000)" }, { status: 400 });
+    return Response.json(
+      { error: "prompt exceeds maximum length (8000)" },
+      { status: 400 },
+    );
   }
 
   const effectivePrompt =
@@ -85,12 +101,16 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "sessionId is required" }, { status: 400 });
   }
 
-  const { store, stored, sessionId: effectiveSessionId } = resolveRefineSession(
-    data.sessionId,
-    data.chatId?.trim()
-  );
+  const {
+    store,
+    stored,
+    sessionId: effectiveSessionId,
+  } = resolveRefineSession(data.sessionId, data.chatId?.trim());
   if (!stored) {
-    return Response.json({ error: "Session not found or expired" }, { status: 404 });
+    return Response.json(
+      { error: "Session not found or expired" },
+      { status: 404 },
+    );
   }
 
   const chat = data.chatId?.trim() ? getChat(data.chatId.trim()) : null;
@@ -99,11 +119,17 @@ export async function POST(request: Request): Promise<Response> {
     chat?.widgetInstanceId ??
     chat?.artifact?.instanceId ??
     undefined;
-  const workspaceLua = workspaceKey ? readWidgetLuaSource(workspaceKey)?.source : null;
+  const workspaceLua = workspaceKey
+    ? readWidgetLuaSource(workspaceKey)?.source
+    : null;
 
   let refineHistory: RefineHistoryInput | undefined;
   if (chat) {
-    refineHistory = buildRefineHistoryInput(chat, effectivePrompt, workspaceLua);
+    refineHistory = buildRefineHistoryInput(
+      chat,
+      effectivePrompt,
+      workspaceLua,
+    );
   } else if (workspaceLua) {
     refineHistory = {
       messages: [],
@@ -120,12 +146,21 @@ export async function POST(request: Request): Promise<Response> {
 
   const stream = createSseStream(async (send) => {
     if (!store.tryAcquire(effectiveSessionId)) {
-      send({ type: "error", content: "Session busy", sessionId: effectiveSessionId, success: false });
+      send({
+        type: "error",
+        content: "Session busy",
+        sessionId: effectiveSessionId,
+        success: false,
+      });
       return;
     }
 
     try {
-      const ctx = { session: stored.session, generator: stored.generator, send };
+      const ctx = {
+        session: stored.session,
+        generator: stored.generator,
+        send,
+      };
       const result = await stored.generator.refine(
         effectivePrompt,
         stored.session.protocol,
@@ -134,7 +169,7 @@ export async function POST(request: Request): Promise<Response> {
         createRunCallbacks(ctx),
         stored.session,
         imagesResult.images.length > 0 ? imagesResult.images : undefined,
-        refineHistory
+        refineHistory,
       );
 
       emitRunCompletion(ctx, result, { action: "refine" });
@@ -145,7 +180,12 @@ export async function POST(request: Request): Promise<Response> {
           : err instanceof Error
             ? err.message
             : "Unknown error";
-      send({ type: "error", content: message, sessionId: effectiveSessionId, success: false });
+      send({
+        type: "error",
+        content: message,
+        sessionId: effectiveSessionId,
+        success: false,
+      });
     } finally {
       store.release(effectiveSessionId);
     }

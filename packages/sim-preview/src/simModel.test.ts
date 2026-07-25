@@ -24,7 +24,10 @@ describe("simModel", () => {
     });
     assert.match(withWidget, /TYPE_CROSSFIRE/);
     for (const label of SIM_TELEMETRY_SENSOR_LABELS) {
-      assert.ok(withWidget.includes(`label: ${label}`), `missing sensor ${label}`);
+      assert.ok(
+        withWidget.includes(`label: ${label}`),
+        `missing sensor ${label}`,
+      );
     }
     assert.match(withWidget, /screenData:/);
     assert.match(withWidget, /widgetName: TX15Dash/);

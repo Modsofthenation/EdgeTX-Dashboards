@@ -13,7 +13,7 @@ export function computeCanvasLayout(
   frameWidth: number,
   frameHeight: number,
   zoneW: number,
-  zoneH: number
+  zoneH: number,
 ): CanvasLayout {
   const scale = Math.min(frameWidth / zoneW, frameHeight / zoneH);
   const drawW = zoneW * scale;

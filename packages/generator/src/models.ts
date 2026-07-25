@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { Cursor } from "@cursor/sdk";
 import { getRepoRoot } from "./knowledge.ts";
@@ -46,11 +52,15 @@ interface DiskCachePayload {
 let memoryCache: ModelCatalogCache | undefined;
 
 function getCacheFilePath(): string {
-  const dataDir = process.env.WIDGET_GEN_DATA_DIR ?? join(getRepoRoot(), "data");
+  const dataDir =
+    process.env.WIDGET_GEN_DATA_DIR ?? join(getRepoRoot(), "data");
   return join(dataDir, "model-catalog-cache.json");
 }
 
-function toMemoryCache(models: ModelCatalogEntry[], fetchedAt: number): ModelCatalogCache {
+function toMemoryCache(
+  models: ModelCatalogEntry[],
+  fetchedAt: number,
+): ModelCatalogCache {
   return {
     models,
     ids: new Set(models.map((m) => m.id)),
@@ -64,7 +74,8 @@ function readDiskCache(): ModelCatalogCache | undefined {
     if (!existsSync(path)) return undefined;
 
     const payload = JSON.parse(readFileSync(path, "utf-8")) as DiskCachePayload;
-    if (!Array.isArray(payload.models) || payload.models.length === 0) return undefined;
+    if (!Array.isArray(payload.models) || payload.models.length === 0)
+      return undefined;
 
     const cache = toMemoryCache(payload.models, payload.fetchedAt);
     if (cache.expires <= Date.now()) return undefined;
@@ -90,7 +101,11 @@ function hydrateMemoryCache(): void {
   memoryCache = readDiskCache();
 }
 
-function mapSdkModel(model: { id: string; displayName?: string; description?: string }): ModelCatalogEntry {
+function mapSdkModel(model: {
+  id: string;
+  displayName?: string;
+  description?: string;
+}): ModelCatalogEntry {
   return {
     id: model.id,
     label: model.displayName?.trim() || model.id,
@@ -110,7 +125,9 @@ export function getDefaultModelId(models: ModelCatalogEntry[]): string {
 }
 
 /** List models available to the authenticated Cursor API key (cached). */
-export async function listAvailableModels(apiKey?: string): Promise<ModelCatalogEntry[]> {
+export async function listAvailableModels(
+  apiKey?: string,
+): Promise<ModelCatalogEntry[]> {
   const key = apiKey ?? process.env.CURSOR_API_KEY;
   if (!key) {
     return [...FALLBACK_MODELS];
@@ -124,7 +141,8 @@ export async function listAvailableModels(apiKey?: string): Promise<ModelCatalog
 
   try {
     const sdkModels = await Cursor.models.list({ apiKey: key });
-    const models = sdkModels.length > 0 ? sdkModels.map(mapSdkModel) : [...FALLBACK_MODELS];
+    const models =
+      sdkModels.length > 0 ? sdkModels.map(mapSdkModel) : [...FALLBACK_MODELS];
 
     memoryCache = toMemoryCache(models, now);
     writeDiskCache(models, now);
@@ -134,12 +152,17 @@ export async function listAvailableModels(apiKey?: string): Promise<ModelCatalog
   }
 }
 
-export async function listAvailableModelIds(apiKey?: string): Promise<string[]> {
+export async function listAvailableModelIds(
+  apiKey?: string,
+): Promise<string[]> {
   const models = await listAvailableModels(apiKey);
   return models.map((m) => m.id);
 }
 
-export function isAllowedModelId(modelId: string, allowedModelIds?: string[]): boolean {
+export function isAllowedModelId(
+  modelId: string,
+  allowedModelIds?: string[],
+): boolean {
   const allowed = allowedModelIds ?? FALLBACK_MODELS.map((m) => m.id);
   return allowed.includes(modelId);
 }

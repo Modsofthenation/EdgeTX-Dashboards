@@ -6,7 +6,10 @@ for (const [name, hex] of Object.entries(COLOR_MAP)) {
 }
 
 /** Map a hex color from the interpreter to an EdgeTX color name. */
-export function hexToEdgeColor(hex: string | undefined, fallback: EdgeColor = "WHITE"): EdgeColor {
+export function hexToEdgeColor(
+  hex: string | undefined,
+  fallback: EdgeColor = "WHITE",
+): EdgeColor {
   if (!hex) return fallback;
   const normalized = hex.toLowerCase();
   return HEX_TO_EDGE.get(normalized) ?? fallback;

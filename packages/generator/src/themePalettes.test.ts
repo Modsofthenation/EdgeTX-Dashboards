@@ -4,7 +4,10 @@ import { pickDashboardPaletteForPrompt } from "./themePalettes.ts";
 
 describe("pickDashboardPaletteForPrompt", () => {
   it("selects light surface for white background requests", () => {
-    const p = pickDashboardPaletteForPrompt(3, "make the background white and clean");
+    const p = pickDashboardPaletteForPrompt(
+      3,
+      "make the background white and clean",
+    );
     assert.equal(p.id, "light-surface");
   });
 

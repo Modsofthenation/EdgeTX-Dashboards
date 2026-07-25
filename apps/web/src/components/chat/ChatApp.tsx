@@ -26,8 +26,13 @@ export function ChatApp() {
 }
 
 function ChatAppLayout() {
-  const { historyCollapsed, artifactCollapsed, toggleHistory, toggleArtifact, expandArtifact } =
-    usePanelCollapse();
+  const {
+    historyCollapsed,
+    artifactCollapsed,
+    toggleHistory,
+    toggleArtifact,
+    expandArtifact,
+  } = usePanelCollapse();
   const { artifact } = useArtifactPanel();
   const prevHadArtifact = useRef(false);
 
@@ -62,7 +67,8 @@ function ChatAppLayout() {
 
 function ChatAppHeader() {
   const { running, startNewChat } = useChatSession();
-  const { modelsLoading, selectedModel, modelId, selectedRadio } = useSessionSettings();
+  const { modelsLoading, selectedModel, modelId, selectedRadio } =
+    useSessionSettings();
   const activeModelLabel = selectedModel?.label ?? modelId;
 
   return (
@@ -114,11 +120,24 @@ function ChatHistoryAside({
   historyCollapsed: boolean;
   onToggleHistory: () => void;
 }) {
-  const { chatHistory, chatId, historyLoading, running, loadChat, startNewChat, deleteChat } =
-    useChatSession();
+  const {
+    chatHistory,
+    chatId,
+    historyLoading,
+    running,
+    loadChat,
+    startNewChat,
+    deleteChat,
+  } = useChatSession();
 
-  const handleSelect = useCallback((id: string) => void loadChat(id), [loadChat]);
-  const handleDelete = useCallback((id: string) => void deleteChat(id), [deleteChat]);
+  const handleSelect = useCallback(
+    (id: string) => void loadChat(id),
+    [loadChat],
+  );
+  const handleDelete = useCallback(
+    (id: string) => void deleteChat(id),
+    [deleteChat],
+  );
 
   return (
     <CollapsibleAside
@@ -146,7 +165,10 @@ function ChatMessageListSection() {
   const { messages, scrollRevision } = useChatMessages();
   const { running, sendMessage } = useChatSession();
   const { artifact } = useArtifactPanel();
-  const handleSuggestion = useCallback((text: string) => void sendMessage(text), [sendMessage]);
+  const handleSuggestion = useCallback(
+    (text: string) => void sendMessage(text),
+    [sendMessage],
+  );
   const handleRetry = useCallback(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
@@ -187,7 +209,7 @@ function ChatComposerSection() {
   const handleSend = useCallback(
     (prompt: string, images?: PendingPromptImage[]) =>
       void sendMessage(prompt, images ? { images } : undefined),
-    [sendMessage]
+    [sendMessage],
   );
 
   return (
@@ -230,9 +252,14 @@ function ArtifactAside({
   );
 }
 
-function ExpandedArtifactPanel({ onToggleArtifact }: { onToggleArtifact: () => void }) {
+function ExpandedArtifactPanel({
+  onToggleArtifact,
+}: {
+  onToggleArtifact: () => void;
+}) {
   const { chatId, running } = useChatSession();
-  const { protocol, layoutProfileId, selectedRadio, edgeTxVersion } = useSessionSettings();
+  const { protocol, layoutProfileId, selectedRadio, edgeTxVersion } =
+    useSessionSettings();
   const {
     artifact,
     artifactVersions,

@@ -12,7 +12,7 @@ export function sanitizeWidgetName(name: string): string {
   const trimmed = String(name).trim();
   if (!WIDGET_NAME_PATTERN.test(trimmed)) {
     throw new Error(
-      `Invalid widget name "${name}": use 1–10 characters (letters, digits, underscore only)`
+      `Invalid widget name "${name}": use 1–10 characters (letters, digits, underscore only)`,
     );
   }
   return trimmed;
@@ -38,7 +38,10 @@ export function getGeneratedRoot(): string {
 export function assertUnderGenerated(resolvedPath: string): void {
   const root = getGeneratedRoot();
   const rel = relative(root, resolve(resolvedPath));
-  if (rel.startsWith("..") || (rel.includes("..") && rel.split(sep).includes(".."))) {
+  if (
+    rel.startsWith("..") ||
+    (rel.includes("..") && rel.split(sep).includes(".."))
+  ) {
     throw new Error("Path traversal detected");
   }
 }

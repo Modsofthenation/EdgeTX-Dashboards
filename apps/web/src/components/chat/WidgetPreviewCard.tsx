@@ -12,7 +12,11 @@ interface WidgetPreviewCardProps {
   protocol: TelemetryProtocol;
 }
 
-export function WidgetPreviewCard({ widget, sessionId, protocol }: WidgetPreviewCardProps) {
+export function WidgetPreviewCard({
+  widget,
+  sessionId,
+  protocol,
+}: WidgetPreviewCardProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 

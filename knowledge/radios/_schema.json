@@ -2,7 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "RadioProfile",
   "type": "object",
-  "required": ["id", "name", "lcdW", "lcdH", "touch", "maxOptions", "edgeTxMin"],
+  "required": [
+    "id",
+    "name",
+    "lcdW",
+    "lcdH",
+    "touch",
+    "maxOptions",
+    "edgeTxMin"
+  ],
   "properties": {
     "id": { "type": "string" },
     "name": { "type": "string" },

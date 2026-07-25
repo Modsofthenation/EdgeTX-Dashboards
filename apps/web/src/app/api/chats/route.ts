@@ -1,5 +1,9 @@
 import { checkApiAuth } from "~/lib/apiSecurity";
-import { createChat, listChats, type CreateChatInput } from "~/lib/db/chatStore";
+import {
+  createChat,
+  listChats,
+  type CreateChatInput,
+} from "~/lib/db/chatStore";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export const runtime = "nodejs";
@@ -28,7 +32,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const data = body as Partial<CreateChatInput>;
   if (!data.title?.trim() || !data.protocol || !data.modelId) {
-    return Response.json({ error: "title, protocol, and modelId are required" }, { status: 400 });
+    return Response.json(
+      { error: "title, protocol, and modelId are required" },
+      { status: 400 },
+    );
   }
 
   const chat = createChat({

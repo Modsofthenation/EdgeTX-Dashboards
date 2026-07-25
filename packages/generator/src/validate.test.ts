@@ -48,22 +48,32 @@ const BARE_SOURCE = [
 describe("archetype-aware validateVisualDesign", () => {
   it("hero-minimal without panels does not warn about missing cards", () => {
     setActiveLayoutArchetype("hero-minimal");
-    const result = validateWidgetLua(HERO_MINIMAL_SOURCE, { layoutArchetype: "hero-minimal" });
-    const panelWarn = result.issues.find((i) => /grouped regions|card panels/i.test(i.message));
+    const result = validateWidgetLua(HERO_MINIMAL_SOURCE, {
+      layoutArchetype: "hero-minimal",
+    });
+    const panelWarn = result.issues.find((i) =>
+      /grouped regions|card panels/i.test(i.message),
+    );
     assert.equal(panelWarn, undefined);
   });
 
   it("strip-board with two bands passes band rule", () => {
     setActiveLayoutArchetype("strip-board");
-    const result = validateWidgetLua(STRIP_SOURCE, { layoutArchetype: "strip-board" });
+    const result = validateWidgetLua(STRIP_SOURCE, {
+      layoutArchetype: "strip-board",
+    });
     const bandWarn = result.issues.find((i) => /bands/i.test(i.message));
     assert.equal(bandWarn, undefined);
   });
 
   it("card-grid without panels warns", () => {
     setActiveLayoutArchetype("card-grid");
-    const result = validateWidgetLua(BARE_SOURCE, { layoutArchetype: "card-grid" });
-    const panelWarn = result.issues.find((i) => /grouped regions/i.test(i.message));
+    const result = validateWidgetLua(BARE_SOURCE, {
+      layoutArchetype: "card-grid",
+    });
+    const panelWarn = result.issues.find((i) =>
+      /grouped regions/i.test(i.message),
+    );
     assert.ok(panelWarn);
   });
 });

@@ -28,6 +28,9 @@ describe("virtualSd", () => {
   });
 
   it("rejects invalid folder names", () => {
-    assert.throws(() => sanitizeWidgetFolderName("too-long-name-here"), /Invalid widget name/);
+    assert.throws(
+      () => sanitizeWidgetFolderName("too-long-name-here"),
+      /Invalid widget name/,
+    );
   });
 });

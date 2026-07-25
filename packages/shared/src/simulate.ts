@@ -43,7 +43,9 @@ const LAYOUT_PROFILES: Record<LayoutProfileId, SimulateLayoutProfile> = {
 };
 
 /** Canonical layout profiles (from packages/shared/src/layouts/*.json). */
-export function getSimulateLayoutProfile(layoutProfileId: string): SimulateLayoutProfile {
+export function getSimulateLayoutProfile(
+  layoutProfileId: string,
+): SimulateLayoutProfile {
   const profile = LAYOUT_PROFILES[layoutProfileId as LayoutProfileId];
   if (!profile) {
     throw new Error(`Simulate layout profile not found: ${layoutProfileId}`);
@@ -51,7 +53,9 @@ export function getSimulateLayoutProfile(layoutProfileId: string): SimulateLayou
   return profile;
 }
 
-export function tryGetSimulateLayoutProfile(layoutProfileId: string): SimulateLayoutProfile | null {
+export function tryGetSimulateLayoutProfile(
+  layoutProfileId: string,
+): SimulateLayoutProfile | null {
   return LAYOUT_PROFILES[layoutProfileId as LayoutProfileId] ?? null;
 }
 
@@ -65,7 +69,9 @@ export function parseScriptTypeAnnotation(source: string): string | null {
   return match?.[1] ?? null;
 }
 
-export function parseSimulateAnnotation(source: string): SimulateAnnotation | null {
+export function parseSimulateAnnotation(
+  source: string,
+): SimulateAnnotation | null {
   const match = source.match(SIMULATE_ANNOTATION);
   if (!match) return null;
   return {
@@ -76,11 +82,13 @@ export function parseSimulateAnnotation(source: string): SimulateAnnotation | nu
 
 export function resolveSimulateZone(
   annotation: SimulateAnnotation,
-  profile: SimulateLayoutProfile
+  profile: SimulateLayoutProfile,
 ): WidgetZoneRect {
   const layout = profile.layouts[annotation.layout];
   if (!layout) {
-    return profile.layouts[profile.defaultSimulate.layout].zones[profile.defaultSimulate.zone];
+    return profile.layouts[profile.defaultSimulate.layout].zones[
+      profile.defaultSimulate.zone
+    ];
   }
   const zone = layout.zones[annotation.zone];
   if (!zone) {
@@ -91,7 +99,7 @@ export function resolveSimulateZone(
 
 export function resolvePreviewDimensions(
   source: string,
-  profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE
+  profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,
 ): PreviewDimensions {
   const annotation = parseSimulateAnnotation(source) ?? profile.defaultSimulate;
   const zone = resolveSimulateZone(annotation, profile);
@@ -109,7 +117,10 @@ export function resolvePreviewDimensions(
 
 /** True when @simulate zone covers the full LCD (dashboard full-screen mode in WASM sim). */
 export function isFullLcdSimulateZone(
-  dims: Pick<PreviewDimensions, "lcdW" | "lcdH" | "zoneX" | "zoneY" | "zoneW" | "zoneH">
+  dims: Pick<
+    PreviewDimensions,
+    "lcdW" | "lcdH" | "zoneX" | "zoneY" | "zoneW" | "zoneH"
+  >,
 ): boolean {
   return (
     dims.zoneX === 0 &&
@@ -122,7 +133,7 @@ export function isFullLcdSimulateZone(
 export function ensureDevKitAnnotations(
   source: string,
   profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,
-  scriptType = "WidgetScript"
+  scriptType = "WidgetScript",
 ): string {
   let body = source.replace(/^\uFEFF/, "");
   const lines: string[] = [];

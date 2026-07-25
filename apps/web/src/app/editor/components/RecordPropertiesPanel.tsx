@@ -2,14 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EDGE_COLOR_NAMES } from "@widget-gen/editor-core";
-import type { DocumentRecord, TextFormat, ZoneOffset } from "@widget-gen/editor-core";
+import type {
+  DocumentRecord,
+  TextFormat,
+  ZoneOffset,
+} from "@widget-gen/editor-core";
 import type { EdgeColor } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { catalogForDrawKind } from "../elementMeta";
 import { SENSOR_CATALOG } from "../lib/sensorCatalog";
 import styles from "../editor.module.css";
 
-const LAYOUT_OPTIONS = ["Layout1x1", "Layout1x2", "Layout2x1", "Layout2x2"] as const;
+const LAYOUT_OPTIONS = [
+  "Layout1x1",
+  "Layout1x2",
+  "Layout2x1",
+  "Layout2x2",
+] as const;
 
 interface RecordPropertiesPanelProps {
   meta: { name: string; layout: string; zone: number };
@@ -17,10 +26,17 @@ interface RecordPropertiesPanelProps {
   zone: ZoneOffset;
   protocol?: TelemetryProtocol;
   onPatchName: (name: string) => void;
-  onPatchRecord: (record: DocumentRecord, patch: Record<string, string | number>) => void;
+  onPatchRecord: (
+    record: DocumentRecord,
+    patch: Record<string, string | number>,
+  ) => void;
   onSetColor: (record: DocumentRecord, color: EdgeColor) => void;
   onSetText: (record: DocumentRecord, text: string) => void;
-  onBindTelemetry?: (record: DocumentRecord, sensor: string, format: TextFormat) => void;
+  onBindTelemetry?: (
+    record: DocumentRecord,
+    sensor: string,
+    format: TextFormat,
+  ) => void;
   onPatchSimulate?: (layout: string, zone: number) => void;
 }
 
@@ -82,16 +98,24 @@ export function RecordPropertiesPanel({
 }: RecordPropertiesPanelProps) {
   const record = selectedRecords.length === 1 ? selectedRecords[0] : null;
   const kindMeta = record ? catalogForDrawKind(record.kind) : null;
-  const sensors = useMemo(() => SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight, [protocol]);
+  const sensors = useMemo(
+    () => SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight,
+    [protocol],
+  );
   const [bindFormat, setBindFormat] = useState<TextFormat>("raw");
 
   const lcdX = record?.x ?? 0;
   const lcdY = record?.y ?? 0;
   const maxZone =
-    meta.layout === "Layout2x2" ? 3 : meta.layout === "Layout1x2" || meta.layout === "Layout2x1" ? 1 : 0;
+    meta.layout === "Layout2x2"
+      ? 3
+      : meta.layout === "Layout1x2" || meta.layout === "Layout2x1"
+        ? 1
+        : 0;
 
   const sharedXY =
-    selectedRecords.length > 1 && selectedRecords.every((r) => r.x != null && r.y != null);
+    selectedRecords.length > 1 &&
+    selectedRecords.every((r) => r.x != null && r.y != null);
 
   return (
     <aside className={`${styles.sidePanel} ${styles.propsPanel}`}>
@@ -127,7 +151,12 @@ export function RecordPropertiesPanel({
                 ))}
               </select>
             ) : (
-              <input type="text" className={styles.fieldInput} value={meta.layout} readOnly />
+              <input
+                type="text"
+                className={styles.fieldInput}
+                value={meta.layout}
+                readOnly
+              />
             )}
           </label>
           <label className={styles.propField}>
@@ -136,7 +165,9 @@ export function RecordPropertiesPanel({
               <select
                 className={styles.fieldInput}
                 value={meta.zone}
-                onChange={(e) => onPatchSimulate(meta.layout, Number(e.target.value))}
+                onChange={(e) =>
+                  onPatchSimulate(meta.layout, Number(e.target.value))
+                }
               >
                 {Array.from({ length: maxZone + 1 }, (_, i) => (
                   <option key={i} value={i}>
@@ -145,7 +176,12 @@ export function RecordPropertiesPanel({
                 ))}
               </select>
             ) : (
-              <input type="number" className={styles.fieldInput} value={meta.zone} readOnly />
+              <input
+                type="number"
+                className={styles.fieldInput}
+                value={meta.zone}
+                readOnly
+              />
             )}
           </label>
         </div>
@@ -153,7 +189,9 @@ export function RecordPropertiesPanel({
 
       {sharedXY && !record && (
         <section className={styles.propSection}>
-          <h3 className={styles.sectionTitle}>Multi-select ({selectedRecords.length})</h3>
+          <h3 className={styles.sectionTitle}>
+            Multi-select ({selectedRecords.length})
+          </h3>
           <p className={styles.propEmptyHint}>Nudge all selected elements:</p>
           <div className={styles.fieldRow}>
             <button
@@ -210,7 +248,8 @@ export function RecordPropertiesPanel({
         <div className={styles.propEmpty}>
           <p className={styles.propEmptyTitle}>Nothing selected</p>
           <p className={styles.propEmptyHint}>
-            Click a drawable element on the canvas or pick a layer to edit its source line.
+            Click a drawable element on the canvas or pick a layer to edit its
+            source line.
           </p>
         </div>
       )}
@@ -222,30 +261,58 @@ export function RecordPropertiesPanel({
               {kindMeta?.shortLabel ?? "?"}
             </span>
             <div>
-              <h3 className={styles.sectionTitle}>{kindMeta?.label ?? record.kind}</h3>
+              <h3 className={styles.sectionTitle}>
+                {kindMeta?.label ?? record.kind}
+              </h3>
               <p className={styles.elementSub}>Line {record.sourceLine}</p>
             </div>
           </div>
 
           {record.x != null && record.y != null && (
             <div className={styles.fieldRow}>
-              <NumField label="X" value={lcdX} onChange={(x) => onPatchRecord(record, { x })} />
-              <NumField label="Y" value={lcdY} onChange={(y) => onPatchRecord(record, { y })} />
+              <NumField
+                label="X"
+                value={lcdX}
+                onChange={(x) => onPatchRecord(record, { x })}
+              />
+              <NumField
+                label="Y"
+                value={lcdY}
+                onChange={(y) => onPatchRecord(record, { y })}
+              />
             </div>
           )}
 
-          {(record.kind === "filledRect" || record.kind === "rect" || record.kind === "gauge") && (
+          {(record.kind === "filledRect" ||
+            record.kind === "rect" ||
+            record.kind === "gauge") && (
             <div className={styles.fieldRow}>
-              <NumField label="W" value={record.w ?? 0} onChange={(w) => onPatchRecord(record, { w })} />
-              <NumField label="H" value={record.h ?? 0} onChange={(h) => onPatchRecord(record, { h })} />
+              <NumField
+                label="W"
+                value={record.w ?? 0}
+                onChange={(w) => onPatchRecord(record, { w })}
+              />
+              <NumField
+                label="H"
+                value={record.h ?? 0}
+                onChange={(h) => onPatchRecord(record, { h })}
+              />
             </div>
           )}
 
           {record.kind === "line" && (
             <>
               <div className={styles.fieldRow}>
-                <NumField label="X1" value={record.x ?? 0} onChange={(x) => onPatchRecord(record, { x })} />
-                <NumField label="Y1" value={record.y ?? 0} onChange={(y) => onPatchRecord(record, { y })} />
+                <NumField
+                  label="X1"
+                  value={record.x ?? 0}
+                  onChange={(x) => onPatchRecord(record, { x })}
+                />
+                <NumField
+                  label="Y1"
+                  value={record.y ?? 0}
+                  onChange={(y) => onPatchRecord(record, { y })}
+                />
               </div>
               <div className={styles.fieldRow}>
                 <NumField
@@ -262,8 +329,14 @@ export function RecordPropertiesPanel({
             </>
           )}
 
-          {(record.kind === "circle" || record.kind === "filledCircle" || record.kind === "arc") && (
-            <NumField label="Radius" value={record.r ?? 0} onChange={(r) => onPatchRecord(record, { r })} />
+          {(record.kind === "circle" ||
+            record.kind === "filledCircle" ||
+            record.kind === "arc") && (
+            <NumField
+              label="Radius"
+              value={record.r ?? 0}
+              onChange={(r) => onPatchRecord(record, { r })}
+            />
           )}
 
           {record.kind === "gauge" && (
@@ -300,7 +373,9 @@ export function RecordPropertiesPanel({
                     <select
                       className={styles.fieldInput}
                       value={bindFormat}
-                      onChange={(e) => setBindFormat(e.target.value as TextFormat)}
+                      onChange={(e) =>
+                        setBindFormat(e.target.value as TextFormat)
+                      }
                     >
                       <option value="raw">Raw number</option>
                       <option value="percent">Percent</option>
@@ -318,7 +393,8 @@ export function RecordPropertiesPanel({
                         const sensor = e.target.value;
                         if (!sensor) return;
                         const hint =
-                          sensors.find((s) => s.label === sensor)?.formatHint ?? bindFormat;
+                          sensors.find((s) => s.label === sensor)?.formatHint ??
+                          bindFormat;
                         onBindTelemetry(record, sensor, hint);
                         e.target.value = "";
                       }}
@@ -332,7 +408,8 @@ export function RecordPropertiesPanel({
                     </select>
                   </label>
                   <p className={styles.propEmptyHint}>
-                    Rewrites this drawText to getValue() with create() sensor cache.
+                    Rewrites this drawText to getValue() with create() sensor
+                    cache.
                   </p>
                 </div>
               )}
@@ -349,7 +426,9 @@ export function RecordPropertiesPanel({
                     ? record.color
                     : EDGE_COLOR_NAMES[0]
                 }
-                onChange={(e) => onSetColor(record, e.target.value as EdgeColor)}
+                onChange={(e) =>
+                  onSetColor(record, e.target.value as EdgeColor)
+                }
               >
                 {EDGE_COLOR_NAMES.map((c) => (
                   <option key={c} value={c}>

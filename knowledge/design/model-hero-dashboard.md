@@ -98,14 +98,14 @@ lcd.drawText(gaugeCx, yVUnit, "V", SMLSIZE + CENTER + LIGHTGREY)
 
 ## Layout proportions (TX15 480×320)
 
-| Region | Size |
-|--------|------|
-| Header | 40px, accent stripe 2px |
-| Footer | 28px, accent stripe 2px |
-| Pad | 12px grid |
-| Top bars | 30px tall, two equal columns |
+| Region      | Size                                        |
+| ----------- | ------------------------------------------- |
+| Header      | 40px, accent stripe 2px                     |
+| Footer      | 28px, accent stripe 2px                     |
+| Pad         | 12px grid                                   |
+| Top bars    | 30px tall, two equal columns                |
 | Hero column | ~248px wide (gauge centered at `heroW / 2`) |
-| Side card | remaining width minus pad |
+| Side card   | remaining width minus pad                   |
 
 ## Rounded panels
 

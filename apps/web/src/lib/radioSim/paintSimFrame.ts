@@ -40,7 +40,7 @@ export function paintSimFrame({
     zone.zoneX,
     zone.zoneY,
     zone.zoneW,
-    zone.zoneH
+    zone.zoneH,
   );
 
   scratchCanvas.width = zone.zoneW;
@@ -48,7 +48,11 @@ export function paintSimFrame({
   const scratchCtx = scratchCanvas.getContext("2d");
   if (!scratchCtx) return false;
 
-  scratchCtx.putImageData(rgb565ToImageData(cropped, zone.zoneW, zone.zoneH), 0, 0);
+  scratchCtx.putImageData(
+    rgb565ToImageData(cropped, zone.zoneW, zone.zoneH),
+    0,
+    0,
+  );
 
   targetCtx.imageSmoothingEnabled = false;
   targetCtx.clearRect(0, 0, targetWidth, targetHeight);

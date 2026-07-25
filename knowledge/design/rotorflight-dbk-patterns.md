@@ -98,14 +98,14 @@ Show `MM:SS` for session timer in a dedicated slot (MIDSIZE). If no timer source
 
 For rotorflight dashboards, offer:
 
-| Option | Type | Purpose |
-|--------|------|---------|
-| `ShowLink` | BOOL | Link card + RQLY blocks |
-| `ShowBatt` | BOOL | Battery card / annulus |
-| `ShowHead` | BOOL | Headspeed hero |
-| `ShowMotor` | BOOL | RPM, ESC/MOT temps |
-| `ValueColor` | COLOR | Primary value accent |
-| `TextColor` | COLOR | Labels / header |
+| Option       | Type  | Purpose                 |
+| ------------ | ----- | ----------------------- |
+| `ShowLink`   | BOOL  | Link card + RQLY blocks |
+| `ShowBatt`   | BOOL  | Battery card / annulus  |
+| `ShowHead`   | BOOL  | Headspeed hero          |
+| `ShowMotor`  | BOOL  | RPM, ESC/MOT temps      |
+| `ValueColor` | COLOR | Primary value accent    |
+| `TextColor`  | COLOR | Labels / header         |
 
 Avoid exposing more than 6–7 options unless requested.
 

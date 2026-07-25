@@ -12,26 +12,31 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "../../..");
 const goldExample = readFileSync(
   join(repoRoot, "examples/tx15-minimal-dashboard.lua"),
-  "utf-8"
+  "utf-8",
 );
 const modelHeroExample = readFileSync(
   join(repoRoot, "examples/tx15-model-hero-dashboard.lua"),
-  "utf-8"
+  "utf-8",
 );
 
 describe("sceneToLua round-trip", () => {
   it("imports gold example and exports valid Lua", () => {
     const { scene, warnings } = luaToScene(goldExample);
-    assert.ok(scene.elements.length > 0, `expected elements, warnings: ${warnings.join("; ")}`);
+    assert.ok(
+      scene.elements.length > 0,
+      `expected elements, warnings: ${warnings.join("; ")}`,
+    );
 
     const exported = sceneToLua(scene);
-    const result = validateWidgetSource(exported, "betaflight", { strictTelemetry: true });
+    const result = validateWidgetSource(exported, "betaflight", {
+      strictTelemetry: true,
+    });
 
     const errors = result.issues.filter((i) => i.severity === "error");
     assert.equal(
       errors.length,
       0,
-      `validation errors: ${errors.map((e) => e.message).join("; ")}`
+      `validation errors: ${errors.map((e) => e.message).join("; ")}`,
     );
   });
 
@@ -39,7 +44,10 @@ describe("sceneToLua round-trip", () => {
     const { scene } = luaToScene(modelHeroExample);
     const elements = scene.elements.some((el) => el.kind === "bitmap")
       ? scene.elements
-      : [...scene.elements, createDefaultElement("bitmap", newElementId("bitmap"))];
+      : [
+          ...scene.elements,
+          createDefaultElement("bitmap", newElementId("bitmap")),
+        ];
 
     const exported = sceneToLua({ ...scene, elements });
     assert.match(exported, /Bitmap\.open/);
@@ -95,7 +103,9 @@ describe("sceneToLua round-trip", () => {
     assert.match(exported, /Bitmap\.open/);
     assert.match(exported, /widget\.modelBmp/);
 
-    const result = validateWidgetSource(exported, "betaflight", { strictTelemetry: false });
+    const result = validateWidgetSource(exported, "betaflight", {
+      strictTelemetry: false,
+    });
     const errors = result.issues.filter((i) => i.severity === "error");
     assert.equal(errors.length, 0, errors.map((e) => e.message).join("; "));
   });

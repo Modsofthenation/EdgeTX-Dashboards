@@ -1,13 +1,7 @@
 export type TelemetryProtocol = "betaflight" | "rotorflight" | "generic-crsf";
 
 export type TelemetryCategory =
-  | "link"
-  | "battery"
-  | "gps"
-  | "attitude"
-  | "flight"
-  | "motor"
-  | "all";
+  "link" | "battery" | "gps" | "attitude" | "flight" | "motor" | "all";
 
 export interface RadioProfile {
   id: string;
@@ -74,7 +68,8 @@ export interface ValidationResult {
   issues: ValidationIssue[];
 }
 
-export type StreamTodoStatus = "pending" | "in_progress" | "completed" | "cancelled";
+export type StreamTodoStatus =
+  "pending" | "in_progress" | "completed" | "cancelled";
 
 export interface StreamTodoItem {
   id: string;

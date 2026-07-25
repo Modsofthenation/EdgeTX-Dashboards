@@ -5,7 +5,11 @@ import {
   BASE_MOCK_TELEMETRY,
 } from "./telemetryBridge.ts";
 import { lcdFrameByteSize } from "./framebuffer.ts";
-import { deploySimModel, SIM_MODEL1_PATH, type SimWidgetLayoutPlan } from "./simModel.ts";
+import {
+  deploySimModel,
+  SIM_MODEL1_PATH,
+  type SimWidgetLayoutPlan,
+} from "./simModel.ts";
 import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.ts";
 import type {
   ExtendedSimulatorExports,
@@ -53,7 +57,8 @@ export class SimRuntime {
   private loopRunning = false;
   private scriptLaunched = false;
   private widgetLaunchDelayFrames = 0;
-  private pendingWidget: { source: string; zone?: WidgetSimulateZone } | null = null;
+  private pendingWidget: { source: string; zone?: WidgetSimulateZone } | null =
+    null;
   private modelBackup: Map<string, string> | null = null;
   private fullscreenTap: FullscreenTapGesture | null = null;
   private mock: MockTelemetryValues = { ...BASE_MOCK_TELEMETRY };
@@ -65,12 +70,19 @@ export class SimRuntime {
   private edgeTxVersion = "2.11.0";
   /** Coalesces rapid hot-reloads (e.g. editor drag) into one FS write at a time. */
   private loadWidgetChain: Promise<void> = Promise.resolve();
-  private loadWidgetPending: { source: string; zone?: WidgetSimulateZone } | null = null;
+  private loadWidgetPending: {
+    source: string;
+    zone?: WidgetSimulateZone;
+  } | null = null;
 
   private wasmUrl: string;
   private radioKey: string;
 
-  constructor(wasmUrl: string, radioKey: string, callbacks: SimRuntimeCallbacks = {}) {
+  constructor(
+    wasmUrl: string,
+    radioKey: string,
+    callbacks: SimRuntimeCallbacks = {},
+  ) {
     this.wasmUrl = wasmUrl;
     this.radioKey = radioKey;
     this.callbacks = callbacks;
@@ -125,7 +137,11 @@ export class SimRuntime {
     if (options?.edgeTxVersion) {
       this.edgeTxVersion = options.edgeTxVersion;
     }
-    this.setState({ phase: "loading-wasm", progress: 5, status: "Loading firmware…" });
+    this.setState({
+      phase: "loading-wasm",
+      progress: 5,
+      status: "Loading firmware…",
+    });
 
     try {
       if (options?.mock) {
@@ -134,7 +150,7 @@ export class SimRuntime {
       const { WasmRunner } = await import("@edgetx/simulator-ui");
       this.runner = new WasmRunner(
         (text: string) => this.callbacks.onLog?.(text),
-        () => {}
+        () => {},
       );
 
       this.setState({ progress: 15, status: "Setting up virtual SD card…" });
@@ -152,7 +168,11 @@ export class SimRuntime {
       this.setState({ progress: 40, status: "Loading WASM…" });
       await this.runner.load(this.wasmUrl);
 
-      this.setState({ phase: "booting", progress: 80, status: "Starting firmware…" });
+      this.setState({
+        phase: "booting",
+        progress: 80,
+        status: "Starting firmware…",
+      });
       const ex = this.getExports();
       ex.simuInit();
       this.runner.setFatfsPaths("/", "/");
@@ -160,7 +180,7 @@ export class SimRuntime {
       await deploySimModel(
         this.runner,
         this.layoutPlanFrom(options?.source, options?.zone),
-        this.edgeTxVersion
+        this.edgeTxVersion,
       );
       ex.simuStart(0);
 
@@ -169,7 +189,12 @@ export class SimRuntime {
       void this.runLoop();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.setState({ phase: "error", progress: 0, status: "Error", error: message });
+      this.setState({
+        phase: "error",
+        progress: 0,
+        status: "Error",
+        error: message,
+      });
       throw err;
     }
   }
@@ -191,7 +216,10 @@ export class SimRuntime {
     }
   }
 
-  private async applyLoadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
+  private async applyLoadWidget(
+    source: string,
+    zone?: WidgetSimulateZone,
+  ): Promise<void> {
     this.fullscreenTap = null;
     const runner = this.runner;
     // Runtime not ready yet: store desired widget and let init/loop pick it up.
@@ -203,7 +231,11 @@ export class SimRuntime {
     }
 
     await this.deployWidget(source);
-    await deploySimModel(runner, this.layoutPlanFrom(source, zone), this.edgeTxVersion);
+    await deploySimModel(
+      runner,
+      this.layoutPlanFrom(source, zone),
+      this.edgeTxVersion,
+    );
     this.pendingWidget = { source, zone };
 
     // Hot reload: firmware is already running — relaunch widget immediately so
@@ -259,7 +291,7 @@ export class SimRuntime {
 
   private layoutPlanFrom(
     source?: string,
-    zone?: WidgetSimulateZone
+    zone?: WidgetSimulateZone,
   ): SimWidgetLayoutPlan | undefined {
     if (!source || !zone) return undefined;
     const plan = planWidgetDeploy(source);
@@ -285,15 +317,15 @@ export class SimRuntime {
       plan.paths.luaPath,
       plan.luaBytes.buffer.slice(
         plan.luaBytes.byteOffset,
-        plan.luaBytes.byteOffset + plan.luaBytes.byteLength
-      ) as ArrayBuffer
+        plan.luaBytes.byteOffset + plan.luaBytes.byteLength,
+      ) as ArrayBuffer,
     );
     await runner.fsWriteFile(
       plan.paths.modelPngPath,
       PLACEHOLDER_MODEL_PNG.buffer.slice(
         PLACEHOLDER_MODEL_PNG.byteOffset,
-        PLACEHOLDER_MODEL_PNG.byteOffset + PLACEHOLDER_MODEL_PNG.byteLength
-      ) as ArrayBuffer
+        PLACEHOLDER_MODEL_PNG.byteOffset + PLACEHOLDER_MODEL_PNG.byteLength,
+      ) as ArrayBuffer,
     );
   }
 
@@ -325,13 +357,16 @@ export class SimRuntime {
     for (const [path, text] of this.modelBackup) {
       await this.runner.fsWriteFile(
         path,
-        new TextEncoder().encode(text).buffer as ArrayBuffer
+        new TextEncoder().encode(text).buffer as ArrayBuffer,
       );
     }
     this.modelBackup = null;
   }
 
-  private fullscreenTapCoords(zone: WidgetSimulateZone): { x: number; y: number } {
+  private fullscreenTapCoords(zone: WidgetSimulateZone): {
+    x: number;
+    y: number;
+  } {
     if (zone.fullscreenTapX != null && zone.fullscreenTapY != null) {
       return { x: zone.fullscreenTapX, y: zone.fullscreenTapY };
     }
@@ -352,7 +387,8 @@ export class SimRuntime {
   }
 
   private launchWidget(source: string, zone?: WidgetSimulateZone): void {
-    const ex = this.getExports() as NonNullable<WasmRunner["exports"]> & ExtendedSimulatorExports;
+    const ex = this.getExports() as NonNullable<WasmRunner["exports"]> &
+      ExtendedSimulatorExports;
     const plan = planWidgetDeploy(source);
     const allocCStr = (s: string): number => {
       const encoded = new TextEncoder().encode(s);
@@ -381,7 +417,9 @@ export class SimRuntime {
         ex.free(namePtr);
       }
     } else {
-      this.callbacks.onLog?.("Radio sim: firmware missing simuLoadWidget export");
+      this.callbacks.onLog?.(
+        "Radio sim: firmware missing simuLoadWidget export",
+      );
     }
 
     if (zone?.enterFullscreen) {
@@ -394,7 +432,7 @@ export class SimRuntime {
     const w = ex.simuLcdGetWidth?.() ?? 0;
     const h = ex.simuLcdGetHeight?.() ?? 0;
     this.callbacks.onLog?.(
-      `Radio sim: widget fullscreen tap done · LCD ${w}×${h}${w === 480 && h === 320 ? " (full)" : ""}`
+      `Radio sim: widget fullscreen tap done · LCD ${w}×${h}${w === 480 && h === 320 ? " (full)" : ""}`,
     );
     this.fullscreenTap = null;
   }
@@ -402,7 +440,10 @@ export class SimRuntime {
   private advanceFullscreenTap(ex: ExtendedSimulatorExports): void {
     const gesture = this.fullscreenTap;
     if (!gesture) return;
-    if (typeof ex.simuTouchDown !== "function" || typeof ex.simuTouchUp !== "function") {
+    if (
+      typeof ex.simuTouchDown !== "function" ||
+      typeof ex.simuTouchUp !== "function"
+    ) {
       this.fullscreenTap = null;
       return;
     }
@@ -436,7 +477,7 @@ export class SimRuntime {
           gesture.counter = FULLSCREEN_RETRY_WAIT_FRAMES;
           ex.simuTouchUp();
           this.callbacks.onLog?.(
-            `Radio sim: retrying widget fullscreen double-tap (${gesture.attempt + 1}/${FULLSCREEN_MAX_ATTEMPTS})`
+            `Radio sim: retrying widget fullscreen double-tap (${gesture.attempt + 1}/${FULLSCREEN_MAX_ATTEMPTS})`,
           );
         } else {
           this.finishFullscreenTap(ex);
@@ -520,7 +561,7 @@ export class SimRuntime {
           ? (frame.buffer as ArrayBuffer)
           : (frame.buffer.slice(
               frame.byteOffset,
-              frame.byteOffset + frame.byteLength
+              frame.byteOffset + frame.byteLength,
             ) as ArrayBuffer);
       this.callbacks.onFrame?.({ buffer: buf, width: w, height: h, depth });
     }

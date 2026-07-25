@@ -1,5 +1,14 @@
-import { CursorAgentError, getSessionStore, listModelCatalog, validateGenerateRequest } from "~/server/generatorFacade";
-import { checkApiAuth, checkRateLimit, checkSessionCapacity } from "~/lib/apiSecurity";
+import {
+  CursorAgentError,
+  getSessionStore,
+  listModelCatalog,
+  validateGenerateRequest,
+} from "~/server/generatorFacade";
+import {
+  checkApiAuth,
+  checkRateLimit,
+  checkSessionCapacity,
+} from "~/lib/apiSecurity";
 import { createSseResponse, createSseStream } from "~/lib/sse";
 import { createRunCallbacks, emitRunCompletion } from "~/lib/widgetSession";
 
@@ -14,7 +23,10 @@ export async function POST(request: Request): Promise<Response> {
   if (rateErr) return rateErr;
 
   if (!process.env.CURSOR_API_KEY) {
-    return Response.json({ error: "CURSOR_API_KEY is not configured on the server" }, { status: 500 });
+    return Response.json(
+      { error: "CURSOR_API_KEY is not configured on the server" },
+      { status: 500 },
+    );
   }
 
   let body: unknown;
@@ -26,7 +38,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const catalog = await listModelCatalog();
   const allowedModelIds = catalog.models.map((m) => m.id);
-  const validated = validateGenerateRequest(body as Record<string, unknown>, { allowedModelIds });
+  const validated = validateGenerateRequest(body as Record<string, unknown>, {
+    allowedModelIds,
+  });
   if (!validated.ok) {
     return Response.json({ error: validated.error }, { status: 400 });
   }
@@ -38,7 +52,7 @@ export async function POST(request: Request): Promise<Response> {
   const session = store.createSession(
     validated.request.radioId,
     validated.request.protocol,
-    validated.request.modelId
+    validated.request.modelId,
   );
   const stored = store.get(session.id)!;
 
@@ -46,7 +60,12 @@ export async function POST(request: Request): Promise<Response> {
     send({ type: "status", content: "Session ready", sessionId: session.id });
 
     if (!store.tryAcquire(session.id)) {
-      send({ type: "error", content: "Session busy", sessionId: session.id, success: false });
+      send({
+        type: "error",
+        content: "Session busy",
+        sessionId: session.id,
+        success: false,
+      });
       return;
     }
 
@@ -55,7 +74,11 @@ export async function POST(request: Request): Promise<Response> {
       session.agentId = stored.generator.agentId ?? "";
 
       const ctx = { session, generator: stored.generator, send };
-      const result = await stored.generator.generate(validated.request, createRunCallbacks(ctx), session);
+      const result = await stored.generator.generate(
+        validated.request,
+        createRunCallbacks(ctx),
+        session,
+      );
 
       emitRunCompletion(ctx, result, { action: "generate" });
     } catch (err) {
@@ -65,7 +88,12 @@ export async function POST(request: Request): Promise<Response> {
           : err instanceof Error
             ? err.message
             : "Unknown error";
-      send({ type: "error", content: message, sessionId: session.id, success: false });
+      send({
+        type: "error",
+        content: message,
+        sessionId: session.id,
+        success: false,
+      });
     } finally {
       store.release(session.id);
     }

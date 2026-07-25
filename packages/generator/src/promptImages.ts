@@ -4,9 +4,17 @@ import { MAX_PROMPT_IMAGE_BYTES, MAX_PROMPT_IMAGES } from "@widget-gen/shared";
 
 export { MAX_PROMPT_IMAGES, MAX_PROMPT_IMAGE_BYTES };
 
-const ALLOWED_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+const ALLOWED_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
 
-export function buildReferenceImagesSection(imageCount: number, radioName: string): string {
+export function buildReferenceImagesSection(
+  imageCount: number,
+  radioName: string,
+): string {
   if (imageCount <= 0) return "";
 
   const noun = imageCount === 1 ? "image" : "images";
@@ -22,7 +30,10 @@ The user attached ${imageCount} reference ${noun} to this message (included as m
 Recreate the **functional dashboard layout and visual intent** on the ${radioName} LCD (${imageCount}×480×320 class screen). Ignore unrelated chrome in the screenshot (browser frames, desktop apps, radio bezels outside the widget area).`;
 }
 
-export function buildSdkUserMessage(text: string, images?: PromptImage[]): string | SDKUserMessage {
+export function buildSdkUserMessage(
+  text: string,
+  images?: PromptImage[],
+): string | SDKUserMessage {
   if (!images?.length) return text;
   return {
     text,
@@ -42,7 +53,7 @@ function decodeBase64ByteLength(data: string): number | null {
 }
 
 export function validatePromptImages(
-  raw: unknown
+  raw: unknown,
 ): { ok: true; images: PromptImage[] } | { ok: false; error: string } {
   if (raw === undefined || raw === null) {
     return { ok: true, images: [] };
@@ -51,7 +62,10 @@ export function validatePromptImages(
     return { ok: false, error: "images must be an array" };
   }
   if (raw.length > MAX_PROMPT_IMAGES) {
-    return { ok: false, error: `At most ${MAX_PROMPT_IMAGES} reference images allowed` };
+    return {
+      ok: false,
+      error: `At most ${MAX_PROMPT_IMAGES} reference images allowed`,
+    };
   }
 
   const images: PromptImage[] = [];
@@ -61,9 +75,15 @@ export function validatePromptImages(
       return { ok: false, error: `images[${i}] must be an object` };
     }
     const record = item as Record<string, unknown>;
-    const mimeType = typeof record.mimeType === "string" ? record.mimeType.trim().toLowerCase() : "";
+    const mimeType =
+      typeof record.mimeType === "string"
+        ? record.mimeType.trim().toLowerCase()
+        : "";
     if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-      return { ok: false, error: `images[${i}] has unsupported type (use PNG, JPEG, WebP, or GIF)` };
+      return {
+        ok: false,
+        error: `images[${i}] has unsupported type (use PNG, JPEG, WebP, or GIF)`,
+      };
     }
     const data = typeof record.data === "string" ? record.data.trim() : "";
     if (!data) {
@@ -74,9 +94,15 @@ export function validatePromptImages(
       return { ok: false, error: `images[${i}] data must be valid base64` };
     }
     if (byteLength > MAX_PROMPT_IMAGE_BYTES) {
-      return { ok: false, error: `images[${i}] exceeds ${MAX_PROMPT_IMAGE_BYTES / (1024 * 1024)}MB limit` };
+      return {
+        ok: false,
+        error: `images[${i}] exceeds ${MAX_PROMPT_IMAGE_BYTES / (1024 * 1024)}MB limit`,
+      };
     }
-    const name = typeof record.name === "string" ? record.name.trim().slice(0, 120) : undefined;
+    const name =
+      typeof record.name === "string"
+        ? record.name.trim().slice(0, 120)
+        : undefined;
     images.push({ data, mimeType, ...(name ? { name } : {}) });
   }
 

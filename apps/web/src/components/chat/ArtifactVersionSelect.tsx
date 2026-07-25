@@ -57,7 +57,10 @@ export function ArtifactVersionSelect({
         )}
       </div>
       {!isViewingLatest && (
-        <p className={styles.hint}>Viewing an earlier snapshot — refine always updates the latest version.</p>
+        <p className={styles.hint}>
+          Viewing an earlier snapshot — refine always updates the latest
+          version.
+        </p>
       )}
     </div>
   );

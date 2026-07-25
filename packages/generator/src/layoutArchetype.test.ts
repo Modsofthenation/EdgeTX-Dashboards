@@ -5,27 +5,43 @@ import { detectVisualStyle } from "./visualStyle.ts";
 
 describe("suggestLayoutArchetype", () => {
   it("routes logger prompts to flight-logger-suite", () => {
-    const hint = suggestLayoutArchetype("add a flight log viewer", "betaflight");
+    const hint = suggestLayoutArchetype(
+      "add a flight log viewer",
+      "betaflight",
+    );
     assert.equal(hint.id, "flight-logger-suite");
   });
 
   it("routes rotorflight heli keywords to heli board", () => {
-    const hint = suggestLayoutArchetype("headspeed and motor temps", "rotorflight");
+    const hint = suggestLayoutArchetype(
+      "headspeed and motor temps",
+      "rotorflight",
+    );
     assert.equal(hint.id, "heli-rotorflight");
   });
 
   it("does not route heli keywords to heli board when protocol is betaflight", () => {
-    const hint = suggestLayoutArchetype("headspeed and motor temps", "betaflight");
+    const hint = suggestLayoutArchetype(
+      "headspeed and motor temps",
+      "betaflight",
+    );
     assert.notEqual(hint.id, "heli-rotorflight");
   });
 
   it("does not force heli board for generic rotorflight prompts", () => {
-    const hint = suggestLayoutArchetype("show battery and link quality", "rotorflight", 0);
+    const hint = suggestLayoutArchetype(
+      "show battery and link quality",
+      "rotorflight",
+      0,
+    );
     assert.notEqual(hint.id, "heli-rotorflight");
   });
 
   it("routes vibrant heli away from default heli clone", () => {
-    const hint = suggestLayoutArchetype("vibrant colorful heli dashboard", "rotorflight");
+    const hint = suggestLayoutArchetype(
+      "vibrant colorful heli dashboard",
+      "rotorflight",
+    );
     assert.notEqual(hint.id, "heli-rotorflight");
     assert.match(hint.layoutNotes, /vibrant accent colors/i);
   });

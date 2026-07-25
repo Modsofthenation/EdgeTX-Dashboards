@@ -7,13 +7,14 @@ describe("SimRuntime loadWidget queue", () => {
     const runtime = new SimRuntime("about:blank", "tx15");
     let calls = 0;
 
-    (runtime as unknown as { flushPendingLoadWidget: () => Promise<void> }).flushPendingLoadWidget =
-      async () => {
-        calls += 1;
-        if (calls === 1) {
-          throw new Error("first reload failed");
-        }
-      };
+    (
+      runtime as unknown as { flushPendingLoadWidget: () => Promise<void> }
+    ).flushPendingLoadWidget = async () => {
+      calls += 1;
+      if (calls === 1) {
+        throw new Error("first reload failed");
+      }
+    };
 
     await assert.rejects(runtime.loadWidget("first"), /first reload failed/);
     await assert.doesNotReject(runtime.loadWidget("second"));

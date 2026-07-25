@@ -16,7 +16,14 @@ describe("findOverlaps", () => {
   it("skips text inside annulus inner radius", () => {
     const records: DrawRecord[] = [
       { kind: "annulus", x: 240, y: 160, rIn: 40, rOut: 52 },
-      { kind: "text", x: 240, y: 150, text: "49", fontSize: 20, textAlign: "center" },
+      {
+        kind: "text",
+        x: 240,
+        y: 150,
+        text: "49",
+        fontSize: 20,
+        textAlign: "center",
+      },
     ];
     const hits = findOverlaps(records);
     assert.equal(hits.length, 0);

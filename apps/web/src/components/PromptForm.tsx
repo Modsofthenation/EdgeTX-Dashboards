@@ -2,19 +2,32 @@
 
 import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { EDGE_TX_VERSION_OPTIONS, DEFAULT_EDGE_TX_VERSION } from "~/lib/edgeTxVersions";
+import {
+  EDGE_TX_VERSION_OPTIONS,
+  DEFAULT_EDGE_TX_VERSION,
+} from "~/lib/edgeTxVersions";
 import styles from "./PromptForm.module.css";
 
 interface PromptFormProps {
-  onGenerate: (prompt: string, radioId: string, protocol: TelemetryProtocol, edgeTxVersion: string) => void;
+  onGenerate: (
+    prompt: string,
+    radioId: string,
+    protocol: TelemetryProtocol,
+    edgeTxVersion: string,
+  ) => void;
   onRefine: (prompt: string) => void;
   running: boolean;
   canRefine: boolean;
 }
 
-export function PromptForm({ onGenerate, onRefine, running, canRefine }: PromptFormProps) {
+export function PromptForm({
+  onGenerate,
+  onRefine,
+  running,
+  canRefine,
+}: PromptFormProps) {
   const [prompt, setPrompt] = useState(
-    "Clean full-screen TX15 dashboard: header bar, link quality card with progress bar, large battery voltage card, GPS strip (alt/speed/sats), flight mode footer — dark theme, card panels, Betaflight ELRS"
+    "Clean full-screen TX15 dashboard: header bar, link quality card with progress bar, large battery voltage card, GPS strip (alt/speed/sats), flight mode footer — dark theme, card panels, Betaflight ELRS",
   );
   const [refinePrompt, setRefinePrompt] = useState("");
   const [protocol, setProtocol] = useState<TelemetryProtocol>("betaflight");

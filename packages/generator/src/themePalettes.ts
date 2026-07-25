@@ -25,7 +25,8 @@ export const DASHBOARD_PALETTES: DashboardPalette[] = [
     label: "GREY",
     headerStyle: "DARKGREY header bar with 4px C_ACCENT accent stripe",
     borderStyle: "C_ACCENT card borders, WHITE secondary values",
-    rgbSetup: "C_BG=lcd.RGB(14,16,22), C_CARD=lcd.RGB(36,40,52), C_ACCENT=lcd.RGB(0,200,255)",
+    rgbSetup:
+      "C_BG=lcd.RGB(14,16,22), C_CARD=lcd.RGB(36,40,52), C_ACCENT=lcd.RGB(0,200,255)",
   },
   {
     id: "edge-dark-green",
@@ -48,7 +49,8 @@ export const DASHBOARD_PALETTES: DashboardPalette[] = [
     label: "LIGHTGREY",
     headerStyle: "ORANGE 4px stripe under header",
     borderStyle: "ORANGE card borders, GREEN link OK",
-    rgbSetup: "C_BG=lcd.RGB(20,14,10), C_CARD=lcd.RGB(40,28,20), C_ACCENT=lcd.RGB(255,140,40)",
+    rgbSetup:
+      "C_BG=lcd.RGB(20,14,10), C_CARD=lcd.RGB(40,28,20), C_ACCENT=lcd.RGB(255,140,40)",
   },
   {
     id: "rotor-neon",
@@ -60,7 +62,8 @@ export const DASHBOARD_PALETTES: DashboardPalette[] = [
     label: "GREY",
     headerStyle: "C_HERO title on dark header",
     borderStyle: "C_HERO dividers, C_ACCENT headspeed hero",
-    rgbSetup: "C_BG=lcd.RGB(16,12,24), C_CARD=lcd.RGB(28,20,40), C_HERO=lcd.RGB(255,80,200), C_ACCENT=lcd.RGB(0,200,255)",
+    rgbSetup:
+      "C_BG=lcd.RGB(16,12,24), C_CARD=lcd.RGB(28,20,40), C_HERO=lcd.RGB(255,80,200), C_ACCENT=lcd.RGB(0,200,255)",
   },
   {
     id: "light-surface",
@@ -70,9 +73,11 @@ export const DASHBOARD_PALETTES: DashboardPalette[] = [
     surface: "WHITE fill + GREY border",
     hero: "DARKBLUE",
     label: "BLACK",
-    headerStyle: "WHITE header bar, DARKBLUE title (BLACK text on light panels)",
+    headerStyle:
+      "WHITE header bar, DARKBLUE title (BLACK text on light panels)",
     borderStyle: "GREY borders; never WHITE text on light cards",
-    rgbSetup: "C_BG=lcd.RGB(220,224,232), C_CARD=lcd.RGB(255,255,255), C_TEXT=lcd.RGB(24,28,36)",
+    rgbSetup:
+      "C_BG=lcd.RGB(220,224,232), C_CARD=lcd.RGB(255,255,255), C_TEXT=lcd.RGB(24,28,36)",
   },
   {
     id: "magenta-orange",
@@ -132,13 +137,33 @@ export function paletteMatchesLightRequest(paletteId: string): boolean {
 }
 
 /** Prefer light palette when user asks for white/light background. */
-export function pickDashboardPaletteForPrompt(seed: number, userPrompt: string): DashboardPalette {
-  if (/white\s+background|background\s+white|light\s+background|light\s+theme|light\s+mode|light\s+grey|lightgray|light\s+surface/i.test(userPrompt)) {
-    return DASHBOARD_PALETTES.find((p) => p.id === "light-surface") ?? pickDashboardPalette(seed);
+export function pickDashboardPaletteForPrompt(
+  seed: number,
+  userPrompt: string,
+): DashboardPalette {
+  if (
+    /white\s+background|background\s+white|light\s+background|light\s+theme|light\s+mode|light\s+grey|lightgray|light\s+surface/i.test(
+      userPrompt,
+    )
+  ) {
+    return (
+      DASHBOARD_PALETTES.find((p) => p.id === "light-surface") ??
+      pickDashboardPalette(seed)
+    );
   }
-  if (/vibrant|neon|colorful|colourful|magenta|lime|cyan accent/i.test(userPrompt)) {
-    const vivid = ["edge-dark-green", "rotor-neon", "magenta-orange", "yellow-cyan"];
-    return DASHBOARD_PALETTES.find((p) => p.id === vivid[seed % vivid.length]) ?? pickDashboardPalette(seed);
+  if (
+    /vibrant|neon|colorful|colourful|magenta|lime|cyan accent/i.test(userPrompt)
+  ) {
+    const vivid = [
+      "edge-dark-green",
+      "rotor-neon",
+      "magenta-orange",
+      "yellow-cyan",
+    ];
+    return (
+      DASHBOARD_PALETTES.find((p) => p.id === vivid[seed % vivid.length]) ??
+      pickDashboardPalette(seed)
+    );
   }
   return pickDashboardPalette(seed);
 }
@@ -146,7 +171,8 @@ export function pickDashboardPaletteForPrompt(seed: number, userPrompt: string):
 /** When the user names concrete colors, emit mandatory override notes for the agent. */
 export function buildExplicitColorDirective(userPrompt: string): string | null {
   const p = userPrompt.toLowerCase();
-  const wantsWhiteBg = /white\s+background|background\s+white|light\s+background/.test(p);
+  const wantsWhiteBg =
+    /white\s+background|background\s+white|light\s+background/.test(p);
   const wantsRedBorder = /red\s+border/.test(p);
   const wantsBlackText = /black\s+text/.test(p);
   const wantsCustomRgb = /lcd\.rgb\s*\(/i.test(userPrompt);
@@ -163,27 +189,29 @@ export function buildExplicitColorDirective(userPrompt: string): string | null {
 
   if (wantsWhiteBg) {
     lines.push(
-      "- **Background & cards:** `C_BG = lcd.RGB(255,255,255)`, `C_CARD = lcd.RGB(255,255,255)` in `create()`, then `lcd.clear(C_BG)` and use `C_CARD` for header/footer/card fills."
+      "- **Background & cards:** `C_BG = lcd.RGB(255,255,255)`, `C_CARD = lcd.RGB(255,255,255)` in `create()`, then `lcd.clear(C_BG)` and use `C_CARD` for header/footer/card fills.",
     );
   }
   if (wantsRedBorder) {
     lines.push(
-      "- **Borders:** `C_BORDER = lcd.RGB(200,32,32)` (or RED) on **every** `lcd.drawRectangle` for header, footer, and cards — not GREY or BLACK."
+      "- **Borders:** `C_BORDER = lcd.RGB(200,32,32)` (or RED) on **every** `lcd.drawRectangle` for header, footer, and cards — not GREY or BLACK.",
     );
   }
   if (wantsBlackText) {
     lines.push(
-      "- **Text:** `C_TEXT = lcd.RGB(0,0,0)` and use `BLACK` / `C_TEXT` for labels and values on light cards — never WHITE or LIGHTGREY on white panels."
+      "- **Text:** `C_TEXT = lcd.RGB(0,0,0)` and use `BLACK` / `C_TEXT` for labels and values on light cards — never WHITE or LIGHTGREY on white panels.",
     );
   }
   if (wantsCustomRgb) {
-    lines.push("- Honor any `lcd.RGB(r,g,b)` values the user specified literally in create().");
+    lines.push(
+      "- Honor any `lcd.RGB(r,g,b)` values the user specified literally in create().",
+    );
   }
 
   lines.push(
     "",
     "- Store colors on the widget in `create()` (`C_BG`, `C_CARD`, `C_BORDER`, `C_TEXT`, …) and assign `local C_* = widget.C_*` at the top of `refresh()`.",
-    "- The web preview reads `lcd.RGB()` assignments in create() — use them instead of only named flags like GREY/DARKGREY when the user asked custom colors."
+    "- The web preview reads `lcd.RGB()` assignments in create() — use them instead of only named flags like GREY/DARKGREY when the user asked custom colors.",
   );
 
   return lines.join("\n");

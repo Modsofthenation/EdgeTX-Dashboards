@@ -58,7 +58,13 @@ export function EditorToolbar({
             title="Undo (Ctrl+Z)"
             aria-label="Undo"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+            >
               <path
                 d="M3 6h7a3 3 0 1 1 0 6H8"
                 stroke="currentColor"
@@ -82,7 +88,13 @@ export function EditorToolbar({
             title="Redo (Ctrl+Y)"
             aria-label="Redo"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+            >
               <path
                 d="M13 6H6a3 3 0 1 0 0 6h2"
                 stroke="currentColor"
@@ -108,7 +120,9 @@ export function EditorToolbar({
           <span className={styles.toolbarSelectLabel}>Protocol</span>
           <select
             value={protocol}
-            onChange={(e) => onProtocolChange(e.target.value as TelemetryProtocol)}
+            onChange={(e) =>
+              onProtocolChange(e.target.value as TelemetryProtocol)
+            }
           >
             <option value="betaflight">Betaflight</option>
             <option value="rotorflight">Rotorflight</option>
@@ -134,15 +148,27 @@ export function EditorToolbar({
 
       <div className={styles.toolbarRight}>
         {valid === true && (
-          <span className={`${styles.statusPill} ${styles.statusPillOk}`}>Valid</span>
+          <span className={`${styles.statusPill} ${styles.statusPillOk}`}>
+            Valid
+          </span>
         )}
         {valid === false && (
-          <span className={`${styles.statusPill} ${styles.statusPillErr}`}>Invalid</span>
+          <span className={`${styles.statusPill} ${styles.statusPillErr}`}>
+            Invalid
+          </span>
         )}
-        <button type="button" className={styles.secondaryBtn} onClick={onVerifySim}>
+        <button
+          type="button"
+          className={styles.secondaryBtn}
+          onClick={onVerifySim}
+        >
           Verify in sim
         </button>
-        <button type="button" className={styles.secondaryBtn} onClick={onValidate}>
+        <button
+          type="button"
+          className={styles.secondaryBtn}
+          onClick={onValidate}
+        >
           Validate
         </button>
         <button
@@ -150,7 +176,9 @@ export function EditorToolbar({
           className={styles.primaryBtn}
           onClick={onSave}
           disabled={saving || valid === false}
-          title={valid === false ? "Fix validation errors before saving" : undefined}
+          title={
+            valid === false ? "Fix validation errors before saving" : undefined
+          }
         >
           {saving ? "Saving…" : "Save"}
         </button>

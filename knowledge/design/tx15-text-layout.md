@@ -4,11 +4,11 @@ EdgeTX has **no text-width or text-height API**. Never guess `y + 16` between li
 
 ## Line heights (TX15 color LCD)
 
-| Flag | `LH` key | Height (px) |
-|------|----------|-------------|
-| `SMLSIZE` | `SML` | 12 |
-| `MIDSIZE` | `MID` | 18 |
-| `DBLSIZE` | `DBL` | 26 |
+| Flag      | `LH` key | Height (px) |
+| --------- | -------- | ----------- |
+| `SMLSIZE` | `SML`    | 12          |
+| `MIDSIZE` | `MID`    | 18          |
+| `DBLSIZE` | `DBL`    | 26          |
 
 ```lua
 local LH = { SML = 12, MID = 18, DBL = 26, GAP = 4, SEC = 8 }

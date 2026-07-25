@@ -1,8 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getSimulateLayoutProfile, resolvePreviewDimensions } from "@widget-gen/shared";
-import type { DocumentRecord, ZoneOffset, BoundingBox } from "@widget-gen/editor-core";
+import {
+  getSimulateLayoutProfile,
+  resolvePreviewDimensions,
+} from "@widget-gen/shared";
+import type {
+  DocumentRecord,
+  ZoneOffset,
+  BoundingBox,
+} from "@widget-gen/editor-core";
 import { computeCanvasLayout, type CanvasLayout } from "../lib/canvasLayout";
 import { EditorPreviewCanvas } from "./EditorPreviewCanvas";
 import { RecordSelectionOverlay } from "./RecordSelectionOverlay";
@@ -46,7 +53,12 @@ export function EditorCanvas({
     const frame = frameRef.current;
     if (!frame) return;
     setLayout(
-      computeCanvasLayout(frame.clientWidth, frame.clientHeight, previewDims.zoneW, previewDims.zoneH)
+      computeCanvasLayout(
+        frame.clientWidth,
+        frame.clientHeight,
+        previewDims.zoneW,
+        previewDims.zoneH,
+      ),
     );
   }, [previewDims.zoneH, previewDims.zoneW]);
 
@@ -62,7 +74,12 @@ export function EditorCanvas({
   return (
     <div className={styles.canvasStage}>
       <div className={styles.simWrapper} ref={frameRef}>
-        <EditorPreviewCanvas source={source} zone={zone} layout={layout} scenarioId={scenarioId} />
+        <EditorPreviewCanvas
+          source={source}
+          zone={zone}
+          layout={layout}
+          scenarioId={scenarioId}
+        />
         {showSnapGuides && layout ? (
           <div
             className={styles.snapGrid}
@@ -96,7 +113,9 @@ export function EditorCanvas({
           {previewDims.layout} z{previewDims.zone}
         </span>
         <span className={styles.canvasHint}>·</span>
-        <span className={styles.canvasHint}>Canvas preview · Shift+click multi-select</span>
+        <span className={styles.canvasHint}>
+          Canvas preview · Shift+click multi-select
+        </span>
       </div>
     </div>
   );

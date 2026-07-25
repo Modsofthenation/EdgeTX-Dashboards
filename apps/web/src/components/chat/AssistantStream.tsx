@@ -3,7 +3,12 @@
 import { useMemo } from "react";
 import { StreamingMarkdown } from "./StreamingMarkdown";
 import { TodoPanel, ToolActivityStream } from "./ToolActivity";
-import { collectToolEntries, formatEventContent, groupStreamLines, type StreamLine } from "~/lib/streamLines";
+import {
+  collectToolEntries,
+  formatEventContent,
+  groupStreamLines,
+  type StreamLine,
+} from "~/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
 interface AssistantStreamProps {
@@ -15,7 +20,8 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
   const entries = useMemo(() => groupStreamLines(lines), [lines]);
   const tools = useMemo(() => collectToolEntries(lines), [lines]);
   const lastLine = lines[lines.length - 1];
-  const showLiveTool = !!isStreaming && lastLine?.type === "tool" && tools.length > 0;
+  const showLiveTool =
+    !!isStreaming && lastLine?.type === "tool" && tools.length > 0;
   const activeTool = tools[tools.length - 1];
   const toolInProgress = showLiveTool && !!activeTool && !activeTool.failed;
   const showThinkingDots = !!isStreaming && !toolInProgress;
@@ -32,9 +38,12 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
       entries.map((entry, i) => {
         if (entry.kind === "text") {
           const fullText = entry.text ?? "";
-          if (!fullText.trim() && !(isStreaming && i === lastTextEntryIndex)) return null;
+          if (!fullText.trim() && !(isStreaming && i === lastTextEntryIndex))
+            return null;
           const streamPartial =
-            !!isStreaming && i === lastTextEntryIndex && lastLine?.type === "text";
+            !!isStreaming &&
+            i === lastTextEntryIndex &&
+            lastLine?.type === "text";
           return { kind: "text" as const, key: i, fullText, streamPartial };
         }
 
@@ -46,7 +55,7 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
 
         return { kind: "event" as const, key: i, entry };
       }),
-    [entries, isStreaming, lastTextEntryIndex, lastLine?.type]
+    [entries, isStreaming, lastTextEntryIndex, lastLine?.type],
   );
 
   const hasVisibleContent = renderedEntries.some(Boolean) || showLiveTool;
@@ -78,13 +87,20 @@ export function AssistantStream({ lines, isStreaming }: AssistantStreamProps) {
 
         if (item.kind === "todo") {
           return (
-            <TodoPanel key={item.key} title={item.entry.title} todos={item.entry.todos!} />
+            <TodoPanel
+              key={item.key}
+              title={item.entry.title}
+              todos={item.entry.todos!}
+            />
           );
         }
 
         const line = item.entry.line!;
         return (
-          <div key={item.key} className={`${styles.event} ${styles[line.type]}`}>
+          <div
+            key={item.key}
+            className={`${styles.event} ${styles[line.type]}`}
+          >
             <span className={styles.badge}>{line.type}</span>
             <span>{formatEventContent(line.type, line.content)}</span>
           </div>

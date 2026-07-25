@@ -5,6 +5,7 @@ These rules apply to all generated EdgeTX widget scripts in this project.
 ## Widget contract
 
 Every widget MUST return a table with at minimum:
+
 - `name` (string, max 10 characters)
 - `create` (function)
 - `refresh` (function)
@@ -79,6 +80,7 @@ See `knowledge/design/layout-principles.md` for principles and `tx15-card-grid-r
 ## Validation before download
 
 Generated widgets must pass `validateWidget` with `valid: true` before packaging:
+
 - Return table includes `name`, `create`, `refresh`
 - Widget name ≤10 characters, no spaces
 - Option names ≤10 characters, no spaces

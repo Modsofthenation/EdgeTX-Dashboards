@@ -4,7 +4,9 @@ export function sseEncode(data: object): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
-export function createSseResponse(stream: ReadableStream<Uint8Array>): Response {
+export function createSseResponse(
+  stream: ReadableStream<Uint8Array>,
+): Response {
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
@@ -15,7 +17,7 @@ export function createSseResponse(stream: ReadableStream<Uint8Array>): Response 
 }
 
 export function createSseStream(
-  handler: (send: (data: object) => void) => Promise<void>
+  handler: (send: (data: object) => void) => Promise<void>,
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream({

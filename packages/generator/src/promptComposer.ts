@@ -1,4 +1,8 @@
-import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
+import type {
+  RadioProfile,
+  TelemetryCatalog,
+  TelemetryProtocol,
+} from "@widget-gen/shared";
 
 import {
   readRules,
@@ -26,10 +30,7 @@ import {
   type LayoutArchetypeId,
 } from "./layoutArchetype.ts";
 import { detectVisualStyle } from "./visualStyle.ts";
-import {
-  buildCreativeBrief,
-  deriveVariationSeed,
-} from "./designVariation.ts";
+import { buildCreativeBrief, deriveVariationSeed } from "./designVariation.ts";
 import { setActiveLayoutArchetype } from "./variationContext.ts";
 import { buildReferenceImagesSection } from "./promptImages.ts";
 import type { RefineHistorySections } from "./refineHistory.ts";
@@ -67,7 +68,7 @@ function formatSensorCatalogInline(catalog: TelemetryCatalog): string {
 function buildProtocolLockSection(catalog: TelemetryCatalog): string {
   const firmwareHint =
     catalog.protocol === "betaflight"
-      ? "Do NOT use rotorflight-only sensors (HSpd, EscT, MotT) or label the UI/footer as \"Rotorflight\"."
+      ? 'Do NOT use rotorflight-only sensors (HSpd, EscT, MotT) or label the UI/footer as "Rotorflight".'
       : catalog.protocol === "rotorflight"
         ? "Rotorflight motor sensors (HSpd, RPM, EscT, MotT) require rf2bg — see setup notes."
         : "Use only sensors listed for generic CRSF; do not assume betaflight or rotorflight names.";
@@ -97,22 +98,27 @@ ${(catalog.setupNotes ?? []).map((n) => `- ${n}`).join("\n")}`;
 
 function wantsModelImage(userPrompt: string): boolean {
   return /model image|model photo|model picture|plane image|heli image|photo of (the )?model|show.*model.*(image|photo|picture)|full[- ]?screen.*(image|photo|picture|png)|background.*(image|photo|picture|png)|image behind|opacity.*(filter|overlay).*(image|photo|model)|behind.*widget/i.test(
-    userPrompt
+    userPrompt,
   );
 }
 
 function wantsModelHeroDashboard(userPrompt: string): boolean {
   if (wantsModelImage(userPrompt)) return true;
   return /rotary|annulus|hero gauge|battery gauge|model bg|model behind|tinywhoop|whoop overview|quad overview/i.test(
-    userPrompt
+    userPrompt,
   );
 }
 
 function wantsGaugeSatelliteLayout(userPrompt: string): boolean {
-  return /annulus|rotary gauge|battery gauge|voltage hero|hero gauge/i.test(userPrompt);
+  return /annulus|rotary gauge|battery gauge|voltage hero|hero gauge/i.test(
+    userPrompt,
+  );
 }
 
-function layoutReferenceExample(archetypeId: LayoutArchetypeId, userPrompt: string): string | null {
+function layoutReferenceExample(
+  archetypeId: LayoutArchetypeId,
+  userPrompt: string,
+): string | null {
   if (archetypeId === "quad-overview") {
     return "tx15-bfdash8f-whoop-dashboard.lua";
   }
@@ -127,36 +133,53 @@ export function buildGenerationPrompt(
   radio: RadioProfile,
   catalog: TelemetryCatalog,
   edgeTxVersion?: string,
-  ctx?: PromptBuildContext
+  ctx?: PromptBuildContext,
 ): string {
   const sessionId = ctx?.sessionId ?? "default";
   const runIndex = ctx?.runIndex ?? 0;
-  const seed = resolveVariation({ sessionId, runIndex, variationSeed: ctx?.variationSeed });
+  const seed = resolveVariation({
+    sessionId,
+    runIndex,
+    variationSeed: ctx?.variationSeed,
+  });
 
   const archetype = suggestLayoutArchetype(userPrompt, catalog.protocol, seed);
   setActiveLayoutArchetype(archetype.id);
 
   const visualStyle = detectVisualStyle(userPrompt, seed);
-  const brief = buildCreativeBrief(seed, archetype, catalog.protocol, userPrompt);
+  const brief = buildCreativeBrief(
+    seed,
+    archetype,
+    catalog.protocol,
+    userPrompt,
+  );
   const designGuide = readDesignGuideForArchetype(radio.id, archetype.id);
   const rotorflightGuide =
     catalog.protocol === "rotorflight" && archetype.id === "heli-rotorflight"
       ? readRotorflightStyleGuide()
       : "";
   const companionGuide = readCompanionScriptsGuide();
-  const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
-  const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
+  const modelImageGuide = wantsModelImage(userPrompt)
+    ? readModelImageGuide()
+    : "";
+  const modelHeroGuide = wantsModelHeroDashboard(userPrompt)
+    ? readModelHeroDashboardGuide()
+    : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const textLayoutGuide = readTextLayoutGuide();
   const layoutReservedRectsGuide = readLayoutReservedRectsGuide();
   const themePalettesGuide = readThemePalettesGuide();
-  const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
+  const roundedCornersGuide = wantsRoundedCorners(userPrompt)
+    ? readRoundedCornersGuide()
+    : "";
   const rules = readRules();
 
   const exampleFile = EXAMPLE_BY_ARCHETYPE[archetype.id];
   const exampleSnippet = readExampleSnippetForArchetype(exampleFile);
   const layoutRefFile = layoutReferenceExample(archetype.id, userPrompt);
-  const layoutRefSnippet = layoutRefFile ? readLayoutExampleSnippet(layoutRefFile) : "";
+  const layoutRefSnippet = layoutRefFile
+    ? readLayoutExampleSnippet(layoutRefFile)
+    : "";
 
   const starterSection = shouldIncludeCardStarter(archetype.id)
     ? `\n## Starter template (card layout reference — vary metrics and proportions per creative brief)\n\n\`\`\`lua\n${readTemplate("dashboard-starter.lua")}\n\`\`\`\n`
@@ -184,8 +207,12 @@ export function buildGenerationPrompt(
 - The display name may match another widget; the workspace UUID is what keeps this chat isolated.\n`
     : "";
 
-  const widgetFolder = ctx?.widgetInstanceId ?? ctx?.assignedWidgetName ?? "<uuid>";
-  const referenceImagesSection = buildReferenceImagesSection(ctx?.referenceImageCount ?? 0, radio.name);
+  const widgetFolder =
+    ctx?.widgetInstanceId ?? ctx?.assignedWidgetName ?? "<uuid>";
+  const referenceImagesSection = buildReferenceImagesSection(
+    ctx?.referenceImageCount ?? 0,
+    radio.name,
+  );
 
   return `You are generating an EdgeTX Lua **full-screen dashboard** (widget script) for ${radio.name}.
 
@@ -295,11 +322,15 @@ export function buildRefinePrompt(
   widgetName?: string,
   radioId = "tx15",
   protocol?: TelemetryProtocol,
-  ctx?: PromptBuildContext
+  ctx?: PromptBuildContext,
 ): string {
   const sessionId = ctx?.sessionId ?? "default";
   const runIndex = ctx?.runIndex ?? 0;
-  const seed = resolveVariation({ sessionId, runIndex, variationSeed: ctx?.variationSeed });
+  const seed = resolveVariation({
+    sessionId,
+    runIndex,
+    variationSeed: ctx?.variationSeed,
+  });
 
   const resolvedProtocol = protocol ?? "generic-crsf";
   const catalog = loadTelemetryCatalog(resolvedProtocol);
@@ -308,7 +339,12 @@ export function buildRefinePrompt(
   setActiveLayoutArchetype(archetype.id);
 
   const visualStyle = detectVisualStyle(userPrompt, seed);
-  const brief = buildCreativeBrief(seed, archetype, resolvedProtocol, userPrompt);
+  const brief = buildCreativeBrief(
+    seed,
+    archetype,
+    resolvedProtocol,
+    userPrompt,
+  );
   const designGuide = readDesignGuideForArchetype(radioId, archetype.id);
   const rotorflightGuide =
     resolvedProtocol === "rotorflight" && archetype.id === "heli-rotorflight"
@@ -316,17 +352,25 @@ export function buildRefinePrompt(
       : "";
   const companionGuide = readCompanionScriptsGuide();
   const themePalettesGuide = readThemePalettesGuide();
-  const roundedCornersGuide = wantsRoundedCorners(userPrompt) ? readRoundedCornersGuide() : "";
-  const modelImageGuide = wantsModelImage(userPrompt) ? readModelImageGuide() : "";
-  const modelHeroGuide = wantsModelHeroDashboard(userPrompt) ? readModelHeroDashboardGuide() : "";
+  const roundedCornersGuide = wantsRoundedCorners(userPrompt)
+    ? readRoundedCornersGuide()
+    : "";
+  const modelImageGuide = wantsModelImage(userPrompt)
+    ? readModelImageGuide()
+    : "";
+  const modelHeroGuide = wantsModelHeroDashboard(userPrompt)
+    ? readModelHeroDashboardGuide()
+    : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
   const textLayoutGuide = readTextLayoutGuide();
   const layoutReservedRectsGuide = readLayoutReservedRectsGuide();
   const layoutRefFile = layoutReferenceExample(archetype.id, userPrompt);
-  const layoutRefSnippet = layoutRefFile ? readLayoutExampleSnippet(layoutRefFile) : "";
+  const layoutRefSnippet = layoutRefFile
+    ? readLayoutExampleSnippet(layoutRefFile)
+    : "";
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
-    loadRadioProfile(radioId).name
+    loadRadioProfile(radioId).name,
   );
 
   return `Refine the existing EdgeTX dashboard${widgetName ? ` (display name "${widgetName}")` : ""}${ctx?.widgetInstanceId ? ` in workspace \`${ctx.widgetInstanceId}\` (v${ctx.widgetVersion ?? 0})` : ""}.
@@ -399,7 +443,7 @@ Keep the dashboard clean and distinct from generic templates. All lcd.* draws mu
 export function resolvePromptContext(
   sessionId: string,
   runIndex = 0,
-  variationSeed?: number
+  variationSeed?: number,
 ): PromptBuildContext {
   const seed = variationSeed ?? deriveVariationSeed(sessionId, runIndex);
   return { sessionId, runIndex, variationSeed: seed };
@@ -408,7 +452,7 @@ export function resolvePromptContext(
 export function getArchetypeForSession(
   userPrompt: string,
   protocol: TelemetryProtocol,
-  ctx: PromptBuildContext
+  ctx: PromptBuildContext,
 ): LayoutArchetypeId {
   const seed = resolveVariation(ctx);
   return suggestLayoutArchetype(userPrompt, protocol, seed).id;

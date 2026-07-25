@@ -4,23 +4,23 @@ npm workspaces monorepo. Workspace packages are consumed as TypeScript source:
 `exports` point at `src/*.ts`, there is no `dist/` and no build step, so nothing
 depends on package build ordering.
 
-| Path | Purpose |
-|------|---------|
-| `apps/web/` | Next.js UI and API routes (`/api/generate`, `/api/refine`, `/api/download`, `/api/validate`, `/api/widget-source`) |
-| `packages/generator/` | Cursor SDK agent, prompt composition, validation, zip packaging, CLI |
-| `packages/shared/` | Shared TS types, `@simulate` layout profiles, `drawSurface` contract |
-| `packages/sim-preview/` | EdgeTX WASM runtime (`SimRuntime`), virtual SD card, CRSF telemetry bridge |
-| `packages/layout-verify/` | Static Lua draw interpreter and overlap/geometry checks |
-| `packages/editor-core/` | Lua ↔ scene document model behind the visual editor |
-| `knowledge/` | Radio profiles, telemetry catalogs, design guides |
-| `templates/` | `dashboard-starter.lua`, `INSTALL.md.tpl` |
-| `examples/` | Gold-standard reference widgets |
-| `stubs/2.11/` | EdgeTX LuaLS stubs (committed; refresh via `npm run sync-stubs`) |
-| `scripts/` | Setup and asset-sync scripts |
-| `apps/web/public/sim/` | EdgeTX WASM firmware (auto-fetched on `npm install` / `npm run dev`) |
-| `generated/` | **Gitignored** — agent-written widgets |
-| `dist-output/` | **Gitignored** — packaged zips |
-| `.cursor/rules/edgetx-lua.md` | Lua widget rules injected into generation prompts |
+| Path                          | Purpose                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `apps/web/`                   | Next.js UI and API routes (`/api/generate`, `/api/refine`, `/api/download`, `/api/validate`, `/api/widget-source`) |
+| `packages/generator/`         | Cursor SDK agent, prompt composition, validation, zip packaging, CLI                                               |
+| `packages/shared/`            | Shared TS types, `@simulate` layout profiles, `drawSurface` contract                                               |
+| `packages/sim-preview/`       | EdgeTX WASM runtime (`SimRuntime`), virtual SD card, CRSF telemetry bridge                                         |
+| `packages/layout-verify/`     | Static Lua draw interpreter and overlap/geometry checks                                                            |
+| `packages/editor-core/`       | Lua ↔ scene document model behind the visual editor                                                                |
+| `knowledge/`                  | Radio profiles, telemetry catalogs, design guides                                                                  |
+| `templates/`                  | `dashboard-starter.lua`, `INSTALL.md.tpl`                                                                          |
+| `examples/`                   | Gold-standard reference widgets                                                                                    |
+| `stubs/2.11/`                 | EdgeTX LuaLS stubs (committed; refresh via `npm run sync-stubs`)                                                   |
+| `scripts/`                    | Setup and asset-sync scripts                                                                                       |
+| `apps/web/public/sim/`        | EdgeTX WASM firmware (auto-fetched on `npm install` / `npm run dev`)                                               |
+| `generated/`                  | **Gitignored** — agent-written widgets                                                                             |
+| `dist-output/`                | **Gitignored** — packaged zips                                                                                     |
+| `.cursor/rules/edgetx-lua.md` | Lua widget rules injected into generation prompts                                                                  |
 
 ## Conventions
 

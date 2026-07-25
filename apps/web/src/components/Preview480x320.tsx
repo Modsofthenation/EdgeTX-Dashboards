@@ -8,7 +8,10 @@ import {
   parseLuaToDrawCommands,
   tickMock,
 } from "@widget-gen/layout-verify";
-import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
+import {
+  resolvePreviewDimensions,
+  getSimulateLayoutProfile,
+} from "@widget-gen/shared";
 import { isChatScrolling } from "~/lib/chatScrollPause";
 import { RadioSimPreview } from "~/components/RadioSimPreview";
 import { renderPreviewCommands } from "~/lib/luaPreviewEngine";
@@ -43,7 +46,10 @@ function ParserPreviewCanvas({
   const hostRef = useRef<HTMLDivElement>(null);
 
   const commands = useMemo(() => {
-    const records = parseLuaToDrawCommands(luaSource, { ...EDITOR_PREVIEW_SCENARIO, mock });
+    const records = parseLuaToDrawCommands(luaSource, {
+      ...EDITOR_PREVIEW_SCENARIO,
+      mock,
+    });
     return records.map((r) => ({
       ...r,
       x: r.x != null ? r.x - zoneX : r.x,
@@ -82,7 +88,11 @@ function ParserPreviewCanvas({
 
   return (
     <div ref={hostRef} className={styles.parserCanvasHost}>
-      <canvas ref={canvasRef} className={styles.parserCanvas} aria-label="Parser preview" />
+      <canvas
+        ref={canvasRef}
+        className={styles.parserCanvas}
+        aria-label="Parser preview"
+      />
     </div>
   );
 }
@@ -99,12 +109,15 @@ export const Preview480x320 = memo(function Preview480x320({
   const [tab, setTab] = useState<"preview" | "source">("preview");
   const [tick, setTick] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [interactiveControls, setInteractiveControls] = useState<{ openInteractive: () => void } | null>(
-    null
-  );
+  const [interactiveControls, setInteractiveControls] = useState<{
+    openInteractive: () => void;
+  } | null>(null);
 
   const baseMock = EDITOR_PREVIEW_SCENARIO.mock;
-  const mock = useMemo(() => (live ? tickMock(baseMock, tick) : baseMock), [live, tick, baseMock]);
+  const mock = useMemo(
+    () => (live ? tickMock(baseMock, tick) : baseMock),
+    [live, tick, baseMock],
+  );
 
   const layoutProfile = useMemo(() => {
     try {
@@ -118,8 +131,9 @@ export const Preview480x320 = memo(function Preview480x320({
   const lcdH = layoutProfile.lcdH;
 
   const previewDims = useMemo(
-    () => (luaSource ? resolvePreviewDimensions(luaSource, layoutProfile) : null),
-    [luaSource, layoutProfile]
+    () =>
+      luaSource ? resolvePreviewDimensions(luaSource, layoutProfile) : null,
+    [luaSource, layoutProfile],
   );
 
   const displayW = previewDims?.zoneW ?? lcdW;
@@ -129,7 +143,10 @@ export const Preview480x320 = memo(function Preview480x320({
 
   const parseMeta = useMemo(() => {
     if (!luaSource) return null;
-    const cmds = parseLuaToDrawCommands(luaSource, { ...EDITOR_PREVIEW_SCENARIO, mock });
+    const cmds = parseLuaToDrawCommands(luaSource, {
+      ...EDITOR_PREVIEW_SCENARIO,
+      mock,
+    });
     const meta = getLastPreviewParseMeta();
     return {
       skippedTextCount: meta.skippedTextCount,
@@ -180,7 +197,13 @@ export const Preview480x320 = memo(function Preview480x320({
         aria-label={copied ? "Lua source copied" : "Copy all Lua source"}
       >
         {copied ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
             <path
               d="M20 6 9 17l-5-5"
               stroke="currentColor"
@@ -190,8 +213,22 @@ export const Preview480x320 = memo(function Preview480x320({
             />
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.75" />
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <rect
+              x="9"
+              y="9"
+              width="11"
+              height="11"
+              rx="2"
+              stroke="currentColor"
+              strokeWidth="1.75"
+            />
             <path
               d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
               stroke="currentColor"
@@ -256,7 +293,9 @@ export const Preview480x320 = memo(function Preview480x320({
       )}
 
       <div
-        className={variant === "compact" ? styles.frameWrapCompact : styles.frameWrap}
+        className={
+          variant === "compact" ? styles.frameWrapCompact : styles.frameWrap
+        }
         style={{ display: tab === "source" ? "none" : undefined }}
         aria-hidden={tab === "source"}
       >
@@ -264,12 +303,20 @@ export const Preview480x320 = memo(function Preview480x320({
           className={variant === "compact" ? styles.frameCompact : styles.frame}
           style={variant === "compact" ? compactFrameStyle : undefined}
         >
-          <div className={variant === "compact" ? styles.deviceCompact : styles.device}>
+          <div
+            className={
+              variant === "compact" ? styles.deviceCompact : styles.device
+            }
+          >
             {variant === "default" && (
-              <div className={styles.deviceLabel}>{radioName ?? "EdgeTX Radio"}</div>
+              <div className={styles.deviceLabel}>
+                {radioName ?? "EdgeTX Radio"}
+              </div>
             )}
             <div
-              className={variant === "compact" ? styles.screenCompact : styles.screen}
+              className={
+                variant === "compact" ? styles.screenCompact : styles.screen
+              }
               style={screenStyle}
             >
               {!luaSource ? (
@@ -316,15 +363,18 @@ export const Preview480x320 = memo(function Preview480x320({
               </span>
             )}
             {luaSource && !isTx15 && (
-              <span className={styles.parserOnlyBadge}>Parser preview only</span>
+              <span className={styles.parserOnlyBadge}>
+                Parser preview only
+              </span>
             )}
           </div>
-          {parseMeta && (parseMeta.skippedTextCount > 0 || parseMeta.unreliable) && (
-            <p className={styles.parseWarn} role="status">
-              Canvas/parser may skip {parseMeta.skippedTextCount || "some"} draw(s) — verify on TX15
-              WASM when possible.
-            </p>
-          )}
+          {parseMeta &&
+            (parseMeta.skippedTextCount > 0 || parseMeta.unreliable) && (
+              <p className={styles.parseWarn} role="status">
+                Canvas/parser may skip {parseMeta.skippedTextCount || "some"}{" "}
+                draw(s) — verify on TX15 WASM when possible.
+              </p>
+            )}
           {interactiveControls && isTx15 && (
             <div className={styles.simActionsRow}>
               <button
@@ -347,7 +397,11 @@ export const Preview480x320 = memo(function Preview480x320({
       </div>
 
       {tab === "source" && (
-        <pre className={variant === "compact" ? styles.sourceCompact : styles.source}>
+        <pre
+          className={
+            variant === "compact" ? styles.sourceCompact : styles.source
+          }
+        >
           {luaSource ?? "// Lua source will appear here after generation"}
         </pre>
       )}

@@ -49,7 +49,9 @@ function loadStubApiIndex(): Map<string, Set<string>> | null {
 
   const index = new Map<string, Set<string>>();
 
-  const addFunctions = (functions: Array<{ module?: string; name?: string }> | undefined) => {
+  const addFunctions = (
+    functions: Array<{ module?: string; name?: string }> | undefined,
+  ) => {
     for (const fn of functions ?? []) {
       if (!fn.module || !fn.name) continue;
       const mod = fn.module.toLowerCase();
@@ -61,9 +63,13 @@ function loadStubApiIndex(): Map<string, Set<string>> | null {
   addFunctions(data.functions);
 
   for (const [key, section] of Object.entries(data)) {
-    if (key === "functions" || key === "version" || key === "generated") continue;
+    if (key === "functions" || key === "version" || key === "generated")
+      continue;
     if (section && typeof section === "object" && "functions" in section) {
-      addFunctions((section as { functions?: Array<{ module?: string; name?: string }> }).functions);
+      addFunctions(
+        (section as { functions?: Array<{ module?: string; name?: string }> })
+          .functions,
+      );
     }
   }
 
@@ -79,7 +85,7 @@ const STUB_CHECK_MODULES = ["lcd", "model", "bitmap", "lvgl"] as const;
 
 export function validateStubApiCalls(
   source: string,
-  options: { strict?: boolean } = {}
+  options: { strict?: boolean } = {},
 ): ValidationIssue[] {
   const index = loadStubApiIndex();
   if (!index) {
@@ -98,7 +104,10 @@ export function validateStubApiCalls(
   for (const match of source.matchAll(pattern)) {
     const mod = match[1];
     const method = match[2];
-    if (!STUB_CHECK_MODULES.includes(mod as (typeof STUB_CHECK_MODULES)[number])) continue;
+    if (
+      !STUB_CHECK_MODULES.includes(mod as (typeof STUB_CHECK_MODULES)[number])
+    )
+      continue;
 
     const methods = index.get(mod);
     if (!methods?.has(method)) {
@@ -114,7 +123,7 @@ export function validateStubApiCalls(
 
 export function validateDevKitAnnotations(
   source: string,
-  profile: SimulateLayoutProfile
+  profile: SimulateLayoutProfile,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
@@ -122,7 +131,8 @@ export function validateDevKitAnnotations(
   if (!scriptType) {
     issues.push({
       severity: "warning",
-      message: "Missing ---@type WidgetScript annotation (required for EdgeTX Dev Kit)",
+      message:
+        "Missing ---@type WidgetScript annotation (required for EdgeTX Dev Kit)",
     });
   } else if (scriptType !== "WidgetScript") {
     issues.push({
@@ -135,7 +145,8 @@ export function validateDevKitAnnotations(
   if (!simulate) {
     issues.push({
       severity: "warning",
-      message: "Missing ---@simulate annotation (recommended for dev-kit simulation)",
+      message:
+        "Missing ---@simulate annotation (recommended for dev-kit simulation)",
     });
   } else if (!profile.layouts[simulate.layout]) {
     issues.push({

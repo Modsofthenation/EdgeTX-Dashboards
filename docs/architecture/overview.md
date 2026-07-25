@@ -4,14 +4,14 @@ EdgeTX **Lua widgets** run on radio transmitters (e.g. RadioMaster TX15) and dra
 
 ## Packages
 
-| Package | Role |
-|---------|------|
-| `@widget-gen/shared` | Shared types (`StreamEvent`, `GenerateRequest`, draw commands, validation issues), `@simulate` layout profiles |
-| `@widget-gen/generator` | Agent orchestration, prompts, validation, zip packaging, CLI |
-| `@widget-gen/layout-verify` | Static Lua draw interpreter, overlap and geometry checks |
-| `@widget-gen/sim-preview` | EdgeTX WASM runtime, virtual SD card, CRSF telemetry bridge |
-| `@widget-gen/editor-core` | Lua ↔ scene document model behind the visual editor |
-| `@widget-gen/web` | Next.js chat UI, SQLite chat history, Lua preview, API routes |
+| Package                     | Role                                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `@widget-gen/shared`        | Shared types (`StreamEvent`, `GenerateRequest`, draw commands, validation issues), `@simulate` layout profiles |
+| `@widget-gen/generator`     | Agent orchestration, prompts, validation, zip packaging, CLI                                                   |
+| `@widget-gen/layout-verify` | Static Lua draw interpreter, overlap and geometry checks                                                       |
+| `@widget-gen/sim-preview`   | EdgeTX WASM runtime, virtual SD card, CRSF telemetry bridge                                                    |
+| `@widget-gen/editor-core`   | Lua ↔ scene document model behind the visual editor                                                            |
+| `@widget-gen/web`           | Next.js chat UI, SQLite chat history, Lua preview, API routes                                                  |
 
 ## Key flows
 

@@ -101,7 +101,10 @@ describe("SqliteChatRepository", () => {
       },
     });
 
-    assert.equal(repo.getChat(chat.id)?.artifact?.luaSource, "local name = 'BfFltLogk7'");
+    assert.equal(
+      repo.getChat(chat.id)?.artifact?.luaSource,
+      "local name = 'BfFltLogk7'",
+    );
     assert.equal(repo.getChat(chat.id)?.artifact?.validated, true);
   });
 
@@ -157,7 +160,13 @@ describe("SqliteChatRepository", () => {
     repo.updateChat(chat.id, {
       messages: [
         { id: "u1", role: "user", content: "hi" },
-        { id: "a1", role: "assistant", content: "", isStreaming: true, lines: [{ type: "text", content: "…" }] },
+        {
+          id: "a1",
+          role: "assistant",
+          content: "",
+          isStreaming: true,
+          lines: [{ type: "text", content: "…" }],
+        },
       ],
     });
 

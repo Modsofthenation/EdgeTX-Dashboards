@@ -108,7 +108,11 @@
 }
 
 .primaryBtn {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    var(--accent-hover) 100%
+  );
   border-color: transparent;
   color: white;
   font-weight: 600;
@@ -416,7 +420,9 @@
   margin-bottom: 0.2rem;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  transition: background var(--transition), border-color var(--transition);
+  transition:
+    background var(--transition),
+    border-color var(--transition);
 }
 
 .layerItem:hover {
@@ -577,7 +583,11 @@
   width: 2rem;
   height: 2rem;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(34, 211, 238, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.2),
+    rgba(34, 211, 238, 0.15)
+  );
   border: 1px solid var(--border);
   font-size: 0.9rem;
 }
@@ -637,7 +647,11 @@
   min-height: 0;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(59, 130, 246, 0.06), transparent),
+    radial-gradient(
+      ellipse 70% 50% at 50% 50%,
+      rgba(59, 130, 246, 0.06),
+      transparent
+    ),
     repeating-linear-gradient(
       0deg,
       transparent,
@@ -663,7 +677,9 @@
   justify-content: center;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.5) inset;
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 1px rgba(0, 0, 0, 0.5) inset;
   overflow: hidden;
   background: #000;
 }
@@ -720,7 +736,9 @@
 
 .selectionBoxActive {
   border: 2px solid var(--accent-bright);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 12px var(--accent-glow);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 0 12px var(--accent-glow);
 }
 
 .resizeHandle {

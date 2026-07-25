@@ -9,6 +9,6 @@ export function assertNodeVersion(): void {
 
   console.warn(
     `Node.js ${RECOMMENDED_NODE.join(".")}+ is recommended for @cursor/sdk (built-in node:sqlite). ` +
-      `Current: ${process.versions.node}. Using JSONL agent store fallback.`
+      `Current: ${process.versions.node}. Using JSONL agent store fallback.`,
   );
 }

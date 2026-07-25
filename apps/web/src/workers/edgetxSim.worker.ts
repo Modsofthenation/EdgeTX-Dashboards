@@ -23,7 +23,13 @@ self.onmessage = (event: MessageEvent<SimWorkerRequest>) => {
       const message = err instanceof Error ? err.message : String(err);
       post({
         type: "state",
-        state: { phase: "error", progress: 0, status: "Error", error: message, keyboardMode: "none" },
+        state: {
+          phase: "error",
+          progress: 0,
+          status: "Error",
+          error: message,
+          keyboardMode: "none",
+        },
       });
       post({ type: "error", message });
     });
@@ -38,8 +44,7 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         }
         runtime = new SimRuntime(msg.wasmUrl, msg.radioKey, {
           onState: (state) => post({ type: "state", state }),
-          onFrame: (frame) =>
-            post({ type: "frame", frame }, [frame.buffer]),
+          onFrame: (frame) => post({ type: "frame", frame }, [frame.buffer]),
           onLog: (text) => post({ type: "log", text }),
         });
         if (msg.mock) {
@@ -55,7 +60,7 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
               }
             : msg.edgeTxVersion
               ? { edgeTxVersion: msg.edgeTxVersion }
-              : undefined
+              : undefined,
         );
         if (currentMock) {
           runtime.setMockTelemetry(currentMock);
@@ -67,11 +72,20 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         try {
           await runtime.loadWidget(msg.source, msg.zone);
           if (currentMock) runtime.setMockTelemetry(currentMock);
-          post({ type: "loadWidgetResult", requestId: msg.requestId, ok: true });
+          post({
+            type: "loadWidgetResult",
+            requestId: msg.requestId,
+            ok: true,
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           post({ type: "log", text: `Widget reload failed: ${message}` });
-          post({ type: "loadWidgetResult", requestId: msg.requestId, ok: false, error: message });
+          post({
+            type: "loadWidgetResult",
+            requestId: msg.requestId,
+            ok: false,
+            error: message,
+          });
         }
         break;
       }
@@ -100,7 +114,16 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         await runtime?.dispose();
         runtime = null;
         currentMock = null;
-        post({ type: "state", state: { phase: "idle", progress: 0, status: "", error: null, keyboardMode: "none" } });
+        post({
+          type: "state",
+          state: {
+            phase: "idle",
+            progress: 0,
+            status: "",
+            error: null,
+            keyboardMode: "none",
+          },
+        });
         break;
       }
     }
@@ -108,8 +131,14 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     post({
       type: "state",
-      state: { phase: "error", progress: 0, status: "Error", error: message, keyboardMode: "none" },
+      state: {
+        phase: "error",
+        progress: 0,
+        status: "Error",
+        error: message,
+        keyboardMode: "none",
+      },
     });
     post({ type: "error", message });
   }
-};
+}

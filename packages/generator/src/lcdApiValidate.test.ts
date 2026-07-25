@@ -1,6 +1,19 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateBarsBlockHeightSync, validateColorConstants, validateDrawAnnulusRadiusOrder, validateGaugeSatelliteBudget, validateGaugeStripLayoutPlanning, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateMainHLiteralClamp, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "./lcdApiValidate.ts";
+import {
+  validateBitmapGetSizeCalls,
+  validateBarsBlockHeightSync,
+  validateColorConstants,
+  validateDrawAnnulusRadiusOrder,
+  validateGaugeSatelliteBudget,
+  validateGaugeStripLayoutPlanning,
+  validateGlobalGetSizeCalls,
+  validateLcdDrawLineCalls,
+  validateMainHLiteralClamp,
+  validateModelBitmapPath,
+  validateRoundedPanelArcCalls,
+  validateUnitSuffixPositioning,
+} from "./lcdApiValidate.ts";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8
@@ -32,7 +45,8 @@ describe("validateLcdDrawLineCalls", () => {
   });
 
   it("rejects named color constant as 5th argument", () => {
-    const source = REFRESH_PREFIX + "lcd.drawLine(1, 2, 3, 4, CYAN)\n" + REFRESH_SUFFIX;
+    const source =
+      REFRESH_PREFIX + "lcd.drawLine(1, 2, 3, 4, CYAN)\n" + REFRESH_SUFFIX;
     assert.equal(validateLcdDrawLineCalls(source).length, 1);
   });
 });
@@ -215,7 +229,7 @@ describe("validateColorConstants", () => {
   it("rejects preview-only LIME global", () => {
     const source =
       REFRESH_PREFIX +
-      "local linkBarColor = LIME\nlcd.drawText(x, y, \"RSSI\", SMLSIZE + LIME)\n" +
+      'local linkBarColor = LIME\nlcd.drawText(x, y, "RSSI", SMLSIZE + LIME)\n' +
       REFRESH_SUFFIX;
     const issues = validateColorConstants(source);
     assert.ok(issues.length >= 1);
@@ -230,8 +244,8 @@ describe("validateColorConstants", () => {
 end
 ` +
       REFRESH_PREFIX +
-      "lcd.drawText(x, y, \"OK\", SMLSIZE + BRIGHTGREEN)\n" +
-      "lcd.drawText(x, y + 20, \"V\", MIDSIZE + widget.C_ACCENT)\n" +
+      'lcd.drawText(x, y, "OK", SMLSIZE + BRIGHTGREEN)\n' +
+      'lcd.drawText(x, y + 20, "V", MIDSIZE + widget.C_ACCENT)\n' +
       REFRESH_SUFFIX;
     assert.deepEqual(validateColorConstants(source), []);
   });

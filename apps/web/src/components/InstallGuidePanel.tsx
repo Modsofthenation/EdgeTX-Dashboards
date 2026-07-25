@@ -10,13 +10,16 @@ interface InstallGuidePanelProps {
   widgetName: string | null;
 }
 
-export function InstallGuidePanel({ protocol, widgetName }: InstallGuidePanelProps) {
+export function InstallGuidePanel({
+  protocol,
+  widgetName,
+}: InstallGuidePanelProps) {
   const [openSection, setOpenSection] = useState<string>("steps");
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const guide = useMemo(
     () => buildInstallGuide(protocol, widgetName ?? undefined),
-    [protocol, widgetName]
+    [protocol, widgetName],
   );
 
   const toggleCheck = (id: string) => {
@@ -62,7 +65,11 @@ export function InstallGuidePanel({ protocol, widgetName }: InstallGuidePanelPro
 
       <div className={styles.accordion}>
         <button
-          className={openSection === "steps" ? styles.accordionActive : styles.accordionBtn}
+          className={
+            openSection === "steps"
+              ? styles.accordionActive
+              : styles.accordionBtn
+          }
           onClick={() => setOpenSection(openSection === "steps" ? "" : "steps")}
         >
           Setup steps
@@ -91,8 +98,14 @@ export function InstallGuidePanel({ protocol, widgetName }: InstallGuidePanelPro
         )}
 
         <button
-          className={openSection === "verify" ? styles.accordionActive : styles.accordionBtn}
-          onClick={() => setOpenSection(openSection === "verify" ? "" : "verify")}
+          className={
+            openSection === "verify"
+              ? styles.accordionActive
+              : styles.accordionBtn
+          }
+          onClick={() =>
+            setOpenSection(openSection === "verify" ? "" : "verify")
+          }
         >
           Verification checklist
         </button>
@@ -120,8 +133,14 @@ export function InstallGuidePanel({ protocol, widgetName }: InstallGuidePanelPro
         )}
 
         <button
-          className={openSection === "trouble" ? styles.accordionActive : styles.accordionBtn}
-          onClick={() => setOpenSection(openSection === "trouble" ? "" : "trouble")}
+          className={
+            openSection === "trouble"
+              ? styles.accordionActive
+              : styles.accordionBtn
+          }
+          onClick={() =>
+            setOpenSection(openSection === "trouble" ? "" : "trouble")
+          }
         >
           Troubleshooting
         </button>
@@ -147,7 +166,8 @@ export function InstallGuidePanel({ protocol, widgetName }: InstallGuidePanelPro
 
       {widgetName && (
         <p className={styles.note}>
-          Full instructions are also included as <code>INSTALL.md</code> inside the downloaded zip.
+          Full instructions are also included as <code>INSTALL.md</code> inside
+          the downloaded zip.
         </p>
       )}
     </div>

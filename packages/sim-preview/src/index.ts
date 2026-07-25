@@ -21,7 +21,11 @@ export {
   SIM_TELEMETRY_SENSOR_LABELS,
 } from "./simModel.ts";
 export type { SimWidgetLayoutPlan, SimFsWriter } from "./simModel.ts";
-export { lcdFrameByteSize, cropZoneFromFramebuffer, rgb565ToImageData } from "./framebuffer.ts";
+export {
+  lcdFrameByteSize,
+  cropZoneFromFramebuffer,
+  rgb565ToImageData,
+} from "./framebuffer.ts";
 export { WIDGET_LAUNCH_DELAY_FRAMES } from "./SimRuntime.ts";
 export type {
   MockTelemetryValues,

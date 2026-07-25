@@ -2,7 +2,10 @@
 
 import { memo, useState } from "react";
 import type { ChatSummary } from "~/lib/chatTypes";
-import { PROTOCOL_BADGE_LABELS, protocolBadgeClass } from "~/lib/protocolLabels";
+import {
+  PROTOCOL_BADGE_LABELS,
+  protocolBadgeClass,
+} from "~/lib/protocolLabels";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import styles from "./ChatHistorySidebar.module.css";
@@ -28,7 +31,10 @@ function formatWhen(timestamp: number): string {
     date.getDate() === now.getDate();
 
   if (sameDay) {
-    return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
   }
 
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -58,11 +64,21 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
       <div className={styles.header}>
         <h2 className={styles.title}>History</h2>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.newBtn} onClick={onNewChat} disabled={running} title="New chat">
+          <button
+            type="button"
+            className={styles.newBtn}
+            onClick={onNewChat}
+            disabled={running}
+            title="New chat"
+          >
             +
           </button>
           {onTogglePanel && (
-            <PanelCollapseButton label="History" collapsed={panelCollapsed} onToggle={onTogglePanel} />
+            <PanelCollapseButton
+              label="History"
+              collapsed={panelCollapsed}
+              onToggle={onTogglePanel}
+            />
           )}
         </div>
       </div>
@@ -71,7 +87,9 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
         {loading && <p className={styles.empty}>Loading…</p>}
 
         {!loading && chats.length === 0 && (
-          <p className={styles.empty}>No saved chats yet. Generate a dashboard to start.</p>
+          <p className={styles.empty}>
+            No saved chats yet. Generate a dashboard to start.
+          </p>
         )}
 
         {chats.map((chat) => {
@@ -98,7 +116,11 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
                   {chat.widgetName ? (
                     <>
                       <span className={styles.dot}>·</span>
-                      <span className={chat.validated ? styles.badgeOk : styles.badgeDraft}>
+                      <span
+                        className={
+                          chat.validated ? styles.badgeOk : styles.badgeDraft
+                        }
+                      >
                         {chat.widgetName}
                       </span>
                     </>

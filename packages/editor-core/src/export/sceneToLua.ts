@@ -53,7 +53,11 @@ function emitTextValue(el: TextElement, locals: Set<string>): string {
   }
 }
 
-function emitElementDraw(el: EditorElement, indent: string, locals: Set<string>): string[] {
+function emitElementDraw(
+  el: EditorElement,
+  indent: string,
+  locals: Set<string>,
+): string[] {
   if (!el.visible) return [];
   const lines: string[] = [];
   const color = (c: string) => edgeColorName(c);
@@ -62,7 +66,7 @@ function emitElementDraw(el: EditorElement, indent: string, locals: Set<string>)
     case "text": {
       const flags = `${fontFlagsForElement(el)} + ${color(el.color)}`;
       lines.push(
-        `${indent}lcd.drawText(${el.x}, ${el.y}, ${emitTextValue(el, locals)}, ${flags})`
+        `${indent}lcd.drawText(${el.x}, ${el.y}, ${emitTextValue(el, locals)}, ${flags})`,
       );
       break;
     }
@@ -72,62 +76,62 @@ function emitElementDraw(el: EditorElement, indent: string, locals: Set<string>)
         locals.add(key);
         lines.push(`${indent}local barW_${key} = ${el.w}`);
         lines.push(
-          `${indent}local fillW_${key} = math.floor(barW_${key} * math.max(0, math.min(100, v_${key})) / 100)`
+          `${indent}local fillW_${key} = math.floor(barW_${key} * math.max(0, math.min(100, v_${key})) / 100)`,
         );
         lines.push(
-          `${indent}lcd.drawFilledRectangle(${el.x}, ${el.y}, barW_${key}, ${el.h}, ${color(el.color)})`
+          `${indent}lcd.drawFilledRectangle(${el.x}, ${el.y}, barW_${key}, ${el.h}, ${color(el.color)})`,
         );
         lines.push(`${indent}if fillW_${key} > 0 then`);
         lines.push(
-          `${indent}  lcd.drawFilledRectangle(${el.x}, ${el.y}, fillW_${key}, ${el.h}, GREEN)`
+          `${indent}  lcd.drawFilledRectangle(${el.x}, ${el.y}, fillW_${key}, ${el.h}, GREEN)`,
         );
         lines.push(`${indent}end`);
       } else {
         lines.push(
-          `${indent}lcd.drawFilledRectangle(${el.x}, ${el.y}, ${el.w}, ${el.h}, ${color(el.color)})`
+          `${indent}lcd.drawFilledRectangle(${el.x}, ${el.y}, ${el.w}, ${el.h}, ${color(el.color)})`,
         );
       }
       break;
     }
     case "rect":
       lines.push(
-        `${indent}lcd.drawRectangle(${el.x}, ${el.y}, ${el.w}, ${el.h}, ${color(el.color)})`
+        `${indent}lcd.drawRectangle(${el.x}, ${el.y}, ${el.w}, ${el.h}, ${color(el.color)})`,
       );
       break;
     case "line":
       lines.push(
-        `${indent}lcd.drawLine(${el.x1}, ${el.y1}, ${el.x2}, ${el.y2}, ${el.pattern ?? "SOLID"}, ${color(el.color)})`
+        `${indent}lcd.drawLine(${el.x1}, ${el.y1}, ${el.x2}, ${el.y2}, ${el.pattern ?? "SOLID"}, ${color(el.color)})`,
       );
       break;
     case "gauge":
       lines.push(
-        `${indent}lcd.drawGauge(${el.x}, ${el.y}, ${el.w}, ${el.h}, ${el.fill}, ${el.maxFill}, ${color(el.color)})`
+        `${indent}lcd.drawGauge(${el.x}, ${el.y}, ${el.w}, ${el.h}, ${el.fill}, ${el.maxFill}, ${color(el.color)})`,
       );
       break;
     case "circle":
       lines.push(
-        `${indent}lcd.drawCircle(${el.x}, ${el.y}, ${el.r}, ${color(el.color)})`
+        `${indent}lcd.drawCircle(${el.x}, ${el.y}, ${el.r}, ${color(el.color)})`,
       );
       break;
     case "filledCircle":
       lines.push(
-        `${indent}lcd.drawFilledCircle(${el.x}, ${el.y}, ${el.r}, ${color(el.color)})`
+        `${indent}lcd.drawFilledCircle(${el.x}, ${el.y}, ${el.r}, ${color(el.color)})`,
       );
       break;
     case "arc":
       lines.push(
-        `${indent}lcd.drawArc(${el.x}, ${el.y}, ${el.r}, ${el.startAngle}, ${el.endAngle}, ${color(el.color)})`
+        `${indent}lcd.drawArc(${el.x}, ${el.y}, ${el.r}, ${el.startAngle}, ${el.endAngle}, ${color(el.color)})`,
       );
       break;
     case "annulus":
       lines.push(
-        `${indent}lcd.drawAnnulus(${el.x}, ${el.y}, ${el.rIn}, ${el.rOut}, ${el.startAngle}, ${el.endAngle}, ${color(el.color)})`
+        `${indent}lcd.drawAnnulus(${el.x}, ${el.y}, ${el.rIn}, ${el.rOut}, ${el.startAngle}, ${el.endAngle}, ${color(el.color)})`,
       );
       break;
     case "bitmap":
       lines.push(`${indent}if widget.modelBmp then`);
       lines.push(
-        `${indent}  lcd.drawBitmap(widget.modelBmp, ${el.x}, ${el.y}${el.scale != null ? `, ${el.scale}` : ""})`
+        `${indent}  lcd.drawBitmap(widget.modelBmp, ${el.x}, ${el.y}${el.scale != null ? `, ${el.scale}` : ""})`,
       );
       lines.push(`${indent}end`);
       break;
@@ -187,7 +191,9 @@ function emitElementGroup(elements: EditorElement[], indent: string): string[] {
 
 function emitOptionsTable(scene: WidgetScene): string {
   if (scene.options.length === 0) return "local options = {}";
-  const rows = scene.options.map((o) => `  { "${o.name}", BOOL, ${o.defaultValue} },`);
+  const rows = scene.options.map(
+    (o) => `  { "${o.name}", BOOL, ${o.defaultValue} },`,
+  );
   return `local options = {\n${rows.join("\n")}\n}`;
 }
 
@@ -219,7 +225,7 @@ function emitTelemetryTable(scene: WidgetScene): string {
     return "    src = {},";
   }
   const rows = scene.telemetry.map(
-    (t) => `      ${t.key} = cacheSource("${t.sensor}"),`
+    (t) => `      ${t.key} = cacheSource("${t.sensor}"),`,
   );
   return `    src = {\n${rows.join("\n")}\n    },`;
 }
@@ -228,7 +234,9 @@ function emitTelemetryTable(scene: WidgetScene): string {
 export function sceneToLua(scene: WidgetScene): string {
   const simLine = `---@simulate ${scene.simulate.layout} zone=${scene.simulate.zone}`;
   const refreshBody = emitElementGroup(scene.elements, "  ");
-  const bitmapHelpers = sceneUsesModelBitmap(scene) ? `${MODEL_BITMAP_HELPERS}\n` : "";
+  const bitmapHelpers = sceneUsesModelBitmap(scene)
+    ? `${MODEL_BITMAP_HELPERS}\n`
+    : "";
 
   return `---@type WidgetScript
 ${simLine}
@@ -289,7 +297,10 @@ export function createEmptyScene(name = "NewDash"): WidgetScene {
 }
 
 /** Insert a new element with sensible defaults at canvas center. */
-export function createDefaultElement(kind: EditorElement["kind"], id: string): EditorElement {
+export function createDefaultElement(
+  kind: EditorElement["kind"],
+  id: string,
+): EditorElement {
   const cx = 240;
   const cy = 160;
 

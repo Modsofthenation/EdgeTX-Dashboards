@@ -11,6 +11,8 @@
     "generate": "npm run generate --workspace=@widget-gen/generator",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "fmt": "prettier --write \"**/*.{ts,tsx,mjs,json,md,css}\"",
+    "fmt:check": "prettier --check \"**/*.{ts,tsx,mjs,json,md,css}\"",
     "sync-stubs": "node scripts/sync-edgetx-stubs.mjs",
     "sync-wasm": "node scripts/sync-edgetx-wasm.mjs",
     "setup": "node scripts/setup.mjs",
@@ -25,6 +27,7 @@
     "node": ">=22.13.0"
   },
   "devDependencies": {
-    "oxlint": "^1.75.0"
+    "oxlint": "^1.75.0",
+    "prettier": "^3.9.6"
   }
 }

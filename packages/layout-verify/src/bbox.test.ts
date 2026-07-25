@@ -34,7 +34,13 @@ describe("bboxForRecord", () => {
 
   it("detects overlapping rects", () => {
     const a = bboxForRecord({ kind: "filledRect", x: 0, y: 0, w: 100, h: 50 })!;
-    const b = bboxForRecord({ kind: "filledRect", x: 50, y: 25, w: 100, h: 50 })!;
+    const b = bboxForRecord({
+      kind: "filledRect",
+      x: 50,
+      y: 25,
+      w: 100,
+      h: 50,
+    })!;
     assert.equal(boxesOverlap(a, b), true);
   });
 });

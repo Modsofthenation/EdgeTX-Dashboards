@@ -23,7 +23,10 @@ describe("buildConversationSummary", () => {
         { role: "user", content: "Tinywhoop dash" },
         { role: "assistant", content: "Generated hero-minimal dashboard." },
         { role: "user", content: "Add model image background" },
-        { role: "assistant", content: "Added full-screen model image with dim overlay." },
+        {
+          role: "assistant",
+          content: "Added full-screen model image with dim overlay.",
+        },
         { role: "user", content: "Make link bars thicker" },
       ],
       currentPrompt: "Make link bars thicker",
@@ -44,7 +47,9 @@ describe("buildArtifactContext", () => {
       messages: [],
       currentPrompt: "refine",
       artifact: { version: 1, luaSource: SAMPLE_LUA_V1, validated: true },
-      artifactVersions: [{ version: 0, luaSource: SAMPLE_LUA_V0, validated: true }],
+      artifactVersions: [
+        { version: 0, luaSource: SAMPLE_LUA_V0, validated: true },
+      ],
       workspaceLuaSource: SAMPLE_LUA_V1,
     });
 

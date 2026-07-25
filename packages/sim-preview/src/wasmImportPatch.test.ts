@@ -13,7 +13,10 @@ describe("patchEnvImports", () => {
 
     try {
       const patched = patchEnvImports(module, { env: {} });
-      assert.equal(typeof (patched.env as WebAssembly.ModuleImports).simuAuxSerialStart, "function");
+      assert.equal(
+        typeof (patched.env as WebAssembly.ModuleImports).simuAuxSerialStart,
+        "function",
+      );
     } finally {
       WebAssembly.Module.imports = originalImports;
     }
@@ -29,8 +32,13 @@ describe("patchEnvImports", () => {
     };
 
     try {
-      const patched = patchEnvImports(module, { env: { simuAuxSerialStart: existing } });
-      assert.equal((patched.env as WebAssembly.ModuleImports).simuAuxSerialStart, existing);
+      const patched = patchEnvImports(module, {
+        env: { simuAuxSerialStart: existing },
+      });
+      assert.equal(
+        (patched.env as WebAssembly.ModuleImports).simuAuxSerialStart,
+        existing,
+      );
     } finally {
       WebAssembly.Module.imports = originalImports;
     }

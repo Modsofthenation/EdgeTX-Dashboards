@@ -1,6 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { resolveSimFirmware, type SimManifest } from "./radioSim/simFirmware.ts";
+import {
+  resolveSimFirmware,
+  type SimManifest,
+} from "./radioSim/simFirmware.ts";
 
 const SAMPLE_MANIFEST: SimManifest = {
   defaultVersion: "2.11.0",

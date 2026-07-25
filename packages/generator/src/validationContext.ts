@@ -1,5 +1,12 @@
-import type { SimulateLayoutProfile, TelemetryProtocol } from "@widget-gen/shared";
-import { loadRadioProfile, loadTelemetryCatalog, loadSimulateLayoutProfile } from "./knowledge.ts";
+import type {
+  SimulateLayoutProfile,
+  TelemetryProtocol,
+} from "@widget-gen/shared";
+import {
+  loadRadioProfile,
+  loadTelemetryCatalog,
+  loadSimulateLayoutProfile,
+} from "./knowledge.ts";
 import type { ValidateWidgetOptions } from "./validate.ts";
 import type { LayoutArchetypeId } from "./layoutArchetype.ts";
 import { getActiveLayoutArchetype } from "./variationContext.ts";
@@ -16,7 +23,7 @@ export function buildReleaseValidationContext(
   protocol: TelemetryProtocol,
   radioId = "tx15",
   strictTelemetry = true,
-  layoutArchetype?: LayoutArchetypeId
+  layoutArchetype?: LayoutArchetypeId,
 ): ReleaseValidationContext {
   const radio = loadRadioProfile(radioId);
   const catalog = loadTelemetryCatalog(protocol);

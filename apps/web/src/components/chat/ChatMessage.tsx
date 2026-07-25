@@ -35,7 +35,9 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
               ))}
             </div>
           ) : null}
-          {hasText ? <div className={styles.userBubble}>{message.content}</div> : null}
+          {hasText ? (
+            <div className={styles.userBubble}>{message.content}</div>
+          ) : null}
         </div>
       </div>
     );
@@ -44,7 +46,9 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
   return (
     <div
       className={`${styles.row} ${styles.assistantRow} ${
-        message.isStreaming && (!message.lines || message.lines.length === 0) && !message.content
+        message.isStreaming &&
+        (!message.lines || message.lines.length === 0) &&
+        !message.content
           ? styles.assistantRowPending
           : ""
       }`}
@@ -55,15 +59,24 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
       <div className={styles.assistantBody}>
         {message.error ? (
           <div className={styles.errorBox} role="alert">
-            <p className={styles.errorText}>{message.content || "Something went wrong."}</p>
+            <p className={styles.errorText}>
+              {message.content || "Something went wrong."}
+            </p>
             {onRetry ? (
-              <button type="button" className={styles.retryBtn} onClick={onRetry}>
+              <button
+                type="button"
+                className={styles.retryBtn}
+                onClick={onRetry}
+              >
                 Retry
               </button>
             ) : null}
           </div>
         ) : message.lines && message.lines.length > 0 ? (
-          <AssistantStream lines={message.lines} isStreaming={message.isStreaming} />
+          <AssistantStream
+            lines={message.lines}
+            isStreaming={message.isStreaming}
+          />
         ) : message.content ? (
           <p className={styles.plainText}>{message.content}</p>
         ) : message.isStreaming ? (

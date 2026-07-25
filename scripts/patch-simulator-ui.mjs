@@ -37,7 +37,9 @@ function patchMainEnv(source) {
     return source.replace(minNeedle, minNeedle + AUX_STUBS_MIN);
   }
 
-  throw new Error("Could not find main-thread env block in simulator-ui bundle");
+  throw new Error(
+    "Could not find main-thread env block in simulator-ui bundle",
+  );
 }
 
 function patchWorkerBlob(source) {
@@ -64,7 +66,9 @@ function patchWorkerBlob(source) {
           Et && (Atomics.add(Et, 0, 1), Atomics.notify(Et, 0));
         }`;
     if (!dec.includes(workerNeedle)) {
-      throw new Error("Could not find worker env block in simulator-ui WASM worker blob");
+      throw new Error(
+        "Could not find worker env block in simulator-ui WASM worker blob",
+      );
     }
 
     const patchedDec = dec.replace(workerNeedle, workerNeedle + AUX_STUBS_MIN);

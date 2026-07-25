@@ -1,4 +1,8 @@
-import type { WidgetGenerator, RunCallbacks, WidgetWorkspaceInfo } from "@widget-gen/generator";
+import type {
+  WidgetGenerator,
+  RunCallbacks,
+  WidgetWorkspaceInfo,
+} from "@widget-gen/generator";
 import type { GenerateSession, ValidationIssue } from "@widget-gen/shared";
 
 export interface WidgetRunOutcome {
@@ -18,7 +22,10 @@ export interface WidgetRunContext {
   send: (data: object) => void;
 }
 
-function emitWidgetWorkspace(ctx: WidgetRunContext, info: WidgetWorkspaceInfo): void {
+function emitWidgetWorkspace(
+  ctx: WidgetRunContext,
+  info: WidgetWorkspaceInfo,
+): void {
   ctx.session.widgetInstanceId = info.instanceId;
   ctx.session.widgetName = info.displayName;
   ctx.session.widgetVersion = info.version;
@@ -72,12 +79,14 @@ export function createRunCallbacks(ctx: WidgetRunContext): RunCallbacks {
 export function emitRunCompletion(
   ctx: WidgetRunContext,
   result: WidgetRunOutcome,
-  options: { action: "generate" | "refine" }
+  options: { action: "generate" | "refine" },
 ): void {
   ctx.session.lastRunId = result.runId;
   if (result.widgetName) ctx.session.widgetName = result.widgetName;
-  if (result.widgetInstanceId) ctx.session.widgetInstanceId = result.widgetInstanceId;
-  if (result.widgetVersion !== undefined) ctx.session.widgetVersion = result.widgetVersion;
+  if (result.widgetInstanceId)
+    ctx.session.widgetInstanceId = result.widgetInstanceId;
+  if (result.widgetVersion !== undefined)
+    ctx.session.widgetVersion = result.widgetVersion;
   ctx.session.validated = result.validated ?? false;
   ctx.session.validationIssues = result.validationIssues ?? [];
 

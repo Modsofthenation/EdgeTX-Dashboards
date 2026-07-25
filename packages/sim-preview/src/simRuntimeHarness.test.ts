@@ -46,28 +46,35 @@ function fingerprintRecords(records: DrawRecord[]): string {
 describe("simRuntime harness (gated on synced WASM)", () => {
   const hasManifest = existsSync(MANIFEST);
 
-  it("manifest + WASM file match declared sha256", { skip: !hasManifest }, () => {
-    const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
-      radios?: { tx15?: { wasm: string; sha256: string; size: number } };
-      versions?: Record<string, { wasm: string; size: number; sha256?: string }>;
-    };
-    const tx15 = manifest.radios?.tx15;
-    const fallback = Object.values(manifest.versions ?? {})[0];
-    const wasmName = tx15?.wasm ?? fallback?.wasm;
-    assert.ok(wasmName, "manifest should list a WASM file");
-    assert.match(wasmName, /\.wasm$/);
-    const size = tx15?.size ?? fallback?.size ?? 0;
-    assert.ok(size > 1_000_000);
-    const wasmPath = join(ROOT, "apps", "web", "public", "sim", wasmName);
-    assert.ok(existsSync(wasmPath), `WASM file missing: ${wasmPath}`);
-    const bytes = readFileSync(wasmPath);
-    assert.ok(bytes.byteLength > 1_000_000);
-    const expectedSha = tx15?.sha256 ?? fallback?.sha256;
-    if (expectedSha) {
-      const actual = createHash("sha256").update(bytes).digest("hex");
-      assert.equal(actual, expectedSha, "WASM sha256 must match manifest");
-    }
-  });
+  it(
+    "manifest + WASM file match declared sha256",
+    { skip: !hasManifest },
+    () => {
+      const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
+        radios?: { tx15?: { wasm: string; sha256: string; size: number } };
+        versions?: Record<
+          string,
+          { wasm: string; size: number; sha256?: string }
+        >;
+      };
+      const tx15 = manifest.radios?.tx15;
+      const fallback = Object.values(manifest.versions ?? {})[0];
+      const wasmName = tx15?.wasm ?? fallback?.wasm;
+      assert.ok(wasmName, "manifest should list a WASM file");
+      assert.match(wasmName, /\.wasm$/);
+      const size = tx15?.size ?? fallback?.size ?? 0;
+      assert.ok(size > 1_000_000);
+      const wasmPath = join(ROOT, "apps", "web", "public", "sim", wasmName);
+      assert.ok(existsSync(wasmPath), `WASM file missing: ${wasmPath}`);
+      const bytes = readFileSync(wasmPath);
+      assert.ok(bytes.byteLength > 1_000_000);
+      const expectedSha = tx15?.sha256 ?? fallback?.sha256;
+      if (expectedSha) {
+        const actual = createHash("sha256").update(bytes).digest("hex");
+        assert.equal(actual, expectedSha, "WASM sha256 must match manifest");
+      }
+    },
+  );
 });
 
 describe("interpreter golden contracts (always run)", () => {
@@ -80,21 +87,29 @@ describe("interpreter golden contracts (always run)", () => {
       const meta = getLastPreviewParseMeta();
       assert.ok(records.length > 3, `${file}: expected draw records`);
       assert.ok(
-        records.some((r) => r.kind === "clear" || r.kind === "filledRect" || r.kind === "text"),
-        `${file}: expected visible draw kinds`
+        records.some(
+          (r) =>
+            r.kind === "clear" || r.kind === "filledRect" || r.kind === "text",
+        ),
+        `${file}: expected visible draw kinds`,
       );
       assert.equal(
-        isInterpretationReliable(records, meta.skippedTextCount) || meta.skippedTextCount === 0,
+        isInterpretationReliable(records, meta.skippedTextCount) ||
+          meta.skippedTextCount === 0,
         true,
-        `${file}: unreliable interpretation (skipped=${meta.skippedTextCount})`
+        `${file}: unreliable interpretation (skipped=${meta.skippedTextCount})`,
       );
     });
 
     it(`${file} draw fingerprint is stable for editor-preview scenario`, () => {
       const path = join(EXAMPLES, file);
       const source = readFileSync(path, "utf8");
-      const a = fingerprintRecords(parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO));
-      const b = fingerprintRecords(parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO));
+      const a = fingerprintRecords(
+        parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO),
+      );
+      const b = fingerprintRecords(
+        parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO),
+      );
       assert.equal(a, b);
       assert.match(a, /^[a-f0-9]{64}$/);
     });
@@ -107,18 +122,23 @@ describe("interpreter golden contracts (always run)", () => {
  * sha256 + interpreter fingerprints until a headless runner is available.
  */
 describe("interpreter↔WASM contract gate", () => {
-  it("gold examples stay reliable whenever WASM firmware is synced", {
-    skip: !existsSync(MANIFEST),
-  }, () => {
-    for (const file of GOLD_EXAMPLES) {
-      const source = readFileSync(join(EXAMPLES, file), "utf8");
-      const records = parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO);
-      const meta = getLastPreviewParseMeta();
-      assert.ok(
-        isInterpretationReliable(records, meta.skippedTextCount) || meta.skippedTextCount === 0,
-        `${file}: interpreter must be reliable when WASM is available`
-      );
-      assert.ok(records.length > 3);
-    }
-  });
+  it(
+    "gold examples stay reliable whenever WASM firmware is synced",
+    {
+      skip: !existsSync(MANIFEST),
+    },
+    () => {
+      for (const file of GOLD_EXAMPLES) {
+        const source = readFileSync(join(EXAMPLES, file), "utf8");
+        const records = parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO);
+        const meta = getLastPreviewParseMeta();
+        assert.ok(
+          isInterpretationReliable(records, meta.skippedTextCount) ||
+            meta.skippedTextCount === 0,
+          `${file}: interpreter must be reliable when WASM is available`,
+        );
+        assert.ok(records.length > 3);
+      }
+    },
+  );
 });

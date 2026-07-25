@@ -34,7 +34,11 @@ export function InsertMenu({ onInsert }: InsertMenuProps) {
 
     const onDoc = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      )
+        return;
       setOpen(false);
     };
 
@@ -87,7 +91,7 @@ export function InsertMenu({ onInsert }: InsertMenuProps) {
           </button>
         ))}
       </div>,
-      document.body
+      document.body,
     );
 
   return (

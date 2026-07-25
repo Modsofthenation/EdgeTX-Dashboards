@@ -1,6 +1,3 @@
 {
-  "recommendations": [
-    "sumneko.lua",
-    "jeffreychix.edgetx-dev-kit"
-  ]
+  "recommendations": ["sumneko.lua", "jeffreychix.edgetx-dev-kit"]
 }

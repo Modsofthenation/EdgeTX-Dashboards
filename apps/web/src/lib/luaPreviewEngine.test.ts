@@ -3,14 +3,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { parseLuaToDrawCommands, getLastPreviewParseMeta } from "./luaPreviewEngine.ts";
+import {
+  parseLuaToDrawCommands,
+  getLastPreviewParseMeta,
+} from "./luaPreviewEngine.ts";
 import { BASE_MOCK } from "./mockTelemetry.ts";
 import { BFMODEL_DT8_SOURCE } from "./fixtures/bfmodel-dt8.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const heliExample = readFileSync(
   join(__dirname, "../../../../examples/tx15-rotorflight-heli.lua"),
-  "utf8"
+  "utf8",
 );
 
 describe("parseLuaToDrawCommands", () => {
@@ -21,7 +24,10 @@ describe("parseLuaToDrawCommands", () => {
 
     assert.ok(fills.length >= 5, `expected card rects, got ${fills.length}`);
     const ys = new Set(fills.map((c) => c.y));
-    assert.ok(ys.size >= 3, `expected varied Y coords, got ${[...ys].join(",")}`);
+    assert.ok(
+      ys.size >= 3,
+      `expected varied Y coords, got ${[...ys].join(",")}`,
+    );
 
     const link = texts.find((t) => t.text === "LINK");
     assert.ok(link && (link.y ?? 0) > 40, "LINK should be below header");
@@ -52,8 +58,8 @@ describe("parseLuaToDrawCommands", () => {
       "  local pad = 12",
       "  local cardY = 52",
       "  local volts = 16.2",
-      "  local motorLine = \"Motor \" .. \"3200\" .. \" ESC \" .. \"42\" .. \"C\"",
-      "  lcd.drawText(10, 22, string.format(\"%.1f\", volts), DBLSIZE + YELLOW)",
+      '  local motorLine = "Motor " .. "3200" .. " ESC " .. "42" .. "C"',
+      '  lcd.drawText(10, 22, string.format("%.1f", volts), DBLSIZE + YELLOW)',
       "  lcd.drawText(10, 200, motorLine, SMLSIZE + WHITE)",
       "end",
       "return {}",
@@ -61,7 +67,9 @@ describe("parseLuaToDrawCommands", () => {
 
     const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
     const voltsText = cmds.find((c) => c.kind === "text" && c.text === "16.2");
-    const motorText = cmds.find((c) => c.kind === "text" && c.text?.startsWith("Motor "));
+    const motorText = cmds.find(
+      (c) => c.kind === "text" && c.text?.startsWith("Motor "),
+    );
     assert.ok(voltsText);
     assert.equal(motorText?.text, "Motor 3200 ESC 42C");
   });
@@ -89,10 +97,18 @@ describe("parseLuaToDrawCommands", () => {
 
     const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
     const texts = cmds.filter((c) => c.kind === "text").map((c) => c.text);
-    const bad = texts.find((t) => t?.includes(" and ") || t?.includes("string.format"));
+    const bad = texts.find(
+      (t) => t?.includes(" and ") || t?.includes("string.format"),
+    );
     assert.equal(bad, undefined, `unevaluated expression in preview: ${bad}`);
-    assert.ok(texts.some((t) => t?.includes("%")), `expected RQLY percent, got ${texts.join("|")}`);
-    assert.ok(texts.some((t) => t?.endsWith("A")), `expected amps suffix, got ${texts.join("|")}`);
+    assert.ok(
+      texts.some((t) => t?.includes("%")),
+      `expected RQLY percent, got ${texts.join("|")}`,
+    );
+    assert.ok(
+      texts.some((t) => t?.endsWith("A")),
+      `expected amps suffix, got ${texts.join("|")}`,
+    );
   });
 
   it("keeps placeholder when rqly is zero (does not force 0%)", () => {
@@ -125,7 +141,9 @@ describe("parseLuaToDrawCommands", () => {
     ].join("\n");
 
     const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
-    assert.ok(cmds.some((c) => c.kind === "bitmap" && c.placeholder === "model"));
+    assert.ok(
+      cmds.some((c) => c.kind === "bitmap" && c.placeholder === "model"),
+    );
   });
 
   it("renders drawGauge and drawAnnulus rotary gauges", () => {
@@ -140,7 +158,7 @@ describe("parseLuaToDrawCommands", () => {
       "  lcd.drawGauge(20, 200, 24, 80, pct, 100, CYAN)",
       "  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, startA + span, GREY)",
       "  lcd.drawAnnulus(cx, cy, rOut, rIn, startA, valA, CYAN)",
-      "  lcd.drawText(cx, cy, \"72%\", MIDSIZE + CENTER + WHITE)",
+      '  lcd.drawText(cx, cy, "72%", MIDSIZE + CENTER + WHITE)',
       "end",
       "return {}",
     ].join("\n");
@@ -156,7 +174,7 @@ describe("parseLuaToDrawCommands", () => {
       "---@simulate Layout1x1 zone=0",
       "local function refresh(widget)",
       "  lcd.clear(LIGHTGREY)",
-      "  lcd.drawText(10, 10, \"Hi\", SMLSIZE + COLOR_THEME_SECONDARY1)",
+      '  lcd.drawText(10, 10, "Hi", SMLSIZE + COLOR_THEME_SECONDARY1)',
       "end",
       "return {}",
     ].join("\n");
@@ -180,16 +198,16 @@ describe("parseLuaToDrawCommands", () => {
       "  local curr = telem(widget.src.curr)",
       "  local trss = telem(widget.src.trss)",
       '  local rqlyStr = "--"',
-      "  if rqly > 0 then rqlyStr = tostring(math.floor(rqly + 0.5)) .. \"%\" end",
+      '  if rqly > 0 then rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%" end',
       '  local voltStr = "--"',
-      "  if volts > 0 then voltStr = string.format(\"%.1fV\", volts) end",
+      '  if volts > 0 then voltStr = string.format("%.1fV", volts) end',
       '  local currStr = "--"',
-      "  if curr ~= 0 then currStr = string.format(\"%.1fA\", curr) end",
+      '  if curr ~= 0 then currStr = string.format("%.1fA", curr) end',
       '  local trssStr = "--"',
-      "  if trss ~= 0 then trssStr = tostring(math.floor(trss + 0.5)) .. \" dB\" end",
+      '  if trss ~= 0 then trssStr = tostring(math.floor(trss + 0.5)) .. " dB" end',
       "  local fmRaw = telem(widget.src.fm)",
       '  local fmStr = "--"',
-      "  if type(fmRaw) == \"string\" and fmRaw ~= \"\" then",
+      '  if type(fmRaw) == "string" and fmRaw ~= "" then',
       "    fmStr = fmRaw",
       "  end",
       "  lcd.drawText(10, 24, rqlyStr, MIDSIZE + BLACK)",
@@ -203,11 +221,26 @@ describe("parseLuaToDrawCommands", () => {
 
     const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
     const texts = cmds.filter((c) => c.kind === "text").map((c) => c.text);
-    assert.ok(texts.some((t) => t?.includes("%")), `expected RQLY percent, got ${texts.join("|")}`);
-    assert.ok(texts.some((t) => t?.endsWith("V")), `expected voltage, got ${texts.join("|")}`);
-    assert.ok(texts.some((t) => t?.endsWith("A")), `expected current, got ${texts.join("|")}`);
-    assert.ok(texts.some((t) => t?.includes("dB")), `expected TRSS dB, got ${texts.join("|")}`);
-    assert.ok(texts.includes("Stab"), `expected FM mode, got ${texts.join("|")}`);
+    assert.ok(
+      texts.some((t) => t?.includes("%")),
+      `expected RQLY percent, got ${texts.join("|")}`,
+    );
+    assert.ok(
+      texts.some((t) => t?.endsWith("V")),
+      `expected voltage, got ${texts.join("|")}`,
+    );
+    assert.ok(
+      texts.some((t) => t?.endsWith("A")),
+      `expected current, got ${texts.join("|")}`,
+    );
+    assert.ok(
+      texts.some((t) => t?.includes("dB")),
+      `expected TRSS dB, got ${texts.join("|")}`,
+    );
+    assert.ok(
+      texts.includes("Stab"),
+      `expected FM mode, got ${texts.join("|")}`,
+    );
   });
 
   it("renders lcd.RGB colors from create() for clear and card borders", () => {
@@ -245,13 +278,13 @@ describe("parseLuaToDrawCommands", () => {
       "---@simulate Layout1x1 zone=0",
       "local function refresh(widget)",
       "  local timerVal = 0",
-      "  local timerStr = \"--\"",
+      '  local timerStr = "--"',
       "  local tInfo = model.getTimer(0)",
       "  if tInfo and tInfo.value then timerVal = tInfo.value end",
       "  if timerVal > 0 then",
       "    local mins = math.floor(timerVal / 60)",
       "    local secs = timerVal % 60",
-      "    timerStr = string.format(\"%02d:%02d\", mins, secs)",
+      '    timerStr = string.format("%02d:%02d", mins, secs)',
       "  end",
       "  lcd.drawText(10, 10, timerStr, MIDSIZE + BLACK)",
       "end",
@@ -293,24 +326,61 @@ describe("parseLuaToDrawCommands", () => {
     const meta = getLastPreviewParseMeta();
 
     const stripFills = cmds.filter(
-      (c) => c.kind === "filledRect" && (c.w ?? 0) >= 100 && (c.h ?? 0) >= 50
+      (c) => c.kind === "filledRect" && (c.w ?? 0) >= 100 && (c.h ?? 0) >= 50,
     );
     const stripXs = new Set(stripFills.map((c) => c.x));
-    assert.ok(stripXs.size >= 4, `expected 4 strip columns, got x=${[...stripXs].join(",")}`);
+    assert.ok(
+      stripXs.size >= 4,
+      `expected 4 strip columns, got x=${[...stripXs].join(",")}`,
+    );
 
     const minStripY = Math.min(...stripFills.map((c) => c.y ?? 0));
-    assert.ok(minStripY > 100, `strip row should be below model band, got y=${minStripY}`);
+    assert.ok(
+      minStripY > 100,
+      `strip row should be below model band, got y=${minStripY}`,
+    );
 
     const valueTexts = cmds.filter(
-      (c) => c.kind === "text" && c.text && !["VOLTAGE", "LINK", "CURRENT", "TIMER", "BATTERY", "USED", "ALTITUDE", "MODE", "WHOOP LIVE", "MODEL", "BATTERY"].includes(c.text)
+      (c) =>
+        c.kind === "text" &&
+        c.text &&
+        ![
+          "VOLTAGE",
+          "LINK",
+          "CURRENT",
+          "TIMER",
+          "BATTERY",
+          "USED",
+          "ALTITUDE",
+          "MODE",
+          "WHOOP LIVE",
+          "MODEL",
+          "BATTERY",
+        ].includes(c.text),
     );
     const positions = valueTexts.map((t) => `${t.x},${t.y}`);
     const uniquePositions = new Set(positions);
-    assert.equal(uniquePositions.size, positions.length, `overlapping value text at ${positions.join("|")}`);
+    assert.equal(
+      uniquePositions.size,
+      positions.length,
+      `overlapping value text at ${positions.join("|")}`,
+    );
 
-    assert.ok(valueTexts.some((t) => t.text === "16.2V"), `expected voltage hero, got ${valueTexts.map((t) => t.text).join("|")}`);
-    assert.ok(valueTexts.some((t) => t.text?.includes("%") && t.text !== "--"), "expected battery percent");
-    assert.ok(valueTexts.some((t) => t.text?.includes("dB")), "expected RSSI dB in footer");
-    assert.ok(meta.skippedTextCount === 0, `skipped text: ${meta.warnings.join("; ")}`);
+    assert.ok(
+      valueTexts.some((t) => t.text === "16.2V"),
+      `expected voltage hero, got ${valueTexts.map((t) => t.text).join("|")}`,
+    );
+    assert.ok(
+      valueTexts.some((t) => t.text?.includes("%") && t.text !== "--"),
+      "expected battery percent",
+    );
+    assert.ok(
+      valueTexts.some((t) => t.text?.includes("dB")),
+      "expected RSSI dB in footer",
+    );
+    assert.ok(
+      meta.skippedTextCount === 0,
+      `skipped text: ${meta.warnings.join("; ")}`,
+    );
   });
 });

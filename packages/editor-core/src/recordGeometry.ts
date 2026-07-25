@@ -1,10 +1,6 @@
 import { bboxForRecord, type DrawRecord } from "@widget-gen/layout-verify";
 import type { DocumentRecord, ZoneOffset } from "./luaDocument.ts";
-import {
-  snapToGrid,
-  type BoundingBox,
-  type ResizeHandle,
-} from "./geometry.ts";
+import { snapToGrid, type BoundingBox, type ResizeHandle } from "./geometry.ts";
 
 /** Shift LCD-space record coords into zone-relative space for hit-testing and overlay. */
 export function recordInZone(record: DrawRecord, zone: ZoneOffset): DrawRecord {
@@ -18,7 +14,7 @@ export function recordInZone(record: DrawRecord, zone: ZoneOffset): DrawRecord {
 
 export function bboxForRecordInZone(
   record: DrawRecord,
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): BoundingBox | null {
   if (record.kind === "clear") return null;
   return bboxForRecord(recordInZone(record, zone), zone.zoneW, zone.zoneH);
@@ -44,21 +40,28 @@ export function hitTestRecords(
   records: DocumentRecord[],
   x: number,
   y: number,
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): DocumentRecord | null {
   for (let i = records.length - 1; i >= 0; i--) {
     const record = records[i]!;
     if (record.kind === "clear") continue;
     const box = bboxForRecordInZone(record, zone);
     if (!box) continue;
-    const target = record.kind === "text" || record.kind === "line" ? hitTargetBox(box) : box;
+    const target =
+      record.kind === "text" || record.kind === "line"
+        ? hitTargetBox(box)
+        : box;
     if (pointInBox(x, y, target)) return record;
   }
   return null;
 }
 
 export function isRectLike(record: DrawRecord): boolean {
-  return record.kind === "filledRect" || record.kind === "rect" || record.kind === "gauge";
+  return (
+    record.kind === "filledRect" ||
+    record.kind === "rect" ||
+    record.kind === "gauge"
+  );
 }
 
 export function resizeRecordBox(
@@ -66,7 +69,7 @@ export function resizeRecordBox(
   handle: ResizeHandle,
   pointerX: number,
   pointerY: number,
-  snap: boolean
+  snap: boolean,
 ): BoundingBox {
   const box = { ...start };
   if (handle.includes("e")) box.w = Math.max(4, pointerX - box.x);
@@ -96,7 +99,7 @@ export function recordLayerLabel(record: DrawRecord): string {
 
 export function recordsForDisplay(
   records: DrawRecord[],
-  zone: ZoneOffset
+  zone: ZoneOffset,
 ): DrawRecord[] {
   return records.map((r) => recordInZone(r, zone));
 }

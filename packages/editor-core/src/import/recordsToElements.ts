@@ -3,10 +3,14 @@ import { hexToEdgeColor } from "../colors.ts";
 import { newElementId } from "../ids.ts";
 import type { EditorElement, TextBinding, TextFormat } from "../types.ts";
 
-function inferTextBinding(text: string, telemetryKeys: Set<string>): TextBinding | undefined {
+function inferTextBinding(
+  text: string,
+  telemetryKeys: Set<string>,
+): TextBinding | undefined {
   const percentMatch = text.match(/^(\d+)%$/);
   if (percentMatch) {
-    if (telemetryKeys.has("rqly")) return { sensorKey: "rqly", format: "percent" };
+    if (telemetryKeys.has("rqly"))
+      return { sensorKey: "rqly", format: "percent" };
   }
 
   const floatMatch = text.match(/^(\d+\.\d+)$/);
@@ -44,7 +48,7 @@ function mapRecordToElement(
   zoneOffsetY: number,
   optionGate: string | undefined,
   telemetryKeys: Set<string>,
-  importConfidence: "high" | "low"
+  importConfidence: "high" | "low",
 ): EditorElement | null {
   const id = newElementId();
   const base = { id, visible: true, optionGate, importConfidence };
@@ -58,7 +62,11 @@ function mapRecordToElement(
       const color = hexToEdgeColor(record.color);
       const fontSize = fontSizeFromRecord(record);
       const fontFlags =
-        fontSize >= 20 ? ["DBLSIZE"] : fontSize >= 14 ? ["MIDSIZE"] : ["SMLSIZE"];
+        fontSize >= 20
+          ? ["DBLSIZE"]
+          : fontSize >= 14
+            ? ["MIDSIZE"]
+            : ["SMLSIZE"];
 
       if (binding) {
         return {
@@ -192,7 +200,7 @@ export function recordsToElements(
   zoneOffsetY: number,
   lcdCallGates: (string | undefined)[],
   telemetryKeys: Set<string>,
-  annulusReliable: boolean
+  annulusReliable: boolean,
 ): EditorElement[] {
   const elements: EditorElement[] = [];
   let gateIndex = 0;
@@ -203,14 +211,15 @@ export function recordsToElements(
     const optionGate = lcdCallGates[gateIndex];
     gateIndex++;
 
-    const confidence = record.kind === "annulus" && !annulusReliable ? "low" : "high";
+    const confidence =
+      record.kind === "annulus" && !annulusReliable ? "low" : "high";
     const el = mapRecordToElement(
       record,
       zoneOffsetX,
       zoneOffsetY,
       optionGate,
       telemetryKeys,
-      confidence
+      confidence,
     );
     if (el) elements.push(el);
   }

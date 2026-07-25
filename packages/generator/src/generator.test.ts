@@ -17,15 +17,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..", "..");
 const exampleLua = readFileSync(
   join(repoRoot, "examples", "tx15-minimal-dashboard.lua"),
-  "utf-8"
+  "utf-8",
 );
 const bfdash8fLua = readFileSync(
   join(repoRoot, "examples", "tx15-bfdash8f-whoop-dashboard.lua"),
-  "utf-8"
+  "utf-8",
 );
 const modelHeroLua = readFileSync(
   join(repoRoot, "examples", "tx15-model-hero-dashboard.lua"),
-  "utf-8"
+  "utf-8",
 );
 
 describe("sanitizeWidgetName", () => {
@@ -39,12 +39,17 @@ describe("sanitizeWidgetName", () => {
   });
 
   it("rejects names over 10 chars", () => {
-    assert.throws(() => sanitizeWidgetName("VeryLongName"), /Invalid widget name/);
+    assert.throws(
+      () => sanitizeWidgetName("VeryLongName"),
+      /Invalid widget name/,
+    );
   });
 });
 
 describe("validateWidgetLua", () => {
-  const betaflightSensors = loadTelemetryCatalog("betaflight").sensors.map((s) => s.name);
+  const betaflightSensors = loadTelemetryCatalog("betaflight").sensors.map(
+    (s) => s.name,
+  );
 
   it("validates example widget with strict telemetry", () => {
     const result = validateWidgetLua(exampleLua, {
@@ -62,7 +67,11 @@ describe("validateWidgetLua", () => {
       strictTelemetry: true,
       layoutArchetype: "quad-overview",
     });
-    assert.equal(result.valid, true, result.issues.map((i) => i.message).join("; "));
+    assert.equal(
+      result.valid,
+      true,
+      result.issues.map((i) => i.message).join("; "),
+    );
   });
 
   it("validates model-hero gold example with layout validators", () => {
@@ -71,13 +80,21 @@ describe("validateWidgetLua", () => {
       strictTelemetry: true,
       layoutArchetype: "quad-overview",
     });
-    assert.equal(result.valid, true, result.issues.map((i) => i.message).join("; "));
+    assert.equal(
+      result.valid,
+      true,
+      result.issues.map((i) => i.message).join("; "),
+    );
   });
 
   it("rejects require()", () => {
     const result = validateWidgetLua('require("foo")\n' + exampleLua);
     assert.equal(result.valid, false);
-    assert.ok(result.issues.some((i: { message: string }) => i.message.includes("require")));
+    assert.ok(
+      result.issues.some((i: { message: string }) =>
+        i.message.includes("require"),
+      ),
+    );
   });
 
   it("rejects unknown sensors in strict mode", () => {
@@ -104,9 +121,11 @@ describe("validateWidgetLua", () => {
   });
 
   it("accepts rotorflight motor sensors in strict mode", () => {
-    const rotorflightSensors = loadTelemetryCatalog("rotorflight").sensors.map((s) => s.name);
+    const rotorflightSensors = loadTelemetryCatalog("rotorflight").sensors.map(
+      (s) => s.name,
+    );
     const source = [
-      'local function cacheSource(n) return getSourceIndex(n) end',
+      "local function cacheSource(n) return getSourceIndex(n) end",
       "local function create() return { src = {",
       '  hspd = cacheSource("HSpd"), rpm = cacheSource("RPM"),',
       '  esct = cacheSource("EscT"), mott = cacheSource("MotT"),',
@@ -118,7 +137,9 @@ describe("validateWidgetLua", () => {
       knownSensors: rotorflightSensors,
       strictTelemetry: true,
     });
-    const telemErrors = result.issues.filter((i) => i.message.includes("not found in selected protocol catalog"));
+    const telemErrors = result.issues.filter((i) =>
+      i.message.includes("not found in selected protocol catalog"),
+    );
     assert.deepEqual(telemErrors, []);
   });
 
@@ -134,18 +155,22 @@ local function refresh(widget, event, touchState)
 end
 return { name = "Clutter", create = function() return {} end, refresh = refresh }
 `;
-    const result = validateWidgetLua(cluttered, { layoutArchetype: "card-grid" });
+    const result = validateWidgetLua(cluttered, {
+      layoutArchetype: "card-grid",
+    });
     assert.ok(
       result.issues.some(
-        (i) => i.message.includes("grouped regions") || i.message.includes("Stacked top-left")
-      )
+        (i) =>
+          i.message.includes("grouped regions") ||
+          i.message.includes("Stacked top-left"),
+      ),
     );
   });
 
   it("rejects Bitmap.getSize with SD path (radio create crash)", () => {
     const source = [
       'local name = "BmpTest"',
-      "local MODEL_IMG = \"/MODELS/model.png\"",
+      'local MODEL_IMG = "/MODELS/model.png"',
       "local function create()",
       "  local modelBmp = Bitmap.open(MODEL_IMG)",
       "  local w, h = Bitmap.getSize(MODEL_IMG, modelBmp)",
@@ -156,7 +181,11 @@ return { name = "Clutter", create = function() return {} end, refresh = refresh 
     ].join("\n");
     const result = validateWidgetLua(source);
     assert.equal(result.valid, false);
-    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("Bitmap.getSize")));
+    assert.ok(
+      result.issues.some(
+        (i) => i.severity === "error" && i.message.includes("Bitmap.getSize"),
+      ),
+    );
   });
 
   it("rejects lcd.drawLine with color as 5th argument", () => {
@@ -196,7 +225,10 @@ describe("validateGenerateRequest", () => {
   });
 
   it("rejects invalid protocol", () => {
-    const r = validateGenerateRequest({ prompt: "x", protocol: "invalid" as never });
+    const r = validateGenerateRequest({
+      prompt: "x",
+      protocol: "invalid" as never,
+    });
     assert.equal(r.ok, false);
   });
 
@@ -205,7 +237,9 @@ describe("validateGenerateRequest", () => {
       prompt: "",
       radioId: "tx15",
       protocol: "betaflight",
-      images: [{ data: Buffer.from("png").toString("base64"), mimeType: "image/png" }],
+      images: [
+        { data: Buffer.from("png").toString("base64"), mimeType: "image/png" },
+      ],
     });
     assert.equal(r.ok, true);
     if (!r.ok) return;
@@ -272,7 +306,11 @@ describe("pickActiveWidgetName", () => {
 
 describe("widgetNaming", () => {
   it("builds descriptive names within EdgeTX limits", () => {
-    const name = suggestWidgetName("betaflight flight logger with timer", "betaflight", 42);
+    const name = suggestWidgetName(
+      "betaflight flight logger with timer",
+      "betaflight",
+      42,
+    );
     assert.ok(name.startsWith("Bf"));
     assert.match(name, /FltLog|Timer/);
     assert.ok(name.length <= 10);
@@ -280,7 +318,11 @@ describe("widgetNaming", () => {
   });
 
   it("uses rotorflight prefix for heli prompts", () => {
-    const name = suggestWidgetName("heli GPS headspeed dashboard", "rotorflight", 7);
+    const name = suggestWidgetName(
+      "heli GPS headspeed dashboard",
+      "rotorflight",
+      7,
+    );
     assert.ok(name.startsWith("Rf"));
     assert.ok(WIDGET_NAME_PATTERN.test(name));
   });
@@ -293,7 +335,12 @@ describe("widgetNaming", () => {
 
   it("skips names already present under generated/", () => {
     const first = suggestWidgetName("gps altitude dashboard", "betaflight", 1);
-    const second = allocateWidgetName("gps altitude dashboard", "betaflight", 1, (n) => n === first);
+    const second = allocateWidgetName(
+      "gps altitude dashboard",
+      "betaflight",
+      1,
+      (n) => n === first,
+    );
     assert.notEqual(first, second);
     assert.ok(WIDGET_NAME_PATTERN.test(second));
   });

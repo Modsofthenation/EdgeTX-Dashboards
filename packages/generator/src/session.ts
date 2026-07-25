@@ -32,7 +32,7 @@ export class SessionStore {
   createSession(
     radioId: string,
     protocol: TelemetryProtocol,
-    modelId = "composer-2.5"
+    modelId = "composer-2.5",
   ): GenerateSession {
     this.evictExpired();
     const id = randomUUID();
@@ -73,7 +73,7 @@ export class SessionStore {
         existing.session.widgetVersion = input.widgetVersion;
       }
       existing.generator.resolveWidgetWorkspaceKey(
-        input.widgetInstanceId ?? input.widgetName
+        input.widgetInstanceId ?? input.widgetName,
       );
       return existing.session;
     }
@@ -87,7 +87,9 @@ export class SessionStore {
       widgetVersion: input.widgetVersion,
     });
     if (input.widgetInstanceId ?? input.widgetName) {
-      generator.resolveWidgetWorkspaceKey(input.widgetInstanceId ?? input.widgetName);
+      generator.resolveWidgetWorkspaceKey(
+        input.widgetInstanceId ?? input.widgetName,
+      );
     }
 
     const session: GenerateSession = {
@@ -144,7 +146,9 @@ let globalStore: SessionStore | null = null;
 const SESSION_STORE_KEY = Symbol.for("@widget-gen/sessionStore");
 
 function getGlobalStore(): SessionStore {
-  const g = globalThis as typeof globalThis & { [SESSION_STORE_KEY]?: SessionStore };
+  const g = globalThis as typeof globalThis & {
+    [SESSION_STORE_KEY]?: SessionStore;
+  };
   if (!g[SESSION_STORE_KEY]) {
     g[SESSION_STORE_KEY] = new SessionStore();
   }

@@ -22,14 +22,19 @@ export async function GET(request: Request): Promise<Response> {
   const sessionId = searchParams.get("sessionId");
   const versionParam = searchParams.get("version");
   const version =
-    versionParam !== null && versionParam !== "" ? Number.parseInt(versionParam, 10) : undefined;
+    versionParam !== null && versionParam !== ""
+      ? Number.parseInt(versionParam, 10)
+      : undefined;
   let protocol = searchParams.get("protocol");
   let radioId = searchParams.get("radioId") ?? "tx15";
 
   if (sessionId) {
     const stored = getSessionStore().get(sessionId);
     if (!stored) {
-      return Response.json({ error: "Session not found or expired" }, { status: 404 });
+      return Response.json(
+        { error: "Session not found or expired" },
+        { status: 404 },
+      );
     }
     if (version === undefined && !stored.session.validated) {
       return Response.json(
@@ -37,11 +42,14 @@ export async function GET(request: Request): Promise<Response> {
           error: "Widget has not passed validation",
           validationIssues: stored.session.validationIssues ?? [],
         },
-        { status: 422 }
+        { status: 422 },
       );
     }
     workspaceKey =
-      workspaceKey ?? stored.session.widgetInstanceId ?? stored.session.widgetName ?? null;
+      workspaceKey ??
+      stored.session.widgetInstanceId ??
+      stored.session.widgetName ??
+      null;
     protocol = protocol ?? stored.session.protocol;
     radioId = stored.session.radioId;
   }
@@ -52,7 +60,10 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   if (!workspaceKey) {
-    return Response.json({ error: "instanceId, name, or sessionId is required" }, { status: 400 });
+    return Response.json(
+      { error: "instanceId, name, or sessionId is required" },
+      { status: 400 },
+    );
   }
 
   let safeKey: string;
@@ -62,17 +73,26 @@ export async function GET(request: Request): Promise<Response> {
     try {
       safeKey = sanitizeWidgetName(workspaceKey);
     } catch {
-      return Response.json({ error: "Invalid widget workspace key" }, { status: 400 });
+      return Response.json(
+        { error: "Invalid widget workspace key" },
+        { status: 400 },
+      );
     }
   }
 
   if (!protocol || !isTelemetryProtocol(protocol)) {
-    return Response.json({ error: "Invalid or missing protocol" }, { status: 400 });
+    return Response.json(
+      { error: "Invalid or missing protocol" },
+      { status: 400 },
+    );
   }
 
   const validation = validateWidgetRelease(safeKey, protocol, radioId);
   if (!validation.valid && version === undefined) {
-    return Response.json({ error: "Widget failed validation", validation }, { status: 422 });
+    return Response.json(
+      { error: "Widget failed validation", validation },
+      { status: 422 },
+    );
   }
 
   try {
@@ -80,7 +100,7 @@ export async function GET(request: Request): Promise<Response> {
       safeKey,
       protocol,
       radioId,
-      Number.isFinite(version) ? version : undefined
+      Number.isFinite(version) ? version : undefined,
     );
     if (!zip) {
       return Response.json({ error: "Widget zip not found" }, { status: 404 });
@@ -94,7 +114,10 @@ export async function GET(request: Request): Promise<Response> {
     });
   } catch (err) {
     if (err instanceof WidgetValidationError) {
-      return Response.json({ error: err.message, validation: err.result }, { status: 422 });
+      return Response.json(
+        { error: err.message, validation: err.result },
+        { status: 422 },
+      );
     }
     return Response.json({ error: "Widget zip not found" }, { status: 404 });
   }

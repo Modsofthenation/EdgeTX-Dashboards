@@ -34,16 +34,16 @@ export function luaToScene(source: string): LuaToSceneResult {
   const scenario = {
     id: "import",
     mock: BASE_MOCK,
-    options: Object.fromEntries(options.map((o) => [o.name, o.defaultValue])) as Record<
-      string,
-      0 | 1
-    >,
+    options: Object.fromEntries(
+      options.map((o) => [o.name, o.defaultValue]),
+    ) as Record<string, 0 | 1>,
   };
 
-  const { records, warnings: parseWarnings, skippedTextCount } = interpretWidgetLayout(
-    source,
-    scenario
-  );
+  const {
+    records,
+    warnings: parseWarnings,
+    skippedTextCount,
+  } = interpretWidgetLayout(source, scenario);
 
   warnings.push(...parseWarnings);
   if (skippedTextCount > 0) {
@@ -52,7 +52,9 @@ export function luaToScene(source: string): LuaToSceneResult {
 
   const annulusReliable = isInterpretationReliable(records);
   if (!annulusReliable) {
-    warnings.push("Annulus coordinates may be unreliable — verify after import");
+    warnings.push(
+      "Annulus coordinates may be unreliable — verify after import",
+    );
   }
 
   const refreshBody = extractRefreshBody(source);
@@ -64,7 +66,7 @@ export function luaToScene(source: string): LuaToSceneResult {
     zoneOffsetY,
     lcdCallGates,
     telemetryKeys,
-    annulusReliable
+    annulusReliable,
   );
 
   if (elements.length === 0) {

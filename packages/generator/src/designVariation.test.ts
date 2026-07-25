@@ -16,15 +16,32 @@ describe("deriveVariationSeed", () => {
   });
 
   it("returns stable seed for same session and run index", () => {
-    assert.equal(deriveVariationSeed("session-b", 2), deriveVariationSeed("session-b", 2));
+    assert.equal(
+      deriveVariationSeed("session-b", 2),
+      deriveVariationSeed("session-b", 2),
+    );
   });
 });
 
 describe("buildCreativeBrief", () => {
   it("produces different palettes for different seeds", () => {
-    const archetype = suggestLayoutArchetype("battery dashboard", "betaflight", 0);
-    const a = buildCreativeBrief(1, archetype, "betaflight", "battery dashboard");
-    const b = buildCreativeBrief(99, archetype, "betaflight", "battery dashboard");
+    const archetype = suggestLayoutArchetype(
+      "battery dashboard",
+      "betaflight",
+      0,
+    );
+    const a = buildCreativeBrief(
+      1,
+      archetype,
+      "betaflight",
+      "battery dashboard",
+    );
+    const b = buildCreativeBrief(
+      99,
+      archetype,
+      "betaflight",
+      "battery dashboard",
+    );
     assert.notEqual(a.palette.id, b.palette.id);
     assert.match(a.markdown, /Creative brief/i);
   });
@@ -40,8 +57,14 @@ describe("hashString", () => {
 
 describe("shouldBumpRunIndexForRefine", () => {
   it("detects layout change keywords", () => {
-    assert.equal(shouldBumpRunIndexForRefine("try a different layout please"), true);
-    assert.equal(shouldBumpRunIndexForRefine("fix the typo in voltage label"), false);
+    assert.equal(
+      shouldBumpRunIndexForRefine("try a different layout please"),
+      true,
+    );
+    assert.equal(
+      shouldBumpRunIndexForRefine("fix the typo in voltage label"),
+      false,
+    );
   });
 });
 
@@ -49,10 +72,13 @@ describe("seed-based archetype variety", () => {
   it("same prompt with different seeds can pick different archetypes", () => {
     const prompt = "show my telemetry nicely";
     const ids = new Set(
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((seed) =>
-        suggestLayoutArchetype(prompt, "betaflight", seed).id
-      )
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(
+        (seed) => suggestLayoutArchetype(prompt, "betaflight", seed).id,
+      ),
     );
-    assert.ok(ids.size >= 2, `expected variety, got only ${[...ids].join(",")}`);
+    assert.ok(
+      ids.size >= 2,
+      `expected variety, got only ${[...ids].join(",")}`,
+    );
   });
 });

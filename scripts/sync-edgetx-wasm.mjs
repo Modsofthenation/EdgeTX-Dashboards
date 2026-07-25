@@ -92,7 +92,8 @@ async function main() {
   }
 
   for (const [id, meta] of downloaded) {
-    const aliasOf = hashToId.get(meta.hash) !== id ? hashToId.get(meta.hash) : undefined;
+    const aliasOf =
+      hashToId.get(meta.hash) !== id ? hashToId.get(meta.hash) : undefined;
     manifest.versions[id] = {
       label: meta.label,
       wasm: meta.wasmFile,
@@ -111,9 +112,14 @@ async function main() {
     manifest.radios.tx15.size = defaultMeta.size;
   }
 
-  await writeFile(join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  await writeFile(
+    join(outDir, "manifest.json"),
+    JSON.stringify(manifest, null, 2) + "\n",
+  );
   console.log(`\nSynced EdgeTX WASM to apps/web/public/sim/`);
-  console.log(`Default firmware: ${manifest.defaultVersion} (${defaultMeta?.size ?? "?"} bytes)`);
+  console.log(
+    `Default firmware: ${manifest.defaultVersion} (${defaultMeta?.size ?? "?"} bytes)`,
+  );
 }
 
 main().catch((err) => {

@@ -25,7 +25,9 @@ function runScript(label, scriptName) {
   run(label, process.execPath, [join(ROOT, "scripts", scriptName)]);
 }
 
-console.log(simOnly ? "EdgeTX setup (Radio sim)" : "EdgeTX setup (full dev environment)");
+console.log(
+  simOnly ? "EdgeTX setup (Radio sim)" : "EdgeTX setup (full dev environment)",
+);
 
 runScript("Patch @edgetx/simulator-ui env stubs", "patch-simulator-ui.mjs");
 
@@ -37,8 +39,12 @@ runScript("Ensure EdgeTX WASM firmware (TX15)", "ensure-edgetx-wasm.mjs");
 
 console.log("\n✓ Setup complete.");
 if (simOnly) {
-  console.log("  Restart the dev server and hard-refresh the browser, then open the Sim tab.");
+  console.log(
+    "  Restart the dev server and hard-refresh the browser, then open the Sim tab.",
+  );
 } else {
   console.log("  Set CURSOR_API_KEY, then run: npm run dev");
-  console.log("  Open http://localhost:3000 — use Preview (fast) or Sim (EdgeTX WASM) tabs.");
+  console.log(
+    "  Open http://localhost:3000 — use Preview (fast) or Sim (EdgeTX WASM) tabs.",
+  );
 }

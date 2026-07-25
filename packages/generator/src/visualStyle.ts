@@ -10,21 +10,26 @@ const SUBTLE_PALETTE_NOTES = [
   "Use **MAGENTA + CYAN** accents — colored title and one hero metric, rest GREY/WHITE.",
 ];
 
-export function detectVisualStyle(userPrompt: string, seed = 0): VisualStyleHints {
+export function detectVisualStyle(
+  userPrompt: string,
+  seed = 0,
+): VisualStyleHints {
   const p = userPrompt.toLowerCase();
 
   const lightTheme =
-    /white\s+background|background\s+white|light\s+background|light\s+theme|black\s+text|red\s+border/.test(p);
+    /white\s+background|background\s+white|light\s+background|light\s+theme|black\s+text|red\s+border/.test(
+      p,
+    );
 
   const vibrant =
     /vibrant|colorful|colourful|neon|bright|bold color|pop of color|saturated|lively|striking/.test(
-      p
+      p,
     );
   const colorEmphasis =
     vibrant ||
     lightTheme ||
     /cyan|magenta|lime|orange accent|yellow accent|custom color|colour scheme|color scheme/.test(
-      p
+      p,
     );
 
   if (lightTheme && !vibrant) {
@@ -50,12 +55,12 @@ export function detectVisualStyle(userPrompt: string, seed = 0): VisualStyleHint
       "- Header: dark fill plus a **4px accent stripe** (C_ACCENT / C_HERO) or colored title text — not a flat GREY bar.",
       "- Hero metric uses ValueColor (DBLSIZE); footer/status uses ORANGE/GREEN/YELLOW as appropriate.",
       "- Minimum **3 distinct accent colors** visible on screen at once.",
-      "- Do not clone the dull DBK grey card clone unless user said \"minimal\" or \"DBK\".",
+      '- Do not clone the dull DBK grey card clone unless user said "minimal" or "DBK".',
     ];
 
     if (vibrant) {
       lines.push(
-        "- Prefer **strip board**, **hero minimal with color bands**, or **asymmetric layout** over the default two-column grey card grid when it fits the prompt."
+        "- Prefer **strip board**, **hero minimal with color bands**, or **asymmetric layout** over the default two-column grey card grid when it fits the prompt.",
       );
     }
 

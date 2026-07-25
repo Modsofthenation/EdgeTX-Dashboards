@@ -1,6 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildTelemetryFrames, BASE_MOCK_TELEMETRY } from "./telemetryBridge.ts";
+import {
+  buildTelemetryFrames,
+  BASE_MOCK_TELEMETRY,
+} from "./telemetryBridge.ts";
 
 describe("telemetryBridge", () => {
   it("builds CRSF frames for BASE_MOCK", () => {
@@ -20,7 +23,10 @@ describe("telemetryBridge", () => {
 
     const flightMode = frames[4];
     assert.equal(flightMode[2], 0x21);
-    const modeText = String.fromCharCode(...flightMode.slice(3)).replace(/\0/g, "");
+    const modeText = String.fromCharCode(...flightMode.slice(3)).replace(
+      /\0/g,
+      "",
+    );
     assert.equal(modeText, "Stab");
   });
 

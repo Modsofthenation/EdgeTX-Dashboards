@@ -1,6 +1,13 @@
 "use client";
 
-import { memo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
+import {
+  memo,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { ChatModel } from "~/lib/chatModels";
 import {
@@ -60,7 +67,12 @@ function AttachImageIcon() {
 function RemoveIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-      <path d="M3 3l6 6M9 3 3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M3 3l6 6M9 3 3 9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -105,7 +117,8 @@ export const ChatComposer = memo(function ChatComposer({
 
   const selectedRadio = radios.find((r) => r.id === radioId);
   const radioGroups = groupRadiosByLayout(radios);
-  const canSend = !running && (input.trim().length > 0 || attachments.length > 0);
+  const canSend =
+    !running && (input.trim().length > 0 || attachments.length > 0);
   const attachDisabled = running || attachments.length >= maxPromptImages();
 
   const submit = () => {
@@ -140,10 +153,14 @@ export const ChatComposer = memo(function ChatComposer({
 
     const picked = Array.from(files).slice(0, remaining);
     try {
-      const next = await Promise.all(picked.map((file) => readPromptImageFile(file)));
+      const next = await Promise.all(
+        picked.map((file) => readPromptImageFile(file)),
+      );
       setAttachments((prev) => [...prev, ...next]);
     } catch (err) {
-      setAttachError(err instanceof Error ? err.message : "Could not read image");
+      setAttachError(
+        err instanceof Error ? err.message : "Could not read image",
+      );
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -231,10 +248,17 @@ export const ChatComposer = memo(function ChatComposer({
                 value={radioId}
                 onChange={(e) => onRadioChange(e.target.value)}
                 disabled={settingsLocked}
-                title={settingsLocked ? "Radio is locked for this chat session" : undefined}
+                title={
+                  settingsLocked
+                    ? "Radio is locked for this chat session"
+                    : undefined
+                }
               >
                 {[...radioGroups.entries()].map(([layoutKey, group]) => (
-                  <optgroup key={layoutKey} label={LAYOUT_GROUP_LABELS[layoutKey] ?? layoutKey}>
+                  <optgroup
+                    key={layoutKey}
+                    label={LAYOUT_GROUP_LABELS[layoutKey] ?? layoutKey}
+                  >
                     {group.map((radio) => (
                       <option key={radio.id} value={radio.id}>
                         {radio.name}
@@ -251,10 +275,18 @@ export const ChatComposer = memo(function ChatComposer({
                 className={styles.select}
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
-                disabled={settingsLocked || modelsLoading || models.length === 0}
-                title={settingsLocked ? "Model is locked for this chat session" : undefined}
+                disabled={
+                  settingsLocked || modelsLoading || models.length === 0
+                }
+                title={
+                  settingsLocked
+                    ? "Model is locked for this chat session"
+                    : undefined
+                }
               >
-                {modelsLoading && <option value={modelId}>Loading models…</option>}
+                {modelsLoading && (
+                  <option value={modelId}>Loading models…</option>
+                )}
                 {!modelsLoading &&
                   modelOptions.map((model) => (
                     <option key={model.id} value={model.id}>
@@ -269,7 +301,9 @@ export const ChatComposer = memo(function ChatComposer({
               <select
                 className={styles.select}
                 value={protocol}
-                onChange={(e) => onProtocolChange(e.target.value as TelemetryProtocol)}
+                onChange={(e) =>
+                  onProtocolChange(e.target.value as TelemetryProtocol)
+                }
                 disabled={settingsLocked}
               >
                 <option value="betaflight">Betaflight</option>
@@ -303,7 +337,11 @@ export const ChatComposer = memo(function ChatComposer({
 
             <span
               className={styles.protocolChip}
-              title={settingsLocked ? "Protocol is locked for this chat session" : undefined}
+              title={
+                settingsLocked
+                  ? "Protocol is locked for this chat session"
+                  : undefined
+              }
             >
               {PROTOCOL_BADGE_LABELS[protocol]}
               {settingsLocked ? " · locked" : ""}
@@ -311,7 +349,8 @@ export const ChatComposer = memo(function ChatComposer({
 
             {canRefine && (
               <span className={styles.refineHint}>
-                Settings locked — refine this dashboard or start a new chat to change radio/protocol.
+                Settings locked — refine this dashboard or start a new chat to
+                change radio/protocol.
               </span>
             )}
           </>
@@ -331,16 +370,25 @@ export const ChatComposer = memo(function ChatComposer({
               <span className={styles.dropOverlayIcon}>
                 <AttachImageIcon />
               </span>
-              <span className={styles.dropOverlayText}>Drop images to attach</span>
+              <span className={styles.dropOverlayText}>
+                Drop images to attach
+              </span>
             </div>
           ) : null}
 
           {attachments.length > 0 ? (
-            <div className={styles.attachmentStrip} aria-label="Attached images">
+            <div
+              className={styles.attachmentStrip}
+              aria-label="Attached images"
+            >
               {attachments.map((img) => (
                 <div key={img.id} className={styles.attachment}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.previewUrl} alt="" className={styles.attachmentThumb} />
+                  <img
+                    src={img.previewUrl}
+                    alt=""
+                    className={styles.attachmentThumb}
+                  />
                   <div className={styles.attachmentMeta}>
                     <span className={styles.attachmentName} title={img.name}>
                       {img.name}
@@ -404,15 +452,22 @@ export const ChatComposer = memo(function ChatComposer({
               disabled={!canSend}
               aria-label={running ? "Generating" : "Send message"}
             >
-              {running ? <span className={styles.sendSpinner} aria-hidden /> : <SendIcon />}
+              {running ? (
+                <span className={styles.sendSpinner} aria-hidden />
+              ) : (
+                <SendIcon />
+              )}
             </button>
           </div>
         </div>
 
-        {attachError ? <p className={styles.attachError}>{attachError}</p> : null}
+        {attachError ? (
+          <p className={styles.attachError}>{attachError}</p>
+        ) : null}
 
         <p className={styles.hint}>
-          Enter to send · Shift+Enter for new line · Up to {maxPromptImages()} images · PNG, JPEG, WebP, GIF · 4MB each
+          Enter to send · Shift+Enter for new line · Up to {maxPromptImages()}{" "}
+          images · PNG, JPEG, WebP, GIF · 4MB each
         </p>
       </div>
     </form>

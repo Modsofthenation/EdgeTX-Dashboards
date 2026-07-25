@@ -5,7 +5,11 @@ import { getRepoRoot } from "./knowledge.ts";
 import { DEFAULT_MODEL_ID, isAllowedModelId } from "./models.ts";
 import { validatePromptImages } from "./promptImages.ts";
 
-const PROTOCOLS: TelemetryProtocol[] = ["betaflight", "rotorflight", "generic-crsf"];
+const PROTOCOLS: TelemetryProtocol[] = [
+  "betaflight",
+  "rotorflight",
+  "generic-crsf",
+];
 
 export { DEFAULT_MODEL_ID as DEFAULT_CHAT_MODEL_ID } from "./models.ts";
 export { FALLBACK_MODELS as ALLOWED_MODEL_IDS } from "./models.ts";
@@ -16,14 +20,16 @@ export function isTelemetryProtocol(value: string): value is TelemetryProtocol {
 
 export function validateGenerateRequest(
   body: Partial<GenerateRequest>,
-  options?: { allowedModelIds?: string[] }
-): {
-  ok: true;
-  request: GenerateRequest;
-} | {
-  ok: false;
-  error: string;
-} {
+  options?: { allowedModelIds?: string[] },
+):
+  | {
+      ok: true;
+      request: GenerateRequest;
+    }
+  | {
+      ok: false;
+      error: string;
+    } {
   const imagesResult = validatePromptImages(body.images);
   if (!imagesResult.ok) {
     return imagesResult;
@@ -31,7 +37,10 @@ export function validateGenerateRequest(
 
   const prompt = body.prompt?.trim() ?? "";
   if (!prompt && imagesResult.images.length === 0) {
-    return { ok: false, error: "prompt or at least one reference image is required" };
+    return {
+      ok: false,
+      error: "prompt or at least one reference image is required",
+    };
   }
   if (prompt.length > 8000) {
     return { ok: false, error: "prompt exceeds maximum length (8000)" };
@@ -42,7 +51,12 @@ export function validateGenerateRequest(
     "Recreate this dashboard using the attached reference image(s) as the primary layout and style guide.";
 
   const radioId = body.radioId ?? "tx15";
-  const radioPath = join(getRepoRoot(), "knowledge", "radios", `${radioId}.json`);
+  const radioPath = join(
+    getRepoRoot(),
+    "knowledge",
+    "radios",
+    `${radioId}.json`,
+  );
   if (!existsSync(radioPath)) {
     return { ok: false, error: `Unknown radio profile: ${radioId}` };
   }
@@ -65,7 +79,9 @@ export function validateGenerateRequest(
       protocol,
       edgeTxVersion: body.edgeTxVersion,
       modelId,
-      ...(imagesResult.images.length > 0 ? { images: imagesResult.images } : {}),
+      ...(imagesResult.images.length > 0
+        ? { images: imagesResult.images }
+        : {}),
     },
   };
 }

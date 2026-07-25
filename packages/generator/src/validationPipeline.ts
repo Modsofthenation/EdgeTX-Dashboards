@@ -30,12 +30,12 @@ export interface ValidateForReleaseOptions {
 export function validateWidgetSource(
   source: string,
   protocol: TelemetryProtocol,
-  options?: { radioId?: string; strictTelemetry?: boolean }
+  options?: { radioId?: string; strictTelemetry?: boolean },
 ): ValidationResult {
   const ctx = buildReleaseValidationContext(
     protocol,
     options?.radioId ?? "tx15",
-    options?.strictTelemetry ?? true
+    options?.strictTelemetry ?? true,
   );
   return validateWidgetLua(source, ctx.validateOptions);
 }
@@ -47,7 +47,7 @@ export function validateWidgetSource(
 export function validateWidgetForRelease(
   workspaceKey: string,
   protocol: TelemetryProtocol,
-  options?: ValidateForReleaseOptions
+  options?: ValidateForReleaseOptions,
 ): ValidationResult {
   const radioId = options?.radioId ?? "tx15";
   const workspace = options?.workspace ?? defaultWorkspace;
@@ -55,13 +55,18 @@ export function validateWidgetForRelease(
     protocol,
     radioId,
     options?.strictTelemetry ?? true,
-    options?.layoutArchetype
+    options?.layoutArchetype,
   );
 
   if (!workspace.exists(workspaceKey)) {
     return {
       valid: false,
-      issues: [{ severity: "error", message: `Widget source not found: ${workspaceKey}` }],
+      issues: [
+        {
+          severity: "error",
+          message: `Widget source not found: ${workspaceKey}`,
+        },
+      ],
     };
   }
 
@@ -71,7 +76,10 @@ export function validateWidgetForRelease(
       : workspace.prepareForRadio(workspaceKey, radioId);
 
   if (!prepared.ok) {
-    return { valid: false, issues: [{ severity: "error", message: prepared.message }] };
+    return {
+      valid: false,
+      issues: [{ severity: "error", message: prepared.message }],
+    };
   }
 
   return validateWidgetLua(prepared.source, ctx.validateOptions);
@@ -80,7 +88,7 @@ export function validateWidgetForRelease(
 export function assertValidForRelease(
   workspaceKey: string,
   protocol: TelemetryProtocol,
-  options?: ValidateForReleaseOptions
+  options?: ValidateForReleaseOptions,
 ): ValidationResult {
   const result = validateWidgetForRelease(workspaceKey, protocol, options);
   if (!result.valid) {

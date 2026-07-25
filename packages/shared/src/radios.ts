@@ -2,7 +2,12 @@
 export const DEFAULT_RADIO_ID = "tx15";
 
 /** Layout profile keys shipped in packages/shared/src/layouts/*.json */
-export const LAYOUT_PROFILE_IDS = ["tx15", "color272", "taranis212", "compact128"] as const;
+export const LAYOUT_PROFILE_IDS = [
+  "tx15",
+  "color272",
+  "taranis212",
+  "compact128",
+] as const;
 export type LayoutProfileId = (typeof LAYOUT_PROFILE_IDS)[number];
 
 export function isLayoutProfileId(value: string): value is LayoutProfileId {
