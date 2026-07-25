@@ -686,17 +686,26 @@ export function EditorApp() {
               className={styles.ghostBtn}
               onClick={navigateBack}
             >
-              Back to Generate
+              <span className={styles.actionLabelFull}>Back to Generate</span>
+              <span className={styles.actionLabelShort}>Generate</span>
             </Link>
             <button type="button" className={styles.ghostBtn} onClick={openSim}>
-              Run in simulator
+              <span className={styles.actionLabelFull}>Run in simulator</span>
+              <span className={styles.actionLabelShort}>Sim</span>
             </button>
             <button
               type="button"
-              className={styles.ghostBtn}
+              className={`${styles.ghostBtn} ${styles.hideOnNarrow}`}
               onClick={() => void handleCopyLua()}
             >
-              {copyDone ? "Copied" : "Copy Lua"}
+              {copyDone ? (
+                "Copied"
+              ) : (
+                <>
+                  <span className={styles.actionLabelFull}>Copy Lua</span>
+                  <span className={styles.actionLabelShort}>Copy</span>
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -709,18 +718,26 @@ export function EditorApp() {
               }
               onClick={() => void handleDownload()}
             >
-              {downloading ? "Downloading…" : "Download zip"}
+              {downloading ? (
+                "Downloading…"
+              ) : (
+                <>
+                  <span className={styles.actionLabelFull}>Download zip</span>
+                  <span className={styles.actionLabelShort}>Zip</span>
+                </>
+              )}
             </button>
             <button
               type="button"
-              className={styles.ghostBtn}
+              className={`${styles.ghostBtn} ${styles.hideOnNarrow}`}
               onClick={() => setPasteOpen(true)}
             >
-              Import Lua
+              <span className={styles.actionLabelFull}>Import Lua</span>
+              <span className={styles.actionLabelShort}>Import</span>
             </button>
             <button
               type="button"
-              className={styles.ghostBtn}
+              className={`${styles.ghostBtn} ${styles.hideOnNarrow}`}
               onClick={() => {
                 if (dirty && !window.confirm("Discard unsaved changes?"))
                   return;

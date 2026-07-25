@@ -270,6 +270,9 @@ body {
     auto,
     24px 24px,
     24px 24px;
+  /* Notch / home-indicator safe areas for mobile shells */
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
 }
 
 button,

@@ -116,6 +116,18 @@
   min-width: 0;
 }
 
+@media (max-width: 1100px) {
+  .chrome {
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+}
+
 @media (max-width: 720px) {
   .chrome {
     flex-wrap: wrap;
@@ -125,6 +137,10 @@
 
   .brandBlock {
     flex: 1 1 auto;
+  }
+
+  .product {
+    font-size: 0.875rem;
   }
 
   .subtitle {
@@ -143,6 +159,37 @@
   }
 
   .actions {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    justify-content: flex-start;
+    padding-bottom: 0.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chrome {
+    padding: 0.55rem 0.7rem;
+    min-height: 0;
+  }
+
+  .logo {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .product {
+    font-size: 0.8125rem;
+  }
+
+  .navItem,
+  .navItemActive,
+  .navItemDisabled {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.75rem;
   }
 }

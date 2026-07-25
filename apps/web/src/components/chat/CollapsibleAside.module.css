@@ -30,6 +30,27 @@
   width: 2.75rem;
 }
 
+/* Tablet: keep a usable chat column between the asides */
+@media (max-width: 1200px) and (min-width: 961px) {
+  .left {
+    width: 12.5rem;
+  }
+
+  .right {
+    width: min(18rem, 30vw);
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 961px) {
+  .left {
+    width: 11.5rem;
+  }
+
+  .right {
+    width: min(16.5rem, 28vw);
+  }
+}
+
 .inner {
   flex: 1;
   min-height: 0;
@@ -185,7 +206,7 @@
   .wrap {
     width: 100% !important;
     height: auto;
-    max-height: min(55vh, 420px);
+    max-height: min(42vh, 320px);
     border-right: none !important;
     border-left: none !important;
     border-bottom: none;
@@ -218,6 +239,16 @@
 
   .inner {
     overflow: auto;
-    max-height: calc(min(55vh, 420px) - 0.25rem);
+    max-height: calc(min(42vh, 320px) - 0.25rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    max-height: min(36vh, 260px);
+  }
+
+  .inner {
+    max-height: calc(min(36vh, 260px) - 0.25rem);
   }
 }
