@@ -3,7 +3,7 @@ import {
   PREVIEW_ONLY_COLOR_HINTS,
   PREVIEW_ONLY_COLOR_NAMES,
   stripLuaComments,
-} from "./edgeTxLiteralColors.js";
+} from "./edgeTxLiteralColors.ts";
 
 const DRAW_LINE_PATTERN = /^(SOLID|DOTTED|\d+)$/;
 

@@ -4,8 +4,8 @@ import {
   commitVersionSnapshot,
   resolveDisplayArtifact,
   resolveLatestVersion,
-} from "../artifactVersionHistory.js";
-import type { WidgetSnapshot, WidgetVersionEntry } from "../chatTypes.js";
+} from "../artifactVersionHistory.ts";
+import type { WidgetSnapshot, WidgetVersionEntry } from "../chatTypes.ts";
 
 const luaV0 = 'local name = "Test"\n-- v0';
 const luaV1 = 'local name = "Test"\n-- v1';

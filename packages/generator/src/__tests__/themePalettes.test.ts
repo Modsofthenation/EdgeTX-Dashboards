@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { pickDashboardPaletteForPrompt } from "../themePalettes.js";
+import { pickDashboardPaletteForPrompt } from "../themePalettes.ts";
 
 describe("pickDashboardPaletteForPrompt", () => {
   it("selects light surface for white background requests", () => {

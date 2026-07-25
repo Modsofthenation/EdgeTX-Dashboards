@@ -9,10 +9,10 @@ import {
   DEFAULT_LAYOUT_SCENARIO,
   TORTURE_SCENARIOS,
 } from "@widget-gen/layout-verify";
-import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.js";
-import { validateLcdApiUsage } from "./lcdApiValidate.js";
-import type { LayoutArchetypeId } from "./layoutArchetype.js";
-import { getActiveLayoutArchetype } from "./variationContext.js";
+import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.ts";
+import { validateLcdApiUsage } from "./lcdApiValidate.ts";
+import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ValidateWidgetOptions {
   maxOptions?: number;

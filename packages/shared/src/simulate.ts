@@ -2,7 +2,7 @@ import tx15Profile from "./layouts/tx15.json" with { type: "json" };
 import color272Profile from "./layouts/color272.json" with { type: "json" };
 import taranis212Profile from "./layouts/taranis212.json" with { type: "json" };
 import compact128Profile from "./layouts/compact128.json" with { type: "json" };
-import type { LayoutProfileId } from "./radios.js";
+import type { LayoutProfileId } from "./radios.ts";
 
 export interface WidgetZoneRect {
   x: number;

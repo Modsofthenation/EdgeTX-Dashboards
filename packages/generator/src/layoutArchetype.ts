@@ -1,5 +1,5 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { hashString } from "./designVariation.js";
+import { hashString } from "./designVariation.ts";
 
 export type LayoutArchetypeId =
   | "card-grid"

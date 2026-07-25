@@ -1,5 +1,5 @@
 import { join, resolve, relative, sep } from "node:path";
-import { getRepoRoot } from "./knowledge.js";
+import { getRepoRoot } from "./knowledge.ts";
 
 /** EdgeTX widget names: max 10 chars, alphanumeric + underscore only. */
 export const WIDGET_NAME_PATTERN = /^[A-Za-z0-9_]{1,10}$/;

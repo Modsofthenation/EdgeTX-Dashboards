@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { hashString } from "./designVariation.js";
-import { getWidgetLuaPath, sanitizeWidgetName, WIDGET_NAME_PATTERN } from "./paths.js";
+import { hashString } from "./designVariation.ts";
+import { getWidgetLuaPath, sanitizeWidgetName, WIDGET_NAME_PATTERN } from "./paths.ts";
 
 const PROTO_PREFIX: Record<TelemetryProtocol, string> = {
   betaflight: "Bf",

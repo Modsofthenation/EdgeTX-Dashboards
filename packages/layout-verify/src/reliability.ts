@@ -1,4 +1,4 @@
-import type { DrawRecord } from "./types.js";
+import type { DrawRecord } from "./types.ts";
 
 /**
  * True when annulus layout constants appear fully resolved (not eval stubs).

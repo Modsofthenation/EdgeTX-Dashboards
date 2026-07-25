@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { patchEnvImports } from "../wasmImportPatch.js";
+import { patchEnvImports } from "../wasmImportPatch.ts";
 
 describe("patchEnvImports", () => {
   it("adds simu* stubs for missing env function imports", () => {

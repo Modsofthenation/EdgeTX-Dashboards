@@ -4,7 +4,7 @@ import {
   buildReferenceImagesSection,
   buildSdkUserMessage,
   validatePromptImages,
-} from "../promptImages.js";
+} from "../promptImages.ts";
 
 describe("promptImages", () => {
   it("buildSdkUserMessage passes images to SDK shape", () => {

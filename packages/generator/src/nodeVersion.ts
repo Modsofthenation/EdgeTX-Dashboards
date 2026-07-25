@@ -1,4 +1,4 @@
-import { hasBuiltinSqlite } from "./localAgentStore.js";
+import { hasBuiltinSqlite } from "./localAgentStore.ts";
 
 const RECOMMENDED_NODE = [22, 13, 0];
 

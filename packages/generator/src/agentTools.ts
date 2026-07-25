@@ -1,18 +1,18 @@
 import { readFileSync, existsSync } from "node:fs";
 import type { SDKCustomTool } from "@cursor/sdk";
 import type { TelemetryCategory, TelemetryProtocol } from "@widget-gen/shared";
-import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.js";
-import { validateWidgetForRelease } from "./validationPipeline.js";
-import { packageWidget, writeInstallMd } from "./package.js";
+import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.ts";
+import { validateWidgetForRelease } from "./validationPipeline.ts";
+import { packageWidget, writeInstallMd } from "./package.ts";
 import {
   getWidgetLuaPathForKey,
   sanitizeWidgetName,
   sanitizeWidgetInstanceId,
   isWidgetInstanceId,
-} from "./paths.js";
-import { resolveDisplayName } from "./widgetInstance.js";
-import type { LayoutArchetypeId } from "./layoutArchetype.js";
-import { getActiveLayoutArchetype } from "./variationContext.js";
+} from "./paths.ts";
+import { resolveDisplayName } from "./widgetInstance.ts";
+import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ToolSessionDefaults {
   protocol?: TelemetryProtocol;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { assertNodeVersion } from "./nodeVersion.js";
-import { WidgetGenerator, CursorAgentError } from "./agent.js";
+import { assertNodeVersion } from "./nodeVersion.ts";
+import { WidgetGenerator, CursorAgentError } from "./agent.ts";
 
 async function main(): Promise<void> {
   assertNodeVersion();

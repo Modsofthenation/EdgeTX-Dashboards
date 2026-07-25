@@ -1,14 +1,14 @@
 import type { GenerateRequest, TelemetryProtocol } from "@widget-gen/shared";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { getRepoRoot } from "./knowledge.js";
-import { DEFAULT_MODEL_ID, isAllowedModelId } from "./models.js";
-import { validatePromptImages } from "./promptImages.js";
+import { getRepoRoot } from "./knowledge.ts";
+import { DEFAULT_MODEL_ID, isAllowedModelId } from "./models.ts";
+import { validatePromptImages } from "./promptImages.ts";
 
 const PROTOCOLS: TelemetryProtocol[] = ["betaflight", "rotorflight", "generic-crsf"];
 
-export { DEFAULT_MODEL_ID as DEFAULT_CHAT_MODEL_ID } from "./models.js";
-export { FALLBACK_MODELS as ALLOWED_MODEL_IDS } from "./models.js";
+export { DEFAULT_MODEL_ID as DEFAULT_CHAT_MODEL_ID } from "./models.ts";
+export { FALLBACK_MODELS as ALLOWED_MODEL_IDS } from "./models.ts";
 
 export function isTelemetryProtocol(value: string): value is TelemetryProtocol {
   return PROTOCOLS.includes(value as TelemetryProtocol);

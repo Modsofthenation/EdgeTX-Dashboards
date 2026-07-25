@@ -5,8 +5,8 @@ import {
   deriveVariationSeed,
   hashString,
   shouldBumpRunIndexForRefine,
-} from "../designVariation.js";
-import { suggestLayoutArchetype } from "../layoutArchetype.js";
+} from "../designVariation.ts";
+import { suggestLayoutArchetype } from "../layoutArchetype.ts";
 
 describe("deriveVariationSeed", () => {
   it("returns different seeds for different run indexes", () => {

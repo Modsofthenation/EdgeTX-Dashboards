@@ -13,7 +13,7 @@ import {
   ensureDevKitAnnotations,
   getSimulateLayoutProfile,
 } from "@widget-gen/shared";
-import { getRepoRoot } from "./knowledge.js";
+import { getRepoRoot } from "./knowledge.ts";
 
 export type {
   SimulateLayoutProfile,

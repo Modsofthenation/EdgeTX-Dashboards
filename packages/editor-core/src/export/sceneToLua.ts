@@ -4,8 +4,8 @@ import type {
   TextBinding,
   TextElement,
   WidgetScene,
-} from "../types.js";
-import { hexToEdgeColor } from "../colors.js";
+} from "../types.ts";
+import { hexToEdgeColor } from "../colors.ts";
 
 function fontFlagsForElement(el: TextElement): string {
   if (el.fontFlags?.length) return el.fontFlags.join(" + ");

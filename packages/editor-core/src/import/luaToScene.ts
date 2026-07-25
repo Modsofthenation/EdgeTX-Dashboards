@@ -5,16 +5,16 @@ import {
   BASE_MOCK,
 } from "@widget-gen/layout-verify";
 import { resolvePreviewDimensions } from "@widget-gen/shared";
-import { resetElementIdCounter } from "../ids.js";
-import type { LuaToSceneResult, WidgetScene } from "../types.js";
+import { resetElementIdCounter } from "../ids.ts";
+import type { LuaToSceneResult, WidgetScene } from "../types.ts";
 import {
   buildLcdCallGates,
   parseSimulateFromSource,
   parseTelemetryBindings,
   parseWidgetName,
   parseWidgetOptions,
-} from "./parseMetadata.js";
-import { recordsToElements } from "./recordsToElements.js";
+} from "./parseMetadata.ts";
+import { recordsToElements } from "./recordsToElements.ts";
 
 /** Import an EdgeTX widget Lua source into an editable scene. */
 export function luaToScene(source: string): LuaToSceneResult {

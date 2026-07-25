@@ -3,10 +3,10 @@ import {
   buildTelemetryFrames,
   injectTelemetryFrames,
   BASE_MOCK_TELEMETRY,
-} from "./telemetryBridge.js";
-import { lcdFrameByteSize } from "./framebuffer.js";
-import { deploySimModel, SIM_MODEL1_PATH, type SimWidgetLayoutPlan } from "./simModel.js";
-import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.js";
+} from "./telemetryBridge.ts";
+import { lcdFrameByteSize } from "./framebuffer.ts";
+import { deploySimModel, SIM_MODEL1_PATH, type SimWidgetLayoutPlan } from "./simModel.ts";
+import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.ts";
 import type {
   ExtendedSimulatorExports,
   MockTelemetryValues,
@@ -15,7 +15,7 @@ import type {
   SimInputMessage,
   SimKeyboardMode,
   WidgetSimulateZone,
-} from "./types.js";
+} from "./types.ts";
 
 export type SimRuntimeCallbacks = {
   onState?: (state: RadioSimState) => void;

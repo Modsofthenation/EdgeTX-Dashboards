@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { SqliteChatRepository } from "../sqliteChatRepository.js";
-import type { ChatMessage } from "../../chatTypes.js";
+import { SqliteChatRepository } from "../sqliteChatRepository.ts";
+import type { ChatMessage } from "../../chatTypes.ts";
 
 describe("SqliteChatRepository", () => {
   let repo: SqliteChatRepository;

@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { suggestLayoutArchetype } from "../layoutArchetype.js";
-import { detectVisualStyle } from "../visualStyle.js";
+import { suggestLayoutArchetype } from "../layoutArchetype.ts";
+import { detectVisualStyle } from "../visualStyle.ts";
 
 describe("suggestLayoutArchetype", () => {
   it("routes logger prompts to flight-logger-suite", () => {

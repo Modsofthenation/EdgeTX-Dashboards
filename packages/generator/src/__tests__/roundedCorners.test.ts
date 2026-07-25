@@ -1,8 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { wantsRoundedCorners, buildRoundedCornersDirective } from "../roundedCorners.js";
-import { buildCreativeBrief } from "../designVariation.js";
-import { suggestLayoutArchetype } from "../layoutArchetype.js";
+import { wantsRoundedCorners, buildRoundedCornersDirective } from "../roundedCorners.ts";
+import { buildCreativeBrief } from "../designVariation.ts";
+import { suggestLayoutArchetype } from "../layoutArchetype.ts";
 
 describe("wantsRoundedCorners", () => {
   it("detects rounded corner requests", () => {

@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { validateWidgetSource } from "@widget-gen/generator";
-import { luaToScene, sceneToLua } from "../index.js";
-import { snapToGrid, hitTestElements, createDefaultElement } from "../index.js";
-import { newElementId } from "../ids.js";
+import { luaToScene, sceneToLua } from "../index.ts";
+import { snapToGrid, hitTestElements, createDefaultElement } from "../index.ts";
+import { newElementId } from "../ids.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "../../../..");

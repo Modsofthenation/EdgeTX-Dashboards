@@ -1,10 +1,10 @@
 import { bboxForRecord, type DrawRecord } from "@widget-gen/layout-verify";
-import type { DocumentRecord, ZoneOffset } from "./luaDocument.js";
+import type { DocumentRecord, ZoneOffset } from "./luaDocument.ts";
 import {
   snapToGrid,
   type BoundingBox,
   type ResizeHandle,
-} from "./geometry.js";
+} from "./geometry.ts";
 
 /** Shift LCD-space record coords into zone-relative space for hit-testing and overlay. */
 export function recordInZone(record: DrawRecord, zone: ZoneOffset): DrawRecord {

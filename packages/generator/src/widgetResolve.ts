@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { getWidgetLuaPath, getWidgetLuaPathForKey, WIDGET_NAME_PATTERN, isWidgetInstanceId } from "./paths.js";
-import { getGeneratedRoot } from "./paths.js";
+import { getWidgetLuaPath, getWidgetLuaPathForKey, WIDGET_NAME_PATTERN, isWidgetInstanceId } from "./paths.ts";
+import { getGeneratedRoot } from "./paths.ts";
 
 /** Prefer session-assigned widget workspace over the most recently modified folder on disk. */
 export function pickActiveWidgetName(options: {

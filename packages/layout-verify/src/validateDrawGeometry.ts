@@ -1,9 +1,9 @@
 import type { ValidationIssue } from "@widget-gen/shared";
-import { findOverlaps, formatOverlapHit } from "./overlap.js";
-import { interpretWidgetLayout } from "./interpreter/luaDrawInterpreter.js";
-import { DEFAULT_LAYOUT_SCENARIO } from "./scenarios/tortureGallery.js";
-import { isInterpretationReliable } from "./reliability.js";
-import type { LayoutScenario } from "./types.js";
+import { findOverlaps, formatOverlapHit } from "./overlap.ts";
+import { interpretWidgetLayout } from "./interpreter/luaDrawInterpreter.ts";
+import { DEFAULT_LAYOUT_SCENARIO } from "./scenarios/tortureGallery.ts";
+import { isInterpretationReliable } from "./reliability.ts";
+import type { LayoutScenario } from "./types.ts";
 
 export interface ValidateDrawGeometryOptions {
   scenario?: LayoutScenario;

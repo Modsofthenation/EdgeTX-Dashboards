@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { findOverlaps } from "../overlap.js";
-import type { DrawRecord } from "../types.js";
+import { findOverlaps } from "../overlap.ts";
+import type { DrawRecord } from "../types.ts";
 
 describe("findOverlaps", () => {
   it("reports annulus vs foreign text overlap above gauge", () => {

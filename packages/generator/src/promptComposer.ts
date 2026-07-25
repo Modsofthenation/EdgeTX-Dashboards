@@ -18,22 +18,22 @@ import {
   loadTelemetryCatalog,
   loadRadioProfile,
   readRoundedCornersGuide,
-} from "./knowledge.js";
-import { wantsRoundedCorners } from "./roundedCorners.js";
+} from "./knowledge.ts";
+import { wantsRoundedCorners } from "./roundedCorners.ts";
 import {
   suggestLayoutArchetype,
   EXAMPLE_BY_ARCHETYPE,
   shouldIncludeCardStarter,
   type LayoutArchetypeId,
-} from "./layoutArchetype.js";
-import { detectVisualStyle } from "./visualStyle.js";
+} from "./layoutArchetype.ts";
+import { detectVisualStyle } from "./visualStyle.ts";
 import {
   buildCreativeBrief,
   deriveVariationSeed,
-} from "./designVariation.js";
-import { setActiveLayoutArchetype } from "./variationContext.js";
-import { buildReferenceImagesSection } from "./promptImages.js";
-import type { RefineHistorySections } from "./refineHistory.js";
+} from "./designVariation.ts";
+import { setActiveLayoutArchetype } from "./variationContext.ts";
+import { buildReferenceImagesSection } from "./promptImages.ts";
+import type { RefineHistorySections } from "./refineHistory.ts";
 
 export interface PromptBuildContext {
   sessionId: string;

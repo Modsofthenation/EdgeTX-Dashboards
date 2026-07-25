@@ -1,5 +1,5 @@
-import { BASE_MOCK } from "../mockTelemetry.js";
-import type { LayoutScenario } from "../types.js";
+import { BASE_MOCK } from "../mockTelemetry.ts";
+import type { LayoutScenario } from "../types.ts";
 
 /** Mock telemetry + widget state tuned to match typical WASM sim preview output. */
 export const EDITOR_PREVIEW_SCENARIO: LayoutScenario = {

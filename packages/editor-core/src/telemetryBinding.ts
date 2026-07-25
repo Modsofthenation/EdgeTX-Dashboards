@@ -1,5 +1,5 @@
-import type { TextFormat } from "./types.js";
-import { getSourceLine, replaceSourceLine, type DocumentRecord } from "./luaDocument.js";
+import type { TextFormat } from "./types.ts";
+import { getSourceLine, replaceSourceLine, type DocumentRecord } from "./luaDocument.ts";
 
 const SENSOR_TO_KEY: Record<string, string> = {
   RQLY: "rqly",

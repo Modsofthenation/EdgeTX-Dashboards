@@ -1,25 +1,25 @@
 import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
 import { randomUUID } from "node:crypto";
 import type { GenerateRequest, GenerateSession, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { buildGenerationPrompt, buildRefinePrompt, getArchetypeForSession } from "./promptComposer.js";
-import { buildSdkUserMessage } from "./promptImages.js";
-import { shouldBumpRunIndexForRefine, deriveVariationSeed } from "./designVariation.js";
-import { allocateWidgetName } from "./widgetNaming.js";
-import { createCustomTools } from "./agentTools.js";
-import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge.js";
-import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.js";
+import { buildGenerationPrompt, buildRefinePrompt, getArchetypeForSession } from "./promptComposer.ts";
+import { buildSdkUserMessage } from "./promptImages.ts";
+import { shouldBumpRunIndexForRefine, deriveVariationSeed } from "./designVariation.ts";
+import { allocateWidgetName } from "./widgetNaming.ts";
+import { createCustomTools } from "./agentTools.ts";
+import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge.ts";
+import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.ts";
 import { existsSync } from "node:fs";
-import { getWidgetLuaPathForKey } from "./paths.js";
-import { ensureWidgetInstanceDir, archiveWidgetVersion } from "./widgetInstance.js";
-import { resolveLocalAgentStore } from "./localAgentStore.js";
+import { getWidgetLuaPathForKey } from "./paths.ts";
+import { ensureWidgetInstanceDir, archiveWidgetVersion } from "./widgetInstance.ts";
+import { resolveLocalAgentStore } from "./localAgentStore.ts";
 import {
   finalizeWidgetRun,
   streamAgentRun,
   type RunCallbacks,
-} from "./orchestrator.js";
-import type { ToolSessionDefaults } from "./agentTools.js";
-import type { RefineHistoryInput } from "./refineHistory.js";
-import { buildRefineHistorySections } from "./refineHistory.js";
+} from "./orchestrator.ts";
+import type { ToolSessionDefaults } from "./agentTools.ts";
+import type { RefineHistoryInput } from "./refineHistory.ts";
+import { buildRefineHistorySections } from "./refineHistory.ts";
 
 export type { RunCallbacks };
 

@@ -1,7 +1,7 @@
 import type { TelemetryProtocol, ValidationResult } from "@widget-gen/shared";
-import { buildReleaseValidationContext } from "./validationContext.js";
-import { defaultWorkspace } from "./workspace.js";
-import { validateWidgetLua } from "./validate.js";
+import { buildReleaseValidationContext } from "./validationContext.ts";
+import { defaultWorkspace } from "./workspace.ts";
+import { validateWidgetLua } from "./validate.ts";
 
 export class WidgetValidationError extends Error {
   readonly result: ValidationResult;
@@ -23,7 +23,7 @@ export interface ValidateForReleaseOptions {
   /** When true (default), inject ---@type / ---@simulate via workspace before validating. */
   ensureAnnotations?: boolean;
   workspace?: typeof defaultWorkspace;
-  layoutArchetype?: import("./layoutArchetype.js").LayoutArchetypeId;
+  layoutArchetype?: import("./layoutArchetype.ts").LayoutArchetypeId;
 }
 
 /** Pure validation on source string (no I/O). */

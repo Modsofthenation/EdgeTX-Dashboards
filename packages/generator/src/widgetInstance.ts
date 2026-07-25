@@ -5,7 +5,7 @@ import {
   getWidgetLuaPathForKey,
   isWidgetInstanceId,
   sanitizeWidgetInstanceId,
-} from "./paths.js";
+} from "./paths.ts";
 
 export const WIDGET_META_FILENAME = ".widget-meta.json";
 

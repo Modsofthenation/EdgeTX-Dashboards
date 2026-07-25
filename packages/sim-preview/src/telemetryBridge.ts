@@ -1,4 +1,4 @@
-import type { MockTelemetryValues } from "./types.js";
+import type { MockTelemetryValues } from "./types.ts";
 
 // CRSF frame builders — ported from EdgeTX Dev Kit ExtensionTelemetry.tsx
 

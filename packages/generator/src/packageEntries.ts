@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { getGeneratedDirForKey, sanitizeWidgetName, isWidgetInstanceId } from "./paths.js";
-import { resolveDisplayName } from "./widgetInstance.js";
+import { getGeneratedDirForKey, sanitizeWidgetName, isWidgetInstanceId } from "./paths.ts";
+import { resolveDisplayName } from "./widgetInstance.ts";
 
 export interface ZipEntry {
   /** Absolute path on disk */

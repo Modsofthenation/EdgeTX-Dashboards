@@ -1,10 +1,10 @@
 import type { SDKMessage, SDKToolUseMessage } from "@cursor/sdk";
 import type { StreamEvent, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { packageWidget } from "./package.js";
-import { describeToolUse } from "./toolDisplay.js";
-import { validateWidgetForRelease } from "./validationPipeline.js";
-import { isWidgetInstanceId } from "./paths.js";
-import { archiveWidgetVersion, readWidgetInstanceMeta } from "./widgetInstance.js";
+import { packageWidget } from "./package.ts";
+import { describeToolUse } from "./toolDisplay.ts";
+import { validateWidgetForRelease } from "./validationPipeline.ts";
+import { isWidgetInstanceId } from "./paths.ts";
+import { archiveWidgetVersion, readWidgetInstanceMeta } from "./widgetInstance.ts";
 
 export interface WidgetWorkspaceInfo {
   instanceId: string;

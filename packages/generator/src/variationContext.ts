@@ -1,4 +1,4 @@
-import type { LayoutArchetypeId } from "./layoutArchetype.js";
+import type { LayoutArchetypeId } from "./layoutArchetype.ts";
 
 let activeLayoutArchetype: LayoutArchetypeId | undefined;
 

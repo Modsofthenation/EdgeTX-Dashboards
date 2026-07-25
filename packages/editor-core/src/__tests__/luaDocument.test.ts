@@ -11,7 +11,7 @@ import {
   removeRecordLine,
   insertDrawLine,
   patchWidgetName,
-} from "../luaDocument.js";
+} from "../luaDocument.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "../../../..");

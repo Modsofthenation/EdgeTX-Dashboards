@@ -5,7 +5,7 @@ import {
   buildScreenDataYaml,
   SIM_CUSTOM_SCREEN_VIEW,
   SIM_TELEMETRY_SENSOR_LABELS,
-} from "../simModel.js";
+} from "../simModel.ts";
 
 describe("simModel", () => {
   it("buildScreenDataYaml assigns widget to layout zone", () => {

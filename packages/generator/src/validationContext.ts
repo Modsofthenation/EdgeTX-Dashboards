@@ -1,8 +1,8 @@
 import type { SimulateLayoutProfile, TelemetryProtocol } from "@widget-gen/shared";
-import { loadRadioProfile, loadTelemetryCatalog, loadSimulateLayoutProfile } from "./knowledge.js";
-import type { ValidateWidgetOptions } from "./validate.js";
-import type { LayoutArchetypeId } from "./layoutArchetype.js";
-import { getActiveLayoutArchetype } from "./variationContext.js";
+import { loadRadioProfile, loadTelemetryCatalog, loadSimulateLayoutProfile } from "./knowledge.ts";
+import type { ValidateWidgetOptions } from "./validate.ts";
+import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ReleaseValidationContext {
   radioId: string;

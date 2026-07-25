@@ -1,6 +1,6 @@
 import { bboxForRecord } from "@widget-gen/layout-verify";
 import type { DrawRecord } from "@widget-gen/layout-verify";
-import type { EditorElement } from "./types.js";
+import type { EditorElement } from "./types.ts";
 
 export const SNAP_GRID = 12;
 

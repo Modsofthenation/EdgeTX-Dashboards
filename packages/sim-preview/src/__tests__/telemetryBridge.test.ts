@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildTelemetryFrames, BASE_MOCK_TELEMETRY } from "../telemetryBridge.js";
+import { buildTelemetryFrames, BASE_MOCK_TELEMETRY } from "../telemetryBridge.ts";
 
 describe("telemetryBridge", () => {
   it("builds CRSF frames for BASE_MOCK", () => {

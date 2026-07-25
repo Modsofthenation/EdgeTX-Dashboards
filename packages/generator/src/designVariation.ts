@@ -1,8 +1,8 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { LayoutArchetypeHint, LayoutArchetypeId } from "./layoutArchetype.js";
-import { pickDashboardPaletteForPrompt, DASHBOARD_PALETTES, type DashboardPalette, buildExplicitColorDirective } from "./themePalettes.js";
-import { wantsRoundedCorners, buildRoundedCornersDirective } from "./roundedCorners.js";
-import { readRoundedCornersGuide } from "./knowledge.js";
+import type { LayoutArchetypeHint, LayoutArchetypeId } from "./layoutArchetype.ts";
+import { pickDashboardPaletteForPrompt, DASHBOARD_PALETTES, type DashboardPalette, buildExplicitColorDirective } from "./themePalettes.ts";
+import { wantsRoundedCorners, buildRoundedCornersDirective } from "./roundedCorners.ts";
+import { readRoundedCornersGuide } from "./knowledge.ts";
 
 export interface ColorPalette {
   id: string;

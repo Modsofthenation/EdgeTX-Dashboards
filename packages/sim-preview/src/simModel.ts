@@ -3,7 +3,7 @@
  * telemetry sensor labels (matches widget getSourceIndex() names).
  */
 
-import { SIM_MODEL_BITMAP } from "./virtualSd.js";
+import { SIM_MODEL_BITMAP } from "./virtualSd.ts";
 
 export const SIM_MODEL1_PATH = "/MODELS/model1.yml";
 

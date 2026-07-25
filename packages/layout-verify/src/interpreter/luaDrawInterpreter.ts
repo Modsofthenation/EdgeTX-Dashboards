@@ -1,6 +1,6 @@
 import { resolvePreviewDimensions, extractRefreshBody, findRefreshBodyStartLine } from "@widget-gen/shared";
-import { BASE_MOCK, getMockForSensor, type MockTelemetry } from "../mockTelemetry.js";
-import type { ArgSpan, DrawRecord, DrawSourceRef, InterpretResult, LayoutScenario } from "../types.js";
+import { BASE_MOCK, getMockForSensor, type MockTelemetry } from "../mockTelemetry.ts";
+import type { ArgSpan, DrawRecord, DrawSourceRef, InterpretResult, LayoutScenario } from "../types.ts";
 
 export type EdgeColor =
   | "WHITE"

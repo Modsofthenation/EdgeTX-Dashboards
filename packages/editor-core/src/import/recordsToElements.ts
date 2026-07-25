@@ -1,7 +1,7 @@
 import type { DrawRecord } from "@widget-gen/layout-verify";
-import { hexToEdgeColor } from "../colors.js";
-import { newElementId } from "../ids.js";
-import type { EditorElement, TextBinding, TextFormat } from "../types.js";
+import { hexToEdgeColor } from "../colors.ts";
+import { newElementId } from "../ids.ts";
+import type { EditorElement, TextBinding, TextFormat } from "../types.ts";
 
 function inferTextBinding(text: string, telemetryKeys: Set<string>): TextBinding | undefined {
   const percentMatch = text.match(/^(\d+)%$/);

@@ -13,9 +13,9 @@ import {
 import {
   validateDevKitAnnotations,
   validateStubApiCalls,
-} from "../devKit.js";
-import { validateWidgetLua } from "../validate.js";
-import { getRepoRoot, loadSimulateLayoutProfile } from "../knowledge.js";
+} from "../devKit.ts";
+import { validateWidgetLua } from "../validate.ts";
+import { getRepoRoot, loadSimulateLayoutProfile } from "../knowledge.ts";
 
 const examplePath = join(getRepoRoot(), "examples", "tx15-minimal-dashboard.lua");
 const exampleSource = readFileSync(examplePath, "utf-8");

@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { describeToolUse } from "../toolDisplay.js";
-import { extractToolEventsFromMessage } from "../orchestrator.js";
+import { describeToolUse } from "../toolDisplay.ts";
+import { extractToolEventsFromMessage } from "../orchestrator.ts";
 
 describe("describeToolUse", () => {
   it("formats Read with shortened path", () => {

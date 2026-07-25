@@ -1,9 +1,9 @@
-export * from "./types.js";
-export * from "./geometry.js";
-export * from "./recordGeometry.js";
-export * from "./colors.js";
-export * from "./ids.js";
-export * from "./luaDocument.js";
-export * from "./telemetryBinding.js";
-export { sceneToLua, createEmptyScene, createDefaultElement } from "./export/sceneToLua.js";
-export { luaToScene } from "./import/luaToScene.js";
+export * from "./types.ts";
+export * from "./geometry.ts";
+export * from "./recordGeometry.ts";
+export * from "./colors.ts";
+export * from "./ids.ts";
+export * from "./luaDocument.ts";
+export * from "./telemetryBinding.ts";
+export { sceneToLua, createEmptyScene, createDefaultElement } from "./export/sceneToLua.ts";
+export { luaToScene } from "./import/luaToScene.ts";

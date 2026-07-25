@@ -1,5 +1,5 @@
-import { BASE_MOCK, type MockTelemetry } from "../mockTelemetry.js";
-import type { LayoutScenario } from "../types.js";
+import { BASE_MOCK, type MockTelemetry } from "../mockTelemetry.ts";
+import type { LayoutScenario } from "../types.ts";
 
 const BOOL_OPTIONS = ["ShowTimer", "ShowAtt", "ShowCapa", "ShowLink", "ShowGPS"] as const;
 

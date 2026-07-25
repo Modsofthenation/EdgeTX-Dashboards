@@ -2,7 +2,7 @@ import {
   parseSimulateAnnotation,
   TX15_SIMULATE_PROFILE,
 } from "@widget-gen/shared";
-import type { TelemetryBinding, WidgetOption } from "../types.js";
+import type { TelemetryBinding, WidgetOption } from "../types.ts";
 
 const NAME_PATTERN = /local\s+name\s*=\s*"([^"]+)"/;
 const OPTION_ROW = /\{\s*"([^"]+)"\s*,\s*BOOL\s*,\s*([01])\s*\}/g;

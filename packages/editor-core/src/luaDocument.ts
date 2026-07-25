@@ -11,7 +11,7 @@ import {
   findRefreshBodyEndIndex,
   findRefreshBodyStartLine,
 } from "@widget-gen/shared";
-import { STARTER_WIDGET_SOURCE } from "./starterSource.js";
+import { STARTER_WIDGET_SOURCE } from "./starterSource.ts";
 
 export interface DocumentRecord extends DrawRecord {
   id: string;

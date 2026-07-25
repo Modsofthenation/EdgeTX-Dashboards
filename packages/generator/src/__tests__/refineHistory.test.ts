@@ -4,7 +4,7 @@ import {
   buildArtifactContext,
   buildConversationSummary,
   buildRefineHistorySections,
-} from "../refineHistory.js";
+} from "../refineHistory.ts";
 
 const SAMPLE_LUA_V0 = `local name = "TestDash"
 local function create() return {} end

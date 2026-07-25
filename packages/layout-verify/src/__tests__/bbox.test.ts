@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { bboxForRecord, boxesOverlap } from "../bbox.js";
+import { bboxForRecord, boxesOverlap } from "../bbox.ts";
 
 describe("bboxForRecord", () => {
   it("computes annulus outer circle bbox from rIn/rOut", () => {

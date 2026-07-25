@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { consumeGenerationStream } from "../generationStreamClient.js";
+import { consumeGenerationStream } from "../generationStreamClient.ts";
 
 function sseResponse(chunks: string[]): Response {
   const encoder = new TextEncoder();

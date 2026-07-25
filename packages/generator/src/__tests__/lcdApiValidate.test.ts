@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateBitmapGetSizeCalls, validateBarsBlockHeightSync, validateColorConstants, validateDrawAnnulusRadiusOrder, validateGaugeSatelliteBudget, validateGaugeStripLayoutPlanning, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateMainHLiteralClamp, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.js";
+import { validateBitmapGetSizeCalls, validateBarsBlockHeightSync, validateColorConstants, validateDrawAnnulusRadiusOrder, validateGaugeSatelliteBudget, validateGaugeStripLayoutPlanning, validateGlobalGetSizeCalls, validateLcdDrawLineCalls, validateMainHLiteralClamp, validateModelBitmapPath, validateRoundedPanelArcCalls, validateUnitSuffixPositioning } from "../lcdApiValidate.ts";
 
 const REFRESH_PREFIX = `local function refresh(widget)
   local cr = 8

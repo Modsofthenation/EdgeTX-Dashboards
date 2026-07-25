@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { GenerateSession, TelemetryProtocol } from "@widget-gen/shared";
-import { WidgetGenerator } from "./agent.js";
-import { deriveVariationSeed } from "./designVariation.js";
+import { WidgetGenerator } from "./agent.ts";
+import { deriveVariationSeed } from "./designVariation.ts";
 
 const SESSION_TTL_MS = 60 * 60 * 1000;
 export const MAX_ACTIVE_SESSIONS = 10;

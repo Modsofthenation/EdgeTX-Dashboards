@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { findOverlaps } from "../overlap.js";
-import { interpretWidgetLayout } from "../interpreter/luaDrawInterpreter.js";
-import { isInterpretationReliable } from "../reliability.js";
-import { TORTURE_SCENARIOS } from "../scenarios/tortureGallery.js";
+import { findOverlaps } from "../overlap.ts";
+import { interpretWidgetLayout } from "../interpreter/luaDrawInterpreter.ts";
+import { isInterpretationReliable } from "../reliability.ts";
+import { TORTURE_SCENARIOS } from "../scenarios/tortureGallery.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..", "..", "..");

@@ -1,4 +1,4 @@
-import type { BoundingBox, DrawRecord } from "./types.js";
+import type { BoundingBox, DrawRecord } from "./types.ts";
 
 /** TX15 character widths (px/char) — knowledge/design/tx15-text-layout.md */
 const CHAR_W: Record<number, number> = {

@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { validateWidgetLua } from "../validate.js";
-import { setActiveLayoutArchetype } from "../variationContext.js";
+import { validateWidgetLua } from "../validate.ts";
+import { setActiveLayoutArchetype } from "../variationContext.ts";
 
 const HERO_MINIMAL_SOURCE = [
   "---@type WidgetScript",

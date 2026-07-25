@@ -2,15 +2,15 @@ import { createWriteStream, existsSync, mkdirSync, writeFileSync } from "node:fs
 import { join } from "node:path";
 import archiver from "archiver";
 import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
-import { getRepoRoot, loadTelemetryCatalog, readTemplate, loadRadioProfile } from "./knowledge.js";
-import { detectCompanions, listWidgetPackageEntries } from "./packageEntries.js";
-import { getGeneratedDirForKey, getWidgetLuaPathForKey, sanitizeWidgetName, isWidgetInstanceId, sanitizeWidgetInstanceId } from "./paths.js";
-import { resolveDisplayName } from "./widgetInstance.js";
-import { readWidgetVersionSource, getWidgetVersionLuaPath } from "./widgetInstance.js";
-import { assertValidForRelease } from "./validationPipeline.js";
-import { defaultWorkspace } from "./workspace.js";
+import { getRepoRoot, loadTelemetryCatalog, readTemplate, loadRadioProfile } from "./knowledge.ts";
+import { detectCompanions, listWidgetPackageEntries } from "./packageEntries.ts";
+import { getGeneratedDirForKey, getWidgetLuaPathForKey, sanitizeWidgetName, isWidgetInstanceId, sanitizeWidgetInstanceId } from "./paths.ts";
+import { resolveDisplayName } from "./widgetInstance.ts";
+import { readWidgetVersionSource, getWidgetVersionLuaPath } from "./widgetInstance.ts";
+import { assertValidForRelease } from "./validationPipeline.ts";
+import { defaultWorkspace } from "./workspace.ts";
 
-export { getGeneratedDir, getWidgetLuaPath, sanitizeWidgetName } from "./paths.js";
+export { getGeneratedDir, getWidgetLuaPath, sanitizeWidgetName } from "./paths.ts";
 
 export function renderInstallMd(
   widgetName: string,

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { extractRefreshBody, findRefreshBodyEndIndex } from "../drawSurface.js";
+import { extractRefreshBody, findRefreshBodyEndIndex } from "../drawSurface.ts";
 
 describe("extractRefreshBody", () => {
   it("extracts full body with nested if/end blocks", () => {

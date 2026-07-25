@@ -1,7 +1,7 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import { rgb565ToImageData } from "@widget-gen/sim-preview";
-import { paintSimFrame } from "../radioSim/paintSimFrame.js";
+import { paintSimFrame } from "../radioSim/paintSimFrame.ts";
 
 before(() => {
   if (typeof globalThis.ImageData === "undefined") {

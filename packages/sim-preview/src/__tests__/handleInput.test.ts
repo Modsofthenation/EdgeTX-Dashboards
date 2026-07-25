@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { SimRuntime } from "../SimRuntime.js";
+import { SimRuntime } from "../SimRuntime.ts";
 import type { WasmRunner } from "@edgetx/simulator-ui";
 
 function mockRuntime(): {

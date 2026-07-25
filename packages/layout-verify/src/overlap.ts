@@ -1,5 +1,5 @@
-import { bboxCenter, bboxContains, bboxForRecord, boxesOverlap, intersectBoxes } from "./bbox.js";
-import type { BoundingBox, DrawRecord, OverlapHit } from "./types.js";
+import { bboxCenter, bboxContains, bboxForRecord, boxesOverlap, intersectBoxes } from "./bbox.ts";
+import type { BoundingBox, DrawRecord, OverlapHit } from "./types.ts";
 
 export interface OverlapPolicy {
   lcdW?: number;

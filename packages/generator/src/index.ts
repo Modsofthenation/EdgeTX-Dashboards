@@ -1,21 +1,21 @@
-export { WidgetGenerator, CursorAgentError, type RunCallbacks } from "./agent.js";
-export { validateWidgetLua, extractUsedTelemetrySensors } from "./validate.js";
+export { WidgetGenerator, CursorAgentError, type RunCallbacks } from "./agent.ts";
+export { validateWidgetLua, extractUsedTelemetrySensors } from "./validate.ts";
 export {
   validateWidgetForRelease,
   validateWidgetSource,
   assertValidForRelease,
   WidgetValidationError,
-} from "./validationPipeline.js";
-export { WidgetWorkspace, defaultWorkspace } from "./workspace.js";
-export { buildReleaseValidationContext } from "./validationContext.js";
-export { streamAgentRun, finalizeWidgetRun, type WidgetWorkspaceInfo } from "./orchestrator.js";
+} from "./validationPipeline.ts";
+export { WidgetWorkspace, defaultWorkspace } from "./workspace.ts";
+export { buildReleaseValidationContext } from "./validationContext.ts";
+export { streamAgentRun, finalizeWidgetRun, type WidgetWorkspaceInfo } from "./orchestrator.ts";
 export {
   validateDevKitAnnotations,
   validateStubApiCalls,
   parseSimulateAnnotation,
   resolvePreviewDimensions,
   ensureDevKitAnnotations,
-} from "./devKit.js";
+} from "./devKit.ts";
 export {
   packageWidget,
   getWidgetLuaPath,
@@ -23,14 +23,14 @@ export {
   sanitizeWidgetName,
   renderInstallMd,
   writeInstallMd,
-} from "./package.js";
+} from "./package.ts";
 export {
   getWidgetLuaPathForKey,
   getGeneratedDirForKey,
   isWidgetInstanceId,
   sanitizeWidgetInstanceId,
   WIDGET_INSTANCE_ID_PATTERN,
-} from "./paths.js";
+} from "./paths.ts";
 export {
   readWidgetInstanceMeta,
   resolveDisplayName,
@@ -38,9 +38,9 @@ export {
   archiveWidgetVersion,
   readWidgetVersionSource,
   type WidgetInstanceMeta,
-} from "./widgetInstance.js";
-export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.js";
-export { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.js";
+} from "./widgetInstance.ts";
+export { loadRadioProfile, loadTelemetryCatalog, getRepoRoot, listRadioProfiles, getLayoutProfileId, getLayoutProfileIdForRadio, loadSimulateLayoutProfile } from "./knowledge.ts";
+export { buildGenerationPrompt, buildRefinePrompt } from "./promptComposer.ts";
 export {
   buildRefineHistorySections,
   buildConversationSummary,
@@ -49,9 +49,9 @@ export {
   type RefineHistorySections,
   type RefineChatMessage,
   type RefineArtifactSnapshot,
-} from "./refineHistory.js";
-export { createCustomTools } from "./agentTools.js";
-export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS, type RestoreSessionInput } from "./session.js";
+} from "./refineHistory.ts";
+export { createCustomTools } from "./agentTools.ts";
+export { SessionStore, getSessionStore, MAX_ACTIVE_SESSIONS, type RestoreSessionInput } from "./session.ts";
 export {
   listAvailableModels,
   listAvailableModelIds,
@@ -61,15 +61,15 @@ export {
   FALLBACK_MODELS,
   DEFAULT_MODEL_ID,
   type ModelCatalogEntry,
-} from "./models.js";
-export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.js";
+} from "./models.ts";
+export { validateGenerateRequest, isTelemetryProtocol } from "./requestValidate.ts";
 export {
   validatePromptImages,
   buildSdkUserMessage,
   MAX_PROMPT_IMAGES,
   MAX_PROMPT_IMAGE_BYTES,
-} from "./promptImages.js";
-export { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.js";
-export { allocateWidgetName, suggestWidgetName, widgetFolderExists } from "./widgetNaming.js";
-export { WIDGET_NAME_PATTERN } from "./paths.js";
-export { assertNodeVersion } from "./nodeVersion.js";
+} from "./promptImages.ts";
+export { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.ts";
+export { allocateWidgetName, suggestWidgetName, widgetFolderExists } from "./widgetNaming.ts";
+export { WIDGET_NAME_PATTERN } from "./paths.ts";
+export { assertNodeVersion } from "./nodeVersion.ts";

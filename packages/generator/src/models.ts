@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { Cursor } from "@cursor/sdk";
-import { getRepoRoot } from "./knowledge.js";
+import { getRepoRoot } from "./knowledge.ts";
 
 export interface ModelCatalogEntry {
   id: string;

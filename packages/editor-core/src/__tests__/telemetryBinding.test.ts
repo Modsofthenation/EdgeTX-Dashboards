@@ -4,7 +4,7 @@ import {
   bindTextRecordToSensor,
   interpretDocument,
   createStarterSource,
-} from "../index.js";
+} from "../index.ts";
 
 describe("bindTextRecordToSensor", () => {
   it("rewrites drawText to telemetry expression and caches sensor", () => {

@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { parseLuaToDrawCommands, getLastPreviewParseMeta } from "../luaPreviewEngine.js";
-import { BASE_MOCK } from "../mockTelemetry.js";
-import { BFMODEL_DT8_SOURCE } from "./fixtures/bfmodel-dt8.js";
+import { parseLuaToDrawCommands, getLastPreviewParseMeta } from "../luaPreviewEngine.ts";
+import { BASE_MOCK } from "../mockTelemetry.ts";
+import { BFMODEL_DT8_SOURCE } from "./fixtures/bfmodel-dt8.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const heliExample = readFileSync(

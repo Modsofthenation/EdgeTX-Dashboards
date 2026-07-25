@@ -6,7 +6,7 @@ import {
   planWidgetDeploy,
   sanitizeWidgetFolderName,
   SIM_MODEL_BITMAP,
-} from "../virtualSd.js";
+} from "../virtualSd.ts";
 
 describe("virtualSd", () => {
   it("extracts widget name from Lua return", () => {
