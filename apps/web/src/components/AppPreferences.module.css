@@ -56,6 +56,9 @@
   gap: 0.25rem;
   padding: 0 1rem;
   border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .tab,
@@ -68,6 +71,8 @@
   font-size: 0.8125rem;
   font-weight: 600;
   margin-bottom: -1px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tabActive {
@@ -168,4 +173,44 @@
   font-size: 0.6875rem;
   color: var(--muted);
   line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .backdrop {
+    padding: 0.5rem;
+    align-items: stretch;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: calc(100dvh - 1rem);
+    border-radius: var(--radius-md);
+  }
+
+  .head {
+    padding: 0.85rem 0.9rem 0.55rem;
+  }
+
+  .title {
+    font-size: 0.95rem;
+  }
+
+  .tabs {
+    padding: 0 0.65rem;
+  }
+
+  .tab,
+  .tabActive {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .body {
+    padding: 0.85rem 0.9rem 1rem;
+  }
+
+  .themeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+  }
 }

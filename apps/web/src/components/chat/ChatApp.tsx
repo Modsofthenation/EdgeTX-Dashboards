@@ -44,6 +44,7 @@ function ChatAppLayout() {
     toggleHistory,
     toggleArtifact,
     expandArtifact,
+    collapseArtifact,
   } = usePanelCollapse();
   const { artifact } = useArtifactPanel();
   const { chatId, loadChat, startNewChat } = useChatSession();
@@ -83,8 +84,16 @@ function ChatAppLayout() {
     if (hasArtifact && !prevHadArtifact.current) {
       expandArtifact();
     }
+    // Keep empty preview collapsed on narrow screens so chat stays usable.
+    if (
+      !hasArtifact &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 960px)").matches
+    ) {
+      collapseArtifact();
+    }
     prevHadArtifact.current = hasArtifact;
-  }, [artifact?.luaSource, expandArtifact]);
+  }, [artifact?.luaSource, expandArtifact, collapseArtifact]);
 
   const handleNewChat = useCallback(() => {
     startNewChat();

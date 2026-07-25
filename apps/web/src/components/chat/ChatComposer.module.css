@@ -334,6 +334,10 @@
 }
 
 @media (max-width: 640px) {
+  .composer {
+    padding: 0.65rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0));
+  }
+
   .metaChip {
     margin-left: 0;
   }

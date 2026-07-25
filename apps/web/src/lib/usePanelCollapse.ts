@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 const STORAGE_KEY = "etx-panel-collapse";
+const NARROW_MQ = "(max-width: 960px)";
 
 type PanelCollapseState = {
   history: boolean;
@@ -10,20 +11,32 @@ type PanelCollapseState = {
 };
 
 /** Artifact panel starts expanded so preview/download are visible on first visit. */
-const DEFAULT: PanelCollapseState = { history: false, artifact: false };
+const DEFAULT_DESKTOP: PanelCollapseState = { history: false, artifact: false };
 
-function readStored(): PanelCollapseState {
-  if (typeof window === "undefined") return DEFAULT;
+/** On phones/tablets, start collapsed so the chat column keeps vertical space. */
+const DEFAULT_NARROW: PanelCollapseState = { history: true, artifact: true };
+
+function isNarrowViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(NARROW_MQ).matches;
+}
+
+function defaultForViewport(): PanelCollapseState {
+  return isNarrowViewport() ? DEFAULT_NARROW : DEFAULT_DESKTOP;
+}
+
+function readStored(): PanelCollapseState | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT;
+    if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PanelCollapseState>;
     return {
-      history: parsed.history ?? DEFAULT.history,
-      artifact: parsed.artifact ?? DEFAULT.artifact,
+      history: parsed.history ?? DEFAULT_DESKTOP.history,
+      artifact: parsed.artifact ?? DEFAULT_DESKTOP.artifact,
     };
   } catch {
-    return DEFAULT;
+    return null;
   }
 }
 
@@ -36,11 +49,12 @@ function writeStored(state: PanelCollapseState) {
 }
 
 export function usePanelCollapse() {
-  const [state, setState] = useState<PanelCollapseState>(DEFAULT);
+  const [state, setState] = useState<PanelCollapseState>(DEFAULT_DESKTOP);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    setState(readStored());
+    const stored = readStored();
+    setState(stored ?? defaultForViewport());
   }, []);
 
   const toggleHistory = useCallback(() => {
@@ -74,11 +88,23 @@ export function usePanelCollapse() {
     });
   }, [startTransition]);
 
+  const collapseArtifact = useCallback(() => {
+    startTransition(() => {
+      setState((prev) => {
+        if (prev.artifact) return prev;
+        const next = { ...prev, artifact: true };
+        writeStored(next);
+        return next;
+      });
+    });
+  }, [startTransition]);
+
   return {
     historyCollapsed: state.history,
     artifactCollapsed: state.artifact,
     toggleHistory,
     toggleArtifact,
     expandArtifact,
+    collapseArtifact,
   };
 }

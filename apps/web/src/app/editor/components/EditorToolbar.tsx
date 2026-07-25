@@ -162,11 +162,12 @@ export function EditorToolbar({
           className={styles.secondaryBtn}
           onClick={onVerifySim}
         >
-          Verify in sim
+          <span className={styles.actionLabelFull}>Verify in sim</span>
+          <span className={styles.actionLabelShort}>Sim</span>
         </button>
         <button
           type="button"
-          className={styles.secondaryBtn}
+          className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
           onClick={onValidate}
         >
           Validate

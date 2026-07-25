@@ -192,16 +192,10 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 1100px) {
-  .sidebar {
-    width: 12rem;
-  }
-}
-
 @media (max-width: 960px) {
   .sidebar {
     width: 100%;
-    max-height: 28vh;
+    max-height: none;
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
@@ -212,14 +206,25 @@
     overflow-x: auto;
     overflow-y: hidden;
     padding: 0.35rem 0.5rem 0.5rem;
+    -webkit-overflow-scrolling: touch;
   }
 
   .item {
     flex-shrink: 0;
-    width: 11rem;
+    width: min(11rem, 70vw);
   }
 
   .deleteBtn {
     opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 0.55rem 0.65rem 0.4rem;
+  }
+
+  .item {
+    width: min(9.5rem, 68vw);
   }
 }
