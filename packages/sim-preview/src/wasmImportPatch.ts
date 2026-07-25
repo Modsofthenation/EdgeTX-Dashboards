@@ -11,7 +11,7 @@ function zero(): number {
 /** Add no-op stubs for any missing `env` function imports (unit tests / reference). */
 export function patchEnvImports(
   module: WebAssembly.Module,
-  imports: WebAssembly.Imports
+  imports: WebAssembly.Imports,
 ): WebAssembly.Imports {
   const env: WebAssembly.ModuleImports = {
     ...((imports.env as WebAssembly.ModuleImports | undefined) ?? {}),

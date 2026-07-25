@@ -1,4 +1,8 @@
-import { JsonlLocalAgentStore, getDefaultSdkStateRoot, type LocalAgentStore } from "@cursor/sdk";
+import {
+  JsonlLocalAgentStore,
+  getDefaultSdkStateRoot,
+  type LocalAgentStore,
+} from "@cursor/sdk";
 
 /** Node 22.13+ ships built-in `node:sqlite`, which the SDK uses by default. */
 export function hasBuiltinSqlite(): boolean {
@@ -10,7 +14,9 @@ export function hasBuiltinSqlite(): boolean {
  * Resolve local agent persistence for this repo.
  * Falls back to JSONL files when `node:sqlite` is unavailable (Node < 22.13).
  */
-export function resolveLocalAgentStore(repoRoot: string): LocalAgentStore | undefined {
+export function resolveLocalAgentStore(
+  repoRoot: string,
+): LocalAgentStore | undefined {
   if (hasBuiltinSqlite()) {
     return undefined;
   }

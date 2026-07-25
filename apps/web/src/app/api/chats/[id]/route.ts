@@ -1,12 +1,20 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { deleteChat, getChat, updateChat, type UpdateChatInput } from "@/lib/db/chatStore";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import {
+  deleteChat,
+  getChat,
+  updateChat,
+  type UpdateChatInput,
+} from "~/lib/db/chatStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: Request, context: RouteContext): Promise<Response> {
+export async function GET(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 
@@ -19,7 +27,10 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   return Response.json(chat);
 }
 
-export async function PUT(request: Request, context: RouteContext): Promise<Response> {
+export async function PUT(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 
@@ -47,7 +58,10 @@ export async function PUT(request: Request, context: RouteContext): Promise<Resp
   }
 }
 
-export async function DELETE(request: Request, context: RouteContext): Promise<Response> {
+export async function DELETE(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 

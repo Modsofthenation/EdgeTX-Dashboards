@@ -5,8 +5,8 @@ import { getPreviewScenario } from "@widget-gen/layout-verify";
 import styles from "../editor.module.css";
 
 const RadioSimPreview = dynamic(
-  () => import("@/components/RadioSimPreview").then((m) => m.RadioSimPreview),
-  { ssr: false }
+  () => import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
+  { ssr: false },
 );
 
 interface SimVerifyModalProps {
@@ -42,13 +42,18 @@ export function SimVerifyModal({
           <h2 id="sim-verify-title" className={styles.modalTitle}>
             Run in simulator
           </h2>
-          <button type="button" className={styles.modalClose} onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className={styles.modalClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
             ×
           </button>
         </div>
         <p className={styles.modalHint}>
-          EdgeTX WASM preview using the same mock telemetry as the canvas. Reload after edits to
-          refresh the sim.
+          EdgeTX WASM preview using the same mock telemetry as the canvas.
+          Reload after edits to refresh the sim.
         </p>
         <div className={styles.simModalBody}>
           <RadioSimPreview
@@ -60,11 +65,19 @@ export function SimVerifyModal({
           />
         </div>
         <div className={styles.modalActions}>
-          <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={onClose}
+          >
             Close
           </button>
           {onReload ? (
-            <button type="button" className={styles.secondaryBtn} onClick={onReload}>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={onReload}
+            >
               Reload
             </button>
           ) : null}

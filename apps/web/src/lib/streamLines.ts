@@ -15,7 +15,10 @@ function toolLineKey(line: StreamLine): string {
 }
 
 /** Merge streaming chunks and dedupe tool events for readable log output. */
-export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLine[] {
+export function appendStreamLine(
+  prev: StreamLine[],
+  line: StreamLine,
+): StreamLine[] {
   const content = line.content.trim();
   if (!content && line.type !== "text") {
     return prev;
@@ -26,7 +29,10 @@ export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLi
     const last = prev[prev.length - 1];
     if (last?.type === "text") {
       const updated = [...prev];
-      updated[updated.length - 1] = { type: "text", content: last.content + line.content };
+      updated[updated.length - 1] = {
+        type: "text",
+        content: last.content + line.content,
+      };
       return updated;
     }
     return [...prev, line];
@@ -47,7 +53,8 @@ export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLi
     const last = prev[prev.length - 1];
     if (last?.type === "tool") {
       if (toolLineKey(last) === toolLineKey(line)) {
-        if (last.content === content && last.detail === line.detail) return prev;
+        if (last.content === content && last.detail === line.detail)
+          return prev;
         const updated = [...prev];
         updated[updated.length - 1] = line;
         return updated;
@@ -57,13 +64,21 @@ export function appendStreamLine(prev: StreamLine[], line: StreamLine): StreamLi
       const nextFailed = content.endsWith("(failed)");
       const lastBase = last.content.replace(/\s\(failed\)$/, "");
       const nextBase = content.replace(/\s\(failed\)$/, "");
-      if (lastBase === nextBase && (last.detail ?? "") === (line.detail ?? "")) {
+      if (
+        lastBase === nextBase &&
+        (last.detail ?? "") === (line.detail ?? "")
+      ) {
         const updated = [...prev];
         updated[updated.length - 1] = line;
         return updated;
       }
 
-      if (!lastFailed && nextFailed && lastBase === nextBase && (last.detail ?? "") === (line.detail ?? "")) {
+      if (
+        !lastFailed &&
+        nextFailed &&
+        lastBase === nextBase &&
+        (last.detail ?? "") === (line.detail ?? "")
+      ) {
         const updated = [...prev];
         updated[updated.length - 1] = line;
         return updated;
@@ -124,7 +139,7 @@ export function collectToolEntries(lines: StreamLine[]): ToolChipEntry[] {
 /** Split assistant text into completed paragraph blocks and an in-flight tail. */
 export function splitStreamingMarkdownBlocks(
   text: string,
-  isStreaming: boolean
+  isStreaming: boolean,
 ): { frozenBlocks: string[]; tail: string } {
   if (!text) return { frozenBlocks: [], tail: "" };
 
@@ -148,12 +163,17 @@ export function splitStreamingMarkdownBlocks(
 
   const completed = text.slice(0, lastBreak);
   const tail = text.slice(lastBreak + 2);
-  const frozenBlocks = completed.split(/\n\n/).filter((part) => part.trim().length > 0);
+  const frozenBlocks = completed
+    .split(/\n\n/)
+    .filter((part) => part.trim().length > 0);
   return { frozenBlocks, tail };
 }
 
 /** Markdown-safe text to show while streaming — hides the in-flight tail. */
-export function visibleStreamingText(text: string, isStreaming: boolean): string {
+export function visibleStreamingText(
+  text: string,
+  isStreaming: boolean,
+): string {
   if (!isStreaming) return text;
 
   const lastBreak = text.lastIndexOf("\n\n");
@@ -168,7 +188,7 @@ export function displayStreamTextEntry(
   entryIndex: number,
   entries: LogEntry[],
   lines: StreamLine[],
-  isStreaming: boolean
+  isStreaming: boolean,
 ): string {
   if (!isStreaming) return text;
 
@@ -247,7 +267,10 @@ export function groupStreamLines(lines: StreamLine[]): LogEntry[] {
   return entries;
 }
 
-export function formatEventContent(type: StreamLine["type"], content: string): string {
+export function formatEventContent(
+  type: StreamLine["type"],
+  content: string,
+): string {
   if (type === "status" && content.startsWith("Run started: ")) {
     return "Agent run started";
   }

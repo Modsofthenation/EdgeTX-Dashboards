@@ -1,11 +1,16 @@
-import { getSessionStore, writeWidgetLuaSource } from "@/server/generatorFacade";
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { getChat, updateChat } from "@/lib/db/chatStore";
+import {
+  getSessionStore,
+  writeWidgetLuaSource,
+} from "~/server/generatorFacade";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { getChat, updateChat } from "~/lib/db/chatStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function resolveWorkspaceKey(chat: NonNullable<ReturnType<typeof getChat>>): string | null {
+function resolveWorkspaceKey(
+  chat: NonNullable<ReturnType<typeof getChat>>,
+): string | null {
   return chat.widgetInstanceId ?? chat.artifact?.instanceId ?? chat.widgetName;
 }
 
@@ -32,7 +37,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const workspaceKey = resolveWorkspaceKey(chat);
   if (!workspaceKey) {
-    return Response.json({ error: "Chat has no widget to restore" }, { status: 400 });
+    return Response.json(
+      { error: "Chat has no widget to restore" },
+      { status: 400 },
+    );
   }
 
   if (chat.artifact?.luaSource) {
@@ -46,7 +54,8 @@ export async function POST(request: Request): Promise<Response> {
     protocol: chat.protocol,
     modelId: chat.modelId,
     widgetName: chat.widgetName ?? chat.artifact?.name ?? undefined,
-    widgetInstanceId: chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
+    widgetInstanceId:
+      chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
     widgetVersion: chat.widgetVersion ?? chat.artifact?.version,
   });
 

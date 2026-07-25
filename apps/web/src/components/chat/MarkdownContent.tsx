@@ -9,7 +9,9 @@ interface MarkdownContentProps {
   children: string;
 }
 
-export const MarkdownContent = memo(function MarkdownContent({ children }: MarkdownContentProps) {
+export const MarkdownContent = memo(function MarkdownContent({
+  children,
+}: MarkdownContentProps) {
   if (!children.trim()) return null;
 
   return (

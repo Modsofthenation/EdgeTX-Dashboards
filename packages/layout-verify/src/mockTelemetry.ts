@@ -83,7 +83,10 @@ const SENSOR_ALIASES: Record<string, keyof MockTelemetry> = {
   RSSI: "1RSS",
 };
 
-export function getMockForSensor(name: string, mock: MockTelemetry): string | number {
+export function getMockForSensor(
+  name: string,
+  mock: MockTelemetry,
+): string | number {
   const alias = SENSOR_ALIASES[name];
   if (alias) return mock[alias];
   const key = name as keyof MockTelemetry;

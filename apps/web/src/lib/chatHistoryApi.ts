@@ -1,4 +1,10 @@
-import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
+import type {
+  ChatMessage,
+  ChatSummary,
+  StoredChat,
+  WidgetSnapshot,
+  WidgetVersionEntry,
+} from "~/lib/chatTypes";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export async function fetchChatList(): Promise<ChatSummary[]> {
@@ -40,7 +46,7 @@ export async function syncChatRecord(
     messages?: ChatMessage[];
     artifact?: WidgetSnapshot | null;
     artifactVersions?: WidgetVersionEntry[];
-  }
+  },
 ): Promise<StoredChat | null> {
   const payload = {
     sessionId: input.sessionId ?? null,
@@ -75,9 +81,7 @@ export async function removeChatRecord(id: string): Promise<boolean> {
   return res.ok;
 }
 
-export async function restoreGeneratorSession(
-  chatId: string
-): Promise<{
+export async function restoreGeneratorSession(chatId: string): Promise<{
   sessionId: string;
   widgetName: string;
   widgetInstanceId?: string;

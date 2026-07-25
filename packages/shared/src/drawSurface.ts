@@ -15,7 +15,9 @@ const REFRESH_SIG =
   /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/;
 const BLOCK_OPEN = new Set(["function", "if", "for", "while", "repeat"]);
 
-function findRefreshSignature(source: string): { index: number; length: number } | null {
+function findRefreshSignature(
+  source: string,
+): { index: number; length: number } | null {
   const sigMatch = source.match(REFRESH_SIG);
   if (!sigMatch || sigMatch.index === undefined) return null;
   return { index: sigMatch.index, length: sigMatch[0].length };
@@ -108,7 +110,9 @@ function skipLuaString(source: string, start: number): number {
 export function analyzeDrawSurface(source: string): DrawSurfaceAnalysis {
   const refreshBody = extractRefreshBody(source);
   const drawTextCount = (refreshBody.match(/lcd\.drawText/g) ?? []).length;
-  const filledRectangleCount = (refreshBody.match(/lcd\.drawFilledRectangle/g) ?? []).length;
+  const filledRectangleCount = (
+    refreshBody.match(/lcd\.drawFilledRectangle/g) ?? []
+  ).length;
   const hasFilledRectangle = filledRectangleCount > 0;
   const hasSmlSize = /SMLSIZE/.test(refreshBody);
   const hasDblSize = /DBLSIZE/.test(refreshBody);

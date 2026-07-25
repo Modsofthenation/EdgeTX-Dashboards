@@ -1,7 +1,12 @@
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RadioProfile, TelemetryCatalog, TelemetryProtocol, SimulateLayoutProfile } from "@widget-gen/shared";
+import type {
+  RadioProfile,
+  TelemetryCatalog,
+  TelemetryProtocol,
+  SimulateLayoutProfile,
+} from "@widget-gen/shared";
 import { DEFAULT_RADIO_ID, getSimulateLayoutProfile } from "@widget-gen/shared";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,7 +17,7 @@ function isRepoRoot(dir: string): boolean {
   return existsSync(join(dir, REPO_MARKER));
 }
 
-/** Resolve monorepo root (works from dist/ and when Next.js cwd is apps/web). */
+/** Resolve monorepo root (works when bundled by Next.js and when cwd is apps/web). */
 export function getRepoRoot(): string {
   const envRoot = process.env.WIDGET_GEN_REPO_ROOT;
   if (envRoot) {
@@ -32,7 +37,7 @@ export function getRepoRoot(): string {
   }
 
   throw new Error(
-    `Could not locate repository root (missing ${REPO_MARKER}). cwd=${process.cwd()}`
+    `Could not locate repository root (missing ${REPO_MARKER}). cwd=${process.cwd()}`,
   );
 }
 
@@ -77,7 +82,9 @@ export function getLayoutProfileIdForRadio(radioId: string): string {
 /** All supported radio profiles from knowledge/radios/*.json (sorted by name). */
 export function listRadioProfiles(): RadioProfile[] {
   const dir = join(getRepoRoot(), "knowledge", "radios");
-  const files = readdirSync(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_"));
+  const files = readdirSync(dir).filter(
+    (f) => f.endsWith(".json") && !f.startsWith("_"),
+  );
 
   return files
     .map((file) => loadRadioProfile(file.replace(/\.json$/, "")))
@@ -94,7 +101,9 @@ const PROTOCOL_FILES: Record<TelemetryProtocol, string> = {
   "generic-crsf": "generic-crsf.json",
 };
 
-export function loadTelemetryCatalog(protocol: TelemetryProtocol): TelemetryCatalog {
+export function loadTelemetryCatalog(
+  protocol: TelemetryProtocol,
+): TelemetryCatalog {
   const cached = catalogCache.get(protocol);
   if (cached) return cached;
   const filename = PROTOCOL_FILES[protocol];
@@ -118,18 +127,28 @@ export function readRules(): string {
 }
 
 export function readLayoutPrinciples(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "layout-principles.md");
+  const path = join(
+    getRepoRoot(),
+    "knowledge",
+    "design",
+    "layout-principles.md",
+  );
   return readCachedTextIfExists(path);
 }
 
 export function readCardGridRecipe(): string {
-  const path = join(getRepoRoot(), "knowledge", "design", "tx15-card-grid-recipe.md");
+  const path = join(
+    getRepoRoot(),
+    "knowledge",
+    "design",
+    "tx15-card-grid-recipe.md",
+  );
   return readCachedTextIfExists(path);
 }
 
 export function readDesignGuideForArchetype(
   radioId = DEFAULT_RADIO_ID,
-  archetypeId?: string
+  archetypeId?: string,
 ): string {
   const principles = readLayoutPrinciples();
   const cardArchetypes = new Set(["card-grid", "heli-rotorflight"]);
@@ -156,7 +175,10 @@ const LAYOUT_HEAVY_EXAMPLES = new Set([
   "tx15-model-hero-dashboard.lua",
 ]);
 
-export function readLayoutExampleSnippet(exampleFile: string, maxLines = 140): string {
+export function readLayoutExampleSnippet(
+  exampleFile: string,
+  maxLines = 140,
+): string {
   return readExampleSnippet(exampleFile, maxLines);
 }
 
@@ -168,7 +190,9 @@ export function readExampleSnippetForArchetype(exampleFile: string): string {
 }
 
 export function readLayoutReservedRectsGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "layout-reserved-rects.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "layout-reserved-rects.md"),
+  );
 }
 
 export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
@@ -189,37 +213,57 @@ export function readDesignGuide(radioId = DEFAULT_RADIO_ID): string {
 }
 
 export function readRotorflightStyleGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "rotorflight-dbk-patterns.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "rotorflight-dbk-patterns.md"),
+  );
 }
 
 export function readCompanionScriptsGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "companion-scripts.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "companion-scripts.md"),
+  );
 }
 
 export function readModelImageGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "model-image.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "model-image.md"),
+  );
 }
 
 export function readModelHeroDashboardGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "model-hero-dashboard.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "model-hero-dashboard.md"),
+  );
 }
 
 export function readTextLayoutGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md"),
+  );
 }
 
 export function readRuntimeApiPitfallsGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "runtime-api-pitfalls.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "runtime-api-pitfalls.md"),
+  );
 }
 
 export function readThemePalettesGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "edgetx-theme-palettes.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "edgetx-theme-palettes.md"),
+  );
 }
 
 export function readRoundedCornersGuide(): string {
-  return readCachedTextIfExists(join(getRepoRoot(), "knowledge", "design", "rounded-card-panels.md"));
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "rounded-card-panels.md"),
+  );
 }
 
-export function loadSimulateLayoutProfile(radioId: string): SimulateLayoutProfile {
-  return getSimulateLayoutProfile(getLayoutProfileId(loadRadioProfile(radioId)));
+export function loadSimulateLayoutProfile(
+  radioId: string,
+): SimulateLayoutProfile {
+  return getSimulateLayoutProfile(
+    getLayoutProfileId(loadRadioProfile(radioId)),
+  );
 }

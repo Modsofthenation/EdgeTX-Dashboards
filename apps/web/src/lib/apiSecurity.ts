@@ -1,4 +1,4 @@
-import { MAX_ACTIVE_SESSIONS } from "@/server/generatorFacade";
+import { MAX_ACTIVE_SESSIONS } from "~/server/generatorFacade";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 8;
@@ -44,7 +44,7 @@ export function checkRateLimit(request: Request): Response | null {
   if (bucket.count > RATE_LIMIT_MAX) {
     return Response.json(
       { error: "Rate limit exceeded. Try again in a minute." },
-      { status: 429 }
+      { status: 429 },
     );
   }
   return null;
@@ -54,7 +54,7 @@ export function checkSessionCapacity(currentCount: number): Response | null {
   if (currentCount >= MAX_ACTIVE_SESSIONS) {
     return Response.json(
       { error: "Too many active generation sessions. Try again later." },
-      { status: 503 }
+      { status: 503 },
     );
   }
   return null;

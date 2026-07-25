@@ -1,11 +1,11 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
+import { checkApiAuth } from "~/lib/apiSecurity";
 import {
   getSessionStore,
   isTelemetryProtocol,
   sanitizeWidgetName,
   validateWidgetRelease,
   validateWidgetSource,
-} from "@/server/generatorFacade";
+} from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +23,10 @@ export async function GET(request: Request): Promise<Response> {
   if (sessionId) {
     const stored = getSessionStore().get(sessionId);
     if (!stored) {
-      return Response.json({ error: "Session not found or expired" }, { status: 404 });
+      return Response.json(
+        { error: "Session not found or expired" },
+        { status: 404 },
+      );
     }
     if (stored.session.widgetName) name = stored.session.widgetName;
     protocol = stored.session.protocol;
@@ -31,7 +34,10 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   if (!name) {
-    return Response.json({ error: "name or sessionId is required" }, { status: 400 });
+    return Response.json(
+      { error: "name or sessionId is required" },
+      { status: 400 },
+    );
   }
 
   let safeName: string;
@@ -42,7 +48,10 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   if (!protocol || !isTelemetryProtocol(protocol)) {
-    return Response.json({ error: "Invalid or missing protocol" }, { status: 400 });
+    return Response.json(
+      { error: "Invalid or missing protocol" },
+      { status: 400 },
+    );
   }
 
   const result = validateWidgetRelease(safeName, protocol, radioId);
@@ -71,6 +80,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const radioId = body.radioId ?? "tx15";
-  const result = validateWidgetSource(source, protocol, { radioId, strictTelemetry: true });
+  const result = validateWidgetSource(source, protocol, {
+    radioId,
+    strictTelemetry: true,
+  });
   return Response.json(result);
 }

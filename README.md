@@ -24,7 +24,7 @@ Pick your radio, protocol, and EdgeTX version in the composer bar. Refine in cha
 
 ```bash
 npm install
-npm run setup    # stubs, WASM firmware, build (first time)
+npm run setup    # stubs, WASM firmware, simulator patch (first time)
 export CURSOR_API_KEY="cursor_..."   # PowerShell: $env:CURSOR_API_KEY="cursor_..."
 npm run dev
 ```
@@ -55,7 +55,6 @@ You can attach reference screenshots to your prompt (PNG, JPEG, WebP, GIF, up to
 ## CLI (optional)
 
 ```bash
-npm run build
 export CURSOR_API_KEY="cursor_..."
 npm run generate -- --protocol betaflight "Full-screen battery and GPS dashboard"
 ```
@@ -64,11 +63,11 @@ Useful flags: `--radio tx15`, `--protocol betaflight|rotorflight|generic-crsf`, 
 
 ## Telemetry protocols
 
-| Protocol | Catalog | Notes |
-|----------|---------|-------|
-| Betaflight | `knowledge/telemetry/betaflight-crsf.json` | Standard CRSF via ELRS / Crossfire |
-| Rotorflight | `knowledge/telemetry/rotorflight-crsf.json` | Needs `rf2bg` for custom sensors |
-| Generic CRSF | `knowledge/telemetry/generic-crsf.json` | Common ELRS / CRSF sensor names |
+| Protocol     | Catalog                                     | Notes                              |
+| ------------ | ------------------------------------------- | ---------------------------------- |
+| Betaflight   | `knowledge/telemetry/betaflight-crsf.json`  | Standard CRSF via ELRS / Crossfire |
+| Rotorflight  | `knowledge/telemetry/rotorflight-crsf.json` | Needs `rf2bg` for custom sensors   |
+| Generic CRSF | `knowledge/telemetry/generic-crsf.json`     | Common ELRS / CRSF sensor names    |
 
 ## Validation
 
@@ -83,12 +82,12 @@ Failed validation blocks download (HTTP 422). Fix issues in chat or edit the Lua
 
 ## If preview or sim breaks
 
-| Symptom | Try this |
-|---------|----------|
-| Stuck on “Booting EdgeTX preview…” | Restart `npm run dev`, hard-refresh the browser |
-| WASM 404 | `npm run sync-wasm` or `npm run setup:sim` |
-| `simuAuxSerialStart` errors | `npm run setup:sim`, restart dev server |
-| After changing `packages/sim-preview` | Rebuild (`npm run setup:sim`), restart dev server |
+| Symptom                               | Try this                                               |
+| ------------------------------------- | ------------------------------------------------------ |
+| Stuck on “Booting EdgeTX preview…”    | Restart `npm run dev`, hard-refresh the browser        |
+| WASM 404                              | `npm run sync-wasm` or `npm run setup:sim`             |
+| `simuAuxSerialStart` errors           | `npm run setup:sim`, restart dev server                |
+| After changing `packages/sim-preview` | Restart dev server (packages are compiled from source) |
 
 ## VS Code / EdgeTX Dev Kit
 
@@ -111,6 +110,8 @@ apps/web/              Next.js UI and API routes
 packages/generator/    Cursor SDK agent, validation, packaging
 packages/shared/       Shared types and @simulate layouts
 packages/sim-preview/  EdgeTX WASM runtime and telemetry bridge
+packages/layout-verify/ Static Lua draw interpreter and overlap checks
+packages/editor-core/  Lua <-> scene model behind the visual editor
 knowledge/             Radio profiles, telemetry catalogs, design guides
 templates/             Starter Lua and INSTALL.md template
 examples/              Reference widgets
@@ -118,13 +119,17 @@ apps/web/public/sim/   EdgeTX WASM firmware (auto-fetched on install)
 generated/             Agent output (gitignored)
 ```
 
+Packages are consumed as TypeScript source, so only the web app has a build step.
+More detail in [docs/reference/workspace-layout.md](docs/reference/workspace-layout.md)
+and [docs/reference/scripts.md](docs/reference/scripts.md).
+
 ## Environment variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `CURSOR_API_KEY` | Yes | Cursor API key for generation |
-| `GENERATOR_API_SECRET` | No | Protects API routes when set |
-| `SKIP_WASM_SYNC` | No | Set to `1` to skip WASM download on install |
+| Variable               | Required | Description                                 |
+| ---------------------- | -------- | ------------------------------------------- |
+| `CURSOR_API_KEY`       | Yes      | Cursor API key for generation               |
+| `GENERATOR_API_SECRET` | No       | Protects API routes when set                |
+| `SKIP_WASM_SYNC`       | No       | Set to `1` to skip WASM download on install |
 
 ## License
 

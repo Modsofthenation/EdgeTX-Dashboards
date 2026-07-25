@@ -1,5 +1,5 @@
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { appendStreamLine, type StreamLine } from "@/lib/streamLines";
+import { appendStreamLine, type StreamLine } from "~/lib/streamLines";
 
 export interface WidgetSnapshot {
   /** EdgeTX radio display name (≤10 chars). */
@@ -28,7 +28,7 @@ export interface WidgetVersionEntry {
 export function snapshotToVersionEntry(
   snapshot: WidgetSnapshot,
   createdAt = Date.now(),
-  messageId?: string | null
+  messageId?: string | null,
 ): WidgetVersionEntry {
   return {
     version: snapshot.version,
@@ -42,7 +42,9 @@ export function snapshotToVersionEntry(
   };
 }
 
-export function versionEntryToSnapshot(entry: WidgetVersionEntry): WidgetSnapshot {
+export function versionEntryToSnapshot(
+  entry: WidgetVersionEntry,
+): WidgetSnapshot {
   return {
     name: entry.name,
     instanceId: entry.instanceId,
@@ -53,7 +55,10 @@ export function versionEntryToSnapshot(entry: WidgetVersionEntry): WidgetSnapsho
   };
 }
 
-export function formatVersionOptionLabel(version: number, latestVersion: number): string {
+export function formatVersionOptionLabel(
+  version: number,
+  latestVersion: number,
+): string {
   if (version === 0) return "v0 — Initial generation";
   if (version === latestVersion) return `v${version} — Latest`;
   return `v${version} — Refine ${version}`;
@@ -118,7 +123,10 @@ function newId(): string {
   return crypto.randomUUID();
 }
 
-export function createUserMessage(content: string, images?: ChatMessageImage[]): ChatMessage {
+export function createUserMessage(
+  content: string,
+  images?: ChatMessageImage[],
+): ChatMessage {
   return {
     id: newId(),
     role: "user",
@@ -128,12 +136,23 @@ export function createUserMessage(content: string, images?: ChatMessageImage[]):
 }
 
 export function createAssistantPlaceholder(): ChatMessage {
-  return { id: newId(), role: "assistant", content: "", lines: [], isStreaming: true };
+  return {
+    id: newId(),
+    role: "assistant",
+    content: "",
+    lines: [],
+    isStreaming: true,
+  };
 }
 
-export function appendAssistantLine(messages: ChatMessage[], assistantId: string, line: StreamLine): ChatMessage[] {
+export function appendAssistantLine(
+  messages: ChatMessage[],
+  assistantId: string,
+  line: StreamLine,
+): ChatMessage[] {
   return messages.map((message) => {
-    if (message.id !== assistantId || message.role !== "assistant") return message;
+    if (message.id !== assistantId || message.role !== "assistant")
+      return message;
     return {
       ...message,
       lines: appendStreamLine(message.lines ?? [], line),
@@ -144,9 +163,11 @@ export function appendAssistantLine(messages: ChatMessage[], assistantId: string
 export function patchAssistant(
   messages: ChatMessage[],
   assistantId: string,
-  patch: Partial<ChatMessage>
+  patch: Partial<ChatMessage>,
 ): ChatMessage[] {
-  return messages.map((message) => (message.id === assistantId ? { ...message, ...patch } : message));
+  return messages.map((message) =>
+    message.id === assistantId ? { ...message, ...patch } : message,
+  );
 }
 
 export async function fetchWidgetSource(
@@ -155,8 +176,13 @@ export async function fetchWidgetSource(
     instanceId?: string | null;
     widgetName?: string | null;
     version?: number;
-  }
-): Promise<{ source: string; name: string; instanceId: string | null; version: number } | null> {
+  },
+): Promise<{
+  source: string;
+  name: string;
+  instanceId: string | null;
+  version: number;
+} | null> {
   const params = new URLSearchParams();
   if (options.instanceId) {
     params.set("instanceId", options.instanceId);

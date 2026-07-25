@@ -3,22 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
-  "bin": {
-    "widget-gen": "./dist/cli.js"
-  },
   "scripts": {
-    "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "generate": "node dist/cli.js",
-    "test": "npm run build && node --test dist/__tests__/generator.test.js dist/__tests__/devKit.test.js dist/__tests__/toolDisplay.test.js dist/__tests__/layoutArchetype.test.js dist/__tests__/designVariation.test.js dist/__tests__/themePalettes.test.js dist/__tests__/roundedCorners.test.js dist/__tests__/validate.test.js dist/__tests__/promptImages.test.js dist/__tests__/lcdApiValidate.test.js dist/__tests__/refineHistory.test.js"
+    "generate": "node --experimental-strip-types src/cli.ts",
+    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.22",

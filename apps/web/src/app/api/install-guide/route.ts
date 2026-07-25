@@ -1,7 +1,7 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { buildInstallGuide } from "@/lib/installGuide";
+import { buildInstallGuide } from "~/lib/installGuide";
 
-import { checkApiAuth } from "@/lib/apiSecurity";
+import { checkApiAuth } from "~/lib/apiSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,10 +11,15 @@ export async function GET(request: Request): Promise<Response> {
   if (authErr) return authErr;
 
   const { searchParams } = new URL(request.url);
-  const protocol = (searchParams.get("protocol") ?? "betaflight") as TelemetryProtocol;
+  const protocol = (searchParams.get("protocol") ??
+    "betaflight") as TelemetryProtocol;
   const widgetName = searchParams.get("widget") ?? undefined;
 
-  const valid: TelemetryProtocol[] = ["betaflight", "rotorflight", "generic-crsf"];
+  const valid: TelemetryProtocol[] = [
+    "betaflight",
+    "rotorflight",
+    "generic-crsf",
+  ];
   if (!valid.includes(protocol)) {
     return Response.json({ error: "Invalid protocol" }, { status: 400 });
   }

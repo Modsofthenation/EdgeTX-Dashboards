@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ChatMessage } from "@/lib/chatTypes";
-import { markChatScrolling } from "@/lib/chatScrollPause";
-import { TEMPLATE_GALLERY } from "@/lib/templateGallery";
+import type { ChatMessage } from "~/lib/chatTypes";
+import { markChatScrolling } from "~/lib/chatScrollPause";
+import { TEMPLATE_GALLERY } from "~/lib/templateGallery";
 import { ChatMessageBubble } from "./ChatMessage";
 import styles from "./ChatMessageList.module.css";
 
@@ -40,7 +40,8 @@ export function ChatMessageList({
     if (!pinnedRef.current) return;
     const list = listRef.current;
     if (!list) return;
-    if (list.scrollHeight === lastScrollHeightRef.current && scrollRevision > 0) return;
+    if (list.scrollHeight === lastScrollHeightRef.current && scrollRevision > 0)
+      return;
     lastScrollHeightRef.current = list.scrollHeight;
     list.scrollTop = list.scrollHeight;
   }, [scrollRevision, running]);
@@ -58,11 +59,14 @@ export function ChatMessageList({
     <div ref={listRef} className={styles.list} onScroll={handleScroll}>
       {messages.length === 0 && (
         <div className={styles.empty}>
-          <h2 className={styles.emptyTitle}>What should your dashboard show?</h2>
+          <h2 className={styles.emptyTitle}>
+            What should your dashboard show?
+          </h2>
           <p className={styles.emptyText}>
-            Describe a full-screen TX15 dashboard — the agent writes Lua, validates it, and shows the
-            preview in the panel on the right. Ask for companion tools (battery selector, flight
-            logger) when you need them.
+            Describe a full-screen TX15 dashboard — the agent writes Lua,
+            validates it, and shows the preview in the panel on the right. Ask
+            for companion tools (battery selector, flight logger) when you need
+            them.
           </p>
           <ol className={styles.steps} aria-label="How it works">
             <li>
@@ -96,7 +100,9 @@ export function ChatMessageList({
                 onClick={() => onSuggestion(item.prompt)}
               >
                 <span className={styles.galleryCardTitle}>{item.title}</span>
-                <span className={styles.galleryCardArchetype}>{item.archetype}</span>
+                <span className={styles.galleryCardArchetype}>
+                  {item.archetype}
+                </span>
               </button>
             ))}
           </div>
@@ -127,8 +133,8 @@ export function ChatMessageList({
 
       {dashboardReadyCue && messages.length > 0 && (
         <div className={styles.readyCue} role="status">
-          Dashboard ready — preview and download are in the <strong>Dashboard</strong> panel on the
-          right.
+          Dashboard ready — preview and download are in the{" "}
+          <strong>Dashboard</strong> panel on the right.
         </div>
       )}
     </div>

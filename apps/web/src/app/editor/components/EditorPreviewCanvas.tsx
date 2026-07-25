@@ -1,10 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { getPreviewScenario, type LayoutScenario } from "@widget-gen/layout-verify";
+import {
+  getPreviewScenario,
+  type LayoutScenario,
+} from "@widget-gen/layout-verify";
 import { recordsForDisplay } from "@widget-gen/editor-core";
 import type { ZoneOffset } from "@widget-gen/editor-core";
-import { parseLuaToDrawCommands, renderPreviewCommands } from "@/lib/luaPreviewEngine";
+import {
+  parseLuaToDrawCommands,
+  renderPreviewCommands,
+} from "~/lib/luaPreviewEngine";
 import type { CanvasLayout } from "../lib/canvasLayout";
 import styles from "../editor.module.css";
 
@@ -24,11 +30,14 @@ export function EditorPreviewCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
 
-  const scenario: LayoutScenario = useMemo(() => getPreviewScenario(scenarioId), [scenarioId]);
+  const scenario: LayoutScenario = useMemo(
+    () => getPreviewScenario(scenarioId),
+    [scenarioId],
+  );
 
   const commands = useMemo(
     () => recordsForDisplay(parseLuaToDrawCommands(source, scenario), zone),
-    [source, zone, scenario]
+    [source, zone, scenario],
   );
 
   const paint = useCallback(() => {
@@ -61,7 +70,11 @@ export function EditorPreviewCanvas({
 
   return (
     <div ref={hostRef} className={styles.previewHost}>
-      <canvas ref={canvasRef} className={styles.previewCanvas} aria-label="Dashboard preview" />
+      <canvas
+        ref={canvasRef}
+        className={styles.previewCanvas}
+        aria-label="Dashboard preview"
+      />
     </div>
   );
 }

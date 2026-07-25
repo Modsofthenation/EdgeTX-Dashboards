@@ -1,4 +1,4 @@
-import type { BoundingBox, DrawRecord } from "./types.js";
+import type { BoundingBox, DrawRecord } from "./types.ts";
 
 /** TX15 character widths (px/char) — knowledge/design/tx15-text-layout.md */
 const CHAR_W: Record<number, number> = {
@@ -14,7 +14,11 @@ function charWidth(fontSize: number): number {
   return CHAR_W[fontSize] ?? 6;
 }
 
-export function bboxForRecord(record: DrawRecord, lcdW = 480, lcdH = 320): BoundingBox | null {
+export function bboxForRecord(
+  record: DrawRecord,
+  lcdW = 480,
+  lcdH = 320,
+): BoundingBox | null {
   switch (record.kind) {
     case "clear":
       return { x: 0, y: 0, w: lcdW, h: lcdH };
@@ -107,7 +111,10 @@ export function bboxContains(outer: BoundingBox, inner: BoundingBox): boolean {
   );
 }
 
-export function intersectBoxes(a: BoundingBox, b: BoundingBox): BoundingBox | null {
+export function intersectBoxes(
+  a: BoundingBox,
+  b: BoundingBox,
+): BoundingBox | null {
   const x = Math.max(a.x, b.x);
   const y = Math.max(a.y, b.y);
   const right = Math.min(a.x + a.w, b.x + b.w);

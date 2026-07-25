@@ -51,7 +51,10 @@ export function isSimWasmReady() {
 
 function runSync() {
   const script = join(ROOT, "scripts", "sync-edgetx-wasm.mjs");
-  const result = spawnSync(process.execPath, [script], { cwd: ROOT, stdio: "inherit" });
+  const result = spawnSync(process.execPath, [script], {
+    cwd: ROOT,
+    stdio: "inherit",
+  });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
@@ -61,7 +64,7 @@ function main() {
   if (process.env.SKIP_WASM_SYNC === "1") {
     if (!isSimWasmReady()) {
       console.warn(
-        "SKIP_WASM_SYNC=1 and EdgeTX WASM sim assets are missing — Radio sim tab will not work."
+        "SKIP_WASM_SYNC=1 and EdgeTX WASM sim assets are missing — Radio sim tab will not work.",
       );
     }
     return;

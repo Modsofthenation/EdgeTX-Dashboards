@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@widget-gen/shared", "@widget-gen/sim-preview", "@edgetx/simulator-ui"],
-  serverExternalPackages: ["@cursor/sdk", "archiver", "@widget-gen/generator", "better-sqlite3"],
+  transpilePackages: [
+    "@widget-gen/shared",
+    "@widget-gen/layout-verify",
+    "@widget-gen/editor-core",
+    "@widget-gen/sim-preview",
+    "@widget-gen/generator",
+    "@edgetx/simulator-ui",
+  ],
+  serverExternalPackages: ["@cursor/sdk", "archiver", "better-sqlite3"],
   async headers() {
     return [
       {

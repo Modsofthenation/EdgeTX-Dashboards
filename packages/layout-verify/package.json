@@ -3,19 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test dist/__tests__/bbox.test.js dist/__tests__/overlap.test.js dist/__tests__/regressionGallery.test.js"
+    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@widget-gen/shared": "*"

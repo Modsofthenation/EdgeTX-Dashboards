@@ -30,7 +30,9 @@ function truncate(text: string, max = 72): string {
   return `${oneLine.slice(0, max - 1)}…`;
 }
 
-function parseTodos(input: Record<string, unknown>): StreamTodoItem[] | undefined {
+function parseTodos(
+  input: Record<string, unknown>,
+): StreamTodoItem[] | undefined {
   const raw = input.todos;
   if (!Array.isArray(raw)) return undefined;
 
@@ -103,7 +105,10 @@ export function describeToolUse(name: string, input: unknown): ToolDisplayInfo {
   if (normalized === "grep") {
     const pattern = readString(args.pattern);
     const path = readString(args.path) ?? readString(args.glob);
-    const detail = [pattern ? `/${pattern}/` : undefined, path ? shortPath(path) : undefined]
+    const detail = [
+      pattern ? `/${pattern}/` : undefined,
+      path ? shortPath(path) : undefined,
+    ]
       .filter(Boolean)
       .join(" in ");
     return { label: "Search", detail: detail || undefined };
@@ -135,7 +140,8 @@ export function describeToolUse(name: string, input: unknown): ToolDisplayInfo {
     const server = readString(args.server);
     const toolName = readString(args.toolName) ?? readString(args.tool_name);
     const description = readString(args.description);
-    const detail = [server, toolName].filter(Boolean).join(" · ") || description;
+    const detail =
+      [server, toolName].filter(Boolean).join(" · ") || description;
     return { label: "MCP", detail: detail || undefined };
   }
 
@@ -152,13 +158,18 @@ export function describeToolUse(name: string, input: unknown): ToolDisplayInfo {
   if (normalized === "task") {
     const description = readString(args.description);
     const subagent = readString(args.subagent_type);
-    const detail = [description, subagent ? `(${subagent})` : undefined].filter(Boolean).join(" ");
+    const detail = [description, subagent ? `(${subagent})` : undefined]
+      .filter(Boolean)
+      .join(" ");
     return { label: "Subagent", detail: detail ? truncate(detail) : undefined };
   }
 
   if (normalized === "generateimage") {
     const description = readString(args.description);
-    return { label: "Generate image", detail: description ? truncate(description) : undefined };
+    return {
+      label: "Generate image",
+      detail: description ? truncate(description) : undefined,
+    };
   }
 
   const fallbackDetail =

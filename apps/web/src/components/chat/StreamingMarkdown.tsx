@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
-import { splitStreamingMarkdownBlocks } from "@/lib/streamLines";
+import { splitStreamingMarkdownBlocks } from "~/lib/streamLines";
 import { MarkdownContent } from "./MarkdownContent";
 
 const TAIL_THROTTLE_MS = 200;
@@ -38,13 +38,19 @@ interface StreamingMarkdownProps {
   streamPartial?: boolean;
 }
 
-export function StreamingMarkdown({ text, streamPartial = false }: StreamingMarkdownProps) {
+export function StreamingMarkdown({
+  text,
+  streamPartial = false,
+}: StreamingMarkdownProps) {
   const { frozenBlocks, tail } = useMemo(
     () => splitStreamingMarkdownBlocks(text, streamPartial),
-    [text, streamPartial]
+    [text, streamPartial],
   );
 
-  const throttledTail = useThrottledValue(tail, streamPartial && tail.length > 0);
+  const throttledTail = useThrottledValue(
+    tail,
+    streamPartial && tail.length > 0,
+  );
 
   if (!text.trim()) return null;
 

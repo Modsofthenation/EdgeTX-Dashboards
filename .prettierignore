@@ -1,0 +1,9 @@
+apps/web/.next
+apps/web/public
+dist
+dist-output
+generated
+node_modules
+package-lock.json
+stubs
+*.tsbuildinfo

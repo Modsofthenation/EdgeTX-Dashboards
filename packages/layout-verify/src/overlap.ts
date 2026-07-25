@@ -1,5 +1,11 @@
-import { bboxCenter, bboxContains, bboxForRecord, boxesOverlap, intersectBoxes } from "./bbox.js";
-import type { BoundingBox, DrawRecord, OverlapHit } from "./types.js";
+import {
+  bboxCenter,
+  bboxContains,
+  bboxForRecord,
+  boxesOverlap,
+  intersectBoxes,
+} from "./bbox.ts";
+import type { BoundingBox, DrawRecord, OverlapHit } from "./types.ts";
 
 export interface OverlapPolicy {
   lcdW?: number;
@@ -13,7 +19,13 @@ function annulusInnerRadius(record: DrawRecord): number {
   return Math.min(rIn, rOut);
 }
 
-function pointInsideCircle(cx: number, cy: number, r: number, px: number, py: number): boolean {
+function pointInsideCircle(
+  cx: number,
+  cy: number,
+  r: number,
+  px: number,
+  py: number,
+): boolean {
   const dx = px - cx;
   const dy = py - cy;
   return dx * dx + dy * dy <= r * r;
@@ -23,13 +35,17 @@ function isResolvableText(record: DrawRecord): boolean {
   if (record.kind !== "text") return true;
   const t = record.text ?? "";
   if (!t) return false;
-  if (/\btruncStr\s*\(/.test(t) || /\bstring\.format\s*\(/.test(t)) return false;
+  if (/\btruncStr\s*\(/.test(t) || /\bstring\.format\s*\(/.test(t))
+    return false;
   if (/widget\.|telem\s*\(/.test(t)) return false;
   if (t.includes("..")) return false;
   return true;
 }
 
-function isInnerGaugeReadout(annulus: DrawRecord, textBox: BoundingBox): boolean {
+function isInnerGaugeReadout(
+  annulus: DrawRecord,
+  textBox: BoundingBox,
+): boolean {
   const cx = annulus.x ?? 0;
   const cy = annulus.y ?? 0;
   const inner = annulusInnerRadius(annulus);
@@ -38,7 +54,10 @@ function isInnerGaugeReadout(annulus: DrawRecord, textBox: BoundingBox): boolean
   return pointInsideCircle(cx, cy, coreR, center.x, center.y);
 }
 
-function shouldSkipAnnulusText(annulus: DrawRecord, textBox: BoundingBox): boolean {
+function shouldSkipAnnulusText(
+  annulus: DrawRecord,
+  textBox: BoundingBox,
+): boolean {
   const cx = annulus.x ?? 0;
   const cy = annulus.y ?? 0;
   const inner = annulusInnerRadius(annulus);
@@ -61,7 +80,12 @@ function shouldSkipAnnulusText(annulus: DrawRecord, textBox: BoundingBox): boole
   return false;
 }
 
-function shouldCheckPair(a: DrawRecord, b: DrawRecord, boxA: BoundingBox, boxB: BoundingBox): boolean {
+function shouldCheckPair(
+  a: DrawRecord,
+  b: DrawRecord,
+  boxA: BoundingBox,
+  boxB: BoundingBox,
+): boolean {
   if (a.kind === "clear" || b.kind === "clear") return false;
 
   if (a.kind === "text" && b.kind === "text") {
@@ -85,13 +109,15 @@ function shouldCheckPair(a: DrawRecord, b: DrawRecord, boxA: BoundingBox, boxB: 
 
 export function findOverlaps(
   records: DrawRecord[],
-  policy: OverlapPolicy = {}
+  policy: OverlapPolicy = {},
 ): OverlapHit[] {
   const lcdW = policy.lcdW ?? 480;
   const lcdH = policy.lcdH ?? 320;
   const hits: OverlapHit[] = [];
 
-  const boxes: (BoundingBox | null)[] = records.map((r) => bboxForRecord(r, lcdW, lcdH));
+  const boxes: (BoundingBox | null)[] = records.map((r) =>
+    bboxForRecord(r, lcdW, lcdH),
+  );
 
   for (let i = 0; i < records.length - 1; i++) {
     const boxA = boxes[i];
@@ -129,9 +155,11 @@ export function findOverlaps(
 
 export function formatOverlapHit(hit: OverlapHit): string {
   const describe = (r: DrawRecord): string => {
-    if (r.kind === "text") return `text "${(r.text ?? "").slice(0, 24)}"@y=${r.y}`;
+    if (r.kind === "text")
+      return `text "${(r.text ?? "").slice(0, 24)}"@y=${r.y}`;
     if (r.kind === "annulus") return `annulus@(${r.x},${r.y}) rOut=${r.rOut}`;
-    if (r.kind === "filledCircle" || r.kind === "circle") return `${r.kind}@(${r.x},${r.y}) r=${r.r}`;
+    if (r.kind === "filledCircle" || r.kind === "circle")
+      return `${r.kind}@(${r.x},${r.y}) r=${r.r}`;
     return `${r.kind}@(${r.x},${r.y})`;
   };
   return `Layout overlap: ${describe(hit.a)} intersects ${describe(hit.b)}`;

@@ -1,5 +1,11 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
+import type {
+  ChatMessage,
+  ChatSummary,
+  StoredChat,
+  WidgetSnapshot,
+  WidgetVersionEntry,
+} from "~/lib/chatTypes";
 
 export interface CreateChatInput {
   title: string;

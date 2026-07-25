@@ -1,8 +1,19 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { LayoutArchetypeHint, LayoutArchetypeId } from "./layoutArchetype.js";
-import { pickDashboardPaletteForPrompt, DASHBOARD_PALETTES, type DashboardPalette, buildExplicitColorDirective } from "./themePalettes.js";
-import { wantsRoundedCorners, buildRoundedCornersDirective } from "./roundedCorners.js";
-import { readRoundedCornersGuide } from "./knowledge.js";
+import type {
+  LayoutArchetypeHint,
+  LayoutArchetypeId,
+} from "./layoutArchetype.ts";
+import {
+  pickDashboardPaletteForPrompt,
+  DASHBOARD_PALETTES,
+  type DashboardPalette,
+  buildExplicitColorDirective,
+} from "./themePalettes.ts";
+import {
+  wantsRoundedCorners,
+  buildRoundedCornersDirective,
+} from "./roundedCorners.ts";
+import { readRoundedCornersGuide } from "./knowledge.ts";
 
 export interface ColorPalette {
   id: string;
@@ -81,19 +92,45 @@ const COMPOSITION_BY_ARCHETYPE: Record<LayoutArchetypeId, string[]> = {
   ],
 };
 
-const METRIC_KEYWORDS: Array<{ pattern: RegExp; emphasis: string; rotorflightOnly?: boolean }> = [
-  { pattern: /voltage|battery|cell|mah|pack/, emphasis: "Battery voltage and mAh as primary focus" },
-  { pattern: /gps|altitude|alt|speed|sats/, emphasis: "GPS altitude and speed as primary focus" },
-  { pattern: /link|rssi|rqly|signal/, emphasis: "Link quality and RSSI as primary focus" },
-  { pattern: /timer|flight time|armed/, emphasis: "Flight timer and armed state as primary focus" },
+const METRIC_KEYWORDS: Array<{
+  pattern: RegExp;
+  emphasis: string;
+  rotorflightOnly?: boolean;
+}> = [
+  {
+    pattern: /voltage|battery|cell|mah|pack/,
+    emphasis: "Battery voltage and mAh as primary focus",
+  },
+  {
+    pattern: /gps|altitude|alt|speed|sats/,
+    emphasis: "GPS altitude and speed as primary focus",
+  },
+  {
+    pattern: /link|rssi|rqly|signal/,
+    emphasis: "Link quality and RSSI as primary focus",
+  },
+  {
+    pattern: /timer|flight time|armed/,
+    emphasis: "Flight timer and armed state as primary focus",
+  },
   {
     pattern: /headspeed|hspd|rotorflight|heli/,
     emphasis: "Headspeed/RPM and motor temps as primary focus",
     rotorflightOnly: true,
   },
-  { pattern: /rpm|motor|esc/, emphasis: "Motor RPM and ESC telemetry as primary focus", rotorflightOnly: true },
-  { pattern: /current|power|amps|watt/, emphasis: "Current and power draw as primary focus" },
-  { pattern: /logger|log viewer|flight log|history|record flight/, emphasis: "Flight logging and last-flight summary as primary focus" },
+  {
+    pattern: /rpm|motor|esc/,
+    emphasis: "Motor RPM and ESC telemetry as primary focus",
+    rotorflightOnly: true,
+  },
+  {
+    pattern: /current|power|amps|watt/,
+    emphasis: "Current and power draw as primary focus",
+  },
+  {
+    pattern: /logger|log viewer|flight log|history|record flight/,
+    emphasis: "Flight logging and last-flight summary as primary focus",
+  },
 ];
 
 const ROTORFLIGHT_METRICS = [
@@ -127,7 +164,7 @@ export function deriveVariationSeed(sessionId: string, runIndex = 0): number {
 function pickMetricEmphasis(
   userPrompt: string,
   protocol: TelemetryProtocol,
-  seed: number
+  seed: number,
 ): string {
   const p = userPrompt.toLowerCase();
   for (const { pattern, emphasis, rotorflightOnly } of METRIC_KEYWORDS) {
@@ -137,7 +174,8 @@ function pickMetricEmphasis(
     }
   }
 
-  const pool = protocol === "rotorflight" ? ROTORFLIGHT_METRICS : BETAFLIGHT_METRICS;
+  const pool =
+    protocol === "rotorflight" ? ROTORFLIGHT_METRICS : BETAFLIGHT_METRICS;
   return pool[seed % pool.length];
 }
 
@@ -145,11 +183,16 @@ export function buildCreativeBrief(
   seed: number,
   archetype: LayoutArchetypeHint,
   protocol: TelemetryProtocol,
-  userPrompt: string
+  userPrompt: string,
 ): CreativeBrief {
-  const palette = toColorPalette(pickDashboardPaletteForPrompt(seed, userPrompt));
+  const palette = toColorPalette(
+    pickDashboardPaletteForPrompt(seed, userPrompt),
+  );
   const compositions = COMPOSITION_BY_ARCHETYPE[archetype.id];
-  const compositionVariant = compositions[Math.floor(seed / DASHBOARD_PALETTES.length) % compositions.length];
+  const compositionVariant =
+    compositions[
+      Math.floor(seed / DASHBOARD_PALETTES.length) % compositions.length
+    ];
   const metricEmphasis = pickMetricEmphasis(userPrompt, protocol, seed);
   const explicitColors = buildExplicitColorDirective(userPrompt);
   const roundedCorners = wantsRoundedCorners(userPrompt)
@@ -168,7 +211,9 @@ export function buildCreativeBrief(
     palette.surface ? `- **Cards / surface:** ${palette.surface}` : "",
     palette.hero ? `- **Hero values:** ${palette.hero}` : "",
     palette.label ? `- **Labels:** ${palette.label}` : "",
-    palette.rgbSetup ? `- **Suggested RGB locals in create():** ${palette.rgbSetup}` : "",
+    palette.rgbSetup
+      ? `- **Suggested RGB locals in create():** ${palette.rgbSetup}`
+      : "",
     `- **Header treatment:** ${palette.headerStyle}`,
     `- **Border / accent treatment:** ${palette.borderStyle}`,
     `- **Metric emphasis:** ${metricEmphasis}`,
@@ -198,6 +243,6 @@ export function buildCreativeBrief(
 export function shouldBumpRunIndexForRefine(prompt: string): boolean {
   const p = prompt.toLowerCase();
   return /different layout|new layout|more colorful|more colour|minimal|strip|hero|dense|rearrange|redesign|vibrant|asymmetric|rounded\s+corner|rounded\s+card|rounded\s+grid/.test(
-    p
+    p,
   );
 }

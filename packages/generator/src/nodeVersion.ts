@@ -1,4 +1,4 @@
-import { hasBuiltinSqlite } from "./localAgentStore.js";
+import { hasBuiltinSqlite } from "./localAgentStore.ts";
 
 const RECOMMENDED_NODE = [22, 13, 0];
 
@@ -9,6 +9,6 @@ export function assertNodeVersion(): void {
 
   console.warn(
     `Node.js ${RECOMMENDED_NODE.join(".")}+ is recommended for @cursor/sdk (built-in node:sqlite). ` +
-      `Current: ${process.versions.node}. Using JSONL agent store fallback.`
+      `Current: ${process.versions.node}. Using JSONL agent store fallback.`,
   );
 }

@@ -1,17 +1,17 @@
-export { SimRuntime } from "./SimRuntime.js";
-export type { SimRuntimeCallbacks } from "./SimRuntime.js";
+export { SimRuntime } from "./SimRuntime.ts";
+export type { SimRuntimeCallbacks } from "./SimRuntime.ts";
 export {
   planWidgetDeploy,
   buildVirtualSdPaths,
   extractWidgetName,
   sanitizeWidgetFolderName,
   PLACEHOLDER_MODEL_PNG,
-} from "./virtualSd.js";
+} from "./virtualSd.ts";
 export {
   buildTelemetryFrames,
   injectTelemetryFrames,
   BASE_MOCK_TELEMETRY,
-} from "./telemetryBridge.js";
+} from "./telemetryBridge.ts";
 export {
   deploySimModel,
   buildSimModelYaml,
@@ -19,10 +19,14 @@ export {
   SIM_MODEL1_PATH,
   SIM_CUSTOM_SCREEN_VIEW,
   SIM_TELEMETRY_SENSOR_LABELS,
-} from "./simModel.js";
-export type { SimWidgetLayoutPlan, SimFsWriter } from "./simModel.js";
-export { lcdFrameByteSize, cropZoneFromFramebuffer, rgb565ToImageData } from "./framebuffer.js";
-export { WIDGET_LAUNCH_DELAY_FRAMES } from "./SimRuntime.js";
+} from "./simModel.ts";
+export type { SimWidgetLayoutPlan, SimFsWriter } from "./simModel.ts";
+export {
+  lcdFrameByteSize,
+  cropZoneFromFramebuffer,
+  rgb565ToImageData,
+} from "./framebuffer.ts";
+export { WIDGET_LAUNCH_DELAY_FRAMES } from "./SimRuntime.ts";
 export type {
   MockTelemetryValues,
   SimFrameData,
@@ -33,4 +37,4 @@ export type {
   WidgetSimulateZone,
   SimWorkerRequest,
   SimWorkerResponse,
-} from "./types.js";
+} from "./types.ts";

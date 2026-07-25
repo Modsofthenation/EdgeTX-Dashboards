@@ -1,25 +1,44 @@
 import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
 import { randomUUID } from "node:crypto";
-import type { GenerateRequest, GenerateSession, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { buildGenerationPrompt, buildRefinePrompt, getArchetypeForSession } from "./promptComposer.js";
-import { buildSdkUserMessage } from "./promptImages.js";
-import { shouldBumpRunIndexForRefine, deriveVariationSeed } from "./designVariation.js";
-import { allocateWidgetName } from "./widgetNaming.js";
-import { createCustomTools } from "./agentTools.js";
-import { getRepoRoot, loadRadioProfile, loadTelemetryCatalog } from "./knowledge.js";
-import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.js";
+import type {
+  GenerateRequest,
+  GenerateSession,
+  TelemetryProtocol,
+  ValidationIssue,
+} from "@widget-gen/shared";
+import {
+  buildGenerationPrompt,
+  buildRefinePrompt,
+  getArchetypeForSession,
+} from "./promptComposer.ts";
+import { buildSdkUserMessage } from "./promptImages.ts";
+import {
+  shouldBumpRunIndexForRefine,
+  deriveVariationSeed,
+} from "./designVariation.ts";
+import { allocateWidgetName } from "./widgetNaming.ts";
+import { createCustomTools } from "./agentTools.ts";
+import {
+  getRepoRoot,
+  loadRadioProfile,
+  loadTelemetryCatalog,
+} from "./knowledge.ts";
+import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.ts";
 import { existsSync } from "node:fs";
-import { getWidgetLuaPathForKey } from "./paths.js";
-import { ensureWidgetInstanceDir, archiveWidgetVersion } from "./widgetInstance.js";
-import { resolveLocalAgentStore } from "./localAgentStore.js";
+import { getWidgetLuaPathForKey } from "./paths.ts";
+import {
+  ensureWidgetInstanceDir,
+  archiveWidgetVersion,
+} from "./widgetInstance.ts";
+import { resolveLocalAgentStore } from "./localAgentStore.ts";
 import {
   finalizeWidgetRun,
   streamAgentRun,
   type RunCallbacks,
-} from "./orchestrator.js";
-import type { ToolSessionDefaults } from "./agentTools.js";
-import type { RefineHistoryInput } from "./refineHistory.js";
-import { buildRefineHistorySections } from "./refineHistory.js";
+} from "./orchestrator.ts";
+import type { ToolSessionDefaults } from "./agentTools.ts";
+import type { RefineHistoryInput } from "./refineHistory.ts";
+import { buildRefineHistorySections } from "./refineHistory.ts";
 
 export type { RunCallbacks };
 
@@ -119,7 +138,7 @@ export class WidgetGenerator {
   async generate(
     request: GenerateRequest,
     callbacks?: RunCallbacks,
-    session?: GenerateSession
+    session?: GenerateSession,
   ): Promise<{
     runId: string;
     agentId: string;
@@ -138,14 +157,21 @@ export class WidgetGenerator {
 
     const variationSeed =
       session?.variationSeed ??
-      deriveVariationSeed(session?.id ?? request.prompt, session?.runIndex ?? 0);
+      deriveVariationSeed(
+        session?.id ?? request.prompt,
+        session?.runIndex ?? 0,
+      );
 
     const widgetInstanceId = session?.widgetInstanceId ?? randomUUID();
     const widgetVersion = session?.widgetVersion ?? 0;
 
     let assignedWidgetName = session?.widgetName;
     if (!assignedWidgetName) {
-      assignedWidgetName = allocateWidgetName(request.prompt, request.protocol, variationSeed);
+      assignedWidgetName = allocateWidgetName(
+        request.prompt,
+        request.protocol,
+        variationSeed,
+      );
     }
 
     if (session) {
@@ -154,7 +180,11 @@ export class WidgetGenerator {
       session.widgetName = assignedWidgetName;
     }
 
-    ensureWidgetInstanceDir(widgetInstanceId, assignedWidgetName, widgetVersion);
+    ensureWidgetInstanceDir(
+      widgetInstanceId,
+      assignedWidgetName,
+      widgetVersion,
+    );
 
     this.toolDefaults.widgetInstanceId = widgetInstanceId;
     this.toolDefaults.widgetName = assignedWidgetName;
@@ -162,29 +192,29 @@ export class WidgetGenerator {
     this.lastKnownWorkspace = widgetInstanceId;
 
     const promptCtx = session
-        ? {
-            sessionId: session.id,
-            runIndex: session.runIndex ?? 0,
-            variationSeed: session.variationSeed,
-            assignedWidgetName,
-            widgetInstanceId,
-            widgetVersion,
-            referenceImageCount: request.images?.length ?? 0,
-          }
-        : {
-            sessionId: "cli",
-            assignedWidgetName,
-            widgetInstanceId,
-            widgetVersion,
-            referenceImageCount: request.images?.length ?? 0,
-          };
+      ? {
+          sessionId: session.id,
+          runIndex: session.runIndex ?? 0,
+          variationSeed: session.variationSeed,
+          assignedWidgetName,
+          widgetInstanceId,
+          widgetVersion,
+          referenceImageCount: request.images?.length ?? 0,
+        }
+      : {
+          sessionId: "cli",
+          assignedWidgetName,
+          widgetInstanceId,
+          widgetVersion,
+          referenceImageCount: request.images?.length ?? 0,
+        };
 
     const prompt = buildGenerationPrompt(
       request.prompt,
       radio,
       catalog,
       request.edgeTxVersion,
-      promptCtx
+      promptCtx,
     );
 
     if (session) {
@@ -195,7 +225,7 @@ export class WidgetGenerator {
           sessionId: session.id,
           runIndex: session.runIndex ?? 0,
           variationSeed: session.variationSeed,
-        }
+        },
       );
     }
 
@@ -218,11 +248,8 @@ export class WidgetGenerator {
       agentId: agent.agentId,
     });
 
-    const streamed = await streamAgentRun(
-      run,
-      agent.agentId,
-      callbacks,
-      () => this.resolveWidgetWorkspaceKey(widgetInstanceId)
+    const streamed = await streamAgentRun(run, agent.agentId, callbacks, () =>
+      this.resolveWidgetWorkspaceKey(widgetInstanceId),
     );
 
     const runFinished = streamed.status === "finished";
@@ -235,7 +262,7 @@ export class WidgetGenerator {
         workspaceKey,
         request.protocol,
         request.radioId,
-        callbacks
+        callbacks,
       );
       validated = finalization.validated;
       validationIssues = finalization.validationIssues;
@@ -265,7 +292,7 @@ export class WidgetGenerator {
     callbacks?: RunCallbacks,
     session?: GenerateSession,
     images?: GenerateRequest["images"],
-    refineHistory?: RefineHistoryInput
+    refineHistory?: RefineHistoryInput,
   ): Promise<{
     runId: string;
     status: string;
@@ -280,8 +307,10 @@ export class WidgetGenerator {
 
     this.syncToolDefaults(session);
 
-    const widgetInstanceId = session?.widgetInstanceId ?? this.toolDefaults.widgetInstanceId;
-    const displayName = widgetName ?? session?.widgetName ?? this.toolDefaults.widgetName;
+    const widgetInstanceId =
+      session?.widgetInstanceId ?? this.toolDefaults.widgetInstanceId;
+    const displayName =
+      widgetName ?? session?.widgetName ?? this.toolDefaults.widgetName;
 
     if (displayName) {
       this.toolDefaults.widgetName = displayName;
@@ -301,7 +330,11 @@ export class WidgetGenerator {
       }
       this.toolDefaults.widgetVersion = session.widgetVersion;
       if (widgetInstanceId && displayName) {
-        ensureWidgetInstanceDir(widgetInstanceId, displayName, session.widgetVersion);
+        ensureWidgetInstanceDir(
+          widgetInstanceId,
+          displayName,
+          session.widgetVersion,
+        );
       }
     }
 
@@ -323,7 +356,9 @@ export class WidgetGenerator {
             widgetInstanceId: session.widgetInstanceId,
             widgetVersion: session.widgetVersion,
             referenceImageCount: images?.length ?? 0,
-            refineHistory: refineHistory ? buildRefineHistorySections(refineHistory) : undefined,
+            refineHistory: refineHistory
+              ? buildRefineHistorySections(refineHistory)
+              : undefined,
           }
         : widgetInstanceId
           ? {
@@ -331,13 +366,17 @@ export class WidgetGenerator {
               widgetInstanceId,
               widgetVersion: this.toolDefaults.widgetVersion,
               referenceImageCount: images?.length ?? 0,
-              refineHistory: refineHistory ? buildRefineHistorySections(refineHistory) : undefined,
+              refineHistory: refineHistory
+                ? buildRefineHistorySections(refineHistory)
+                : undefined,
             }
           : {
               sessionId: "refine",
               referenceImageCount: images?.length ?? 0,
-              refineHistory: refineHistory ? buildRefineHistorySections(refineHistory) : undefined,
-            }
+              refineHistory: refineHistory
+                ? buildRefineHistorySections(refineHistory)
+                : undefined,
+            },
     );
 
     if (session) {
@@ -358,11 +397,8 @@ export class WidgetGenerator {
 
     const run = await agent.send(buildSdkUserMessage(refinePrompt, images));
 
-    const streamed = await streamAgentRun(
-      run,
-      agent.agentId,
-      callbacks,
-      () => this.resolveWidgetWorkspaceKey(widgetInstanceId)
+    const streamed = await streamAgentRun(run, agent.agentId, callbacks, () =>
+      this.resolveWidgetWorkspaceKey(widgetInstanceId),
     );
 
     const runFinished = streamed.status === "finished";
@@ -371,7 +407,12 @@ export class WidgetGenerator {
     const workspaceKey = widgetInstanceId ?? streamed.widgetName;
 
     if (workspaceKey && runFinished) {
-      const finalization = await finalizeWidgetRun(workspaceKey, protocol, radioId, callbacks);
+      const finalization = await finalizeWidgetRun(
+        workspaceKey,
+        protocol,
+        radioId,
+        callbacks,
+      );
       validated = finalization.validated;
       validationIssues = finalization.validationIssues;
     }

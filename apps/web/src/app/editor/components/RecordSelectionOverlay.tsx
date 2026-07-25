@@ -31,7 +31,7 @@ function screenToZone(
   clientX: number,
   clientY: number,
   rect: DOMRect,
-  layout: CanvasLayout
+  layout: CanvasLayout,
 ): { x: number; y: number } {
   const localX = clientX - rect.left - layout.offsetX;
   const localY = clientY - rect.top - layout.offsetY;
@@ -92,7 +92,7 @@ export function RecordSelectionOverlay({
 
       if (!event.shiftKey) onSelect([]);
     },
-    [records, layout, onSelect, selectedIds, frameRef, zone]
+    [records, layout, onSelect, selectedIds, frameRef, zone],
   );
 
   const onPointerMove = useCallback(
@@ -118,12 +118,23 @@ export function RecordSelectionOverlay({
         return;
       }
 
-      if (drag.mode === "resize" && drag.handle && drag.startBox && drag.recordIds.length === 1) {
-        const box = resizeRecordBox(drag.startBox, drag.handle, pointer.x, pointer.y, snap);
+      if (
+        drag.mode === "resize" &&
+        drag.handle &&
+        drag.startBox &&
+        drag.recordIds.length === 1
+      ) {
+        const box = resizeRecordBox(
+          drag.startBox,
+          drag.handle,
+          pointer.x,
+          pointer.y,
+          snap,
+        );
         onResize(drag.recordIds[0]!, box);
       }
     },
-    [layout, onTranslate, onResize, frameRef]
+    [layout, onTranslate, onResize, frameRef],
   );
 
   const onPointerUp = useCallback(() => {
@@ -131,7 +142,11 @@ export function RecordSelectionOverlay({
   }, []);
 
   const onResizeStart = useCallback(
-    (handle: ResizeHandle, event: React.PointerEvent, record: DocumentRecord) => {
+    (
+      handle: ResizeHandle,
+      event: React.PointerEvent,
+      record: DocumentRecord,
+    ) => {
       if (!layout) return;
       const box = bboxForRecordInZone(record, zone);
       if (!box) return;
@@ -146,7 +161,7 @@ export function RecordSelectionOverlay({
       };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [layout, zone]
+    [layout, zone],
   );
 
   if (!layout) return null;

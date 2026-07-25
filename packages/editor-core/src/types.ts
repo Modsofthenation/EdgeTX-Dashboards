@@ -26,7 +26,8 @@ export interface TelemetryBinding {
   sensor: string;
 }
 
-export type TextFormat = "raw" | "percent" | "float1" | "float1_amps" | "string";
+export type TextFormat =
+  "raw" | "percent" | "float1" | "float1_amps" | "string";
 
 export interface TextBinding {
   sensorKey: string;

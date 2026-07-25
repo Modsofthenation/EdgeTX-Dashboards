@@ -19,9 +19,13 @@ function clearViaSql() {
   const Database = require("better-sqlite3");
   const db = new Database(dbPath);
   db.pragma("foreign_keys = ON");
-  db.exec(`DELETE FROM chat_artifacts; DELETE FROM chat_messages; DELETE FROM chats;`);
+  db.exec(
+    `DELETE FROM chat_artifacts; DELETE FROM chat_messages; DELETE FROM chats;`,
+  );
   db.close();
-  console.log(`Cleared all chats in ${dbPath} (tables wiped — dev server may still hold the file open).`);
+  console.log(
+    `Cleared all chats in ${dbPath} (tables wiped — dev server may still hold the file open).`,
+  );
 }
 
 if (!existsSync(dbPath)) {
@@ -38,7 +42,8 @@ try {
   console.log(`Removed ${dbPath}`);
   console.log("Chat history cleared.");
 } catch (err) {
-  const code = err && typeof err === "object" && "code" in err ? String(err.code) : "";
+  const code =
+    err && typeof err === "object" && "code" in err ? String(err.code) : "";
   if (code === "EBUSY" || code === "EPERM") {
     clearViaSql();
   } else {

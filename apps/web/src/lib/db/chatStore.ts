@@ -1,9 +1,13 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { getDataDirectory } from "@/server/generatorFacade";
-import type { ChatSummary, StoredChat } from "@/lib/chatTypes";
-import type { ChatRepository, CreateChatInput, UpdateChatInput } from "@/lib/db/chatRepository";
-import { SqliteChatRepository } from "@/lib/db/sqliteChatRepository";
+import { getDataDirectory } from "~/server/generatorFacade";
+import type { ChatSummary, StoredChat } from "~/lib/chatTypes";
+import type {
+  ChatRepository,
+  CreateChatInput,
+  UpdateChatInput,
+} from "~/lib/db/chatRepository";
+import { SqliteChatRepository } from "~/lib/db/sqliteChatRepository";
 
 export type { CreateChatInput, UpdateChatInput };
 export { SqliteChatRepository };
@@ -36,7 +40,10 @@ export function createChat(input: CreateChatInput): StoredChat {
   return getChatRepository().createChat(input);
 }
 
-export function updateChat(id: string, input: UpdateChatInput): StoredChat | null {
+export function updateChat(
+  id: string,
+  input: UpdateChatInput,
+): StoredChat | null {
   return getChatRepository().updateChat(id, input);
 }
 

@@ -1,4 +1,9 @@
-import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel, type ModelCatalog } from "@/lib/chatModels";
+import {
+  DEFAULT_CHAT_MODEL,
+  FALLBACK_CHAT_MODELS,
+  type ChatModel,
+  type ModelCatalog,
+} from "~/lib/chatModels";
 
 export type { ChatModel, ModelCatalog };
 
@@ -64,6 +69,9 @@ export async function fetchModelCatalog(): Promise<ModelCatalog> {
   return data;
 }
 
-export function findModel(catalog: ModelCatalog, modelId: string): ChatModel | undefined {
+export function findModel(
+  catalog: ModelCatalog,
+  modelId: string,
+): ChatModel | undefined {
   return catalog.models.find((m) => m.id === modelId);
 }

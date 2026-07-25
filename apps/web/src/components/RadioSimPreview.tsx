@@ -3,21 +3,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { resolvePreviewDimensions, getSimulateLayoutProfile, isFullLcdSimulateZone } from "@widget-gen/shared";
-import type { MockTelemetryValues, SimFrameData, SimKeyboardMode } from "@widget-gen/sim-preview";
+import {
+  resolvePreviewDimensions,
+  getSimulateLayoutProfile,
+  isFullLcdSimulateZone,
+} from "@widget-gen/shared";
+import type {
+  MockTelemetryValues,
+  SimFrameData,
+  SimKeyboardMode,
+} from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
-import { useRadioSim } from "@/lib/radioSim/useRadioSim";
-import { SimFrameCanvas } from "@/components/SimFrameCanvas";
+import { useRadioSim } from "~/lib/radioSim/useRadioSim";
+import { SimFrameCanvas } from "~/components/SimFrameCanvas";
 import styles from "./Preview480x320.module.css";
 
 const SimulatorThemeProvider = dynamic(
   () => import("@edgetx/simulator-ui").then((m) => m.SimulatorThemeProvider),
-  { ssr: false }
+  { ssr: false },
 );
 
 const Simulator = dynamic(
   () => import("@edgetx/simulator-ui").then((m) => m.Simulator),
-  { ssr: false }
+  { ssr: false },
 );
 
 interface RadioSimPreviewProps {
@@ -29,7 +37,9 @@ interface RadioSimPreviewProps {
   /** Keep WASM worker alive (pause when false). */
   active: boolean;
   /** Called when interactive sim can be opened (running) or unavailable. */
-  onInteractiveControls?: (controls: { openInteractive: () => void } | null) => void;
+  onInteractiveControls?: (
+    controls: { openInteractive: () => void } | null,
+  ) => void;
 }
 
 function SimInteractiveOverlay({
@@ -52,7 +62,12 @@ function SimInteractiveOverlay({
   frame: SimFrameData | null;
   live: boolean;
   running: boolean;
-  simState: { loading: boolean; error: string | null; progress: number; status: string };
+  simState: {
+    loading: boolean;
+    error: string | null;
+    progress: number;
+    status: string;
+  };
   keyboardMode: SimKeyboardMode;
   firmwareLabel: string;
   firmwareNote?: string | null;
@@ -90,10 +105,17 @@ function SimInteractiveOverlay({
     >
       <div className={styles.radioSimInteractiveBar}>
         <span className={styles.radioSimFullscreenMeta}>
-          {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX {firmwareLabel} WASM · {previewDims.layout} z
-          {previewDims.zone}
-          {firmwareNote ? <span className={styles.radioSimLiveTag}> · {firmwareNote}</span> : null}
-          {live && running && <span className={styles.radioSimLiveTag}> · Live mock telemetry</span>}
+          {previewDims.lcdW} × {previewDims.lcdH} · EdgeTX {firmwareLabel} WASM
+          · {previewDims.layout} z{previewDims.zone}
+          {firmwareNote ? (
+            <span className={styles.radioSimLiveTag}> · {firmwareNote}</span>
+          ) : null}
+          {live && running && (
+            <span className={styles.radioSimLiveTag}>
+              {" "}
+              · Live mock telemetry
+            </span>
+          )}
         </span>
         {showFullscreenButton && (
           <button
@@ -104,7 +126,11 @@ function SimInteractiveOverlay({
             Enter widget fullscreen
           </button>
         )}
-        <button type="button" className={styles.radioSimFullscreenClose} onClick={onClose}>
+        <button
+          type="button"
+          className={styles.radioSimFullscreenClose}
+          onClick={onClose}
+        >
           Close
         </button>
       </div>
@@ -122,10 +148,11 @@ function SimInteractiveOverlay({
         </div>
       </div>
       <p className={styles.radioSimFullscreenHint}>
-        Double-tap widget for fullscreen · Esc to close · Arrow keys = rotary encoder
+        Double-tap widget for fullscreen · Esc to close · Arrow keys = rotary
+        encoder
       </p>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -173,7 +200,9 @@ export function RadioSimPreview({
     import("@edgetx/simulator-ui")
       .then((m) => {
         const radios = m.radios as RadioProfile[];
-        const tx15 = radios.find((r) => r.wasm === "edgetx-tx15-simulator.wasm");
+        const tx15 = radios.find(
+          (r) => r.wasm === "edgetx-tx15-simulator.wasm",
+        );
         if (tx15) setRadioProfile(tx15);
       })
       .catch(() => {});
@@ -194,7 +223,7 @@ export function RadioSimPreview({
 
   const previewDims = useMemo(
     () => resolvePreviewDimensions(luaSource, layoutProfile),
-    [luaSource, layoutProfile]
+    [luaSource, layoutProfile],
   );
 
   const simZone = useMemo(
@@ -213,7 +242,7 @@ export function RadioSimPreview({
         ? Math.floor(previewDims.lcdH / 2)
         : Math.floor(previewDims.zoneY + previewDims.zoneH / 2),
     }),
-    [previewDims]
+    [previewDims],
   );
 
   const frameZone = useMemo(
@@ -223,7 +252,7 @@ export function RadioSimPreview({
       zoneW: previewDims.zoneW,
       zoneH: previewDims.zoneH,
     }),
-    [previewDims]
+    [previewDims],
   );
   mockRef.current = mock;
 
@@ -250,13 +279,14 @@ export function RadioSimPreview({
       progress: state.progress,
       status: state.status,
     }),
-    [state]
+    [state],
   );
 
   const firmwareLabel = firmware?.label ?? edgeTxVersion.replace(/\.0$/, "");
   const firmwareNote = useMemo(() => {
     if (!firmware) return null;
-    if (firmware.aliasOf) return `uses ${firmware.aliasOf.replace(/\.0$/, "")} firmware`;
+    if (firmware.aliasOf)
+      return `uses ${firmware.aliasOf.replace(/\.0$/, "")} firmware`;
     if (firmware.fallback) return "nearest available firmware";
     return null;
   }, [firmware]);
@@ -324,15 +354,20 @@ export function RadioSimPreview({
         <div className={styles.radioSimMessage}>
           <p>Radio preview unavailable: {state.error}</p>
           <p className={styles.hint}>
-            The EdgeTX firmware may still be downloading, or the sim worker crashed. Hard-refresh the
-            page. If this persists, run <code>npm run setup:sim</code> then restart the app.
+            The EdgeTX firmware may still be downloading, or the sim worker
+            crashed. Hard-refresh the page. If this persists, run{" "}
+            <code>npm run setup:sim</code> then restart the app.
           </p>
         </div>
       </div>
     );
   }
 
-  if (state.phase === "idle" || state.phase === "loading-wasm" || state.phase === "booting") {
+  if (
+    state.phase === "idle" ||
+    state.phase === "loading-wasm" ||
+    state.phase === "booting"
+  ) {
     return (
       <div className={styles.simPreviewRoot}>
         <div className={styles.radioSimMessage}>
@@ -342,12 +377,16 @@ export function RadioSimPreview({
           <p>{state.status || "Booting EdgeTX radio preview…"}</p>
           {wasmSizeMb != null && (
             <p className={styles.hint}>
-              First load downloads ~{wasmSizeMb} MB of firmware (cached afterward).
+              First load downloads ~{wasmSizeMb} MB of firmware (cached
+              afterward).
             </p>
           )}
           {state.progress > 0 && (
             <div className={styles.radioSimProgress} aria-hidden>
-              <div className={styles.radioSimProgressBar} style={{ width: `${state.progress}%` }} />
+              <div
+                className={styles.radioSimProgressBar}
+                style={{ width: `${state.progress}%` }}
+              />
             </div>
           )}
         </div>

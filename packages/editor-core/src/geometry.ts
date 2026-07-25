@@ -1,6 +1,6 @@
 import { bboxForRecord } from "@widget-gen/layout-verify";
 import type { DrawRecord } from "@widget-gen/layout-verify";
-import type { EditorElement } from "./types.js";
+import type { EditorElement } from "./types.ts";
 
 export const SNAP_GRID = 12;
 
@@ -11,7 +11,11 @@ export interface BoundingBox {
   h: number;
 }
 
-export function snapToGrid(value: number, grid = SNAP_GRID, enabled = true): number {
+export function snapToGrid(
+  value: number,
+  grid = SNAP_GRID,
+  enabled = true,
+): number {
   if (!enabled) return Math.round(value);
   return Math.round(value / grid) * grid;
 }
@@ -102,14 +106,20 @@ export function elementToDrawRecord(el: EditorElement): DrawRecord | null {
   }
 }
 
-export function bboxForElement(el: EditorElement, lcdW = 480, lcdH = 320): BoundingBox | null {
+export function bboxForElement(
+  el: EditorElement,
+  lcdW = 480,
+  lcdH = 320,
+): BoundingBox | null {
   const record = elementToDrawRecord(el);
   if (!record) return null;
   return bboxForRecord(record, lcdW, lcdH);
 }
 
 export function pointInBox(px: number, py: number, box: BoundingBox): boolean {
-  return px >= box.x && px <= box.x + box.w && py >= box.y && py <= box.y + box.h;
+  return (
+    px >= box.x && px <= box.x + box.w && py >= box.y && py <= box.y + box.h
+  );
 }
 
 function hitTargetBox(el: EditorElement, box: BoundingBox): BoundingBox {
@@ -140,7 +150,7 @@ export function hitTestElements(
   px: number,
   py: number,
   lcdW = 480,
-  lcdH = 320
+  lcdH = 320,
 ): string | null {
   for (let i = elements.length - 1; i >= 0; i--) {
     const el = elements[i];
@@ -152,7 +162,11 @@ export function hitTestElements(
   return null;
 }
 
-export function translateElement(el: EditorElement, dx: number, dy: number): EditorElement {
+export function translateElement(
+  el: EditorElement,
+  dx: number,
+  dy: number,
+): EditorElement {
   switch (el.kind) {
     case "text":
     case "filledRect":
@@ -165,7 +179,13 @@ export function translateElement(el: EditorElement, dx: number, dy: number): Edi
     case "bitmap":
       return { ...el, x: el.x + dx, y: el.y + dy };
     case "line":
-      return { ...el, x1: el.x1 + dx, y1: el.y1 + dy, x2: el.x2 + dx, y2: el.y2 + dy };
+      return {
+        ...el,
+        x1: el.x1 + dx,
+        y1: el.y1 + dy,
+        x2: el.x2 + dx,
+        y2: el.y2 + dy,
+      };
     default:
       return el;
   }
@@ -174,9 +194,10 @@ export function translateElement(el: EditorElement, dx: number, dy: number): Edi
 export function resizeRectElement(
   el: EditorElement,
   newBox: BoundingBox,
-  handle: ResizeHandle
+  handle: ResizeHandle,
 ): EditorElement {
-  if (el.kind !== "filledRect" && el.kind !== "rect" && el.kind !== "gauge") return el;
+  if (el.kind !== "filledRect" && el.kind !== "rect" && el.kind !== "gauge")
+    return el;
 
   const minSize = 4;
   let { x, y, w, h } = newBox;
@@ -191,14 +212,32 @@ export function resizeRectElement(
     y = newBox.y + newBox.h - h;
   }
 
-  return { ...el, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  return {
+    ...el,
+    x: Math.round(x),
+    y: Math.round(y),
+    w: Math.round(w),
+    h: Math.round(h),
+  };
 }
 
 export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
-export const RESIZE_HANDLES: ResizeHandle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+export const RESIZE_HANDLES: ResizeHandle[] = [
+  "nw",
+  "n",
+  "ne",
+  "e",
+  "se",
+  "s",
+  "sw",
+  "w",
+];
 
-export function handlePosition(box: BoundingBox, handle: ResizeHandle): { x: number; y: number } {
+export function handlePosition(
+  box: BoundingBox,
+  handle: ResizeHandle,
+): { x: number; y: number } {
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2;
   const right = box.x + box.w;

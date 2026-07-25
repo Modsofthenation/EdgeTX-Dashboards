@@ -2,10 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { StreamTodoItem } from "@widget-gen/shared";
-import type { ToolChipEntry } from "@/lib/streamLines";
+import type { ToolChipEntry } from "~/lib/streamLines";
 import styles from "./ToolActivity.module.css";
 
-function ToolLineContent({ tool, shimmer }: { tool: ToolChipEntry; shimmer?: boolean }) {
+function ToolLineContent({
+  tool,
+  shimmer,
+}: {
+  tool: ToolChipEntry;
+  shimmer?: boolean;
+}) {
   if (shimmer) {
     const text = tool.detail ? `${tool.label} · ${tool.detail}` : tool.label;
     return <span className={styles.toolShimmerText}>{text}</span>;
@@ -14,7 +20,9 @@ function ToolLineContent({ tool, shimmer }: { tool: ToolChipEntry; shimmer?: boo
   return (
     <>
       <span className={styles.toolLineLabel}>{tool.label}</span>
-      {tool.detail ? <span className={styles.toolLineDetail}>{tool.detail}</span> : null}
+      {tool.detail ? (
+        <span className={styles.toolLineDetail}>{tool.detail}</span>
+      ) : null}
     </>
   );
 }
@@ -58,7 +66,10 @@ export function ToolActivityStream({
   return (
     <div className={styles.toolStream} aria-live="polite" aria-atomic="true">
       {exitingTool ? (
-        <div className={`${styles.toolLine} ${styles.toolLineExit}`} key={`exit-${exitingTool.key}`}>
+        <div
+          className={`${styles.toolLine} ${styles.toolLineExit}`}
+          key={`exit-${exitingTool.key}`}
+        >
           <ToolLineContent tool={exitingTool} />
         </div>
       ) : null}
@@ -93,14 +104,22 @@ export function ToolChipRow({ tools }: { tools: ToolChipEntry[] }) {
           title={tool.detail}
         >
           <span className={styles.toolChipLabel}>{tool.label}</span>
-          {tool.detail ? <span className={styles.toolChipDetail}>{tool.detail}</span> : null}
+          {tool.detail ? (
+            <span className={styles.toolChipDetail}>{tool.detail}</span>
+          ) : null}
         </span>
       ))}
     </div>
   );
 }
 
-export function TodoPanel({ title, todos }: { title?: string; todos: StreamTodoItem[] }) {
+export function TodoPanel({
+  title,
+  todos,
+}: {
+  title?: string;
+  todos: StreamTodoItem[];
+}) {
   return (
     <div className={styles.todoPanel}>
       <div className={styles.todoHeader}>{title ?? "Todos"}</div>
@@ -110,8 +129,17 @@ export function TodoPanel({ title, todos }: { title?: string; todos: StreamTodoI
             key={todo.id}
             className={`${styles.todoItem} ${styles[`todo_${todo.status}`]}`}
           >
-            <span className={styles.todoStatus} aria-label={TODO_STATUS_LABEL[todo.status]}>
-              {todo.status === "completed" ? "✓" : todo.status === "in_progress" ? "◐" : todo.status === "cancelled" ? "—" : "○"}
+            <span
+              className={styles.todoStatus}
+              aria-label={TODO_STATUS_LABEL[todo.status]}
+            >
+              {todo.status === "completed"
+                ? "✓"
+                : todo.status === "in_progress"
+                  ? "◐"
+                  : todo.status === "cancelled"
+                    ? "—"
+                    : "○"}
             </span>
             <span className={styles.todoText}>{todo.content}</span>
           </li>

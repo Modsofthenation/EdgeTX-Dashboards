@@ -1,23 +1,53 @@
-import { createWriteStream, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import archiver from "archiver";
-import type { RadioProfile, TelemetryCatalog, TelemetryProtocol } from "@widget-gen/shared";
-import { getRepoRoot, loadTelemetryCatalog, readTemplate, loadRadioProfile } from "./knowledge.js";
-import { detectCompanions, listWidgetPackageEntries } from "./packageEntries.js";
-import { getGeneratedDirForKey, getWidgetLuaPathForKey, sanitizeWidgetName, isWidgetInstanceId, sanitizeWidgetInstanceId } from "./paths.js";
-import { resolveDisplayName } from "./widgetInstance.js";
-import { readWidgetVersionSource, getWidgetVersionLuaPath } from "./widgetInstance.js";
-import { assertValidForRelease } from "./validationPipeline.js";
-import { defaultWorkspace } from "./workspace.js";
+import type {
+  RadioProfile,
+  TelemetryCatalog,
+  TelemetryProtocol,
+} from "@widget-gen/shared";
+import {
+  getRepoRoot,
+  loadTelemetryCatalog,
+  readTemplate,
+  loadRadioProfile,
+} from "./knowledge.ts";
+import {
+  detectCompanions,
+  listWidgetPackageEntries,
+} from "./packageEntries.ts";
+import {
+  getGeneratedDirForKey,
+  getWidgetLuaPathForKey,
+  sanitizeWidgetName,
+  isWidgetInstanceId,
+  sanitizeWidgetInstanceId,
+} from "./paths.ts";
+import { resolveDisplayName } from "./widgetInstance.ts";
+import {
+  readWidgetVersionSource,
+  getWidgetVersionLuaPath,
+} from "./widgetInstance.ts";
+import { assertValidForRelease } from "./validationPipeline.ts";
+import { defaultWorkspace } from "./workspace.ts";
 
-export { getGeneratedDir, getWidgetLuaPath, sanitizeWidgetName } from "./paths.js";
+export {
+  getGeneratedDir,
+  getWidgetLuaPath,
+  sanitizeWidgetName,
+} from "./paths.ts";
 
 export function renderInstallMd(
   widgetName: string,
   radio: RadioProfile,
   catalog: TelemetryCatalog,
   sensorNames: string[],
-  companions?: { tools: string[]; telemetry: string[] }
+  companions?: { tools: string[]; telemetry: string[] },
 ): string {
   let tpl = readTemplate("INSTALL.md.tpl");
   const sensors = catalog.sensors.filter((s) => sensorNames.includes(s.name));
@@ -33,19 +63,24 @@ export function renderInstallMd(
   const setupNotes = catalog.setupNotes ?? [];
   tpl = tpl.replace(
     /\{\{#SETUP_NOTES\}\}[\s\S]*?\{\{\/SETUP_NOTES\}\}/,
-    setupNotes.map((n) => `- ${n}`).join("\n")
+    setupNotes.map((n) => `- ${n}`).join("\n"),
   );
 
   if (catalog.protocol === "rotorflight") {
     tpl = tpl.replace(/\{\{#ROTORFLIGHT_NOTE\}\}/, "");
     tpl = tpl.replace(/\{\{\/ROTORFLIGHT_NOTE\}\}/, "");
   } else {
-    tpl = tpl.replace(/\{\{#ROTORFLIGHT_NOTE\}\}[\s\S]*?\{\{\/ROTORFLIGHT_NOTE\}\}/, "");
+    tpl = tpl.replace(
+      /\{\{#ROTORFLIGHT_NOTE\}\}[\s\S]*?\{\{\/ROTORFLIGHT_NOTE\}\}/,
+      "",
+    );
   }
 
   const sensorBlock =
     sensors.length > 0
-      ? sensors.map((s) => `- **${s.name}** — ${s.description} (${s.unit})`).join("\n")
+      ? sensors
+          .map((s) => `- **${s.name}** — ${s.description} (${s.unit})`)
+          .join("\n")
       : "- See generated dashboard source for sensor references";
   tpl = tpl.replace(/\{\{#SENSORS\}\}[\s\S]*?\{\{\/SENSORS\}\}/, sensorBlock);
 
@@ -61,7 +96,7 @@ export function renderInstallMd(
             "",
             ...tools.map(
               (t) =>
-                `1. Copy \`${t}\` to \`SD:/SCRIPTS/TOOLS/${t}\` on your radio.\n2. Open **SYS** → **Tools** → run **${t.replace(/\.lua$/, "")}**.`
+                `1. Copy \`${t}\` to \`SD:/SCRIPTS/TOOLS/${t}\` on your radio.\n2. Open **SYS** → **Tools** → run **${t.replace(/\.lua$/, "")}**.`,
             ),
             "",
           ].join("\n")
@@ -72,7 +107,7 @@ export function renderInstallMd(
             "",
             ...telemetry.map(
               (t) =>
-                `1. Copy \`${t}\` to \`SD:/SCRIPTS/TELEMETRY/${t}\`.\n2. **Model** → **Telemetry** (or **Display**) → set a screen to **Script** → pick **${t.replace(/\.lua$/, "")}**.`
+                `1. Copy \`${t}\` to \`SD:/SCRIPTS/TELEMETRY/${t}\`.\n2. **Model** → **Telemetry** (or **Display**) → set a screen to **Script** → pick **${t.replace(/\.lua$/, "")}**.`,
             ),
             "",
           ].join("\n")
@@ -83,7 +118,10 @@ export function renderInstallMd(
     tpl = tpl.replace(/\{\{\/COMPANION_SCRIPTS\}\}/, "");
     tpl = tpl.replace(/\{\{COMPANION_BLOCK\}\}/, companionBlock);
   } else {
-    tpl = tpl.replace(/\{\{#COMPANION_SCRIPTS\}\}[\s\S]*?\{\{\/COMPANION_SCRIPTS\}\}/, "");
+    tpl = tpl.replace(
+      /\{\{#COMPANION_SCRIPTS\}\}[\s\S]*?\{\{\/COMPANION_SCRIPTS\}\}/,
+      "",
+    );
     tpl = tpl.replace(/\{\{COMPANION_BLOCK\}\}/, "");
   }
 
@@ -93,8 +131,13 @@ export function renderInstallMd(
 export async function packageWidget(
   workspaceKey: string,
   protocol: TelemetryProtocol,
-  options?: { radioId?: string; version?: number; skipValidation?: boolean }
-): Promise<{ zipPath: string; widgetDir: string; widgetName: string; instanceId?: string }> {
+  options?: { radioId?: string; version?: number; skipValidation?: boolean },
+): Promise<{
+  zipPath: string;
+  widgetDir: string;
+  widgetName: string;
+  instanceId?: string;
+}> {
   const radioId = options?.radioId ?? "tx15";
   const version = options?.version;
   const widgetDir = isWidgetInstanceId(workspaceKey)
@@ -110,7 +153,9 @@ export async function packageWidget(
   if (version !== undefined && isWidgetInstanceId(workspaceKey)) {
     const archived = readWidgetVersionSource(workspaceKey, version);
     if (!archived) {
-      throw new Error(`Version ${version} not found for workspace ${workspaceKey}`);
+      throw new Error(
+        `Version ${version} not found for workspace ${workspaceKey}`,
+      );
     }
     source = archived;
   } else {
@@ -131,7 +176,9 @@ export async function packageWidget(
 
   const displayName = resolveDisplayName(workspaceKey);
   if (!displayName) {
-    throw new Error(`Could not resolve radio display name for workspace ${workspaceKey}`);
+    throw new Error(
+      `Could not resolve radio display name for workspace ${workspaceKey}`,
+    );
   }
   const safeDisplay = sanitizeWidgetName(displayName);
 
@@ -145,7 +192,9 @@ export async function packageWidget(
   const distDir = join(repoRoot, "dist-output");
   mkdirSync(distDir, { recursive: true });
 
-  const zipBaseName = isWidgetInstanceId(workspaceKey) ? sanitizeWidgetInstanceId(workspaceKey) : safeDisplay;
+  const zipBaseName = isWidgetInstanceId(workspaceKey)
+    ? sanitizeWidgetInstanceId(workspaceKey)
+    : safeDisplay;
   const zipPath =
     version !== undefined
       ? join(distDir, `${zipBaseName}-v${version}.zip`)
@@ -180,7 +229,9 @@ export async function packageWidget(
     zipPath,
     widgetDir,
     widgetName: safeDisplay,
-    instanceId: isWidgetInstanceId(workspaceKey) ? sanitizeWidgetInstanceId(workspaceKey) : undefined,
+    instanceId: isWidgetInstanceId(workspaceKey)
+      ? sanitizeWidgetInstanceId(workspaceKey)
+      : undefined,
   };
 }
 
@@ -188,7 +239,7 @@ export function writeInstallMd(
   workspaceKey: string,
   radio: RadioProfile,
   catalog: TelemetryCatalog,
-  source: string
+  source: string,
 ): string {
   const displayName = resolveDisplayName(workspaceKey) ?? workspaceKey;
   const safeDisplay = sanitizeWidgetName(displayName);
@@ -196,7 +247,13 @@ export function writeInstallMd(
     .filter((s) => source.includes(`"${s.name}"`))
     .map((s) => s.name);
   const companions = detectCompanions(workspaceKey);
-  const content = renderInstallMd(safeDisplay, radio, catalog, sensorNames, companions);
+  const content = renderInstallMd(
+    safeDisplay,
+    radio,
+    catalog,
+    sensorNames,
+    companions,
+  );
   const dir = getGeneratedDirForKey(workspaceKey);
   mkdirSync(dir, { recursive: true });
   const installPath = join(dir, "INSTALL.md");

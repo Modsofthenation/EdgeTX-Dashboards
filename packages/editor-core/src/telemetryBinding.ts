@@ -1,5 +1,9 @@
-import type { TextFormat } from "./types.js";
-import { getSourceLine, replaceSourceLine, type DocumentRecord } from "./luaDocument.js";
+import type { TextFormat } from "./types.ts";
+import {
+  getSourceLine,
+  replaceSourceLine,
+  type DocumentRecord,
+} from "./luaDocument.ts";
 
 const SENSOR_TO_KEY: Record<string, string> = {
   RQLY: "rqly",
@@ -26,7 +30,10 @@ const SENSOR_TO_KEY: Record<string, string> = {
 export function sensorKeyForLabel(sensor: string): string {
   return (
     SENSOR_TO_KEY[sensor] ??
-    sensor.toLowerCase().replace(/%/g, "p").replace(/[^a-z0-9]/gi, "")
+    sensor
+      .toLowerCase()
+      .replace(/%/g, "p")
+      .replace(/[^a-z0-9]/gi, "")
   );
 }
 
@@ -47,7 +54,8 @@ function formatExpr(localVar: string, format: TextFormat): string {
 }
 
 function defaultFormatForSensor(sensor: string): TextFormat {
-  if (sensor === "RQLY" || sensor === "TQLY" || sensor === "Bat%") return "percent";
+  if (sensor === "RQLY" || sensor === "TQLY" || sensor === "Bat%")
+    return "percent";
   if (sensor === "Curr") return "float1_amps";
   if (sensor === "RxBt") return "float1";
   if (sensor === "FM") return "string";
@@ -62,7 +70,7 @@ export function bindTextRecordToSensor(
   source: string,
   record: DocumentRecord,
   sensor: string,
-  format?: TextFormat
+  format?: TextFormat,
 ): string {
   if (record.kind !== "text" || !record.sourceRef) return source;
   const key = sensorKeyForLabel(sensor);
@@ -80,7 +88,9 @@ export function bindTextRecordToSensor(
   const third = args[2]!;
   const expr = formatExpr(localVar, fmt);
   const patchedLine =
-    line.slice(0, argsStart + third.start) + expr + line.slice(argsStart + third.end);
+    line.slice(0, argsStart + third.start) +
+    expr +
+    line.slice(argsStart + third.end);
   let next = replaceSourceLine(source, lineNum, patchedLine);
 
   next = ensureTelemetryCache(next, key, sensor);
@@ -89,16 +99,28 @@ export function bindTextRecordToSensor(
 }
 
 function hasSensorCache(source: string, key: string, sensor: string): boolean {
-  if (new RegExp(`\\b${escapeReg(key)}\\s*=\\s*cacheSource\\s*\\(\\s*"${escapeReg(sensor)}"`).test(source)) {
+  if (
+    new RegExp(
+      `\\b${escapeReg(key)}\\s*=\\s*cacheSource\\s*\\(\\s*"${escapeReg(sensor)}"`,
+    ).test(source)
+  ) {
     return true;
   }
-  if (new RegExp(`\\b${escapeReg(key)}\\s*=\\s*getSourceIndex\\s*\\(\\s*"${escapeReg(sensor)}"`).test(source)) {
+  if (
+    new RegExp(
+      `\\b${escapeReg(key)}\\s*=\\s*getSourceIndex\\s*\\(\\s*"${escapeReg(sensor)}"`,
+    ).test(source)
+  ) {
     return true;
   }
   return false;
 }
 
-function ensureTelemetryCache(source: string, key: string, sensor: string): string {
+function ensureTelemetryCache(
+  source: string,
+  key: string,
+  sensor: string,
+): string {
   if (hasSensorCache(source, key, sensor)) return source;
 
   // Prefer inserting into an existing `src = { ... }` table in create().
@@ -119,15 +141,22 @@ function ensureTelemetryCache(source: string, key: string, sensor: string): stri
   return source.slice(0, insertAt) + snippet + source.slice(insertAt);
 }
 
-function ensureRefreshLocal(source: string, key: string, localVar: string): string {
-  if (new RegExp(`local\\s+${escapeReg(localVar)}\\s*=`).test(source)) return source;
+function ensureRefreshLocal(
+  source: string,
+  key: string,
+  localVar: string,
+): string {
+  if (new RegExp(`local\\s+${escapeReg(localVar)}\\s*=`).test(source))
+    return source;
   const refreshMatch = source.match(
-    /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/
+    /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/,
   );
   if (!refreshMatch || refreshMatch.index === undefined) return source;
   const insertAt = refreshMatch.index + refreshMatch[0].length;
   // Prefer telem() helper when present; else getValue(widget.src.key).
-  const usesTelem = /\bfunction\s+telem\s*\(/.test(source) || /\btelem\s*=\s*function/.test(source);
+  const usesTelem =
+    /\bfunction\s+telem\s*\(/.test(source) ||
+    /\btelem\s*=\s*function/.test(source);
   const valueExpr = usesTelem
     ? `telem(widget.src.${key})`
     : `getValue(widget.src.${key}) or 0`;
@@ -161,7 +190,9 @@ function escapeReg(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function splitTopLevelArgs(argsSrc: string): { start: number; end: number; text: string }[] {
+function splitTopLevelArgs(
+  argsSrc: string,
+): { start: number; end: number; text: string }[] {
   const args: { start: number; end: number; text: string }[] = [];
   let depth = 0;
   let start = 0;

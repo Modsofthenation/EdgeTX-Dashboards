@@ -1,11 +1,11 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
+import { checkApiAuth } from "~/lib/apiSecurity";
 import {
   isTelemetryProtocol,
   readWidgetLuaSource,
   resolveWidgetWorkspaceFromSession,
   validateWidgetSource,
   writeWidgetLuaSource,
-} from "@/server/generatorFacade";
+} from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,12 +20,14 @@ export async function GET(request: Request): Promise<Response> {
   const explicitInstanceId = searchParams.get("instanceId");
   const versionParam = searchParams.get("version");
   const version =
-    versionParam !== null && versionParam !== "" ? Number.parseInt(versionParam, 10) : undefined;
+    versionParam !== null && versionParam !== ""
+      ? Number.parseInt(versionParam, 10)
+      : undefined;
 
   const resolved = resolveWidgetWorkspaceFromSession(
     sessionId,
     explicitInstanceId,
-    explicitName
+    explicitName,
   );
   if (resolved.pending) {
     return new Response(null, { status: 204 });
@@ -33,7 +35,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const widget = readWidgetLuaSource(
     resolved.workspaceKey,
-    Number.isFinite(version) ? version : undefined
+    Number.isFinite(version) ? version : undefined,
   );
   if (!widget) {
     return new Response(null, { status: 204 });
@@ -77,7 +79,7 @@ export async function PUT(request: Request): Promise<Response> {
   const resolved = resolveWidgetWorkspaceFromSession(
     body.sessionId ?? null,
     body.instanceId ?? null,
-    body.name ?? null
+    body.name ?? null,
   );
   if (resolved.pending || !resolved.workspaceKey) {
     return Response.json({ error: "Workspace not found" }, { status: 404 });
@@ -89,12 +91,15 @@ export async function PUT(request: Request): Promise<Response> {
   }
 
   const radioId = body.radioId ?? "tx15";
-  const validation = validateWidgetSource(source, protocol, { radioId, strictTelemetry: true });
+  const validation = validateWidgetSource(source, protocol, {
+    radioId,
+    strictTelemetry: true,
+  });
 
   if (!validation.valid) {
     return Response.json(
       { valid: false, issues: validation.issues, error: "Validation failed" },
-      { status: 422 }
+      { status: 422 },
     );
   }
 

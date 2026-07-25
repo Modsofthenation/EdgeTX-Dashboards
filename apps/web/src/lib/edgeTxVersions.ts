@@ -17,6 +17,8 @@ export function normalizeEdgeTxVersion(version: string): string {
 
 export function edgeTxVersionLabel(version: string): string {
   const normalized = normalizeEdgeTxVersion(version);
-  const option = EDGE_TX_VERSION_OPTIONS.find((entry) => entry.value === normalized);
+  const option = EDGE_TX_VERSION_OPTIONS.find(
+    (entry) => entry.value === normalized,
+  );
   return option?.label ?? normalized.replace(/\.0$/, "");
 }

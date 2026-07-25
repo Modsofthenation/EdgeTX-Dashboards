@@ -1,7 +1,11 @@
 import { existsSync } from "node:fs";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { hashString } from "./designVariation.js";
-import { getWidgetLuaPath, sanitizeWidgetName, WIDGET_NAME_PATTERN } from "./paths.js";
+import { hashString } from "./designVariation.ts";
+import {
+  getWidgetLuaPath,
+  sanitizeWidgetName,
+  WIDGET_NAME_PATTERN,
+} from "./paths.ts";
 
 const PROTO_PREFIX: Record<TelemetryProtocol, string> = {
   betaflight: "Bf",
@@ -11,10 +15,17 @@ const PROTO_PREFIX: Record<TelemetryProtocol, string> = {
 
 /** Ordered by specificity — first matches win for primary topic. */
 const TOPIC_RULES: Array<{ pattern: RegExp; tag: string }> = [
-  { pattern: /flight\s*log|logger|logging|log viewer|record flight|last flight/i, tag: "FltLog" },
+  {
+    pattern:
+      /flight\s*log|logger|logging|log viewer|record flight|last flight/i,
+    tag: "FltLog",
+  },
   { pattern: /heli|helicopter|rotorcraft|headspeed|head speed/i, tag: "Heli" },
   { pattern: /gps|geofenc|waypoint|\bsats?\b|satellite/i, tag: "GPS" },
-  { pattern: /model\s*(image|photo|picture)|plane image|show.*model/i, tag: "Model" },
+  {
+    pattern: /model\s*(image|photo|picture)|plane image|show.*model/i,
+    tag: "Model",
+  },
   { pattern: /battery|voltage|\bbatt\b|rxbt|cell volt/i, tag: "Batt" },
   { pattern: /\brpm\b|motor|esc|esct|mott|hspd/i, tag: "Motor" },
   { pattern: /link|rssi|rqly|lqi|signal quality/i, tag: "Link" },
@@ -106,14 +117,14 @@ function normalizeWidgetName(name: string): string {
 export function suggestWidgetName(
   prompt: string,
   protocol: TelemetryProtocol,
-  seed: number
+  seed: number,
 ): string {
   const proto = PROTO_PREFIX[protocol];
   const budget = 10 - proto.length - SUFFIX_LEN;
   const topics = detectTopicTags(prompt);
   const semantic = combineWithinBudget(
     topics.length > 0 ? topics : [fallbackTopicTag(prompt)],
-    budget
+    budget,
   );
   const suffix = randomSuffix(seed ^ hashString(prompt));
   return normalizeWidgetName(`${proto}${semantic}${suffix}`);
@@ -132,10 +143,14 @@ export function allocateWidgetName(
   prompt: string,
   protocol: TelemetryProtocol,
   seed: number,
-  exists: (name: string) => boolean = widgetFolderExists
+  exists: (name: string) => boolean = widgetFolderExists,
 ): string {
   for (let attempt = 0; attempt < 64; attempt++) {
-    const candidate = suggestWidgetName(prompt, protocol, seed + attempt * 9973);
+    const candidate = suggestWidgetName(
+      prompt,
+      protocol,
+      seed + attempt * 9973,
+    );
     if (!exists(candidate) && WIDGET_NAME_PATTERN.test(candidate)) {
       return candidate;
     }

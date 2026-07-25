@@ -116,7 +116,9 @@
   background: var(--bg-elevated);
   color: var(--muted);
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .rail:hover {
@@ -148,7 +150,10 @@
   color: var(--muted);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .headerToggle:hover {

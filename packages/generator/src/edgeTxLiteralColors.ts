@@ -25,7 +25,13 @@ export const EDGE_TX_LITERAL_COLORS = new Set([
  * Color names the web preview understands but EdgeTX radio Lua does not define.
  * Using them in `SMLSIZE + LIME` etc. crashes refresh() with nil arithmetic.
  */
-export const PREVIEW_ONLY_COLOR_NAMES = ["LIME", "CYAN", "MAGENTA", "GRAY", "LIGHTRED"] as const;
+export const PREVIEW_ONLY_COLOR_NAMES = [
+  "LIME",
+  "CYAN",
+  "MAGENTA",
+  "GRAY",
+  "LIGHTRED",
+] as const;
 
 export type PreviewOnlyColorName = (typeof PREVIEW_ONLY_COLOR_NAMES)[number];
 

@@ -4,12 +4,12 @@ When the user asks for **battery selection**, **flight logging**, **log viewing*
 
 ## Output layout (under `generated/<DashboardName>/`)
 
-| Path | SD card destination | Purpose |
-|------|---------------------|---------|
-| `main.lua` | `WIDGETS/<DashboardName>/main.lua` | Full-screen dashboard (always required) |
-| `tools/*.lua` | `SCRIPTS/TOOLS/<name>.lua` | Configuration wizards, battery picker, log browser |
-| `telemetry/*.lua` | `SCRIPTS/TELEMETRY/<name>.lua` | Background loggers, session timers tied to arm switch |
-| `INSTALL.md` | `WIDGETS/<DashboardName>/INSTALL.md` | Auto-generated — must document **every** file |
+| Path              | SD card destination                  | Purpose                                               |
+| ----------------- | ------------------------------------ | ----------------------------------------------------- |
+| `main.lua`        | `WIDGETS/<DashboardName>/main.lua`   | Full-screen dashboard (always required)               |
+| `tools/*.lua`     | `SCRIPTS/TOOLS/<name>.lua`           | Configuration wizards, battery picker, log browser    |
+| `telemetry/*.lua` | `SCRIPTS/TELEMETRY/<name>.lua`       | Background loggers, session timers tied to arm switch |
+| `INSTALL.md`      | `WIDGETS/<DashboardName>/INSTALL.md` | Auto-generated — must document **every** file         |
 
 ## Battery selector tool (`tools/batt_select.lua`)
 

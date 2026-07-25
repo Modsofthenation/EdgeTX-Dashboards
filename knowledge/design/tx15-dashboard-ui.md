@@ -34,11 +34,11 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 ## Typography
 
-| Role | Flag | Line height (`LH`) |
-|------|------|---------------------|
-| Hero | `DBLSIZE` | `LH.DBL` = 26px |
-| Primary | `MIDSIZE` | `LH.MID` = 18px |
-| Label / unit | `SMLSIZE` | `LH.SML` = 12px |
+| Role         | Flag      | Line height (`LH`) |
+| ------------ | --------- | ------------------ |
+| Hero         | `DBLSIZE` | `LH.DBL` = 26px    |
+| Primary      | `MIDSIZE` | `LH.MID` = 18px    |
+| Label / unit | `SMLSIZE` | `LH.SML` = 12px    |
 
 **Mandatory:** use height-aware stacking per `knowledge/design/tx15-text-layout.md` — define `local LH = { SML = 12, MID = 18, DBL = 26, GAP = 4, SEC = 8 }` and accumulate `y` inside each container. Never use flat `y + 16` steps or `#str * charW` unit placement.
 
@@ -51,9 +51,9 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 The generator web UI offers two preview modes:
 
-| Mode | Engine | Guarantees | Default |
-|------|--------|------------|---------|
-| **Preview** | Regex parser (`luaPreviewEngine.ts`) | Fast; parses direct `lcd.*` in `refresh()` only | Yes |
+| Mode          | Engine                                    | Guarantees                                                  | Default    |
+| ------------- | ----------------------------------------- | ----------------------------------------------------------- | ---------- |
+| **Preview**   | Regex parser (`luaPreviewEngine.ts`)      | Fast; parses direct `lcd.*` in `refresh()` only             | Yes        |
 | **Radio sim** | EdgeTX 2.11 WASM (`@edgetx/simulator-ui`) | Real Lua + firmware draw; LVGL-capable; ~5–15 MB first load | Lazy (tab) |
 
 Both modes use the same mock telemetry catalog (`mockTelemetry.ts` → CRSF injection in Radio sim). `@simulate` zone cropping applies in Preview (overlay) and Radio sim (framebuffer crop).
@@ -69,15 +69,15 @@ For **Preview** (regex) parsing rules:
 
 ## Color semantics
 
-| Meaning | Color |
-|---------|-------|
-| Good / link OK | `GREEN` |
-| Battery / caution | `YELLOW` or `ORANGE` |
-| Warning / low | `RED` (sparingly — one element max) |
-| Labels / secondary | `GREY` or `WHITE` |
-| Hero values | `WHITE`, `CYAN`, or `YELLOW` |
-| Card background | `DARKGREY` on `BLACK` |
-| Card border | `GREY` |
+| Meaning            | Color                               |
+| ------------------ | ----------------------------------- |
+| Good / link OK     | `GREEN`                             |
+| Battery / caution  | `YELLOW` or `ORANGE`                |
+| Warning / low      | `RED` (sparingly — one element max) |
+| Labels / secondary | `GREY` or `WHITE`                   |
+| Hero values        | `WHITE`, `CYAN`, or `YELLOW`        |
+| Card background    | `DARKGREY` on `BLACK`               |
+| Card border        | `GREY`                              |
 
 Do not use rainbow colors on every line. Pick **2 accent colors** plus grey/white.
 

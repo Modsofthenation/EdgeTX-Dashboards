@@ -1,4 +1,4 @@
-import type { MockTelemetryValues } from "./types.js";
+import type { MockTelemetryValues } from "./types.ts";
 
 // CRSF frame builders — ported from EdgeTX Dev Kit ExtensionTelemetry.tsx
 
@@ -139,10 +139,15 @@ export function injectTelemetryFrames(
     malloc: (size: number) => number;
     free: (ptr: number) => void;
     memory: WebAssembly.Memory;
-    simuSendTelemetry: (mod: number, protocol: number, ptr: number, frameLen: number) => void;
+    simuSendTelemetry: (
+      mod: number,
+      protocol: number,
+      ptr: number,
+      frameLen: number,
+    ) => void;
   },
   frames: number[][],
-  modules: readonly number[] = CRSF_TELEMETRY_MODULES
+  modules: readonly number[] = CRSF_TELEMETRY_MODULES,
 ): void {
   for (const frameData of frames) {
     if (!frameData.length) continue;
@@ -151,7 +156,12 @@ export function injectTelemetryFrames(
     if (!ptr) continue;
     new Uint8Array(exports.memory.buffer).set(bytes, ptr);
     for (const mod of modules) {
-      exports.simuSendTelemetry(mod, CRSF_TELEMETRY_PROTOCOL, ptr, bytes.length);
+      exports.simuSendTelemetry(
+        mod,
+        CRSF_TELEMETRY_PROTOCOL,
+        ptr,
+        bytes.length,
+      );
     }
     exports.free(ptr);
   }

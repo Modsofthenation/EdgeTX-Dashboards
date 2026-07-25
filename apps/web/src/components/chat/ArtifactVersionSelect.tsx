@@ -1,7 +1,7 @@
 "use client";
 
-import type { WidgetVersionEntry } from "@/lib/chatTypes";
-import { formatVersionOptionLabel } from "@/lib/chatTypes";
+import type { WidgetVersionEntry } from "~/lib/chatTypes";
+import { formatVersionOptionLabel } from "~/lib/chatTypes";
 import styles from "./ArtifactVersionSelect.module.css";
 
 interface ArtifactVersionSelectProps {
@@ -57,7 +57,10 @@ export function ArtifactVersionSelect({
         )}
       </div>
       {!isViewingLatest && (
-        <p className={styles.hint}>Viewing an earlier snapshot — refine always updates the latest version.</p>
+        <p className={styles.hint}>
+          Viewing an earlier snapshot — refine always updates the latest
+          version.
+        </p>
       )}
     </div>
   );

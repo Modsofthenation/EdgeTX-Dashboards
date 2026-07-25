@@ -12,13 +12,17 @@ import {
   type ReactNode,
 } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { consumeGenerationStream, type GenerationSsePayload } from "@/lib/generationStreamClient";
-import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
-import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel } from "@/lib/chatModels";
 import {
-  fetchModelCatalog,
-  findModel,
-} from "@/lib/modelCatalog";
+  consumeGenerationStream,
+  type GenerationSsePayload,
+} from "~/lib/generationStreamClient";
+import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
+import {
+  DEFAULT_CHAT_MODEL,
+  FALLBACK_CHAT_MODELS,
+  type ChatModel,
+} from "~/lib/chatModels";
+import { fetchModelCatalog, findModel } from "~/lib/modelCatalog";
 import {
   createChatRecord,
   fetchChat,
@@ -26,12 +30,12 @@ import {
   removeChatRecord,
   restoreGeneratorSession,
   syncChatRecord,
-} from "@/lib/chatHistoryApi";
+} from "~/lib/chatHistoryApi";
 import {
   fetchRadioCatalog,
   findRadio,
   type RadioCatalogEntry,
-} from "@/lib/radioCatalog";
+} from "~/lib/radioCatalog";
 import {
   appendAssistantLine,
   createAssistantPlaceholder,
@@ -44,15 +48,15 @@ import {
   type ChatSummary,
   type WidgetSnapshot,
   type WidgetVersionEntry,
-} from "@/lib/chatTypes";
-import { toPromptImages, type PendingPromptImage } from "@/lib/promptImages";
+} from "~/lib/chatTypes";
+import { toPromptImages, type PendingPromptImage } from "~/lib/promptImages";
 import {
   commitVersionSnapshot,
   buildVersionTimeline,
   resolveDisplayArtifact,
   resolveLatestVersion,
-} from "@/lib/artifactVersionHistory";
-import type { StreamLine } from "@/lib/streamLines";
+} from "~/lib/artifactVersionHistory";
+import type { StreamLine } from "~/lib/streamLines";
 
 function shouldRenderStreamEvent(type: string): boolean {
   return type !== "widget" && type !== "status" && type !== "done";
@@ -72,7 +76,9 @@ export function useWidgetChatState() {
   const [edgeTxVersion, setEdgeTxVersion] = useState("2.11.0");
   const [running, setRunning] = useState(false);
   const [artifact, setArtifact] = useState<WidgetSnapshot | null>(null);
-  const [artifactVersions, setArtifactVersions] = useState<WidgetVersionEntry[]>([]);
+  const [artifactVersions, setArtifactVersions] = useState<
+    WidgetVersionEntry[]
+  >([]);
   const [viewingVersion, setViewingVersion] = useState<number | null>(null);
   const [artifactLoading, setArtifactLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -106,7 +112,9 @@ export function useWidgetChatState() {
       .then((catalog) => {
         setModels(catalog.models);
         setModelId((current) =>
-          catalog.models.some((m) => m.id === current) ? current : catalog.defaultId
+          catalog.models.some((m) => m.id === current)
+            ? current
+            : catalog.defaultId,
         );
       })
       .finally(() => setModelsLoading(false));
@@ -114,12 +122,12 @@ export function useWidgetChatState() {
 
   const selectedRadio = useMemo(
     () => findRadio({ defaultId: DEFAULT_RADIO_ID, radios }, radioId),
-    [radioId, radios]
+    [radioId, radios],
   );
 
   const selectedModel = useMemo(
     () => findModel({ defaultId: DEFAULT_CHAT_MODEL, models }, modelId),
-    [modelId, models]
+    [modelId, models],
   );
 
   const layoutProfileId = selectedRadio?.layoutProfile ?? DEFAULT_RADIO_ID;
@@ -128,29 +136,45 @@ export function useWidgetChatState() {
   const effectiveViewingVersion = viewingVersion ?? latestVersion;
 
   const displayArtifact = useMemo(
-    () => resolveDisplayArtifact(effectiveViewingVersion, latestVersion, artifact, artifactVersions),
-    [effectiveViewingVersion, latestVersion, artifact, artifactVersions]
+    () =>
+      resolveDisplayArtifact(
+        effectiveViewingVersion,
+        latestVersion,
+        artifact,
+        artifactVersions,
+      ),
+    [effectiveViewingVersion, latestVersion, artifact, artifactVersions],
   );
 
   const versionTimeline = useMemo(
     () => buildVersionTimeline(artifactVersions, latestVersion, artifact),
-    [artifactVersions, latestVersion, artifact]
+    [artifactVersions, latestVersion, artifact],
   );
 
   const commitSnapshot = useCallback(
-    (snapshot: WidgetSnapshot, options?: { messageId?: string | null; force?: boolean }) => {
+    (
+      snapshot: WidgetSnapshot,
+      options?: { messageId?: string | null; force?: boolean },
+    ) => {
       if (!snapshot.luaSource) return;
-      const next = commitVersionSnapshot(artifactVersionsRef.current, snapshot, options);
+      const next = commitVersionSnapshot(
+        artifactVersionsRef.current,
+        snapshot,
+        options,
+      );
       artifactVersionsRef.current = next;
       setArtifactVersions(next);
     },
-    []
+    [],
   );
 
-  const setArtifactVersionsTracked = useCallback((entries: WidgetVersionEntry[]) => {
-    artifactVersionsRef.current = entries;
-    setArtifactVersions(entries);
-  }, []);
+  const setArtifactVersionsTracked = useCallback(
+    (entries: WidgetVersionEntry[]) => {
+      artifactVersionsRef.current = entries;
+      setArtifactVersions(entries);
+    },
+    [],
+  );
 
   const persistChat = useCallback(
     async (id: string) => {
@@ -162,21 +186,26 @@ export function useWidgetChatState() {
         widgetVersion: widgetVersionRef.current,
         messages: messagesRef.current,
         artifact:
-          snapshot?.luaSource != null && snapshot.luaSource.length > 0 ? snapshot : undefined,
+          snapshot?.luaSource != null && snapshot.luaSource.length > 0
+            ? snapshot
+            : undefined,
         artifactVersions: artifactVersionsRef.current,
       });
       await refreshHistory();
     },
-    [refreshHistory]
+    [refreshHistory],
   );
 
-  const setMessagesTracked = useCallback((updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
-    setMessages((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      messagesRef.current = next;
-      return next;
-    });
-  }, []);
+  const setMessagesTracked = useCallback(
+    (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+      setMessages((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        messagesRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
   const flushStreamDraft = useCallback(() => {
     if (streamFlushRef.current !== null) {
@@ -212,16 +241,24 @@ export function useWidgetChatState() {
         flushStreamDraft();
       });
     },
-    [flushStreamDraft]
+    [flushStreamDraft],
   );
 
-  const setArtifactTracked = useCallback((updater: WidgetSnapshot | null | ((prev: WidgetSnapshot | null) => WidgetSnapshot | null)) => {
-    setArtifact((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      artifactRef.current = next;
-      return next;
-    });
-  }, []);
+  const setArtifactTracked = useCallback(
+    (
+      updater:
+        | WidgetSnapshot
+        | null
+        | ((prev: WidgetSnapshot | null) => WidgetSnapshot | null),
+    ) => {
+      setArtifact((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        artifactRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
   const loadArtifact = useCallback(
     async (
@@ -230,7 +267,7 @@ export function useWidgetChatState() {
       issues?: ValidationIssue[],
       session?: string | null,
       forChatId?: string | null,
-      options?: { version?: number; forceHistory?: boolean }
+      options?: { version?: number; forceHistory?: boolean },
     ) => {
       const generation = ++fetchGenerationRef.current;
       const expectedChatId = forChatId ?? chatIdRef.current;
@@ -241,7 +278,7 @@ export function useWidgetChatState() {
           instanceId: widgetInstanceIdRef.current,
           widgetName: name,
           version: targetVersion,
-        }
+        },
       );
       if (generation !== fetchGenerationRef.current) return;
       if (expectedChatId !== chatIdRef.current) return;
@@ -262,10 +299,12 @@ export function useWidgetChatState() {
         validationIssues: issues ?? [],
       };
       setArtifactTracked(snapshot);
-      commitSnapshot(snapshot, { force: options?.forceHistory ?? targetVersion === undefined });
+      commitSnapshot(snapshot, {
+        force: options?.forceHistory ?? targetVersion === undefined,
+      });
       setArtifactLoading(false);
     },
-    [setArtifactTracked, commitSnapshot]
+    [setArtifactTracked, commitSnapshot],
   );
 
   const selectViewingVersion = useCallback(
@@ -273,7 +312,9 @@ export function useWidgetChatState() {
       viewingVersionRef.current = version;
       setViewingVersion(version);
 
-      const entry = artifactVersionsRef.current.find((v) => v.version === version);
+      const entry = artifactVersionsRef.current.find(
+        (v) => v.version === version,
+      );
       if (entry?.luaSource) return;
 
       if (!widgetInstanceIdRef.current && !widgetNameRef.current) return;
@@ -296,13 +337,13 @@ export function useWidgetChatState() {
             validated: entry?.validated ?? false,
             validationIssues: entry?.validationIssues ?? [],
           },
-          { force: false }
+          { force: false },
         );
       } finally {
         setArtifactLoading(false);
       }
     },
-    [commitSnapshot]
+    [commitSnapshot],
   );
 
   const scheduleLoadArtifact = useCallback(
@@ -312,11 +353,17 @@ export function useWidgetChatState() {
         void loadArtifact(name, validated, issues);
       }, 500);
     },
-    [loadArtifact]
+    [loadArtifact],
   );
 
   const ensureChat = useCallback(
-    async (title: string, proto: TelemetryProtocol, model: string, edgeTx: string, radio: string) => {
+    async (
+      title: string,
+      proto: TelemetryProtocol,
+      model: string,
+      edgeTx: string,
+      radio: string,
+    ) => {
       if (chatIdRef.current) return chatIdRef.current;
 
       const chat = await createChatRecord({
@@ -333,11 +380,14 @@ export function useWidgetChatState() {
       await refreshHistory();
       return chat.id;
     },
-    [refreshHistory]
+    [refreshHistory],
   );
 
   const sendMessage = useCallback(
-    async (prompt: string, options?: Partial<ChatSendOptions> & { images?: PendingPromptImage[] }) => {
+    async (
+      prompt: string,
+      options?: Partial<ChatSendOptions> & { images?: PendingPromptImage[] },
+    ) => {
       const trimmed = prompt.trim();
       const pendingImages = options?.images ?? [];
       if ((!trimmed && pendingImages.length === 0) || running) return;
@@ -372,7 +422,8 @@ export function useWidgetChatState() {
 
       const isRefine =
         !!sessionIdRef.current ||
-        (!!chatIdRef.current && !!(widgetInstanceIdRef.current || widgetNameRef.current));
+        (!!chatIdRef.current &&
+          !!(widgetInstanceIdRef.current || widgetNameRef.current));
 
       fetchGenerationRef.current += 1;
       if (fetchDebounceRef.current) {
@@ -385,7 +436,10 @@ export function useWidgetChatState() {
         widgetInstanceIdRef.current = null;
         widgetVersionRef.current = 0;
         setArtifactTracked(null);
-      } else if (chatIdRef.current && (widgetInstanceIdRef.current || widgetNameRef.current)) {
+      } else if (
+        chatIdRef.current &&
+        (widgetInstanceIdRef.current || widgetNameRef.current)
+      ) {
         const restored = await restoreGeneratorSession(chatIdRef.current);
         if (restored?.sessionId) {
           setSessionId(restored.sessionId);
@@ -425,10 +479,17 @@ export function useWidgetChatState() {
       setArtifactLoading(true);
 
       if (!isRefine) {
-        await ensureChat(trimmed || "Reference image dashboard", proto, model, edgeTx, radio);
+        await ensureChat(
+          trimmed || "Reference image dashboard",
+          proto,
+          model,
+          edgeTx,
+          radio,
+        );
       }
 
-      const apiImages = pendingImages.length > 0 ? toPromptImages(pendingImages) : undefined;
+      const apiImages =
+        pendingImages.length > 0 ? toPromptImages(pendingImages) : undefined;
       const url = isRefine ? "/api/refine" : "/api/generate";
       const body = isRefine
         ? {
@@ -464,7 +525,7 @@ export function useWidgetChatState() {
               isStreaming: false,
               error: true,
               content: err.error ?? "Request failed",
-            })
+            }),
           );
           setArtifactLoading(false);
           return;
@@ -484,7 +545,11 @@ export function useWidgetChatState() {
             const prevInstanceId = widgetInstanceIdRef.current;
             const prevName = widgetNameRef.current;
 
-            if (prevInstanceId && nextInstanceId && prevInstanceId !== nextInstanceId) {
+            if (
+              prevInstanceId &&
+              nextInstanceId &&
+              prevInstanceId !== nextInstanceId
+            ) {
               return;
             }
             if (!nextInstanceId && prevName && prevName !== nextName) {
@@ -493,7 +558,8 @@ export function useWidgetChatState() {
 
             widgetNameRef.current = nextName;
             if (nextInstanceId) widgetInstanceIdRef.current = nextInstanceId;
-            if (data.widgetVersion !== undefined) widgetVersionRef.current = data.widgetVersion;
+            if (data.widgetVersion !== undefined)
+              widgetVersionRef.current = data.widgetVersion;
 
             const identityChanged =
               prevInstanceId !== nextInstanceId ||
@@ -518,7 +584,9 @@ export function useWidgetChatState() {
 
           if (shouldRenderStreamEvent(data.type)) {
             const lineType =
-              data.type === "done" && data.success === false ? "error" : (data.type as StreamLine["type"]);
+              data.type === "done" && data.success === false
+                ? "error"
+                : (data.type as StreamLine["type"]);
             if (
               lineType === "text" ||
               lineType === "tool" ||
@@ -539,7 +607,8 @@ export function useWidgetChatState() {
 
           if (data.type === "done" || data.type === "error") {
             const name = data.widgetName ?? widgetNameRef.current;
-            const instanceId = data.widgetInstanceId ?? widgetInstanceIdRef.current;
+            const instanceId =
+              data.widgetInstanceId ?? widgetInstanceIdRef.current;
             const version = data.widgetVersion ?? widgetVersionRef.current;
             const finalValidated = data.validated ?? validated;
             const finalIssues = data.validationIssues ?? validationIssues;
@@ -556,7 +625,7 @@ export function useWidgetChatState() {
                     validated: finalValidated,
                     validationIssues: finalIssues,
                   }
-                : prev
+                : prev,
             );
 
             flushStreamDraft();
@@ -564,7 +633,7 @@ export function useWidgetChatState() {
               patchAssistant(prev, assistantId, {
                 isStreaming: false,
                 error: data.type === "error" && data.success === false,
-              })
+              }),
             );
           }
         };
@@ -581,7 +650,7 @@ export function useWidgetChatState() {
               isStreaming: false,
               error: true,
               content: (err as Error).message,
-            })
+            }),
           );
         }
       } finally {
@@ -605,7 +674,7 @@ export function useWidgetChatState() {
             validationIssues,
             sessionIdRef.current,
             activeChatId,
-            { forceHistory: true }
+            { forceHistory: true },
           );
         } else {
           setArtifactLoading(false);
@@ -634,7 +703,7 @@ export function useWidgetChatState() {
       setMessagesTracked,
       commitSnapshot,
       setArtifactVersionsTracked,
-    ]
+    ],
   );
 
   const loadChat = useCallback(
@@ -671,7 +740,8 @@ export function useWidgetChatState() {
       widgetNameRef.current = chat.widgetName ?? chat.artifact?.name ?? null;
       widgetInstanceIdRef.current =
         chat.widgetInstanceId ?? chat.artifact?.instanceId ?? null;
-      widgetVersionRef.current = chat.widgetVersion ?? chat.artifact?.version ?? 0;
+      widgetVersionRef.current =
+        chat.widgetVersion ?? chat.artifact?.version ?? 0;
       setProtocol(chat.protocol);
       setModelId(chat.modelId);
       setRadioId(chat.radioId);
@@ -724,9 +794,12 @@ export function useWidgetChatState() {
           chat.artifact?.validated,
           chat.artifact?.validationIssues,
           sessionIdRef.current,
-          chat.id
+          chat.id,
         );
-        if (loadGen === chatLoadGenRef.current && chatIdRef.current === chat.id) {
+        if (
+          loadGen === chatLoadGenRef.current &&
+          chatIdRef.current === chat.id
+        ) {
           await persistChat(chat.id);
         }
         return;
@@ -735,7 +808,14 @@ export function useWidgetChatState() {
       setArtifactTracked(null);
       setArtifactLoading(false);
     },
-    [running, loadArtifact, persistChat, setMessagesTracked, setArtifactTracked, setArtifactVersionsTracked]
+    [
+      running,
+      loadArtifact,
+      persistChat,
+      setMessagesTracked,
+      setArtifactTracked,
+      setArtifactVersionsTracked,
+    ],
   );
 
   const startNewChat = useCallback(() => {
@@ -770,7 +850,7 @@ export function useWidgetChatState() {
       }
       await refreshHistory();
     },
-    [running, startNewChat, refreshHistory]
+    [running, startNewChat, refreshHistory],
   );
 
   return {
@@ -857,17 +937,20 @@ type SessionSettingsContextValue = Pick<
   | "setEdgeTxVersion"
 >;
 
-const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
+const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(
+  null,
+);
 const ChatSessionContext = createContext<ChatSessionContextValue | null>(null);
 const ArtifactContext = createContext<ArtifactContextValue | null>(null);
-const SessionSettingsContext = createContext<SessionSettingsContextValue | null>(null);
+const SessionSettingsContext =
+  createContext<SessionSettingsContextValue | null>(null);
 
 export function WidgetChatProvider({ children }: { children: ReactNode }) {
   const state = useWidgetChatState();
 
   const messagesValue = useMemo(
     () => ({ messages: state.messages, scrollRevision: state.scrollRevision }),
-    [state.messages, state.scrollRevision]
+    [state.messages, state.scrollRevision],
   );
 
   const sessionValue = useMemo(
@@ -892,7 +975,7 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       state.loadChat,
       state.deleteChat,
       state.canRefine,
-    ]
+    ],
   );
 
   const artifactValue = useMemo(
@@ -913,7 +996,7 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       state.selectViewingVersion,
       state.artifactLoading,
       state.sessionId,
-    ]
+    ],
   );
 
   const settingsValue = useMemo(
@@ -948,14 +1031,16 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
       state.setModelId,
       state.edgeTxVersion,
       state.setEdgeTxVersion,
-    ]
+    ],
   );
 
   return (
     <SessionSettingsContext.Provider value={settingsValue}>
       <ArtifactContext.Provider value={artifactValue}>
         <ChatSessionContext.Provider value={sessionValue}>
-          <ChatMessagesContext.Provider value={messagesValue}>{children}</ChatMessagesContext.Provider>
+          <ChatMessagesContext.Provider value={messagesValue}>
+            {children}
+          </ChatMessagesContext.Provider>
         </ChatSessionContext.Provider>
       </ArtifactContext.Provider>
     </SessionSettingsContext.Provider>

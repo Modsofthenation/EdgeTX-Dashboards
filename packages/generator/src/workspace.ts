@@ -2,8 +2,8 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { SimulateLayoutProfile } from "@widget-gen/shared";
 import { ensureDevKitAnnotations } from "@widget-gen/shared";
-import { loadSimulateLayoutProfile } from "./knowledge.js";
-import { getWidgetLuaPathForKey } from "./paths.js";
+import { loadSimulateLayoutProfile } from "./knowledge.ts";
+import { getWidgetLuaPathForKey } from "./paths.ts";
 
 export interface WidgetSourceResult {
   ok: true;
@@ -44,7 +44,10 @@ export class WidgetWorkspace {
     return { ok: true, source: readFileSync(path, "utf-8"), mutated: false };
   }
 
-  prepareSource(workspaceKey: string, simulateProfile: SimulateLayoutProfile): ReadWidgetResult {
+  prepareSource(
+    workspaceKey: string,
+    simulateProfile: SimulateLayoutProfile,
+  ): ReadWidgetResult {
     const read = this.readSource(workspaceKey);
     if (!read.ok) return read;
 

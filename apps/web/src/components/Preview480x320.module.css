@@ -210,7 +210,9 @@
   background: linear-gradient(180deg, #1a1d26 0%, #0f1118 100%);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .deviceLabel {
@@ -401,7 +403,9 @@
   line-height: 1;
   cursor: pointer;
   opacity: 0.75;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
 }
 
 .radioSimScreen:hover .radioSimExpand,
@@ -517,7 +521,12 @@
   flex-direction: column;
   align-items: center;
   padding: 0.75rem 1rem 1rem;
-  background: radial-gradient(ellipse 120% 80% at 50% 20%, #2a3142 0%, #12151c 55%, #08090d 100%);
+  background: radial-gradient(
+    ellipse 120% 80% at 50% 20%,
+    #2a3142 0%,
+    #12151c 55%,
+    #08090d 100%
+  );
   backdrop-filter: blur(8px);
   overflow: auto;
 }

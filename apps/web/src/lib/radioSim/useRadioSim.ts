@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type {
   MockTelemetryValues,
   RadioSimState,
@@ -10,13 +10,13 @@ import type {
   SimWorkerResponse,
   WidgetSimulateZone,
 } from "@widget-gen/sim-preview";
-import { DEFAULT_EDGE_TX_VERSION } from "@/lib/edgeTxVersions";
+import { DEFAULT_EDGE_TX_VERSION } from "~/lib/edgeTxVersions";
 import {
   resolveSimFirmware,
   type SimFirmwareResolution,
   type SimManifest,
-} from "@/lib/radioSim/simFirmware";
-import { resolveReachableWasmUrl } from "@/lib/radioSim/resolveWasmUrl";
+} from "~/lib/radioSim/simFirmware";
+import { resolveReachableWasmUrl } from "~/lib/radioSim/resolveWasmUrl";
 
 const DEFAULT_STATE: RadioSimState = {
   phase: "idle",
@@ -43,7 +43,8 @@ function fetchSimManifest(): Promise<SimManifest> {
   if (!manifestPromise) {
     manifestPromise = fetch("/sim/manifest.json")
       .then((response) => {
-        if (!response.ok) throw new Error(`Failed to load sim manifest (${response.status})`);
+        if (!response.ok)
+          throw new Error(`Failed to load sim manifest (${response.status})`);
         return response.json() as Promise<SimManifest>;
       })
       .catch((err) => {
@@ -61,14 +62,16 @@ export function useRadioSim() {
   const lastFrameCommitRef = useRef(0);
   const nextLoadRequestIdRef = useRef(1);
   const pendingLoadRef = useRef(
-    new Map<number, { resolve: () => void; reject: (err: Error) => void }>()
+    new Map<number, { resolve: () => void; reject: (err: Error) => void }>(),
   );
   const [state, setState] = useState<RadioSimState>(DEFAULT_STATE);
   const [firmware, setFirmware] = useState<SimFirmwareResolution | null>(null);
 
   const ensureWorker = useCallback(() => {
     if (workerRef.current) return workerRef.current;
-    const worker = new Worker(new URL("../../workers/edgetxSim.worker.ts", import.meta.url));
+    const worker = new Worker(
+      new URL("../../workers/edgetxSim.worker.ts", import.meta.url),
+    );
     worker.onmessage = (event: MessageEvent<SimWorkerResponse>) => {
       const msg = event.data;
       if (msg.type === "state") setState(msg.state);
@@ -82,7 +85,13 @@ export function useRadioSim() {
         subscriber(msg.frame);
       }
       if (msg.type === "error") {
-        setState({ phase: "error", progress: 0, status: "Error", error: msg.message, keyboardMode: "none" });
+        setState({
+          phase: "error",
+          progress: 0,
+          status: "Error",
+          error: msg.message,
+          keyboardMode: "none",
+        });
       }
       if (msg.type === "loadWidgetResult") {
         const pending = pendingLoadRef.current.get(msg.requestId);
@@ -112,14 +121,26 @@ export function useRadioSim() {
     async (widget?: RadioSimInitOptions) => {
       const worker = ensureWorker();
       const edgeTxVersion = widget?.edgeTxVersion ?? DEFAULT_EDGE_TX_VERSION;
-      setState({ phase: "loading-wasm", progress: 0, status: "Resolving firmware…", error: null, keyboardMode: "none" });
+      setState({
+        phase: "loading-wasm",
+        progress: 0,
+        status: "Resolving firmware…",
+        error: null,
+        keyboardMode: "none",
+      });
 
       try {
         const manifest = await fetchSimManifest();
         const resolved = resolveSimFirmware(manifest, edgeTxVersion);
         const wasmUrl = await resolveReachableWasmUrl(resolved, manifest);
         setFirmware(resolved);
-        setState({ phase: "loading-wasm", progress: 0, status: "Starting…", error: null, keyboardMode: "none" });
+        setState({
+          phase: "loading-wasm",
+          progress: 0,
+          status: "Starting…",
+          error: null,
+          keyboardMode: "none",
+        });
 
         const req: SimWorkerRequest = {
           type: "init",
@@ -133,23 +154,34 @@ export function useRadioSim() {
         worker.postMessage(req);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        setState({ phase: "error", progress: 0, status: "Error", error: message, keyboardMode: "none" });
+        setState({
+          phase: "error",
+          progress: 0,
+          status: "Error",
+          error: message,
+          keyboardMode: "none",
+        });
       }
     },
-    [ensureWorker]
+    [ensureWorker],
   );
 
   const loadWidget = useCallback(
     (source: string, zone?: WidgetSimulateZone) => {
       const worker = ensureWorker();
       const requestId = nextLoadRequestIdRef.current++;
-      const req: SimWorkerRequest = { type: "loadWidget", source, zone, requestId };
+      const req: SimWorkerRequest = {
+        type: "loadWidget",
+        source,
+        zone,
+        requestId,
+      };
       return new Promise<void>((resolve, reject) => {
         pendingLoadRef.current.set(requestId, { resolve, reject });
         worker.postMessage(req);
       });
     },
-    [ensureWorker]
+    [ensureWorker],
   );
 
   const setMock = useCallback(
@@ -158,7 +190,7 @@ export function useRadioSim() {
       const req: SimWorkerRequest = { type: "setMock", mock };
       worker.postMessage(req);
     },
-    [ensureWorker]
+    [ensureWorker],
   );
 
   const sendInput = useCallback((msg: SimInputMessage) => {
@@ -169,15 +201,21 @@ export function useRadioSim() {
   }, []);
 
   const pause = useCallback(() => {
-    workerRef.current?.postMessage({ type: "pause" } satisfies SimWorkerRequest);
+    workerRef.current?.postMessage({
+      type: "pause",
+    } satisfies SimWorkerRequest);
   }, []);
 
   const resume = useCallback(() => {
-    workerRef.current?.postMessage({ type: "resume" } satisfies SimWorkerRequest);
+    workerRef.current?.postMessage({
+      type: "resume",
+    } satisfies SimWorkerRequest);
   }, []);
 
   const enterWidgetFullscreen = useCallback(() => {
-    workerRef.current?.postMessage({ type: "enterWidgetFullscreen" } satisfies SimWorkerRequest);
+    workerRef.current?.postMessage({
+      type: "enterWidgetFullscreen",
+    } satisfies SimWorkerRequest);
   }, []);
 
   const subscribeFrames = useCallback((subscriber: FrameSubscriber | null) => {
@@ -193,7 +231,9 @@ export function useRadioSim() {
       pending.reject(new Error("Simulator disposed"));
     }
     pendingLoadRef.current.clear();
-    workerRef.current?.postMessage({ type: "dispose" } satisfies SimWorkerRequest);
+    workerRef.current?.postMessage({
+      type: "dispose",
+    } satisfies SimWorkerRequest);
     workerRef.current?.terminate();
     workerRef.current = null;
     frameRef.current = null;
@@ -204,7 +244,9 @@ export function useRadioSim() {
   }, []);
 
   const wasmSizeMb =
-    firmware?.size != null ? Math.round((firmware.size / 1024 / 1024) * 10) / 10 : null;
+    firmware?.size != null
+      ? Math.round((firmware.size / 1024 / 1024) * 10) / 10
+      : null;
 
   return {
     state,

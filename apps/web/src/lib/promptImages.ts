@@ -1,7 +1,12 @@
 import type { PromptImage } from "@widget-gen/shared";
 import { MAX_PROMPT_IMAGES, MAX_PROMPT_IMAGE_BYTES } from "@widget-gen/shared";
 
-const ALLOWED_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+const ALLOWED_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
 
 export interface PendingPromptImage {
   id: string;
@@ -17,12 +22,16 @@ export function isAllowedPromptImageType(mimeType: string): boolean {
   return ALLOWED_MIME_TYPES.has(mimeType.toLowerCase());
 }
 
-export async function readPromptImageFile(file: File): Promise<PendingPromptImage> {
+export async function readPromptImageFile(
+  file: File,
+): Promise<PendingPromptImage> {
   if (!isAllowedPromptImageType(file.type)) {
     throw new Error("Use PNG, JPEG, WebP, or GIF images");
   }
   if (file.size > MAX_PROMPT_IMAGE_BYTES) {
-    throw new Error(`Each image must be ${MAX_PROMPT_IMAGE_BYTES / (1024 * 1024)}MB or smaller`);
+    throw new Error(
+      `Each image must be ${MAX_PROMPT_IMAGE_BYTES / (1024 * 1024)}MB or smaller`,
+    );
   }
 
   const buffer = await file.arrayBuffer();

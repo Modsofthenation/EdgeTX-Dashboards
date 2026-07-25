@@ -1,5 +1,5 @@
 import type { RefineHistoryInput } from "@widget-gen/generator";
-import type { ChatMessage, StoredChat } from "@/lib/chatTypes";
+import type { ChatMessage, StoredChat } from "~/lib/chatTypes";
 
 function messageText(message: ChatMessage): string {
   const direct = message.content.trim();
@@ -8,7 +8,10 @@ function messageText(message: ChatMessage): string {
   if (!message.lines?.length) return "";
 
   return message.lines
-    .filter((line) => line.type === "text" || line.type === "done" || line.type === "status")
+    .filter(
+      (line) =>
+        line.type === "text" || line.type === "done" || line.type === "status",
+    )
     .map((line) => line.content?.trim() ?? "")
     .filter(Boolean)
     .join("\n")
@@ -18,7 +21,7 @@ function messageText(message: ChatMessage): string {
 export function buildRefineHistoryInput(
   chat: StoredChat,
   currentPrompt: string,
-  workspaceLuaSource?: string | null
+  workspaceLuaSource?: string | null,
 ): RefineHistoryInput {
   return {
     messages: chat.messages.map((message) => ({

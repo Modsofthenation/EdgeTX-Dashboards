@@ -1,4 +1,7 @@
-import { DEFAULT_EDGE_TX_VERSION, normalizeEdgeTxVersion } from "@/lib/edgeTxVersions";
+import {
+  DEFAULT_EDGE_TX_VERSION,
+  normalizeEdgeTxVersion,
+} from "~/lib/edgeTxVersions";
 
 export interface SimDisplayProfile {
   w: number;
@@ -46,7 +49,7 @@ export interface SimFirmwareResolution {
 
 export function resolveSimFirmware(
   manifest: SimManifest,
-  edgeTxVersion: string
+  edgeTxVersion: string,
 ): SimFirmwareResolution {
   const requestedVersion = normalizeEdgeTxVersion(edgeTxVersion);
   const versions = manifest.versions ?? {};

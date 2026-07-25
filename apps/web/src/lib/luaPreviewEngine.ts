@@ -23,7 +23,7 @@ export function renderPreviewCommands(
   commands: PreviewDrawCommand[],
   scale: number,
   lcdW = 480,
-  lcdH = 320
+  lcdH = 320,
 ): void {
   ctx.save();
   ctx.scale(scale, scale);
@@ -134,7 +134,13 @@ export function renderPreviewCommands(
         ctx.strokeStyle = cmd.color ?? "#ffffff";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(cx, cy, r, degToRad(cmd.startAngle ?? 0), degToRad(cmd.endAngle ?? 360));
+        ctx.arc(
+          cx,
+          cy,
+          r,
+          degToRad(cmd.startAngle ?? 0),
+          degToRad(cmd.endAngle ?? 360),
+        );
         ctx.stroke();
         break;
       }
@@ -149,7 +155,13 @@ export function renderPreviewCommands(
         ctx.lineWidth = width;
         ctx.lineCap = "butt";
         ctx.beginPath();
-        ctx.arc(cx, cy, midR, degToRad(cmd.startAngle ?? 0), degToRad(cmd.endAngle ?? 360));
+        ctx.arc(
+          cx,
+          cy,
+          midR,
+          degToRad(cmd.startAngle ?? 0),
+          degToRad(cmd.endAngle ?? 360),
+        );
         ctx.stroke();
         break;
       }

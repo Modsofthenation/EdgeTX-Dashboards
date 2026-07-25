@@ -41,7 +41,8 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
   {
     id: "flight-logger",
     title: "Flight logger suite",
-    prompt: "Flight logger telemetry script with last-flight summary on the dashboard",
+    prompt:
+      "Flight logger telemetry script with last-flight summary on the dashboard",
     archetype: "flight-logger-suite",
   },
 ];

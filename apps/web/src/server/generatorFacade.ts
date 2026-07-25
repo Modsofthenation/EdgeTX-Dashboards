@@ -97,13 +97,15 @@ export interface ResolvedWidgetWorkspace {
 }
 
 function normalizeWorkspaceKey(key: string): string {
-  return isWidgetInstanceId(key) ? sanitizeWidgetInstanceId(key) : sanitizeWidgetName(key);
+  return isWidgetInstanceId(key)
+    ? sanitizeWidgetInstanceId(key)
+    : sanitizeWidgetName(key);
 }
 
 export function resolveWidgetWorkspaceFromSession(
   sessionId: string | null,
   explicitInstanceId: string | null,
-  explicitName: string | null
+  explicitName: string | null,
 ): ResolvedWidgetWorkspace {
   let workspaceKey = explicitInstanceId?.trim() || undefined;
   let displayName = explicitName?.trim() || undefined;
@@ -137,7 +139,7 @@ export function resolveWidgetWorkspaceFromSession(
 
 export function readWidgetLuaSource(
   workspaceKey: string,
-  version?: number
+  version?: number,
 ): {
   source: string;
   name: string;
@@ -169,7 +171,10 @@ export function readWidgetLuaSource(
 }
 
 /** Write chat snapshot back to generated/ before refine (each chat has its own UUID workspace). */
-export function writeWidgetLuaSource(workspaceKey: string, source: string): void {
+export function writeWidgetLuaSource(
+  workspaceKey: string,
+  source: string,
+): void {
   const key = normalizeWorkspaceKey(workspaceKey);
   mkdirSync(getGeneratedDirForKey(key), { recursive: true });
   writeFileSync(getWidgetLuaPathForKey(key), source, "utf-8");
@@ -179,7 +184,7 @@ export async function readOrBuildWidgetZip(
   workspaceKey: string,
   protocol: Parameters<typeof packageWidget>[1],
   radioId: string,
-  version?: number
+  version?: number,
 ): Promise<{ buffer: Buffer; downloadName: string } | null> {
   const key = normalizeWorkspaceKey(workspaceKey);
   const zipBaseName = isWidgetInstanceId(key) ? key : sanitizeWidgetName(key);
@@ -192,9 +197,13 @@ export async function readOrBuildWidgetZip(
   }
   if (!existsSync(distZip)) return null;
 
-  const displayName = resolveDisplayName(key) ?? (isWidgetInstanceId(key) ? key : sanitizeWidgetName(key));
+  const displayName =
+    resolveDisplayName(key) ??
+    (isWidgetInstanceId(key) ? key : sanitizeWidgetName(key));
   const downloadName =
-    version !== undefined ? `${sanitizeWidgetName(displayName)}-v${version}` : sanitizeWidgetName(displayName);
+    version !== undefined
+      ? `${sanitizeWidgetName(displayName)}-v${version}`
+      : sanitizeWidgetName(displayName);
   return {
     buffer: readFileSync(distZip),
     downloadName,
@@ -204,12 +213,16 @@ export async function readOrBuildWidgetZip(
 export function validateWidgetRelease(
   workspaceKey: string,
   protocol: Parameters<typeof validateWidgetForRelease>[1],
-  radioId: string
+  radioId: string,
 ) {
-  return validateWidgetForRelease(normalizeWorkspaceKey(workspaceKey), protocol, {
-    radioId,
-    strictTelemetry: true,
-  });
+  return validateWidgetForRelease(
+    normalizeWorkspaceKey(workspaceKey),
+    protocol,
+    {
+      radioId,
+      strictTelemetry: true,
+    },
+  );
 }
 
 export { findLatestWidgetName, sanitizeWidgetName };

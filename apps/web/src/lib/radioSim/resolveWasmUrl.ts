@@ -1,9 +1,12 @@
-import type { SimFirmwareResolution, SimManifest } from "@/lib/radioSim/simFirmware";
+import type {
+  SimFirmwareResolution,
+  SimManifest,
+} from "~/lib/radioSim/simFirmware";
 
 /** Prefer local /sim blobs; fall back to manifest CDN when dev server has no public/sim yet. */
 export async function resolveReachableWasmUrl(
   resolved: SimFirmwareResolution,
-  manifest: SimManifest
+  manifest: SimManifest,
 ): Promise<string> {
   const local = resolved.wasmUrl;
   const candidates = [local];
@@ -25,6 +28,6 @@ export async function resolveReachableWasmUrl(
   }
 
   throw new Error(
-    "EdgeTX WASM firmware is not available. Restart the dev server (npm run dev) to auto-download sim assets."
+    "EdgeTX WASM firmware is not available. Restart the dev server (npm run dev) to auto-download sim assets.",
   );
 }

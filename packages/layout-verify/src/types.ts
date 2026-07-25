@@ -1,4 +1,4 @@
-import type { MockTelemetry } from "./mockTelemetry.js";
+import type { MockTelemetry } from "./mockTelemetry.ts";
 
 export type DrawKind =
   | "clear"

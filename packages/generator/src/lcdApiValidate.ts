@@ -3,7 +3,7 @@ import {
   PREVIEW_ONLY_COLOR_HINTS,
   PREVIEW_ONLY_COLOR_NAMES,
   stripLuaComments,
-} from "./edgeTxLiteralColors.js";
+} from "./edgeTxLiteralColors.ts";
 
 const DRAW_LINE_PATTERN = /^(SOLID|DOTTED|\d+)$/;
 
@@ -54,7 +54,11 @@ export function splitTopLevelArgs(argsSource: string): string[] {
 }
 
 /** Extract inner argument strings for namespace.<method>(...) calls in source. */
-export function extractCallArgStrings(source: string, prefix: string, method: string): string[] {
+export function extractCallArgStrings(
+  source: string,
+  prefix: string,
+  method: string,
+): string[] {
   const calls: string[] = [];
   const needle = `${prefix}.${method}(`;
   let index = 0;
@@ -93,7 +97,10 @@ export function extractCallArgStrings(source: string, prefix: string, method: st
 }
 
 /** Extract inner argument strings for lcd.<method>(...) calls in source. */
-export function extractLcdCallArgStrings(source: string, method: string): string[] {
+export function extractLcdCallArgStrings(
+  source: string,
+  method: string,
+): string[] {
   return extractCallArgStrings(source, "lcd", method);
 }
 
@@ -115,13 +122,27 @@ function looksLikeColorArg(arg: string): boolean {
   const trimmed = arg.trim();
   if (!trimmed) return false;
   if (DRAW_LINE_PATTERN.test(trimmed)) return false;
-  if (/^(WHITE|BLACK|GREY|GRAY|RED|GREEN|BLUE|YELLOW|ORANGE|LIGHTGREY|DARKGREY|BRIGHTGREEN|DARKGREEN|DARKBLUE|DARKRED|LIGHTWHITE)$/i.test(trimmed)) {
+  if (
+    /^(WHITE|BLACK|GREY|GRAY|RED|GREEN|BLUE|YELLOW|ORANGE|LIGHTGREY|DARKGREY|BRIGHTGREEN|DARKGREEN|DARKBLUE|DARKRED|LIGHTWHITE)$/i.test(
+      trimmed,
+    )
+  ) {
     return true;
   }
   if (/^widget\.C_/.test(trimmed)) return true;
   if (/^lcd\.RGB\s*\(/.test(trimmed)) return true;
-  if (/^(heroColor|accentCol|linkColor|battColor|armColor|armFill|C_[A-Z_]+)$/.test(trimmed)) return true;
-  if (/\+/.test(trimmed) && /(WHITE|RIGHT|SMLSIZE|MIDSIZE|DBLSIZE|GREEN|RED|YELLOW|ORANGE|BRIGHTGREEN)/.test(trimmed)) {
+  if (
+    /^(heroColor|accentCol|linkColor|battColor|armColor|armFill|C_[A-Z_]+)$/.test(
+      trimmed,
+    )
+  )
+    return true;
+  if (
+    /\+/.test(trimmed) &&
+    /(WHITE|RIGHT|SMLSIZE|MIDSIZE|DBLSIZE|GREEN|RED|YELLOW|ORANGE|BRIGHTGREEN)/.test(
+      trimmed,
+    )
+  ) {
     return false;
   }
   return true;
@@ -261,13 +282,16 @@ export function validateGlobalGetSizeCalls(source: string): ValidationIssue[] {
  * Rounded-panel borders: top-left corner arc must use EdgeTX angles 270→360 (0=up),
  * not math/textbook 180→270.
  */
-export function validateRoundedPanelArcCalls(source: string): ValidationIssue[] {
+export function validateRoundedPanelArcCalls(
+  source: string,
+): ValidationIssue[] {
   if (!source.includes("drawFilledCircle") || !source.includes("drawArc")) {
     return [];
   }
 
   const issues: ValidationIssue[] = [];
-  const wrongTopLeft = /drawArc\(\s*[^,]+\s*\+\s*\w*cr\w*\s*,\s*[^,]+\s*\+\s*\w*cr\w*\s*,\s*[^,]+\s*,\s*180\s*,\s*270\b/gi;
+  const wrongTopLeft =
+    /drawArc\(\s*[^,]+\s*\+\s*\w*cr\w*\s*,\s*[^,]+\s*\+\s*\w*cr\w*\s*,\s*[^,]+\s*,\s*180\s*,\s*270\b/gi;
 
   for (const match of source.matchAll(wrongTopLeft)) {
     if (match.index === undefined) continue;
@@ -285,12 +309,18 @@ export function validateRoundedPanelArcCalls(source: string): ValidationIssue[] 
 /**
  * drawAnnulus: r1 = inner (smaller), r2 = outer (larger). Swapped radii draw nothing on radio.
  */
-export function validateDrawAnnulusRadiusOrder(source: string): ValidationIssue[] {
+export function validateDrawAnnulusRadiusOrder(
+  source: string,
+): ValidationIssue[] {
   if (!source.includes("drawAnnulus")) return [];
 
   const issues: ValidationIssue[] = [];
 
-  for (const argsSource of extractCallArgStrings(source, "lcd", "drawAnnulus")) {
+  for (const argsSource of extractCallArgStrings(
+    source,
+    "lcd",
+    "drawAnnulus",
+  )) {
     const args = splitTopLevelArgs(argsSource);
     if (args.length < 4) continue;
 
@@ -361,7 +391,9 @@ export function validateMainHLiteralClamp(source: string): ValidationIssue[] {
 }
 
 /** Gauge satellite labels at gaugeCy+rOut must be included in layout budget. */
-export function validateGaugeSatelliteBudget(source: string): ValidationIssue[] {
+export function validateGaugeSatelliteBudget(
+  source: string,
+): ValidationIssue[] {
   if (!source.includes("drawAnnulus")) {
     return [];
   }
@@ -385,7 +417,9 @@ export function validateGaugeSatelliteBudget(source: string): ValidationIssue[] 
 }
 
 /** Annulus + strip layouts must plan rects / mainBottom before drawing. */
-export function validateGaugeStripLayoutPlanning(source: string): ValidationIssue[] {
+export function validateGaugeStripLayoutPlanning(
+  source: string,
+): ValidationIssue[] {
   if (!source.includes("drawAnnulus")) {
     return [];
   }
@@ -435,7 +469,9 @@ export function validateBarsBlockHeightSync(source: string): ValidationIssue[] {
 }
 
 /** Reject fragile #str*charW unit positioning — overlaps on TX15 (no text-width API). */
-export function validateUnitSuffixPositioning(source: string): ValidationIssue[] {
+export function validateUnitSuffixPositioning(
+  source: string,
+): ValidationIssue[] {
   const suffixMath = /math\.floor\(\s*#\w+\s*\*\s*\d+/;
   const unitOffsetVars = /\w+UnitX\s*=/;
 

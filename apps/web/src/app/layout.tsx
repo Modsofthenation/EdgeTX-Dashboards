@@ -16,10 +16,15 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "EdgeTX Dashboard Generator",
-  description: "Generate EdgeTX Lua dashboards for TX15 with AI — telemetry, companion tools, and install guides",
+  description:
+    "Generate EdgeTX Lua dashboards for TX15 with AI — telemetry, companion tools, and install guides",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={`${dmSans.variable} ${jetbrains.variable}`}>
       <body>{children}</body>

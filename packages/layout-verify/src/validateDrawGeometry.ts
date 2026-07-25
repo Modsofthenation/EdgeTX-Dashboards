@@ -1,9 +1,9 @@
 import type { ValidationIssue } from "@widget-gen/shared";
-import { findOverlaps, formatOverlapHit } from "./overlap.js";
-import { interpretWidgetLayout } from "./interpreter/luaDrawInterpreter.js";
-import { DEFAULT_LAYOUT_SCENARIO } from "./scenarios/tortureGallery.js";
-import { isInterpretationReliable } from "./reliability.js";
-import type { LayoutScenario } from "./types.js";
+import { findOverlaps, formatOverlapHit } from "./overlap.ts";
+import { interpretWidgetLayout } from "./interpreter/luaDrawInterpreter.ts";
+import { DEFAULT_LAYOUT_SCENARIO } from "./scenarios/tortureGallery.ts";
+import { isInterpretationReliable } from "./reliability.ts";
+import type { LayoutScenario } from "./types.ts";
 
 export interface ValidateDrawGeometryOptions {
   scenario?: LayoutScenario;
@@ -15,10 +15,13 @@ export interface ValidateDrawGeometryOptions {
 
 export function validateDrawGeometry(
   source: string,
-  options: ValidateDrawGeometryOptions = {}
+  options: ValidateDrawGeometryOptions = {},
 ): ValidationIssue[] {
   const scenario = options.scenario ?? DEFAULT_LAYOUT_SCENARIO;
-  const { records, warnings, skippedTextCount } = interpretWidgetLayout(source, scenario);
+  const { records, warnings, skippedTextCount } = interpretWidgetLayout(
+    source,
+    scenario,
+  );
 
   const issues: ValidationIssue[] = [];
 
@@ -43,7 +46,10 @@ export function validateDrawGeometry(
     issues.push({ severity: "warning", message: `Layout verify: ${w}` });
   }
 
-  const hits = findOverlaps(records, { lcdW: options.lcdW, lcdH: options.lcdH });
+  const hits = findOverlaps(records, {
+    lcdW: options.lcdW,
+    lcdH: options.lcdH,
+  });
   const severity = options.strict ? "error" : "warning";
 
   for (const hit of hits.slice(0, 5)) {
@@ -64,7 +70,7 @@ export function validateDrawGeometry(
 
 export function verifyLayoutNoOverlap(
   source: string,
-  scenario: LayoutScenario = DEFAULT_LAYOUT_SCENARIO
+  scenario: LayoutScenario = DEFAULT_LAYOUT_SCENARIO,
 ): boolean {
   const { records, skippedTextCount } = interpretWidgetLayout(source, scenario);
   if (skippedTextCount > 0) return false;

@@ -3,7 +3,7 @@
  * telemetry sensor labels (matches widget getSourceIndex() names).
  */
 
-import { SIM_MODEL_BITMAP } from "./virtualSd.js";
+import { SIM_MODEL_BITMAP } from "./virtualSd.ts";
 
 export const SIM_MODEL1_PATH = "/MODELS/model1.yml";
 
@@ -410,7 +410,7 @@ export type SimFsWriter = {
 export function buildScreenDataYaml(
   layoutId: string,
   zoneIndex: number,
-  widgetName: string
+  widgetName: string,
 ): string {
   return `screenData:
   "0":
@@ -425,19 +425,25 @@ view: ${SIM_CUSTOM_SCREEN_VIEW}`;
 /** CRSF model YAML, optionally with pre-assigned dashboard widget in screen 0. */
 export function buildSimModelYaml(
   layoutPlan?: SimWidgetLayoutPlan,
-  edgeTxVersion = "2.11.0"
+  edgeTxVersion = "2.11.0",
 ): string {
-  const base = SIM_MODEL1_YML.trimEnd().replace(/^semver: .*$/m, `semver: ${edgeTxVersion}`);
+  const base = SIM_MODEL1_YML.trimEnd().replace(
+    /^semver: .*$/m,
+    `semver: ${edgeTxVersion}`,
+  );
   if (!layoutPlan) return `${base}\n`;
   return `${base}\n${buildScreenDataYaml(
     layoutPlan.layoutId,
     layoutPlan.zoneIndex,
-    layoutPlan.widgetName
+    layoutPlan.widgetName,
   )}\n`;
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
 }
 
 /** Patch radio.yml internal module to CRSF when simCreateDefaults left it unset. */
@@ -450,21 +456,30 @@ export async function patchRadioInternalCrsf(fs: SimFsWriter): Promise<void> {
   if (text.includes("TYPE_CROSSFIRE")) return;
 
   if (/internalModule:\s*\S+/m.test(text)) {
-    text = text.replace(/internalModule:\s*\S+/m, "internalModule: TYPE_CROSSFIRE");
+    text = text.replace(
+      /internalModule:\s*\S+/m,
+      "internalModule: TYPE_CROSSFIRE",
+    );
   } else {
     text = `internalModule: TYPE_CROSSFIRE\n${text}`;
   }
 
-  await fs.fsWriteFile("/RADIO/radio.yml", toArrayBuffer(new TextEncoder().encode(text)));
+  await fs.fsWriteFile(
+    "/RADIO/radio.yml",
+    toArrayBuffer(new TextEncoder().encode(text)),
+  );
 }
 
 /** Overwrite default model1.yml with CRSF + optional dashboard widget assignment. */
 export async function deploySimModel(
   fs: SimFsWriter,
   layoutPlan?: SimWidgetLayoutPlan,
-  edgeTxVersion = "2.11.0"
+  edgeTxVersion = "2.11.0",
 ): Promise<void> {
   const yaml = buildSimModelYaml(layoutPlan, edgeTxVersion);
-  await fs.fsWriteFile(SIM_MODEL1_PATH, toArrayBuffer(new TextEncoder().encode(yaml)));
+  await fs.fsWriteFile(
+    SIM_MODEL1_PATH,
+    toArrayBuffer(new TextEncoder().encode(yaml)),
+  );
   await patchRadioInternalCrsf(fs);
 }

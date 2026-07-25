@@ -5,16 +5,16 @@ import {
   BASE_MOCK,
 } from "@widget-gen/layout-verify";
 import { resolvePreviewDimensions } from "@widget-gen/shared";
-import { resetElementIdCounter } from "../ids.js";
-import type { LuaToSceneResult, WidgetScene } from "../types.js";
+import { resetElementIdCounter } from "../ids.ts";
+import type { LuaToSceneResult, WidgetScene } from "../types.ts";
 import {
   buildLcdCallGates,
   parseSimulateFromSource,
   parseTelemetryBindings,
   parseWidgetName,
   parseWidgetOptions,
-} from "./parseMetadata.js";
-import { recordsToElements } from "./recordsToElements.js";
+} from "./parseMetadata.ts";
+import { recordsToElements } from "./recordsToElements.ts";
 
 /** Import an EdgeTX widget Lua source into an editable scene. */
 export function luaToScene(source: string): LuaToSceneResult {
@@ -34,16 +34,16 @@ export function luaToScene(source: string): LuaToSceneResult {
   const scenario = {
     id: "import",
     mock: BASE_MOCK,
-    options: Object.fromEntries(options.map((o) => [o.name, o.defaultValue])) as Record<
-      string,
-      0 | 1
-    >,
+    options: Object.fromEntries(
+      options.map((o) => [o.name, o.defaultValue]),
+    ) as Record<string, 0 | 1>,
   };
 
-  const { records, warnings: parseWarnings, skippedTextCount } = interpretWidgetLayout(
-    source,
-    scenario
-  );
+  const {
+    records,
+    warnings: parseWarnings,
+    skippedTextCount,
+  } = interpretWidgetLayout(source, scenario);
 
   warnings.push(...parseWarnings);
   if (skippedTextCount > 0) {
@@ -52,7 +52,9 @@ export function luaToScene(source: string): LuaToSceneResult {
 
   const annulusReliable = isInterpretationReliable(records);
   if (!annulusReliable) {
-    warnings.push("Annulus coordinates may be unreliable — verify after import");
+    warnings.push(
+      "Annulus coordinates may be unreliable — verify after import",
+    );
   }
 
   const refreshBody = extractRefreshBody(source);
@@ -64,7 +66,7 @@ export function luaToScene(source: string): LuaToSceneResult {
     zoneOffsetY,
     lcdCallGates,
     telemetryKeys,
-    annulusReliable
+    annulusReliable,
   );
 
   if (elements.length === 0) {

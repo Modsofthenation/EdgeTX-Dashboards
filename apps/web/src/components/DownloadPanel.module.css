@@ -69,7 +69,10 @@
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 16px var(--success-glow);
-  transition: filter var(--transition), box-shadow var(--transition), transform var(--transition);
+  transition:
+    filter var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
 }
 
 .button:disabled {

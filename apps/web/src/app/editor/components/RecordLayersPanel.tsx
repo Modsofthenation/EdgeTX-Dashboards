@@ -50,7 +50,8 @@ export function RecordLayersPanel({
         <div className={styles.emptyState}>
           <p className={styles.emptyTitle}>No drawable layers</p>
           <p className={styles.emptyHint}>
-            Lines the interpreter cannot parse stay in Lua but are not editable here.
+            Lines the interpreter cannot parse stay in Lua but are not editable
+            here.
           </p>
         </div>
       ) : (
@@ -71,7 +72,9 @@ export function RecordLayersPanel({
                   <span className={styles.layerKindIcon} aria-hidden>
                     {meta?.shortLabel ?? "?"}
                   </span>
-                  <span className={styles.layerLabel}>{recordLayerLabel(record)}</span>
+                  <span className={styles.layerLabel}>
+                    {recordLayerLabel(record)}
+                  </span>
                   <span className={styles.layerKindTag}>{record.kind}</span>
                 </button>
                 <div className={styles.layerActions}>

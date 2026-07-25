@@ -38,11 +38,18 @@ function normalizePrompt(text: string): string {
   return text.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-function truncateLua(source: string, maxLines: number, maxChars: number): string {
+function truncateLua(
+  source: string,
+  maxLines: number,
+  maxChars: number,
+): string {
   const lines = source.split(/\r?\n/);
   let body = source;
   if (lines.length > maxLines) {
-    body = [...lines.slice(0, maxLines), `-- … ${lines.length - maxLines} more lines omitted`].join("\n");
+    body = [
+      ...lines.slice(0, maxLines),
+      `-- … ${lines.length - maxLines} more lines omitted`,
+    ].join("\n");
   }
   if (body.length > maxChars) {
     body = `${body.slice(0, maxChars - 40)}\n-- … source truncated for prompt budget`;
@@ -50,18 +57,21 @@ function truncateLua(source: string, maxLines: number, maxChars: number): string
   return body;
 }
 
-function resolveCurrentLua(input: RefineHistoryInput): { version: number; source: string } | null {
+function resolveCurrentLua(
+  input: RefineHistoryInput,
+): { version: number; source: string } | null {
   const workspace = input.workspaceLuaSource?.trim();
   if (workspace) {
     const version =
-      input.artifact?.version ??
-      input.artifactVersions.at(-1)?.version ??
-      0;
+      input.artifact?.version ?? input.artifactVersions.at(-1)?.version ?? 0;
     return { version, source: workspace };
   }
 
   if (input.artifact?.luaSource?.trim()) {
-    return { version: input.artifact.version, source: input.artifact.luaSource.trim() };
+    return {
+      version: input.artifact.version,
+      source: input.artifact.luaSource.trim(),
+    };
   }
 
   const latest = input.artifactVersions.at(-1);
@@ -72,7 +82,9 @@ function resolveCurrentLua(input: RefineHistoryInput): { version: number; source
   return null;
 }
 
-function collectVersionSnapshots(input: RefineHistoryInput): RefineArtifactSnapshot[] {
+function collectVersionSnapshots(
+  input: RefineHistoryInput,
+): RefineArtifactSnapshot[] {
   const byVersion = new Map<number, RefineArtifactSnapshot>();
 
   for (const entry of input.artifactVersions) {
@@ -111,9 +123,13 @@ export function buildConversationSummary(input: RefineHistoryInput): string {
 
     turnIndex++;
     if (message.role === "user") {
-      turns.push(`${turnIndex}. **User:** ${truncate(text, MAX_USER_TURN_CHARS)}`);
+      turns.push(
+        `${turnIndex}. **User:** ${truncate(text, MAX_USER_TURN_CHARS)}`,
+      );
     } else {
-      turns.push(`${turnIndex}. **Assistant:** ${truncate(text, MAX_ASSISTANT_TURN_CHARS)}`);
+      turns.push(
+        `${turnIndex}. **Assistant:** ${truncate(text, MAX_ASSISTANT_TURN_CHARS)}`,
+      );
     }
   }
 
@@ -152,17 +168,28 @@ export function buildArtifactContext(input: RefineHistoryInput): string {
             ? `v${snap.version} — **current**`
             : `v${snap.version} — prior refine`;
       const status = snap.validated ? "validated" : "not validated";
-      const hasLua = !!(snap.luaSource?.trim());
-      lines.push(`- ${label} (${status}${hasLua ? "" : ", no Lua snapshot stored"})`);
+      const hasLua = !!snap.luaSource?.trim();
+      lines.push(
+        `- ${label} (${status}${hasLua ? "" : ", no Lua snapshot stored"})`,
+      );
     }
     lines.push("");
   }
 
   if (current) {
-    lines.push(`### Current widget source (v${current.version}) — edit this`, "", "```lua", current.source, "```", "");
+    lines.push(
+      `### Current widget source (v${current.version}) — edit this`,
+      "",
+      "```lua",
+      current.source,
+      "```",
+      "",
+    );
   }
 
-  const prior = versions.filter((v) => v.version !== current?.version && v.luaSource?.trim());
+  const prior = versions.filter(
+    (v) => v.version !== current?.version && v.luaSource?.trim(),
+  );
   if (prior.length > 0) {
     lines.push("### Prior design snapshots (reference only)", "");
     let budget = MAX_TOTAL_PRIOR_LUA_CHARS;
@@ -171,7 +198,7 @@ export function buildArtifactContext(input: RefineHistoryInput): string {
       const capped = truncateLua(
         source,
         MAX_PRIOR_LUA_LINES,
-        Math.min(budget, MAX_TOTAL_PRIOR_LUA_CHARS)
+        Math.min(budget, MAX_TOTAL_PRIOR_LUA_CHARS),
       );
       budget -= capped.length;
       lines.push(`#### v${snap.version}`, "", "```lua", capped, "```", "");
@@ -182,7 +209,9 @@ export function buildArtifactContext(input: RefineHistoryInput): string {
   return lines.join("\n").trim();
 }
 
-export function buildRefineHistorySections(input: RefineHistoryInput): RefineHistorySections {
+export function buildRefineHistorySections(
+  input: RefineHistoryInput,
+): RefineHistorySections {
   return {
     conversationSummary: buildConversationSummary(input),
     artifactContext: buildArtifactContext(input),

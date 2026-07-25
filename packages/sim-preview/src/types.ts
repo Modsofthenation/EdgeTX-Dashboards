@@ -34,11 +34,7 @@ export interface SimFrameData {
 }
 
 export type RadioSimPhase =
-  | "idle"
-  | "loading-wasm"
-  | "booting"
-  | "running"
-  | "error";
+  "idle" | "loading-wasm" | "booting" | "running" | "error";
 
 export type SimKeyboardMode = "none" | "text" | "number";
 
@@ -87,7 +83,12 @@ export type SimWorkerRequest =
       zone?: WidgetSimulateZone;
       mock?: MockTelemetryValues;
     }
-  | { type: "loadWidget"; source: string; zone?: WidgetSimulateZone; requestId: number }
+  | {
+      type: "loadWidget";
+      source: string;
+      zone?: WidgetSimulateZone;
+      requestId: number;
+    }
   | { type: "setMock"; mock: MockTelemetryValues }
   | { type: "input"; msg: SimInputMessage }
   | { type: "pause" }
@@ -106,7 +107,11 @@ export type SimWorkerResponse =
 
 export interface ExtendedSimulatorExports {
   simuLoadWidget?: (namePtr: number) => void;
-  simuLoadWidgetByLayout?: (namePtr: number, layoutPtr: number, zoneIndex: number) => void;
+  simuLoadWidgetByLayout?: (
+    namePtr: number,
+    layoutPtr: number,
+    zoneIndex: number,
+  ) => void;
   simuTouchDown?: (x: number, y: number) => void;
   simuTouchUp?: () => void;
   simuCreateDefaults?: () => void;

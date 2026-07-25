@@ -14,11 +14,11 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 ## Typography
 
-| Role | Flag | Use for |
-|------|------|---------|
-| Hero | `DBLSIZE` | One main number (e.g. battery voltage, altitude, headspeed) |
-| Primary | `MIDSIZE` | Section values, link quality % |
-| Label | `SMLSIZE` | Field names, units, footer |
+| Role    | Flag      | Use for                                                     |
+| ------- | --------- | ----------------------------------------------------------- |
+| Hero    | `DBLSIZE` | One main number (e.g. battery voltage, altitude, headspeed) |
+| Primary | `MIDSIZE` | Section values, link quality %                              |
+| Label   | `SMLSIZE` | Field names, units, footer                                  |
 
 - **Label above value** — Draw label at `y`, value at `y + 14`.
 - **Units** — Separate from value when space allows.
@@ -32,13 +32,13 @@ Apply these rules to every generated dashboard. Goal: **clean, readable, profess
 
 ## Color semantics
 
-| Meaning | Color |
-|---------|-------|
-| Good / link OK | `GREEN` |
-| Battery / caution | `YELLOW` or `ORANGE` |
-| Warning / low | `RED` (sparingly) |
-| Labels / secondary | `GREY` or `WHITE` |
-| Hero values | From creative brief palette |
+| Meaning            | Color                       |
+| ------------------ | --------------------------- |
+| Good / link OK     | `GREEN`                     |
+| Battery / caution  | `YELLOW` or `ORANGE`        |
+| Warning / low      | `RED` (sparingly)           |
+| Labels / secondary | `GREY` or `WHITE`           |
+| Hero values        | From creative brief palette |
 
 Use the run palette accents — not rainbow on every line.
 

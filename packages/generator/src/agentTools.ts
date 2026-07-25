@@ -1,18 +1,18 @@
 import { readFileSync, existsSync } from "node:fs";
 import type { SDKCustomTool } from "@cursor/sdk";
 import type { TelemetryCategory, TelemetryProtocol } from "@widget-gen/shared";
-import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.js";
-import { validateWidgetForRelease } from "./validationPipeline.js";
-import { packageWidget, writeInstallMd } from "./package.js";
+import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.ts";
+import { validateWidgetForRelease } from "./validationPipeline.ts";
+import { packageWidget, writeInstallMd } from "./package.ts";
 import {
   getWidgetLuaPathForKey,
   sanitizeWidgetName,
   sanitizeWidgetInstanceId,
   isWidgetInstanceId,
-} from "./paths.js";
-import { resolveDisplayName } from "./widgetInstance.js";
-import type { LayoutArchetypeId } from "./layoutArchetype.js";
-import { getActiveLayoutArchetype } from "./variationContext.js";
+} from "./paths.ts";
+import { resolveDisplayName } from "./widgetInstance.ts";
+import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ToolSessionDefaults {
   protocol?: TelemetryProtocol;
@@ -26,7 +26,7 @@ export interface ToolSessionDefaults {
 
 function resolveToolProtocol(
   args: Record<string, unknown>,
-  defaults?: ToolSessionDefaults
+  defaults?: ToolSessionDefaults,
 ): TelemetryProtocol {
   if (args.protocol) return args.protocol as TelemetryProtocol;
   if (defaults?.protocol) return defaults.protocol;
@@ -35,12 +35,14 @@ function resolveToolProtocol(
 
 function resolveWorkspaceKey(
   args: Record<string, unknown>,
-  defaults?: ToolSessionDefaults
+  defaults?: ToolSessionDefaults,
 ): string {
   const fromArgs = args.widgetInstanceId ?? args.widgetName;
   if (fromArgs) {
     const raw = String(fromArgs);
-    return isWidgetInstanceId(raw) ? sanitizeWidgetInstanceId(raw) : sanitizeWidgetName(raw);
+    return isWidgetInstanceId(raw)
+      ? sanitizeWidgetInstanceId(raw)
+      : sanitizeWidgetName(raw);
   }
   if (defaults?.widgetInstanceId) {
     return sanitizeWidgetInstanceId(defaults.widgetInstanceId);
@@ -51,11 +53,14 @@ function resolveWorkspaceKey(
   throw new Error("widgetInstanceId is required for this session");
 }
 
-export function createCustomTools(defaults?: ToolSessionDefaults): Record<string, SDKCustomTool> {
+export function createCustomTools(
+  defaults?: ToolSessionDefaults,
+): Record<string, SDKCustomTool> {
   const workspaceKeyProp = {
     widgetInstanceId: {
       type: "string",
-      description: "UUID workspace folder under generated/ (use the session-assigned id)",
+      description:
+        "UUID workspace folder under generated/ (use the session-assigned id)",
     },
     widgetName: {
       type: "string",
@@ -76,7 +81,10 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
             enum: ["betaflight", "rotorflight", "generic-crsf"],
             description: "Telemetry protocol for sensor validation",
           },
-          radioId: { type: "string", description: "Radio profile id (default tx15)" },
+          radioId: {
+            type: "string",
+            description: "Radio profile id (default tx15)",
+          },
           layoutArchetype: {
             type: "string",
             description:
@@ -104,12 +112,18 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           }
           const protocol = resolveToolProtocol(args, defaults);
           const radioId = String(args.radioId ?? defaults?.radioId ?? "tx15");
-          const layoutArchetype = (args.layoutArchetype as LayoutArchetypeId | undefined) ??
+          const layoutArchetype =
+            (args.layoutArchetype as LayoutArchetypeId | undefined) ??
             getActiveLayoutArchetype();
           const path = getWidgetLuaPathForKey(workspaceKey);
           if (!existsSync(path)) {
             return {
-              content: [{ type: "text", text: `File not found for workspace: ${workspaceKey}` }],
+              content: [
+                {
+                  type: "text",
+                  text: `File not found for workspace: ${workspaceKey}`,
+                },
+              ],
               isError: true,
             };
           }
@@ -152,7 +166,15 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           },
           category: {
             type: "string",
-            enum: ["link", "battery", "gps", "attitude", "flight", "motor", "all"],
+            enum: [
+              "link",
+              "battery",
+              "gps",
+              "attitude",
+              "flight",
+              "motor",
+              "all",
+            ],
           },
         },
         required: ["protocol"],
@@ -168,7 +190,11 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
         // Compact payload — names + units only (prompt already has the full list).
         return JSON.stringify({
           protocol: catalog.protocol,
-          sensors: sensors.map((s) => ({ name: s.name, unit: s.unit, category: s.category })),
+          sensors: sensors.map((s) => ({
+            name: s.name,
+            unit: s.unit,
+            category: s.category,
+          })),
         });
       },
     },
@@ -179,7 +205,10 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
       inputSchema: {
         type: "object",
         properties: {
-          question: { type: "string", description: "Specific question about EdgeTX Lua API" },
+          question: {
+            type: "string",
+            description: "Specific question about EdgeTX Lua API",
+          },
           goal: { type: "string", description: "Broader goal context" },
         },
         required: ["question"],
@@ -192,7 +221,12 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           : `https://luadoc.edgetx.org/readme.md?ask=${question}`;
         const res = await fetch(url);
         if (!res.ok) {
-          return { content: [{ type: "text", text: `Docs query failed: ${res.status}` }], isError: true };
+          return {
+            content: [
+              { type: "text", text: `Docs query failed: ${res.status}` },
+            ],
+            isError: true,
+          };
         }
         return await res.text();
       },
@@ -209,7 +243,10 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
             type: "string",
             enum: ["betaflight", "rotorflight", "generic-crsf"],
           },
-          radioId: { type: "string", description: "Radio profile id (default tx15)" },
+          radioId: {
+            type: "string",
+            description: "Radio profile id (default tx15)",
+          },
         },
         required: ["widgetInstanceId", "protocol"],
       },
@@ -218,8 +255,16 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           const workspaceKey = resolveWorkspaceKey(args, defaults);
           const protocol = args.protocol as TelemetryProtocol;
           const radioId = String(args.radioId ?? "tx15");
-          const { widgetName: name, instanceId } = await packageWidget(workspaceKey, protocol, { radioId });
-          return JSON.stringify({ success: true, widgetName: name, widgetInstanceId: instanceId ?? workspaceKey });
+          const { widgetName: name, instanceId } = await packageWidget(
+            workspaceKey,
+            protocol,
+            { radioId },
+          );
+          return JSON.stringify({
+            success: true,
+            widgetName: name,
+            widgetInstanceId: instanceId ?? workspaceKey,
+          });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           return { content: [{ type: "text", text: msg }], isError: true };
@@ -250,7 +295,12 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           const path = getWidgetLuaPathForKey(workspaceKey);
           if (!existsSync(path)) {
             return {
-              content: [{ type: "text", text: `File not found for workspace: ${workspaceKey}` }],
+              content: [
+                {
+                  type: "text",
+                  text: `File not found for workspace: ${workspaceKey}`,
+                },
+              ],
               isError: true,
             };
           }
@@ -259,7 +309,11 @@ export function createCustomTools(defaults?: ToolSessionDefaults): Record<string
           const catalog = loadTelemetryCatalog(protocol);
           writeInstallMd(workspaceKey, radio, catalog, source);
           const displayName = resolveDisplayName(workspaceKey) ?? workspaceKey;
-          return JSON.stringify({ success: true, widgetName: displayName, widgetInstanceId: workspaceKey });
+          return JSON.stringify({
+            success: true,
+            widgetName: displayName,
+            widgetInstanceId: workspaceKey,
+          });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           return { content: [{ type: "text", text: msg }], isError: true };

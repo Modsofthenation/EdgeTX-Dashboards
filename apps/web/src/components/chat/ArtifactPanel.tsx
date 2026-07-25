@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
+import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
 import { PanelCollapseButton } from "./CollapsibleAside";
@@ -80,7 +80,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   const previewKey = `${chatId ?? "new"}-${artifact?.instanceId ?? artifact?.name ?? "empty"}-v${viewingVersion}`;
   const isViewingLatest = viewingVersion === latestVersion;
 
-  const errors = artifact?.validationIssues.filter((i) => i.severity === "error") ?? [];
+  const errors =
+    artifact?.validationIssues.filter((i) => i.severity === "error") ?? [];
 
   const handleDownload = async () => {
     if (!artifact?.validated) return;
@@ -90,7 +91,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
     try {
       const params = new URLSearchParams({ protocol });
       if (sessionId) params.set("sessionId", sessionId);
-      else if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
+      else if (artifact.instanceId)
+        params.set("instanceId", artifact.instanceId);
       else params.set("name", artifact.name);
       if (!isViewingLatest) params.set("version", String(viewingVersion));
 
@@ -120,7 +122,12 @@ export const ArtifactPanel = memo(function ArtifactPanel({
       <div className={styles.header}>
         <div className={styles.headerMain}>
           {onTogglePanel && (
-            <PanelCollapseButton label="Dashboard" collapsed={panelCollapsed} onToggle={onTogglePanel} side="right" />
+            <PanelCollapseButton
+              label="Dashboard"
+              collapsed={panelCollapsed}
+              onToggle={onTogglePanel}
+              side="right"
+            />
           )}
           <div className={styles.headerText}>
             <span className={styles.label}>Dashboard</span>
@@ -128,8 +135,14 @@ export const ArtifactPanel = memo(function ArtifactPanel({
           </div>
         </div>
         {artifact && (
-          <span className={artifact.validated ? styles.badgeOk : styles.badgeWarn}>
-            {artifact.validated ? "Ready" : running ? "Building" : "Needs fixes"}
+          <span
+            className={artifact.validated ? styles.badgeOk : styles.badgeWarn}
+          >
+            {artifact.validated
+              ? "Ready"
+              : running
+                ? "Building"
+                : "Needs fixes"}
           </span>
         )}
       </div>
@@ -151,9 +164,10 @@ export const ArtifactPanel = memo(function ArtifactPanel({
           </span>
           <h3 className={styles.emptyTitle}>No dashboard yet</h3>
           <p className={styles.emptyText}>
-            Your generated dashboard preview and download zip will appear here when the agent writes{" "}
-            <code>main.lua</code>. Companion scripts (tools, loggers) are included in the zip with
-            install steps in <code>INSTALL.md</code>.
+            Your generated dashboard preview and download zip will appear here
+            when the agent writes <code>main.lua</code>. Companion scripts
+            (tools, loggers) are included in the zip with install steps in{" "}
+            <code>INSTALL.md</code>.
           </p>
         </div>
       ) : (
@@ -170,7 +184,11 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               variant="compact"
             />
             {showPreviewLoader && (
-              <div className={styles.previewOverlay} role="status" aria-live="polite">
+              <div
+                className={styles.previewOverlay}
+                role="status"
+                aria-live="polite"
+              >
                 <span className={styles.spinner} aria-hidden />
                 <p className={styles.overlayTitle}>
                   {running ? "Generating dashboard…" : "Loading preview…"}
@@ -186,7 +204,9 @@ export const ArtifactPanel = memo(function ArtifactPanel({
 
           {artifact && !artifact.validated && (
             <div className={styles.downloadGate}>
-              <p className={styles.downloadGateTitle}>Download blocked until validation passes</p>
+              <p className={styles.downloadGateTitle}>
+                Download blocked until validation passes
+              </p>
               {errors.length > 0 ? (
                 <ul className={styles.errors}>
                   {errors.slice(0, 5).map((issue, i) => (
@@ -198,8 +218,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 </ul>
               ) : (
                 <p className={styles.downloadGateHint}>
-                  Ask the assistant to fix validation issues, or open Edit layout to adjust the
-                  source.
+                  Ask the assistant to fix validation issues, or open Edit
+                  layout to adjust the source.
                 </p>
               )}
             </div>
@@ -223,7 +243,9 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 <button
                   type="button"
                   className={styles.downloadBtn}
-                  disabled={!artifact.validated || downloading || showPreviewLoader}
+                  disabled={
+                    !artifact.validated || downloading || showPreviewLoader
+                  }
                   title={
                     !artifact.validated
                       ? "Fix validation errors before downloading"
@@ -236,12 +258,17 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                     : `Download ${artifact.name}${isViewingLatest ? "" : ` v${viewingVersion}`}.zip`}
                 </button>
               </div>
-              {downloadError && <p className={styles.downloadError}>{downloadError}</p>}
+              {downloadError && (
+                <p className={styles.downloadError}>{downloadError}</p>
+              )}
               <p className={styles.hint}>
-                Extract to <code>WIDGETS/{artifact.name}/</code> on your radio SD card. INSTALL.md is
-                inside the zip.
+                Extract to <code>WIDGETS/{artifact.name}/</code> on your radio
+                SD card. INSTALL.md is inside the zip.
               </p>
-              <InstallGuideInline protocol={protocol} widgetName={artifact.name} />
+              <InstallGuideInline
+                protocol={protocol}
+                widgetName={artifact.name}
+              />
             </>
           )}
         </>

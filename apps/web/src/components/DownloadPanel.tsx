@@ -72,12 +72,14 @@ export function DownloadPanel({
       <h2 className={styles.title}>Download</h2>
 
       {!widgetName ? (
-        <p className={styles.muted}>Complete generation to download your widget zip.</p>
+        <p className={styles.muted}>
+          Complete generation to download your widget zip.
+        </p>
       ) : !validated ? (
         <>
           <p className={styles.warn}>
-            Widget <strong>{widgetName}</strong> was generated but did not pass validation.
-            Download is blocked until all errors are fixed.
+            Widget <strong>{widgetName}</strong> was generated but did not pass
+            validation. Download is blocked until all errors are fixed.
           </p>
           {errors.length > 0 && (
             <ul className={styles.validationList}>
@@ -87,15 +89,15 @@ export function DownloadPanel({
             </ul>
           )}
           <p className={styles.muted}>
-            Use <strong>Refine</strong> to ask the agent to fix validation errors, or edit the Lua
-            source manually.
+            Use <strong>Refine</strong> to ask the agent to fix validation
+            errors, or edit the Lua source manually.
           </p>
         </>
       ) : (
         <>
           <p className={styles.info}>
-            Widget <strong>{widgetName}</strong> passed validation and is ready for{" "}
-            <code>WIDGETS/{widgetName}/main.lua</code>
+            Widget <strong>{widgetName}</strong> passed validation and is ready
+            for <code>WIDGETS/{widgetName}/main.lua</code>
           </p>
           <button
             type="button"

@@ -1,10 +1,13 @@
-import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
-import { snapshotToVersionEntry, versionEntryToSnapshot } from "@/lib/chatTypes";
+import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
+import {
+  snapshotToVersionEntry,
+  versionEntryToSnapshot,
+} from "~/lib/chatTypes";
 
 /** Latest version number from head snapshot or version history. */
 export function resolveLatestVersion(
   head: WidgetSnapshot | null,
-  history: WidgetVersionEntry[]
+  history: WidgetVersionEntry[],
 ): number {
   if (head?.version !== undefined) return head.version;
   if (history.length === 0) return 0;
@@ -19,7 +22,7 @@ export function resolveDisplayArtifact(
   viewingVersion: number,
   latestVersion: number,
   head: WidgetSnapshot | null,
-  history: WidgetVersionEntry[]
+  history: WidgetVersionEntry[],
 ): WidgetSnapshot | null {
   const entry = history.find((v) => v.version === viewingVersion);
 
@@ -45,12 +48,16 @@ export function resolveDisplayArtifact(
 export function commitVersionSnapshot(
   history: WidgetVersionEntry[],
   snapshot: WidgetSnapshot,
-  options?: { messageId?: string | null; force?: boolean }
+  options?: { messageId?: string | null; force?: boolean },
 ): WidgetVersionEntry[] {
   if (!snapshot.luaSource) return history;
 
   const idx = history.findIndex((v) => v.version === snapshot.version);
-  const entry = snapshotToVersionEntry(snapshot, Date.now(), options?.messageId);
+  const entry = snapshotToVersionEntry(
+    snapshot,
+    Date.now(),
+    options?.messageId,
+  );
 
   if (idx >= 0) {
     const existing = history[idx]!;
@@ -78,7 +85,7 @@ export function commitVersionSnapshot(
 export function buildVersionTimeline(
   history: WidgetVersionEntry[],
   latestVersion: number,
-  head: WidgetSnapshot | null
+  head: WidgetSnapshot | null,
 ): WidgetVersionEntry[] {
   const byVersion = new Map(history.map((e) => [e.version, e]));
   const timeline: WidgetVersionEntry[] = [];

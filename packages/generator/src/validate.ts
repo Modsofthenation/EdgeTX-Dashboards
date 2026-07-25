@@ -1,4 +1,8 @@
-import type { SimulateLayoutProfile, ValidationIssue, ValidationResult } from "@widget-gen/shared";
+import type {
+  SimulateLayoutProfile,
+  ValidationIssue,
+  ValidationResult,
+} from "@widget-gen/shared";
 import {
   analyzeDrawSurface,
   extractRefreshBody,
@@ -9,10 +13,10 @@ import {
   DEFAULT_LAYOUT_SCENARIO,
   TORTURE_SCENARIOS,
 } from "@widget-gen/layout-verify";
-import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.js";
-import { validateLcdApiUsage } from "./lcdApiValidate.js";
-import type { LayoutArchetypeId } from "./layoutArchetype.js";
-import { getActiveLayoutArchetype } from "./variationContext.js";
+import { validateDevKitAnnotations, validateStubApiCalls } from "./devKit.ts";
+import { validateLcdApiUsage } from "./lcdApiValidate.ts";
+import type { LayoutArchetypeId } from "./layoutArchetype.ts";
+import { getActiveLayoutArchetype } from "./variationContext.ts";
 
 export interface ValidateWidgetOptions {
   maxOptions?: number;
@@ -28,13 +32,31 @@ export interface ValidateWidgetOptions {
 }
 
 const FORBIDDEN_PATTERNS = [
-  { pattern: /\brequire\s*\(/, message: "require() is not allowed in EdgeTX widgets" },
-  { pattern: /\bdofile\s*\(/, message: "dofile() is not allowed in EdgeTX widgets" },
-  { pattern: /\bloadfile\s*\(/, message: "loadfile() is not allowed in EdgeTX widgets" },
-  { pattern: /\bloadstring\s*\(/, message: "loadstring() is not allowed in EdgeTX widgets" },
-  { pattern: /\bluarocks\b/i, message: "luarocks is not available on EdgeTX widgets" },
+  {
+    pattern: /\brequire\s*\(/,
+    message: "require() is not allowed in EdgeTX widgets",
+  },
+  {
+    pattern: /\bdofile\s*\(/,
+    message: "dofile() is not allowed in EdgeTX widgets",
+  },
+  {
+    pattern: /\bloadfile\s*\(/,
+    message: "loadfile() is not allowed in EdgeTX widgets",
+  },
+  {
+    pattern: /\bloadstring\s*\(/,
+    message: "loadstring() is not allowed in EdgeTX widgets",
+  },
+  {
+    pattern: /\bluarocks\b/i,
+    message: "luarocks is not available on EdgeTX widgets",
+  },
   { pattern: /\bio\./, message: "io.* is not allowed in EdgeTX widgets" },
-  { pattern: /\bos\.execute\b/, message: "os.execute is not allowed in EdgeTX widgets" },
+  {
+    pattern: /\bos\.execute\b/,
+    message: "os.execute is not allowed in EdgeTX widgets",
+  },
 ];
 
 const OPTION_PATTERN = /\{\s*"([^"]+)"\s*,\s*(SOURCE|BOOL|VALUE|COLOR|STRING)/g;
@@ -54,12 +76,15 @@ export function extractUsedTelemetrySensors(source: string): Set<string> {
   return used;
 }
 
-function validateLcdOnlyInRefresh(source: string, issues: ValidationIssue[]): void {
+function validateLcdOnlyInRefresh(
+  source: string,
+  issues: ValidationIssue[],
+): void {
   const body = extractRefreshBody(source);
   if (!body || body.length < 8) return;
 
   const sig = source.match(
-    /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/
+    /(?:local\s+function\s+refresh\s*\([^)]*\)|refresh\s*=\s*function\s*\([^)]*\))/,
   );
   if (!sig || sig.index === undefined) return;
   const bodyStart = sig.index + sig[0].length;
@@ -82,15 +107,20 @@ function validateLcdOnlyInRefresh(source: string, issues: ValidationIssue[]): vo
 
 function validateLayoutGeometry(
   source: string,
-  layoutArchetype?: LayoutArchetypeId
+  layoutArchetype?: LayoutArchetypeId,
 ): ValidationIssue[] {
   if (!/lcd\.draw(Text|FilledRectangle|Annulus|FilledCircle)/.test(source)) {
     return [];
   }
 
   const hasAnnulus = source.includes("drawAnnulus");
-  const strictArchetypes = new Set<LayoutArchetypeId>(["quad-overview", "hero-minimal"]);
-  const strict = hasAnnulus || (layoutArchetype !== undefined && strictArchetypes.has(layoutArchetype));
+  const strictArchetypes = new Set<LayoutArchetypeId>([
+    "quad-overview",
+    "hero-minimal",
+  ]);
+  const strict =
+    hasAnnulus ||
+    (layoutArchetype !== undefined && strictArchetypes.has(layoutArchetype));
   const scenarios = strict ? TORTURE_SCENARIOS : [DEFAULT_LAYOUT_SCENARIO];
 
   const issues: ValidationIssue[] = [];
@@ -112,7 +142,11 @@ function validateLayoutGeometry(
   return issues;
 }
 
-function validateVisualDesign(source: string, issues: ValidationIssue[], layoutArchetype?: LayoutArchetypeId): void {
+function validateVisualDesign(
+  source: string,
+  issues: ValidationIssue[],
+  layoutArchetype?: LayoutArchetypeId,
+): void {
   const {
     refreshBody,
     drawTextCount,
@@ -124,8 +158,15 @@ function validateVisualDesign(source: string, issues: ValidationIssue[], layoutA
   } = analyzeDrawSurface(source);
 
   const archetype = layoutArchetype ?? getActiveLayoutArchetype();
-  const cardLike = new Set<LayoutArchetypeId>(["card-grid", "heli-rotorflight", "quad-overview"]);
-  const bandLike = new Set<LayoutArchetypeId>(["strip-board", "telemetry-dense"]);
+  const cardLike = new Set<LayoutArchetypeId>([
+    "card-grid",
+    "heli-rotorflight",
+    "quad-overview",
+  ]);
+  const bandLike = new Set<LayoutArchetypeId>([
+    "strip-board",
+    "telemetry-dense",
+  ]);
 
   if (archetype === "hero-minimal") {
     if (!hasDblSize) {
@@ -142,7 +183,12 @@ function validateVisualDesign(source: string, issues: ValidationIssue[], layoutA
           "Strip/dense layout — use at least 2 horizontal or vertical bands (drawFilledRectangle dividers or column backgrounds)",
       });
     }
-  } else if (!archetype || cardLike.has(archetype) || archetype === "flight-logger-suite" || archetype === "battery-tool-suite") {
+  } else if (
+    !archetype ||
+    cardLike.has(archetype) ||
+    archetype === "flight-logger-suite" ||
+    archetype === "battery-tool-suite"
+  ) {
     if (!hasFilledRectangle) {
       issues.push({
         severity: "warning",
@@ -162,7 +208,8 @@ function validateVisualDesign(source: string, issues: ValidationIssue[], layoutA
   if (drawTextCount > 0 && !hasSmlSize) {
     issues.push({
       severity: "warning",
-      message: "No SMLSIZE labels — use label/value hierarchy (SMLSIZE labels, MIDSIZE/DBLSIZE values)",
+      message:
+        "No SMLSIZE labels — use label/value hierarchy (SMLSIZE labels, MIDSIZE/DBLSIZE values)",
     });
   }
 
@@ -186,7 +233,10 @@ function validateVisualDesign(source: string, issues: ValidationIssue[], layoutA
 function validateReturnTable(source: string, issues: ValidationIssue[]): void {
   const lastReturn = source.lastIndexOf("return {");
   if (lastReturn === -1) {
-    issues.push({ severity: "error", message: "Missing return { ... } widget table" });
+    issues.push({
+      severity: "error",
+      message: "Missing return { ... } widget table",
+    });
     return;
   }
 
@@ -195,21 +245,32 @@ function validateReturnTable(source: string, issues: ValidationIssue[]): void {
   const block = blockMatch?.[1] ?? "";
 
   if (!/\bname\b/.test(block)) {
-    issues.push({ severity: "error", message: "Return table must include name field" });
+    issues.push({
+      severity: "error",
+      message: "Return table must include name field",
+    });
   }
   if (!/\bcreate\b/.test(block)) {
-    issues.push({ severity: "error", message: "Return table must include create function" });
+    issues.push({
+      severity: "error",
+      message: "Return table must include create function",
+    });
   }
   if (!/\brefresh\b/.test(block)) {
-    issues.push({ severity: "error", message: "Return table must include refresh function" });
+    issues.push({
+      severity: "error",
+      message: "Return table must include refresh function",
+    });
   }
 }
 
 function validateFunctions(source: string, issues: ValidationIssue[]): void {
   const hasCreate =
-    /\bcreate\s*=\s*function\b/.test(source) || /function\s+create\s*\(/.test(source);
+    /\bcreate\s*=\s*function\b/.test(source) ||
+    /function\s+create\s*\(/.test(source);
   const hasRefresh =
-    /\brefresh\s*=\s*function\b/.test(source) || /function\s+refresh\s*\(/.test(source);
+    /\brefresh\s*=\s*function\b/.test(source) ||
+    /function\s+refresh\s*\(/.test(source);
 
   if (!hasCreate) {
     issues.push({ severity: "error", message: "Missing create function" });
@@ -219,13 +280,19 @@ function validateFunctions(source: string, issues: ValidationIssue[]): void {
   }
 }
 
-function validateWidgetName(source: string, issues: ValidationIssue[]): string | undefined {
+function validateWidgetName(
+  source: string,
+  issues: ValidationIssue[],
+): string | undefined {
   const nameMatch =
     source.match(/local\s+name\s*=\s*"([^"]+)"/) ??
     source.match(/(?:^|\n)\s*name\s*=\s*"([^"]+)"/);
 
   if (!nameMatch) {
-    issues.push({ severity: "error", message: "Could not find widget name declaration" });
+    issues.push({
+      severity: "error",
+      message: "Could not find widget name declaration",
+    });
     return undefined;
   }
 
@@ -237,7 +304,10 @@ function validateWidgetName(source: string, issues: ValidationIssue[]): string |
     });
   }
   if (/\s/.test(widgetName)) {
-    issues.push({ severity: "error", message: "Widget name must not contain spaces" });
+    issues.push({
+      severity: "error",
+      message: "Widget name must not contain spaces",
+    });
   }
   if (!/^[A-Za-z0-9_]+$/.test(widgetName)) {
     issues.push({
@@ -252,7 +322,7 @@ function validateWidgetName(source: string, issues: ValidationIssue[]): string |
 function validateOptions(
   source: string,
   maxOptions: number,
-  issues: ValidationIssue[]
+  issues: ValidationIssue[],
 ): void {
   let optionCount = 0;
   for (const match of source.matchAll(OPTION_PATTERN)) {
@@ -265,7 +335,10 @@ function validateOptions(
       });
     }
     if (/\s/.test(optName)) {
-      issues.push({ severity: "error", message: `Option name "${optName}" contains spaces` });
+      issues.push({
+        severity: "error",
+        message: `Option name "${optName}" contains spaces`,
+      });
     }
   }
 
@@ -281,7 +354,7 @@ function validateTelemetry(
   source: string,
   knownSensors: string[],
   strictTelemetry: boolean,
-  issues: ValidationIssue[]
+  issues: ValidationIssue[],
 ): void {
   const used = extractUsedTelemetrySensors(source);
   for (const sensor of used) {
@@ -300,12 +373,15 @@ function validateTelemetry(
  */
 export function validateWidgetLua(
   source: string,
-  options?: ValidateWidgetOptions
+  options?: ValidateWidgetOptions,
 ): ValidationResult {
   const issues: ValidationIssue[] = [];
 
   if (!source.trim()) {
-    return { valid: false, issues: [{ severity: "error", message: "Empty source file" }] };
+    return {
+      valid: false,
+      issues: [{ severity: "error", message: "Empty source file" }],
+    };
   }
 
   for (const { pattern, message } of FORBIDDEN_PATTERNS) {
@@ -330,18 +406,30 @@ export function validateWidgetLua(
   validateVisualDesign(source, issues, options?.layoutArchetype);
 
   if (options?.knownSensors?.length) {
-    validateTelemetry(source, options.knownSensors, options.strictTelemetry ?? false, issues);
+    validateTelemetry(
+      source,
+      options.knownSensors,
+      options.strictTelemetry ?? false,
+      issues,
+    );
   }
 
   if (options?.simulateProfile) {
-    for (const issue of validateDevKitAnnotations(source, options.simulateProfile)) {
+    for (const issue of validateDevKitAnnotations(
+      source,
+      options.simulateProfile,
+    )) {
       if (options.strictDevKit && issue.severity === "warning") {
         issues.push({ ...issue, severity: "error" });
       } else {
         issues.push(issue);
       }
     }
-    issues.push(...validateStubApiCalls(source, { strict: options.strictDevKit === true }));
+    issues.push(
+      ...validateStubApiCalls(source, {
+        strict: options.strictDevKit === true,
+      }),
+    );
   }
 
   issues.push(...validateLcdApiUsage(source));

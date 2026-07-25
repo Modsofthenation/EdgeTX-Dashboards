@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { assertNodeVersion } from "./nodeVersion.js";
-import { WidgetGenerator, CursorAgentError } from "./agent.js";
+import { assertNodeVersion } from "./nodeVersion.ts";
+import { WidgetGenerator, CursorAgentError } from "./agent.ts";
 
 async function main(): Promise<void> {
   assertNodeVersion();
@@ -42,7 +42,9 @@ Requires CURSOR_API_KEY environment variable.`);
   try {
     await gen.createAgent();
     console.error(`Agent: ${gen.agentId}`);
-    console.error(`Generating widget for ${flags.radio} / ${flags.protocol}...\n`);
+    console.error(
+      `Generating widget for ${flags.radio} / ${flags.protocol}...\n`,
+    );
 
     const result = await gen.generate(
       {
@@ -59,7 +61,7 @@ Requires CURSOR_API_KEY environment variable.`);
             process.stderr.write(`${ev.content}\n`);
           }
         },
-      }
+      },
     );
 
     console.error(`\nStatus: ${result.status}`);
@@ -73,7 +75,9 @@ Requires CURSOR_API_KEY environment variable.`);
     }
   } catch (err) {
     if (err instanceof CursorAgentError) {
-      console.error(`Startup failed: ${err.message} (retryable=${err.isRetryable})`);
+      console.error(
+        `Startup failed: ${err.message} (retryable=${err.isRetryable})`,
+      );
       process.exit(1);
     }
     throw err;

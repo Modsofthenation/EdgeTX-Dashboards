@@ -38,7 +38,10 @@ export async function fetchRadioCatalog(): Promise<RadioCatalog> {
   return (await res.json()) as RadioCatalog;
 }
 
-export function findRadio(catalog: RadioCatalog, radioId: string): RadioCatalogEntry | undefined {
+export function findRadio(
+  catalog: RadioCatalog,
+  radioId: string,
+): RadioCatalogEntry | undefined {
   return catalog.radios.find((r) => r.id === radioId);
 }
 
@@ -53,7 +56,9 @@ export const LAYOUT_GROUP_LABELS: Record<string, string> = {
   compact128: "128×64 · Compact",
 };
 
-export function groupRadiosByLayout(radios: RadioCatalogEntry[]): Map<string, RadioCatalogEntry[]> {
+export function groupRadiosByLayout(
+  radios: RadioCatalogEntry[],
+): Map<string, RadioCatalogEntry[]> {
   const groups = new Map<string, RadioCatalogEntry[]>();
   for (const radio of radios) {
     const list = groups.get(radio.layoutProfile) ?? [];

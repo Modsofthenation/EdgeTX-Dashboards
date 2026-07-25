@@ -1,10 +1,17 @@
 import type { SDKMessage, SDKToolUseMessage } from "@cursor/sdk";
-import type { StreamEvent, TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { packageWidget } from "./package.js";
-import { describeToolUse } from "./toolDisplay.js";
-import { validateWidgetForRelease } from "./validationPipeline.js";
-import { isWidgetInstanceId } from "./paths.js";
-import { archiveWidgetVersion, readWidgetInstanceMeta } from "./widgetInstance.js";
+import type {
+  StreamEvent,
+  TelemetryProtocol,
+  ValidationIssue,
+} from "@widget-gen/shared";
+import { packageWidget } from "./package.ts";
+import { describeToolUse } from "./toolDisplay.ts";
+import { validateWidgetForRelease } from "./validationPipeline.ts";
+import { isWidgetInstanceId } from "./paths.ts";
+import {
+  archiveWidgetVersion,
+  readWidgetInstanceMeta,
+} from "./widgetInstance.ts";
 
 export interface WidgetWorkspaceInfo {
   instanceId: string;
@@ -40,18 +47,22 @@ type ToolStreamEvent = {
 function buildToolStreamEvents(
   name: string,
   input: unknown,
-  status?: SDKToolUseMessage["status"]
+  status?: SDKToolUseMessage["status"],
 ): ToolStreamEvent[] {
   const info = describeToolUse(name, input);
 
   if (info.todos && info.todos.length > 0) {
-    return [{ type: "todo", content: info.label, todos: info.todos, toolName: name }];
+    return [
+      { type: "todo", content: info.label, todos: info.todos, toolName: name },
+    ];
   }
 
   let label = info.label;
   if (status === "error") label = `${label} (failed)`;
 
-  return [{ type: "tool", content: label, detail: info.detail, toolName: name }];
+  return [
+    { type: "tool", content: label, detail: info.detail, toolName: name },
+  ];
 }
 
 /** @deprecated Use extractToolEventsFromMessage — kept for tests and CLI parity. */
@@ -66,7 +77,9 @@ export function extractToolInfo(message: SDKMessage): string | null {
     .join(", ");
 }
 
-export function extractToolEventsFromMessage(message: SDKMessage): ToolStreamEvent[] {
+export function extractToolEventsFromMessage(
+  message: SDKMessage,
+): ToolStreamEvent[] {
   if (message.type === "tool_call") {
     const call = message as SDKToolUseMessage;
     return buildToolStreamEvents(call.name, call.args, call.status);
@@ -84,7 +97,9 @@ export function extractToolEventsFromMessage(message: SDKMessage): ToolStreamEve
 
   if (message.type === "task") {
     const detail = message.text?.trim();
-    return [{ type: "tool", content: "Subagent task", detail: detail || undefined }];
+    return [
+      { type: "tool", content: "Subagent task", detail: detail || undefined },
+    ];
   }
 
   return [];
@@ -101,14 +116,24 @@ export async function streamAgentRun(
   run: AgentRunLike,
   agentId: string,
   callbacks: RunCallbacks | undefined,
-  resolveName: () => string | undefined
-): Promise<{ runId: string; status: string; result?: string; widgetName?: string }> {
+  resolveName: () => string | undefined,
+): Promise<{
+  runId: string;
+  status: string;
+  result?: string;
+  widgetName?: string;
+}> {
   let lastReportedName: string | undefined;
 
   for await (const event of run.stream()) {
     const text = extractTextFromMessage(event);
     if (text) {
-      callbacks?.onEvent?.({ type: "text", content: text, runId: run.id, agentId });
+      callbacks?.onEvent?.({
+        type: "text",
+        content: text,
+        runId: run.id,
+        agentId,
+      });
     }
 
     for (const toolEvent of extractToolEventsFromMessage(event)) {
@@ -137,7 +162,7 @@ export async function finalizeWidgetRun(
   workspaceKey: string,
   protocol: TelemetryProtocol,
   radioId: string,
-  callbacks?: RunCallbacks
+  callbacks?: RunCallbacks,
 ): Promise<{ validated: boolean; validationIssues: ValidationIssue[] }> {
   const validation = validateWidgetForRelease(workspaceKey, protocol, {
     radioId,
@@ -158,7 +183,10 @@ export async function finalizeWidgetRun(
 
   try {
     // Validation already ran above — skip the duplicate assert inside packageWidget.
-    await packageWidget(workspaceKey, protocol, { radioId, skipValidation: true });
+    await packageWidget(workspaceKey, protocol, {
+      radioId,
+      skipValidation: true,
+    });
     if (isWidgetInstanceId(workspaceKey)) {
       const meta = readWidgetInstanceMeta(workspaceKey);
       if (meta) archiveWidgetVersion(workspaceKey, meta.version);
@@ -169,7 +197,10 @@ export async function finalizeWidgetRun(
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    callbacks?.onEvent?.({ type: "error", content: `Packaging failed: ${msg}` });
+    callbacks?.onEvent?.({
+      type: "error",
+      content: `Packaging failed: ${msg}`,
+    });
     return { validated: false, validationIssues: validation.issues };
   }
 

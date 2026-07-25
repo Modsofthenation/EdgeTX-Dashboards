@@ -28,7 +28,10 @@ import {
   type EdgeColor,
 } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { getSimulateLayoutProfile, resolvePreviewDimensions } from "@widget-gen/shared";
+import {
+  getSimulateLayoutProfile,
+  resolvePreviewDimensions,
+} from "@widget-gen/shared";
 import { useRouter } from "next/navigation";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { EditorCanvas } from "./components/EditorCanvas";
@@ -41,10 +44,15 @@ import styles from "./editor.module.css";
 
 type MobileTab = "layers" | "canvas" | "properties";
 
-const PROTOCOLS: TelemetryProtocol[] = ["betaflight", "rotorflight", "generic-crsf"];
+const PROTOCOLS: TelemetryProtocol[] = [
+  "betaflight",
+  "rotorflight",
+  "generic-crsf",
+];
 
 function parseProtocol(raw: string | null): TelemetryProtocol {
-  if (raw && PROTOCOLS.includes(raw as TelemetryProtocol)) return raw as TelemetryProtocol;
+  if (raw && PROTOCOLS.includes(raw as TelemetryProtocol))
+    return raw as TelemetryProtocol;
   return "betaflight";
 }
 
@@ -58,12 +66,14 @@ export function EditorApp() {
   const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
 
   const [protocol, setProtocol] = useState<TelemetryProtocol>(() =>
-    parseProtocol(searchParams.get("protocol"))
+    parseProtocol(searchParams.get("protocol")),
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [valid, setValid] = useState<boolean | null>(null);
-  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>(
+    [],
+  );
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
@@ -80,13 +90,18 @@ export function EditorApp() {
   const loadRequestIdRef = useRef(0);
   const savedSourceRef = useRef<string | null>(null);
 
-  const { source, setSource, replaceSource, undo, redo, canUndo, canRedo } = useSourceUndoStack(
-    createStarterSource()
-  );
+  const { source, setSource, replaceSource, undo, redo, canUndo, canRedo } =
+    useSourceUndoStack(createStarterSource());
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
-  const previewScenario = useMemo(() => getPreviewScenario(previewScenarioId), [previewScenarioId]);
-  const records = useMemo(() => interpretDocument(source, previewScenario), [source, previewScenario]);
+  const previewScenario = useMemo(
+    () => getPreviewScenario(previewScenarioId),
+    [previewScenarioId],
+  );
+  const records = useMemo(
+    () => interpretDocument(source, previewScenario),
+    [source, previewScenario],
+  );
 
   const previewMeta = useMemo(() => {
     const cmds = parseLuaToDrawCommands(source, previewScenario);
@@ -99,7 +114,10 @@ export function EditorApp() {
   }, [source, previewScenario]);
 
   const zone = useMemo((): ZoneOffset => {
-    const dims = resolvePreviewDimensions(source, getSimulateLayoutProfile("tx15"));
+    const dims = resolvePreviewDimensions(
+      source,
+      getSimulateLayoutProfile("tx15"),
+    );
     return {
       zoneX: dims.zoneX,
       zoneY: dims.zoneY,
@@ -126,7 +144,7 @@ export function EditorApp() {
         setDirty(true);
       }
     },
-    [replaceSource]
+    [replaceSource],
   );
 
   useEffect(() => {
@@ -153,12 +171,17 @@ export function EditorApp() {
         }
         const text = await res.text();
         const wk =
-          res.headers.get("X-Widget-Instance-Id") ?? instanceId ?? widgetName ?? sid ?? "";
+          res.headers.get("X-Widget-Instance-Id") ??
+          instanceId ??
+          widgetName ??
+          sid ??
+          "";
         setWorkspaceKey(wk);
         loadFromSource(text, true);
       })
       .catch((err: Error) => {
-        if (controller.signal.aborted || requestId !== loadRequestIdRef.current) return;
+        if (controller.signal.aborted || requestId !== loadRequestIdRef.current)
+          return;
         setLoadError(err.message);
       })
       .finally(() => {
@@ -180,20 +203,26 @@ export function EditorApp() {
 
   const selectedRecords = useMemo(
     () => records.filter((r) => selectedIds.includes(r.id)),
-    [records, selectedIds]
+    [records, selectedIds],
   );
 
   const findRecord = useCallback(
-    (id: string): DocumentRecord | undefined => records.find((r) => r.id === id),
-    [records]
+    (id: string): DocumentRecord | undefined =>
+      records.find((r) => r.id === id),
+    [records],
   );
 
   const applyToRecords = useCallback(
-    (ids: string[], updater: (current: string, record: DocumentRecord) => string) => {
+    (
+      ids: string[],
+      updater: (current: string, record: DocumentRecord) => string,
+    ) => {
       setSource((prev) => {
         let next = prev;
         for (const id of ids) {
-          const record = interpretDocument(next, previewScenario).find((r) => r.id === id);
+          const record = interpretDocument(next, previewScenario).find(
+            (r) => r.id === id,
+          );
           if (!record) continue;
           next = updater(next, record);
         }
@@ -201,14 +230,16 @@ export function EditorApp() {
       });
       markDirty();
     },
-    [setSource, markDirty, previewScenario]
+    [setSource, markDirty, previewScenario],
   );
 
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
-      applyToRecords(ids, (current, record) => translateRecord(current, record, dx, dy, zone));
+      applyToRecords(ids, (current, record) =>
+        translateRecord(current, record, dx, dy, zone),
+      );
     },
-    [applyToRecords, zone]
+    [applyToRecords, zone],
   );
 
   const handleResize = useCallback(
@@ -218,7 +249,7 @@ export function EditorApp() {
       setSource((prev) => resizeRecord(prev, record, box, zone));
       markDirty();
     },
-    [findRecord, setSource, zone, markDirty]
+    [findRecord, setSource, zone, markDirty],
   );
 
   const handlePatchRecord = useCallback(
@@ -226,7 +257,7 @@ export function EditorApp() {
       setSource((prev) => patchRecordArgs(prev, record, patch, zone));
       markDirty();
     },
-    [setSource, zone, markDirty]
+    [setSource, zone, markDirty],
   );
 
   const handleSetColor = useCallback(
@@ -234,7 +265,7 @@ export function EditorApp() {
       setSource((prev) => setRecordColor(prev, record, color, zone));
       markDirty();
     },
-    [setSource, zone, markDirty]
+    [setSource, zone, markDirty],
   );
 
   const handleSetText = useCallback(
@@ -242,7 +273,7 @@ export function EditorApp() {
       setSource((prev) => setRecordText(prev, record, text, zone));
       markDirty();
     },
-    [setSource, zone, markDirty]
+    [setSource, zone, markDirty],
   );
 
   const handleBindTelemetry = useCallback(
@@ -250,7 +281,7 @@ export function EditorApp() {
       setSource((prev) => bindTextRecordToSensor(prev, record, sensor, format));
       markDirty();
     },
-    [setSource, markDirty]
+    [setSource, markDirty],
   );
 
   const handleAdd = useCallback(
@@ -258,7 +289,7 @@ export function EditorApp() {
       setSource((prev) => insertDrawLine(prev, kind));
       markDirty();
     },
-    [setSource, markDirty]
+    [setSource, markDirty],
   );
 
   const handleDelete = useCallback(
@@ -269,7 +300,7 @@ export function EditorApp() {
       setSelectedIds((prev) => prev.filter((x) => x !== id));
       markDirty();
     },
-    [findRecord, setSource, markDirty]
+    [findRecord, setSource, markDirty],
   );
 
   const handleValidate = useCallback(async () => {
@@ -282,14 +313,19 @@ export function EditorApp() {
       setValid(false);
       return;
     }
-    const body = (await res.json()) as { valid: boolean; issues: ValidationIssue[] };
+    const body = (await res.json()) as {
+      valid: boolean;
+      issues: ValidationIssue[];
+    };
     setValid(body.valid);
     setValidationIssues(body.issues ?? []);
   }, [source, protocol]);
 
   const handleSave = useCallback(async () => {
     if (!workspaceKey && !sessionId) {
-      setLoadError("No workspace to save to — load a widget via URL or paste Lua first");
+      setLoadError(
+        "No workspace to save to — load a widget via URL or paste Lua first",
+      );
       return;
     }
     setSaving(true);
@@ -405,7 +441,7 @@ export function EditorApp() {
         setMobileTab("layers");
       }
     },
-    [records]
+    [records],
   );
 
   const backHref = useMemo(() => {
@@ -428,7 +464,7 @@ export function EditorApp() {
       }
       if (!e) router.push(backHref);
     },
-    [confirmLeave, router, backHref]
+    [confirmLeave, router, backHref],
   );
 
   useEffect(() => {
@@ -438,7 +474,10 @@ export function EditorApp() {
         undo();
         markDirty();
       }
-      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === "y" || (e.key === "z" && e.shiftKey))
+      ) {
         e.preventDefault();
         redo();
         markDirty();
@@ -448,7 +487,10 @@ export function EditorApp() {
         setSimOpen(false);
         setSelectedIds([]);
       }
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedIds.length > 0) {
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        selectedIds.length > 0
+      ) {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         e.preventDefault();
@@ -498,25 +540,41 @@ export function EditorApp() {
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Link href={backHref} className={styles.ghostBtn} onClick={navigateBack}>
+          <Link
+            href={backHref}
+            className={styles.ghostBtn}
+            onClick={navigateBack}
+          >
             Back to chat
           </Link>
           <button type="button" className={styles.ghostBtn} onClick={openSim}>
             Run in simulator
           </button>
-          <button type="button" className={styles.ghostBtn} onClick={() => void handleCopyLua()}>
+          <button
+            type="button"
+            className={styles.ghostBtn}
+            onClick={() => void handleCopyLua()}
+          >
             {copyDone ? "Copied" : "Copy Lua"}
           </button>
           <button
             type="button"
             className={styles.ghostBtn}
             disabled={downloading || valid === false}
-            title={valid === false ? "Fix validation errors before downloading" : undefined}
+            title={
+              valid === false
+                ? "Fix validation errors before downloading"
+                : undefined
+            }
             onClick={() => void handleDownload()}
           >
             {downloading ? "Downloading…" : "Download zip"}
           </button>
-          <button type="button" className={styles.ghostBtn} onClick={() => setPasteOpen(true)}>
+          <button
+            type="button"
+            className={styles.ghostBtn}
+            onClick={() => setPasteOpen(true)}
+          >
             Import Lua
           </button>
           <button
@@ -555,12 +613,15 @@ export function EditorApp() {
             <ul>
               {previewMeta.skippedTextCount > 0 && (
                 <li>
-                  {previewMeta.skippedTextCount} text draw(s) could not be evaluated statically —
-                  use Run in simulator to verify.
+                  {previewMeta.skippedTextCount} text draw(s) could not be
+                  evaluated statically — use Run in simulator to verify.
                 </li>
               )}
               {previewMeta.unreliable && (
-                <li>Gauge layout could not be fully resolved — verify in the WASM simulator.</li>
+                <li>
+                  Gauge layout could not be fully resolved — verify in the WASM
+                  simulator.
+                </li>
               )}
             </ul>
           </div>
@@ -590,7 +651,11 @@ export function EditorApp() {
         onPreviewScenarioChange={setPreviewScenarioId}
       />
 
-      <div className={styles.mobileTabs} role="tablist" aria-label="Editor panels">
+      <div
+        className={styles.mobileTabs}
+        role="tablist"
+        aria-label="Editor panels"
+      >
         {(
           [
             ["layers", "Layers"],
@@ -603,7 +668,9 @@ export function EditorApp() {
             type="button"
             role="tab"
             aria-selected={mobileTab === id}
-            className={mobileTab === id ? styles.mobileTabActive : styles.mobileTab}
+            className={
+              mobileTab === id ? styles.mobileTabActive : styles.mobileTab
+            }
             onClick={() => setMobileTab(id)}
           >
             {label}
@@ -618,7 +685,11 @@ export function EditorApp() {
             selectedIds={selectedIds}
             onSelect={(id, additive) =>
               setSelectedIds((prev) =>
-                additive ? (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]) : [id]
+                additive
+                  ? prev.includes(id)
+                    ? prev.filter((x) => x !== id)
+                    : [...prev, id]
+                  : [id],
               )
             }
             onDelete={handleDelete}
@@ -645,7 +716,9 @@ export function EditorApp() {
           )}
         </div>
 
-        <div className={`${styles.rightColumn} ${styles.mobilePane} ${styles.mobilePaneProperties}`}>
+        <div
+          className={`${styles.rightColumn} ${styles.mobilePane} ${styles.mobilePaneProperties}`}
+        >
           <RecordPropertiesPanel
             meta={meta}
             selectedRecords={selectedRecords}
@@ -663,8 +736,8 @@ export function EditorApp() {
               setSource((prev) =>
                 prev.replace(
                   /@simulate\s+\S+\s+zone=\d+/,
-                  `@simulate ${layout} zone=${zoneIdx}`
-                )
+                  `@simulate ${layout} zone=${zoneIdx}`,
+                ),
               );
               markDirty();
             }}
@@ -674,7 +747,10 @@ export function EditorApp() {
               <h3 className={styles.sectionTitle}>Validation</h3>
               <ul className={styles.validationList}>
                 {validationIssues.map((issue, i) => (
-                  <li key={`${issue.message}-${i}`} data-severity={issue.severity}>
+                  <li
+                    key={`${issue.message}-${i}`}
+                    data-severity={issue.severity}
+                  >
                     {issue.line != null ? (
                       <button
                         type="button"
@@ -704,7 +780,11 @@ export function EditorApp() {
       />
 
       {pasteOpen && (
-        <div className={styles.modalBackdrop} role="presentation" onClick={() => setPasteOpen(false)}>
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onClick={() => setPasteOpen(false)}
+        >
           <div
             className={styles.modal}
             role="dialog"
@@ -726,7 +806,8 @@ export function EditorApp() {
               </button>
             </div>
             <p className={styles.modalHint}>
-              Paste an EdgeTX widget <code>main.lua</code>. The editor patches draw lines in place.
+              Paste an EdgeTX widget <code>main.lua</code>. The editor patches
+              draw lines in place.
             </p>
             <textarea
               className={styles.modalTextarea}
@@ -737,7 +818,11 @@ export function EditorApp() {
               autoFocus
             />
             <div className={styles.modalActions}>
-              <button type="button" className={styles.ghostBtn} onClick={() => setPasteOpen(false)}>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={() => setPasteOpen(false)}
+              >
                 Cancel
               </button>
               <button

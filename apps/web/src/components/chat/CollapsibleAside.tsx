@@ -30,7 +30,15 @@ function PanelIcon({ side }: { side: "left" | "right" }) {
   }
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect
+        x="2"
+        y="2"
+        width="12"
+        height="12"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
       <path d="M6 2v12" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
@@ -38,7 +46,11 @@ function PanelIcon({ side }: { side: "left" | "right" }) {
 
 function PanelExpandSkeleton({ label }: { label: string }) {
   return (
-    <div className={styles.skeleton} aria-busy="true" aria-label={`Loading ${label} panel`}>
+    <div
+      className={styles.skeleton}
+      aria-busy="true"
+      aria-label={`Loading ${label} panel`}
+    >
       <div className={styles.skeletonBar} />
       <div className={styles.skeletonBlock} />
       <div className={styles.skeletonBlockShort} />
@@ -55,7 +67,9 @@ export function CollapsibleAside({
   children,
 }: CollapsibleAsideProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [contentReady, setContentReady] = useState(!collapsed && !deferContentMount);
+  const [contentReady, setContentReady] = useState(
+    !collapsed && !deferContentMount,
+  );
   const [transitioning, setTransitioning] = useState(false);
   const expandLabel = `Show ${label} panel`;
 

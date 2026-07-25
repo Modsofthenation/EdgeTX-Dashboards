@@ -2,7 +2,7 @@ import {
   parseSimulateAnnotation,
   TX15_SIMULATE_PROFILE,
 } from "@widget-gen/shared";
-import type { TelemetryBinding, WidgetOption } from "../types.js";
+import type { TelemetryBinding, WidgetOption } from "../types.ts";
 
 const NAME_PATTERN = /local\s+name\s*=\s*"([^"]+)"/;
 const OPTION_ROW = /\{\s*"([^"]+)"\s*,\s*BOOL\s*,\s*([01])\s*\}/g;
@@ -31,7 +31,9 @@ export function parseWidgetOptions(source: string): WidgetOption[] {
 
 export function parseTelemetryBindings(source: string): TelemetryBinding[] {
   const bindings: TelemetryBinding[] = [];
-  const createBlock = source.match(/local\s+function\s+create[\s\S]*?src\s*=\s*\{([\s\S]*?)\}/);
+  const createBlock = source.match(
+    /local\s+function\s+create[\s\S]*?src\s*=\s*\{([\s\S]*?)\}/,
+  );
   if (!createBlock) return bindings;
 
   let match: RegExpExecArray | null;
@@ -57,7 +59,9 @@ export function buildLcdCallGates(refreshBody: string): (string | undefined)[] {
 
   for (const raw of lines) {
     const line = raw.trim();
-    const gateOpen = line.match(/^if\s+widget\.options\.(\w+)\s*==\s*1\s+then$/);
+    const gateOpen = line.match(
+      /^if\s+widget\.options\.(\w+)\s*==\s*1\s+then$/,
+    );
     if (gateOpen && depth === 0) {
       currentGate = gateOpen[1];
       depth = 1;
