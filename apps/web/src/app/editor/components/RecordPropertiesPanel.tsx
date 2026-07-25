@@ -30,6 +30,7 @@ interface RecordPropertiesPanelProps {
     record: DocumentRecord,
     patch: Record<string, string | number>,
   ) => void;
+  onTranslateSelected?: (dx: number, dy: number) => void;
   onSetColor: (record: DocumentRecord, color: EdgeColor) => void;
   onSetText: (record: DocumentRecord, text: string) => void;
   onBindTelemetry?: (
@@ -65,6 +66,7 @@ function NumField({
       setDraft(String(value));
       return;
     }
+    if (parsed === value) return;
     onChange(parsed);
   };
 
@@ -85,12 +87,51 @@ function NumField({
   );
 }
 
+function TextField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const commit = () => {
+    if (draft === value) return;
+    onChange(draft);
+  };
+
+  return (
+    <label className={styles.propField}>
+      <FieldLabel>{label}</FieldLabel>
+      <input
+        type="text"
+        className={styles.fieldInput}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+        }}
+      />
+    </label>
+  );
+}
+
 export function RecordPropertiesPanel({
   meta,
   selectedRecords,
+  zone,
   protocol = "betaflight",
   onPatchName,
   onPatchRecord,
+  onTranslateSelected,
   onSetColor,
   onSetText,
   onBindTelemetry,
@@ -103,9 +144,14 @@ export function RecordPropertiesPanel({
     [protocol],
   );
   const [bindFormat, setBindFormat] = useState<TextFormat>("raw");
+  const [nameDraft, setNameDraft] = useState(meta.name);
 
-  const lcdX = record?.x ?? 0;
-  const lcdY = record?.y ?? 0;
+  useEffect(() => {
+    setNameDraft(meta.name);
+  }, [meta.name]);
+
+  const zoneX = record?.x != null ? record.x - zone.zoneX : 0;
+  const zoneY = record?.y != null ? record.y - zone.zoneY : 0;
   const maxZone =
     meta.layout === "Layout2x2"
       ? 3
@@ -116,6 +162,9 @@ export function RecordPropertiesPanel({
   const sharedXY =
     selectedRecords.length > 1 &&
     selectedRecords.every((r) => r.x != null && r.y != null);
+
+  const toLcdX = (x: number) => x + zone.zoneX;
+  const toLcdY = (y: number) => y + zone.zoneY;
 
   return (
     <aside className={`${styles.sidePanel} ${styles.propsPanel}`}>
@@ -131,8 +180,15 @@ export function RecordPropertiesPanel({
             type="text"
             className={styles.fieldInput}
             maxLength={10}
-            value={meta.name}
-            onChange={(e) => onPatchName(e.target.value.slice(0, 10))}
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value.slice(0, 10))}
+            onBlur={() => {
+              if (nameDraft !== meta.name) onPatchName(nameDraft.slice(0, 10));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter")
+                (e.currentTarget as HTMLInputElement).blur();
+            }}
           />
         </label>
         <div className={styles.fieldRow}>
@@ -197,22 +253,14 @@ export function RecordPropertiesPanel({
             <button
               type="button"
               className={styles.secondaryBtn}
-              onClick={() => {
-                for (const r of selectedRecords) {
-                  if (r.x != null) onPatchRecord(r, { x: (r.x ?? 0) - 12 });
-                }
-              }}
+              onClick={() => onTranslateSelected?.(-12, 0)}
             >
               ← 12
             </button>
             <button
               type="button"
               className={styles.secondaryBtn}
-              onClick={() => {
-                for (const r of selectedRecords) {
-                  if (r.x != null) onPatchRecord(r, { x: (r.x ?? 0) + 12 });
-                }
-              }}
+              onClick={() => onTranslateSelected?.(12, 0)}
             >
               12 →
             </button>
@@ -221,22 +269,14 @@ export function RecordPropertiesPanel({
             <button
               type="button"
               className={styles.secondaryBtn}
-              onClick={() => {
-                for (const r of selectedRecords) {
-                  if (r.y != null) onPatchRecord(r, { y: (r.y ?? 0) - 12 });
-                }
-              }}
+              onClick={() => onTranslateSelected?.(0, -12)}
             >
               ↑ 12
             </button>
             <button
               type="button"
               className={styles.secondaryBtn}
-              onClick={() => {
-                for (const r of selectedRecords) {
-                  if (r.y != null) onPatchRecord(r, { y: (r.y ?? 0) + 12 });
-                }
-              }}
+              onClick={() => onTranslateSelected?.(0, 12)}
             >
               ↓ 12
             </button>
@@ -272,13 +312,13 @@ export function RecordPropertiesPanel({
             <div className={styles.fieldRow}>
               <NumField
                 label="X"
-                value={lcdX}
-                onChange={(x) => onPatchRecord(record, { x })}
+                value={zoneX}
+                onChange={(x) => onPatchRecord(record, { x: toLcdX(x) })}
               />
               <NumField
                 label="Y"
-                value={lcdY}
-                onChange={(y) => onPatchRecord(record, { y })}
+                value={zoneY}
+                onChange={(y) => onPatchRecord(record, { y: toLcdY(y) })}
               />
             </div>
           )}
@@ -305,25 +345,29 @@ export function RecordPropertiesPanel({
               <div className={styles.fieldRow}>
                 <NumField
                   label="X1"
-                  value={record.x ?? 0}
-                  onChange={(x) => onPatchRecord(record, { x })}
+                  value={(record.x ?? 0) - zone.zoneX}
+                  onChange={(x) => onPatchRecord(record, { x: toLcdX(x) })}
                 />
                 <NumField
                   label="Y1"
-                  value={record.y ?? 0}
-                  onChange={(y) => onPatchRecord(record, { y })}
+                  value={(record.y ?? 0) - zone.zoneY}
+                  onChange={(y) => onPatchRecord(record, { y: toLcdY(y) })}
                 />
               </div>
               <div className={styles.fieldRow}>
                 <NumField
                   label="X2"
-                  value={record.x2 ?? 0}
-                  onChange={(x2) => onPatchRecord(record, { x2 })}
+                  value={(record.x2 ?? 0) - zone.zoneX}
+                  onChange={(x2) =>
+                    onPatchRecord(record, { x2: toLcdX(x2) })
+                  }
                 />
                 <NumField
                   label="Y2"
-                  value={record.y2 ?? 0}
-                  onChange={(y2) => onPatchRecord(record, { y2 })}
+                  value={(record.y2 ?? 0) - zone.zoneY}
+                  onChange={(y2) =>
+                    onPatchRecord(record, { y2: toLcdY(y2) })
+                  }
                 />
               </div>
             </>
@@ -356,15 +400,11 @@ export function RecordPropertiesPanel({
 
           {record.kind === "text" && (
             <>
-              <label className={styles.propField}>
-                <FieldLabel>Static text</FieldLabel>
-                <input
-                  type="text"
-                  className={styles.fieldInput}
-                  value={record.text ?? ""}
-                  onChange={(e) => onSetText(record, e.target.value)}
-                />
-              </label>
+              <TextField
+                label="Static text"
+                value={record.text ?? ""}
+                onChange={(text) => onSetText(record, text)}
+              />
               {onBindTelemetry && (
                 <div className={styles.propSection}>
                   <h3 className={styles.sectionTitle}>Telemetry binding</h3>

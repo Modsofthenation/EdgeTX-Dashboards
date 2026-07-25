@@ -23,6 +23,8 @@ interface EditorCanvasProps {
   onSelect: (ids: string[]) => void;
   onTranslate: (ids: string[], dx: number, dy: number) => void;
   onResize: (id: string, box: BoundingBox) => void;
+  onGestureStart?: () => void;
+  onGestureEnd?: () => void;
   showSnapGuides?: boolean;
   scenarioId?: string;
 }
@@ -35,6 +37,8 @@ export function EditorCanvas({
   onSelect,
   onTranslate,
   onResize,
+  onGestureStart,
+  onGestureEnd,
   showSnapGuides = false,
   scenarioId = "editor-preview",
 }: EditorCanvasProps) {
@@ -102,6 +106,8 @@ export function EditorCanvas({
           onSelect={onSelect}
           onTranslate={onTranslate}
           onResize={onResize}
+          onGestureStart={onGestureStart}
+          onGestureEnd={onGestureEnd}
         />
       </div>
       <div className={styles.canvasMeta}>

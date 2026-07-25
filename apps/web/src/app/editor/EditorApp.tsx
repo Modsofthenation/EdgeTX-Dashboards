@@ -7,11 +7,12 @@ import {
   bindTextRecordToSensor,
   createStarterSource,
   interpretDocument,
-  insertDrawLine,
+  insertDrawLineWithId,
   parseDocumentMeta,
   patchRecordArgs,
   patchWidgetName,
-  removeRecordLine,
+  removeRecordLines,
+  remapRecordIdsAfterLineRemoval,
   resizeRecord,
   setRecordColor,
   setRecordText,
@@ -90,7 +91,7 @@ export function EditorApp() {
   const loadRequestIdRef = useRef(0);
   const savedSourceRef = useRef<string | null>(null);
 
-  const { source, setSource, replaceSource, undo, redo, canUndo, canRedo } =
+  const { source, setSource, replaceSource, beginTransient, endTransient, undo, redo, canUndo, canRedo } =
     useSourceUndoStack(createStarterSource());
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
@@ -206,16 +207,11 @@ export function EditorApp() {
     [records, selectedIds],
   );
 
-  const findRecord = useCallback(
-    (id: string): DocumentRecord | undefined =>
-      records.find((r) => r.id === id),
-    [records],
-  );
-
   const applyToRecords = useCallback(
     (
       ids: string[],
       updater: (current: string, record: DocumentRecord) => string,
+      opts?: { history?: boolean },
     ) => {
       setSource((prev) => {
         let next = prev;
@@ -227,7 +223,7 @@ export function EditorApp() {
           next = updater(next, record);
         }
         return next;
-      });
+      }, opts);
       markDirty();
     },
     [setSource, markDirty, previewScenario],
@@ -235,8 +231,10 @@ export function EditorApp() {
 
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
-      applyToRecords(ids, (current, record) =>
-        translateRecord(current, record, dx, dy, zone),
+      applyToRecords(
+        ids,
+        (current, record) => translateRecord(current, record, dx, dy, zone),
+        { history: false },
       );
     },
     [applyToRecords, zone],
@@ -244,63 +242,121 @@ export function EditorApp() {
 
   const handleResize = useCallback(
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
-      const record = findRecord(id);
-      if (!record) return;
-      setSource((prev) => resizeRecord(prev, record, box, zone));
+      setSource((prev) => {
+        const record = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === id,
+        );
+        if (!record) return prev;
+        return resizeRecord(prev, record, box, zone);
+      }, { history: false });
       markDirty();
     },
-    [findRecord, setSource, zone, markDirty],
+    [setSource, zone, markDirty, previewScenario],
   );
+
+  const handleGestureStart = useCallback(() => {
+    beginTransient();
+  }, [beginTransient]);
+
+  const handleGestureEnd = useCallback(() => {
+    endTransient();
+  }, [endTransient]);
 
   const handlePatchRecord = useCallback(
     (record: DocumentRecord, patch: Record<string, string | number>) => {
-      setSource((prev) => patchRecordArgs(prev, record, patch, zone));
+      setSource((prev) => {
+        const live = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === record.id,
+        );
+        if (!live) return prev;
+        return patchRecordArgs(prev, live, patch, zone);
+      });
       markDirty();
     },
-    [setSource, zone, markDirty],
+    [setSource, zone, markDirty, previewScenario],
   );
 
   const handleSetColor = useCallback(
     (record: DocumentRecord, color: EdgeColor) => {
-      setSource((prev) => setRecordColor(prev, record, color, zone));
+      setSource((prev) => {
+        const live = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === record.id,
+        );
+        if (!live) return prev;
+        return setRecordColor(prev, live, color, zone);
+      });
       markDirty();
     },
-    [setSource, zone, markDirty],
+    [setSource, zone, markDirty, previewScenario],
   );
 
   const handleSetText = useCallback(
     (record: DocumentRecord, text: string) => {
-      setSource((prev) => setRecordText(prev, record, text, zone));
+      setSource((prev) => {
+        const live = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === record.id,
+        );
+        if (!live) return prev;
+        return setRecordText(prev, live, text, zone);
+      });
       markDirty();
     },
-    [setSource, zone, markDirty],
+    [setSource, zone, markDirty, previewScenario],
   );
 
   const handleBindTelemetry = useCallback(
     (record: DocumentRecord, sensor: string, format: TextFormat) => {
-      setSource((prev) => bindTextRecordToSensor(prev, record, sensor, format));
+      setSource((prev) => {
+        const live = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === record.id,
+        );
+        if (!live) return prev;
+        return bindTextRecordToSensor(prev, live, sensor, format);
+      });
       markDirty();
     },
-    [setSource, markDirty],
+    [setSource, markDirty, previewScenario],
   );
 
   const handleAdd = useCallback(
     (kind: InsertDrawKind) => {
-      setSource((prev) => insertDrawLine(prev, kind));
+      let insertedId: string | null = null;
+      setSource((prev) => {
+        const result = insertDrawLineWithId(prev, kind, previewScenario);
+        insertedId = result.insertedId;
+        return result.source;
+      });
+      if (insertedId) setSelectedIds([insertedId]);
       markDirty();
     },
-    [setSource, markDirty],
+    [setSource, markDirty, previewScenario],
+  );
+
+  const handleDeleteIds = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      const current = interpretDocument(source, previewScenario);
+      const targets = ids
+        .map((id) => current.find((r) => r.id === id))
+        .filter((r): r is DocumentRecord => r != null);
+      if (targets.length === 0) return;
+      const removedLines = targets
+        .map((r) => r.sourceLine)
+        .filter((n): n is number => typeof n === "number");
+      setSource((prev) => removeRecordLines(prev, targets));
+      setSelectedIds((prev) =>
+        remapRecordIdsAfterLineRemoval(prev, removedLines),
+      );
+      markDirty();
+    },
+    [setSource, markDirty, previewScenario, source],
   );
 
   const handleDelete = useCallback(
     (id: string) => {
-      const record = findRecord(id);
-      if (!record) return;
-      setSource((prev) => removeRecordLine(prev, record));
-      setSelectedIds((prev) => prev.filter((x) => x !== id));
-      markDirty();
+      handleDeleteIds([id]);
     },
-    [findRecord, setSource, markDirty],
+    [handleDeleteIds],
   );
 
   const handleValidate = useCallback(async () => {
@@ -494,12 +550,39 @@ export function EditorApp() {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         e.preventDefault();
-        for (const id of selectedIds) handleDelete(id);
+        handleDeleteIds(selectedIds);
+      }
+      if (
+        selectedIds.length > 0 &&
+        (e.key === "ArrowLeft" ||
+          e.key === "ArrowRight" ||
+          e.key === "ArrowUp" ||
+          e.key === "ArrowDown")
+      ) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        e.preventDefault();
+        const step = e.shiftKey ? 1 : 12;
+        const dx =
+          e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy =
+          e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        applyToRecords(selectedIds, (current, record) =>
+          translateRecord(current, record, dx, dy, zone),
+        );
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo, selectedIds, handleDelete, markDirty]);
+  }, [
+    undo,
+    redo,
+    selectedIds,
+    handleDeleteIds,
+    markDirty,
+    applyToRecords,
+    zone,
+  ]);
 
   const openSim = useCallback(() => {
     setSimReloadKey((k) => k + 1);
@@ -710,6 +793,8 @@ export function EditorApp() {
               onSelect={setSelectedIds}
               onTranslate={handleTranslate}
               onResize={handleResize}
+              onGestureStart={handleGestureStart}
+              onGestureEnd={handleGestureEnd}
               showSnapGuides
               scenarioId={previewScenarioId}
             />
@@ -729,6 +814,11 @@ export function EditorApp() {
               markDirty();
             }}
             onPatchRecord={handlePatchRecord}
+            onTranslateSelected={(dx, dy) => {
+              applyToRecords(selectedIds, (current, record) =>
+                translateRecord(current, record, dx, dy, zone),
+              );
+            }}
             onSetColor={handleSetColor}
             onSetText={handleSetText}
             onBindTelemetry={handleBindTelemetry}

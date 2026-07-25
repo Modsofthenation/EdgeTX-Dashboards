@@ -12,6 +12,7 @@ import {
   findRefreshBodyStartLine,
 } from "@widget-gen/shared";
 import { STARTER_WIDGET_SOURCE } from "./starterSource.ts";
+import { EDGE_COLOR_NAMES } from "./colors.ts";
 
 export interface DocumentRecord extends DrawRecord {
   id: string;
@@ -143,6 +144,9 @@ export function patchRecordArgs(
   let line = getSourceLine(source, ref.sourceLine);
   const map = argMapForRecord(record);
 
+  // Apply right-to-left so earlier arg spans stay valid when replacement
+  // lengths differ (e.g. pad→24 while also patching y).
+  const replacements: { start: number; end: number; text: string }[] = [];
   for (const [key, value] of Object.entries(patch)) {
     const argIdx = map[key];
     if (argIdx === undefined) continue;
@@ -156,7 +160,12 @@ export function patchRecordArgs(
     else if (key === "y2") text = lcdToSourceY(Number(value), zone);
     else text = formatPatchValue(key, value, record);
 
-    line = patchArgSpan(line, span, text);
+    replacements.push({ start: span.start, end: span.end, text });
+  }
+
+  replacements.sort((a, b) => b.start - a.start);
+  for (const { start, end, text } of replacements) {
+    line = patchArgSpan(line, { start, end }, text);
   }
 
   return replaceSourceLine(source, ref.sourceLine, line);
@@ -205,18 +214,25 @@ export function setRecordColor(
   zone: ZoneOffset,
 ): string {
   if (record.kind === "text") {
-    const flags =
+    const ref = record.sourceRef;
+    const flagsSpan = ref?.args[3];
+    const line = ref ? getSourceLine(source, ref.sourceLine) : "";
+    const existing = flagsSpan ? line.slice(flagsSpan.start, flagsSpan.end) : "";
+    const colorNames = new Set(EDGE_COLOR_NAMES);
+    const withoutColor = existing
+      .split("+")
+      .map((p) => p.trim())
+      .filter((p) => p && !colorNames.has(p as EdgeColor))
+      .join(" + ");
+    const sizeFallback =
       record.fontSize && record.fontSize >= 20
         ? "DBLSIZE"
         : record.fontSize && record.fontSize >= 14
           ? "MIDSIZE"
           : "SMLSIZE";
-    return patchRecordArgs(
-      source,
-      record,
-      { flags: `${flags} + ${color}` },
-      zone,
-    );
+    const base = withoutColor || sizeFallback;
+    const flags = base.includes(color) ? base : `${base} + ${color}`;
+    return patchRecordArgs(source, record, { flags }, zone);
   }
   return patchRecordArgs(source, record, { color }, zone);
 }
@@ -230,13 +246,53 @@ export function setRecordText(
   return patchRecordArgs(source, record, { text }, zone);
 }
 
+export function removeSourceLine(source: string, lineNum: number): string {
+  if (lineNum < 1) return source;
+  const lines = source.split("\n");
+  if (lineNum > lines.length) return source;
+  lines.splice(lineNum - 1, 1);
+  return lines.join("\n");
+}
+
 export function removeRecordLine(source: string, record: DrawRecord): string {
   const lineNum = record.sourceRef?.sourceLine ?? record.sourceLine;
   if (!lineNum) return source;
-  const lines = source.split("\n");
-  if (lineNum < 1 || lineNum > lines.length) return source;
-  lines.splice(lineNum - 1, 1);
-  return lines.join("\n");
+  return removeSourceLine(source, lineNum);
+}
+
+/** Delete multiple anchored records in one pass (highest line first). */
+export function removeRecordLines(
+  source: string,
+  records: DrawRecord[],
+): string {
+  const lines = records
+    .map((r) => r.sourceRef?.sourceLine ?? r.sourceLine)
+    .filter((n): n is number => typeof n === "number" && n > 0);
+  const unique = [...new Set(lines)].sort((a, b) => b - a);
+  let next = source;
+  for (const lineNum of unique) {
+    next = removeSourceLine(next, lineNum);
+  }
+  return next;
+}
+
+/** Remap L{line} ids after deleting source lines (1-based). */
+export function remapRecordIdsAfterLineRemoval(
+  ids: string[],
+  removedLines: number[],
+): string[] {
+  if (removedLines.length === 0) return ids;
+  const removed = new Set(removedLines);
+  return ids
+    .map((id) => {
+      const match = /^L(\d+)$/.exec(id);
+      if (!match) return id;
+      const line = Number(match[1]);
+      if (removed.has(line)) return null;
+      const shift = removedLines.filter((l) => l < line).length;
+      return `L${line - shift}`;
+    })
+    .filter((id): id is string => id != null);
 }
 
 export const INSERT_LINE_TEMPLATES: Record<string, string> = {
@@ -259,9 +315,26 @@ export function insertDrawLine(
   const template = INSERT_LINE_TEMPLATES[kind];
   if (!template) return source;
   const bodyEnd = findRefreshBodyEndIndex(source);
+  if (bodyEnd < 0) return source;
   const indent = "  ";
   const line = `${indent}${template}`;
   return source.slice(0, bodyEnd) + "\n" + line + source.slice(bodyEnd);
+}
+
+/** Insert a draw line and return the new source plus the inserted record id when parseable. */
+export function insertDrawLineWithId(
+  source: string,
+  kind: keyof typeof INSERT_LINE_TEMPLATES,
+  mockOrScenario?: MockTelemetry | LayoutScenario,
+): { source: string; insertedId: string | null } {
+  const next = insertDrawLine(source, kind);
+  if (next === source) return { source, insertedId: null };
+  const before = new Set(interpretDocument(source, mockOrScenario).map((r) => r.id));
+  const after = interpretDocument(next, mockOrScenario);
+  const inserted = after
+    .toReversed()
+    .find((r) => !before.has(r.id) && r.kind === kind);
+  return { source: next, insertedId: inserted?.id ?? null };
 }
 
 export function patchWidgetName(source: string, name: string): string {
