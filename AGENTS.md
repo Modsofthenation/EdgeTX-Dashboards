@@ -1,63 +1,38 @@
 # AGENTS.md
 
-Guidance for AI agents working in this repository.
+An **EdgeTX Lua dashboard generator** for **RadioMaster TX15** (480×320). Users describe a dashboard in natural language; a Cursor SDK agent writes `generated/<Name>/main.lua` (plus optional companion scripts), validates it, and packages a zip with INSTALL.md for the radio SD card.
 
-## What this project is
+Telemetry protocols: `betaflight`, `rotorflight`, `generic-crsf` (sensor catalogs in `knowledge/telemetry/`).
 
-An **EdgeTX Lua dashboard generator** for **RadioMaster TX15** (480×320). Users describe a dashboard in natural language; a Cursor SDK agent writes `generated/<Name>/main.lua` (plus optional companion scripts), validates, and packages a zip with INSTALL.md for the radio SD card.
+## Task Completion Requirements
 
-**Stack:** npm workspaces monorepo — Next.js web UI (`apps/web`), generator/CLI (`packages/generator`), shared types (`packages/shared`), WASM radio preview (`packages/sim-preview`).
+- Keep local verification focused on the files and packages changed. Run the smallest relevant test set; do not run the full workspace suite as a routine completion step.
+  - One file: `node --experimental-strip-types --test packages/generator/src/validate.test.ts`. Web tests need the `~/*` alias, so run them with `tsx`: `cd apps/web && npx tsx --test src/lib/luaPreviewEngine.test.ts`.
+  - One package: `npm run test -w @widget-gen/generator`.
+  - Run `npm run lint` and `npm run typecheck -w <workspace>` for the affected scope.
+- Do not run repo-wide `npm test` or `npm run build` locally unless the user asks. CI owns full verification.
+- After a user-visible web change, verify the affected flow in the browser against `npm run dev`, then stop the dev server.
+- Do not commit unless the user asks.
 
-**Telemetry protocols:** `betaflight`, `rotorflight`, `generic-crsf` (sensor catalogs in `knowledge/telemetry/`).
+## Package Roles
 
-## Commands
+- `apps/web`: Next.js UI and API routes. Owns chat UX, SSE consumption, previews, SQLite chat history.
+- `packages/generator`: Cursor SDK agent, prompt composition, validation pipeline, zip packaging, CLI.
+- `packages/shared`: Shared types, `@simulate` layout profiles, and the `drawSurface` refresh-body contract. No IO.
+- `packages/sim-preview`: EdgeTX WASM runtime (`SimRuntime`), virtual SD card, CRSF telemetry bridge.
+- `packages/layout-verify`: Static Lua draw interpreter plus overlap and geometry checks.
+- `packages/editor-core`: Lua ↔ scene document model behind the visual editor.
 
-```bash
-npm install
-npm run setup          # recommended: stubs + WASM + patch + build
-npm run setup:sim      # Radio sim only: WASM (if missing) + patch + sim-preview build
-npm run build          # shared → sim-preview → generator → web (order matters)
-npm test               # unit tests (shared, sim-preview, generator, web preview)
-npm run test:wasm      # optional: after npm run sync-wasm
-npm run typecheck      # all workspaces
-npm run dev            # web UI at http://localhost:3000 (needs CURSOR_API_KEY)
-npm run generate -- --protocol betaflight "prompt"
-npm run sync-stubs     # fetch stubs/2.11/ if missing
-npm run sync-wasm      # force re-download TX15 WASM (normally automatic on install/dev)
-```
+## Workspace Conventions
 
-**Requires:** Node **22.13+**, `CURSOR_API_KEY` for generation.
+- Packages are consumed as TypeScript source: `exports` resolve to `src/*.ts`, there is no `dist/` and no build step. Only `apps/web` builds.
+- Relative imports carry real extensions (`./validate.ts`).
+- Tests sit next to the module they cover (`validate.ts` / `validate.test.ts`) and are discovered by glob — new test files need no script changes.
+- `apps/web` resolves internal modules through `~/*`.
+- Compiler options live in `tsconfig.base.json`; packages and `apps/web` extend it.
+- Match existing style: minimal diffs, no drive-by refactors.
 
-## Repository layout
-
-| Path | Purpose |
-|------|---------|
-| `apps/web/` | Next.js UI, API routes (`/api/generate`, `/api/refine`, `/api/download`, `/api/validate`, `/api/widget-source`) |
-| `packages/generator/` | SDK agent, validation, packaging, CLI |
-| `packages/shared/` | Shared TS types, `@simulate` layout helpers, `drawSurface` |
-| `packages/sim-preview/` | EdgeTX WASM runtime (`SimRuntime`), virtual SD, CRSF telemetry bridge |
-| `knowledge/` | Radio profiles, telemetry catalogs, visual design guide |
-| `templates/` | `dashboard-starter.lua`, `INSTALL.md.tpl` |
-| `examples/` | Gold-standard reference widget (`tx15-minimal-dashboard.lua`) |
-| `stubs/2.11/` | EdgeTX LuaLS stubs (committed; refresh via `npm run sync-stubs`) |
-| `apps/web/public/sim/` | EdgeTX WASM firmware for Radio sim (auto-fetched on `npm install` / `npm run dev`; force refresh via `npm run sync-wasm`) |
-| `generated/` | **Gitignored** — agent-written widgets |
-| `dist-output/` | **Gitignored** — packaged zips |
-| `.cursor/rules/edgetx-lua.md` | Lua widget rules injected into generation prompts |
-
-## Agent skills
-
-Matt Pocock engineering skills are installed locally (not committed):
-
-```bash
-npx skills add mattpocock/skills
-```
-
-- Installed copy: `.agents/skills/` (gitignored)
-- Lock file: `skills-lock.json` (committed)
-- First-time repo setup: run the `setup-matt-pocock-skills` skill if using those workflows
-
-Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
+Layout and script details: [docs/reference/workspace-layout.md](docs/reference/workspace-layout.md), [docs/reference/scripts.md](docs/reference/scripts.md).
 
 ## Generating widgets (SDK agent)
 
@@ -108,19 +83,27 @@ Steps:
 
 Warnings do not block download; errors do. Download returns **HTTP 422** when invalid.
 
-## Working on TypeScript
-
-- **Build order:** `@widget-gen/shared` → `@widget-gen/sim-preview` → `@widget-gen/generator` → `@widget-gen/web`
-- Match existing style: minimal diffs, no drive-by refactors
-- Run `npm test` and `npm run build` after generator/shared changes
-- Do not commit unless the user asks
-
 ## Working on the web UI
 
 - **Preview tab:** EdgeTX WASM framebuffer (cropped to `@simulate` zone) via `SimFrameCanvas` + `paintSimFrame.ts`. **Open interactive sim** button below the preview opens the full `@edgetx/simulator-ui` overlay (touch/keys/sticks).
 - Mock telemetry: `apps/web/src/lib/mockTelemetry.ts` (shared with CRSF bridge in sim-preview)
 - Optional API auth: `GENERATOR_API_SECRET` (see `.env.example`)
 - Radio sim firmware: auto-downloaded by `scripts/ensure-edgetx-wasm.mjs` on postinstall and `npm run dev` → `apps/web/public/sim/`. Manual refresh: `npm run sync-wasm`. Set `SKIP_WASM_SYNC=1` to skip fetch (e.g. CI without sim).
+- API routes reach the generator only through `apps/web/src/server/generatorFacade.ts`.
+
+## Agent skills
+
+Matt Pocock engineering skills are installed locally (not committed):
+
+```bash
+npx skills add mattpocock/skills
+```
+
+- Installed copy: `.agents/skills/` (gitignored)
+- Lock file: `skills-lock.json` (committed)
+- First-time repo setup: run the `setup-matt-pocock-skills` skill if using those workflows
+
+Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 
 ## Security
 
@@ -137,6 +120,7 @@ Warnings do not block download; errors do. Download returns **HTTP 422** when in
 
 ## Reference links
 
+- [Documentation index](docs/README.md)
 - [EdgeTX Lua docs](https://luadoc.edgetx.org/)
 - [EdgeTX Dev Kit](https://github.com/JeffreyChix/edgetx-dev-kit)
 - [Cursor SDK](https://cursor.com/docs/sdk/typescript)

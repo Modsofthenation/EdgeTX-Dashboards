@@ -6,13 +6,16 @@ EdgeTX **Lua widgets** run on radio transmitters (e.g. RadioMaster TX15) and dra
 
 | Package | Role |
 |---------|------|
-| `@widget-gen/shared` | Shared types (`StreamEvent`, `GenerateRequest`, draw commands, validation issues) |
+| `@widget-gen/shared` | Shared types (`StreamEvent`, `GenerateRequest`, draw commands, validation issues), `@simulate` layout profiles |
 | `@widget-gen/generator` | Agent orchestration, prompts, validation, zip packaging, CLI |
+| `@widget-gen/layout-verify` | Static Lua draw interpreter, overlap and geometry checks |
+| `@widget-gen/sim-preview` | EdgeTX WASM runtime, virtual SD card, CRSF telemetry bridge |
+| `@widget-gen/editor-core` | Lua ↔ scene document model behind the visual editor |
 | `@widget-gen/web` | Next.js chat UI, SQLite chat history, Lua preview, API routes |
 
 ## Key flows
 
-1. **Generate** — `POST /api/generate` opens an SSE stream. The generator agent writes `widgets/<name>/main.lua`, validates it, and the route emits a single terminal `done` via `emitRunCompletion()`.
+1. **Generate** — `POST /api/generate` opens an SSE stream. The generator agent writes `generated/<name>/main.lua`, validates it, and the route emits a single terminal `done` via `emitRunCompletion()`.
 2. **Refine** — `POST /api/refine` continues an existing session with follow-up prompts.
 3. **Preview** — `luaPreviewEngine` parses a subset of Lua and evaluates draw calls against mock telemetry (no radio required).
 4. **Download** — `GET /api/download` returns a zip with `WIDGETS/<name>/main.lua` and generated `INSTALL.md`.
@@ -30,11 +33,11 @@ EdgeTX **Lua widgets** run on radio transmitters (e.g. RadioMaster TX15) and dra
 ## Data paths
 
 - `WIDGET_GEN_DATA_DIR` — Override for SQLite (`chats.db`) and runtime data (default: `<repo>/data`).
-- `widgets/` — Generated Lua source tree (agent workspace).
+- `generated/` — Generated Lua source tree (agent workspace).
 - `dist-output/` — Built zip artifacts for download.
 
 ## Server seams (web)
 
 - `apps/web/src/server/generatorFacade.ts` — Only place API routes import `@widget-gen/generator`.
 - `apps/web/src/lib/generationStreamClient.ts` — SSE parser for the browser.
-- `apps/web/src/lib/db/chatRepository.ts` — Chat persistence interface; SQLite impl in `chatStore.ts`.
+- `apps/web/src/lib/db/chatRepository.ts` — Chat persistence interface; SQLite impl in `sqliteChatRepository.ts`, wired up in `chatStore.ts`.
