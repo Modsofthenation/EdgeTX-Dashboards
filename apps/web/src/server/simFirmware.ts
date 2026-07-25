@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
-import { getRepoRoot } from "@widget-gen/generator";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export type SimFirmwareFileStatus = {
   name: string;
@@ -22,13 +22,41 @@ export type SimFirmwareStatus = {
 };
 
 const LEGACY_WASM = "edgetx-tx15-simulator.wasm";
+const REPO_MARKER = join("knowledge", "radios", "tx15.json");
+
+function findRepoRoot(): string {
+  if (process.env.WIDGET_GEN_REPO_ROOT) {
+    const envRoot = resolve(process.env.WIDGET_GEN_REPO_ROOT);
+    if (existsSync(join(envRoot, REPO_MARKER))) return envRoot;
+  }
+
+  const starts = [
+    process.cwd(),
+    resolve(dirname(fileURLToPath(import.meta.url)), "../../.."),
+    resolve(dirname(fileURLToPath(import.meta.url)), "../../../.."),
+  ];
+
+  for (const start of starts) {
+    let dir = resolve(start);
+    for (let depth = 0; depth < 8; depth++) {
+      if (existsSync(join(dir, REPO_MARKER))) return dir;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+
+  throw new Error(
+    `Could not locate repository root (missing ${REPO_MARKER}). cwd=${process.cwd()}`,
+  );
+}
 
 function getSimDir(repoRoot: string): string {
   return join(repoRoot, "apps", "web", "public", "sim");
 }
 
 export function getSimFirmwareStatus(): SimFirmwareStatus {
-  const repoRoot = getRepoRoot();
+  const repoRoot = findRepoRoot();
   const outDir = getSimDir(repoRoot);
   const manifestPath = join(outDir, "manifest.json");
   if (!existsSync(manifestPath)) {
@@ -95,7 +123,7 @@ export function getSimFirmwareStatus(): SimFirmwareStatus {
 }
 
 export function downloadSimFirmware(): SimFirmwareStatus {
-  const repoRoot = getRepoRoot();
+  const repoRoot = findRepoRoot();
   const script = join(repoRoot, "scripts", "sync-edgetx-wasm.mjs");
   const result = spawnSync(process.execPath, [script], {
     cwd: repoRoot,

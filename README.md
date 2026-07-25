@@ -1,22 +1,64 @@
-# EdgeTX Dashboard Generator
+# EdgeTX Dashboards
 
-Describe the dashboard you want. The app writes the Lua, checks it, shows a live preview on a virtual TX15, and gives you a zip to copy to your radio SD card.
+Describe a TX15 dashboard in plain language — get validated Lua, a live EdgeTX WASM preview, a visual layout editor, and an SD-card zip.
 
-Built for full-screen widgets on color LCD radios (default: **RadioMaster TX15**, 480×320). Works with **Betaflight**, **Rotorflight**, and **generic CRSF** telemetry. You can also ask for companion **Tool** or **Telemetry** scripts (battery selector, flight logger, and similar).
+Built for full-screen widgets on color LCD radios (default **RadioMaster TX15**, 480×320). Supports **Betaflight**, **Rotorflight**, and **generic CRSF**. Optional companion **Tool** / **Telemetry** scripts (battery selector, flight logger, and more).
 
-![Home screen with chat and dashboard panel](docs/screenshots/home.png)
+<p align="center">
+  <img src="docs/screenshots/readme-generate.png" alt="Generate page — chat history, composer, and dashboard output panel" width="900" />
+</p>
 
-![Generated widget preview running EdgeTX WASM firmware](docs/screenshots/preview-panel.png)
+## Tour
+
+### Generate
+
+Chat to describe layout, sensors, and style. The agent writes `main.lua`, validates it, and streams a live preview (see hero screenshot above).
+
+### Layout editor
+
+Open **Edit layout** (or `/editor`) to nudge, resize, bind telemetry, and tweak draw objects on a dark LCD canvas with a light instrument chrome.
+
+<p align="center">
+  <img src="docs/screenshots/readme-editor.png" alt="Layout editor with layers, canvas, and properties" width="800" />
+</p>
+
+### Themes
+
+**Preferences → Appearance** ships seven themes (Light, Dark, Midnight, Slate, Forest, Ocean, High contrast). The radio LCD canvas stays dark in every theme.
+
+<p align="center">
+  <img src="docs/screenshots/readme-preferences-themes.png" alt="Preferences appearance themes" width="720" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-editor-dark.png" alt="Layout editor in Dark theme" width="800" />
+</p>
+
+### Simulator firmware (WASM)
+
+**Preferences → Simulator WASM** downloads ~5 MB EdgeTX TX15 firmware for the in-browser radio preview (also auto-fetched on `npm run setup` / `npm run sync-wasm`).
+
+<p align="center">
+  <img src="docs/screenshots/readme-preferences-wasm.png" alt="Simulator WASM preferences panel" width="720" />
+</p>
+
+### Run in simulator
+
+From the editor, **Run in simulator** boots the same WASM preview with mock telemetry. Use **Open interactive sim** for touch, keys, and sticks.
+
+<p align="center">
+  <img src="docs/screenshots/readme-sim.png" alt="Editor Run in simulator modal" width="720" />
+</p>
 
 ## What you get
 
-1. A chat where you describe layout, sensors, colors, and options
+1. Chat to describe layout, sensors, colors, and options
 2. An agent that writes `main.lua` (and optional companion scripts)
 3. Validation against EdgeTX rules and your telemetry protocol
-4. A **Preview** panel that runs real EdgeTX firmware in the browser (WASM), not a fake canvas
-5. A **Download** button with `INSTALL.md` inside the zip
-
-Pick your radio, protocol, and EdgeTX version in the composer bar. Refine in chat until it looks right, then download.
+4. A **Preview** that runs real EdgeTX firmware in the browser (WASM)
+5. A visual **Layout** editor for fine-tuning draw objects
+6. A **Download** zip with `INSTALL.md` for the radio SD card
+7. Optional **desktop** builds (Windows / Linux / macOS) via Tauri 2
 
 ## Quick start
 
@@ -29,20 +71,32 @@ export CURSOR_API_KEY="cursor_..."   # PowerShell: $env:CURSOR_API_KEY="cursor_.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), describe a dashboard, wait for the agent to finish, then check the preview on the right.
+Open [http://localhost:3000](http://localhost:3000), describe a dashboard, wait for the agent to finish, then check the preview.
 
-The first WASM preview load downloads about 5 MB of EdgeTX firmware. Your browser caches it after that.
+The first WASM preview load is about 5 MB of EdgeTX firmware (cached afterward). You can also manage it under **Preferences → Simulator WASM**.
 
 ## Using the web UI
 
-**History** on the left keeps past chats. **Output** on the right shows:
+| Area            | What it does                                               |
+| --------------- | ---------------------------------------------------------- |
+| **Chats**       | Past conversations                                         |
+| **Generate**    | Prompt, radio/protocol/version, generation stream          |
+| **Preview**     | Live EdgeTX WASM render + mock CRSF telemetry              |
+| **Layout**      | Visual editor (`/editor`) — layers, properties, sim verify |
+| **Preferences** | Themes + simulator firmware download                       |
+| **Download**    | SD-card zip (blocked until validation passes)              |
 
-- **Preview**: live EdgeTX WASM render of your widget (mock CRSF telemetry ticks every few seconds)
-- **Lua**: the generated source
-- **Open interactive sim**: full radio overlay with touch, keys, and sticks (Esc to close)
-- **Download**: zip for your SD card (blocked until validation passes)
+Attach reference screenshots to prompts (PNG, JPEG, WebP, GIF, up to 4 MB each).
 
-You can attach reference screenshots to your prompt (PNG, JPEG, WebP, GIF, up to 4 MB each).
+## Desktop app (Tauri)
+
+```bash
+npm run desktop:dev       # Next.js + native window
+npm run desktop:prepare   # Next standalone + WASM for packaging
+npm run desktop:build     # Native installer (needs platform toolchains)
+```
+
+Merges to `main` build Windows, Linux, and macOS packages in CI (see [desktop docs](docs/reference/desktop-tauri.md)). Release sidecars currently expect Node 22+ on PATH (or `EDGETX_NODE_PATH`).
 
 ## Put it on your radio
 
@@ -78,58 +132,46 @@ Nothing ships until the widget passes checks:
 - EdgeTX LCD API rules (including dev-kit stubs)
 - Agent must get `valid: true` from `validateWidget` before packaging
 
-Failed validation blocks download (HTTP 422). Fix issues in chat or edit the Lua, then try again.
+Failed validation blocks download (HTTP 422). Fix in chat or the layout editor, then try again.
 
 ## If preview or sim breaks
 
-| Symptom                               | Try this                                               |
-| ------------------------------------- | ------------------------------------------------------ |
-| Stuck on “Booting EdgeTX preview…”    | Restart `npm run dev`, hard-refresh the browser        |
-| WASM 404                              | `npm run sync-wasm` or `npm run setup:sim`             |
-| `simuAuxSerialStart` errors           | `npm run setup:sim`, restart dev server                |
-| After changing `packages/sim-preview` | Restart dev server (packages are compiled from source) |
-
-## VS Code / EdgeTX Dev Kit
-
-For local script debugging outside the web app:
-
-1. Install **Lua** + **EdgeTX Dev Kit** (see `.vscode/extensions.json`)
-2. Open generated `main.lua` (annotations are injected automatically):
-
-   ```lua
-   ---@type WidgetScript
-   ---@simulate Layout1x1 zone=0
-   ```
-
-3. Run **EdgeTX: Simulate Script** or **Watch Script**
+| Symptom                            | Try this                                               |
+| ---------------------------------- | ------------------------------------------------------ |
+| Stuck on “Booting EdgeTX preview…” | Restart `npm run dev`, hard-refresh the browser        |
+| WASM 404 / Preferences incomplete  | `npm run sync-wasm` or Preferences → Download firmware |
+| `simuAuxSerialStart` errors        | `npm run setup:sim`, restart dev server                |
+| After changing `packages/*`        | Restart dev server (packages compile from source)      |
 
 ## Project layout
 
 ```
-apps/web/              Next.js UI and API routes
-packages/generator/    Cursor SDK agent, validation, packaging
-packages/shared/       Shared types and @simulate layouts
-packages/sim-preview/  EdgeTX WASM runtime and telemetry bridge
+apps/web/               Next.js UI and API routes
+apps/desktop/           Tauri 2 desktop shell + standalone sidecar
+packages/generator/     Cursor SDK agent, validation, packaging
+packages/shared/        Shared types and @simulate layouts
+packages/sim-preview/   EdgeTX WASM runtime and telemetry bridge
 packages/layout-verify/ Static Lua draw interpreter and overlap checks
-packages/editor-core/  Lua <-> scene model behind the visual editor
-knowledge/             Radio profiles, telemetry catalogs, design guides
-templates/             Starter Lua and INSTALL.md template
-examples/              Reference widgets
-apps/web/public/sim/   EdgeTX WASM firmware (auto-fetched on install)
-generated/             Agent output (gitignored)
+packages/editor-core/   Lua document model behind the visual editor
+knowledge/              Radio profiles, telemetry catalogs, design guides
+templates/              Starter Lua and INSTALL.md template
+examples/               Reference widgets
+apps/web/public/sim/    EdgeTX WASM firmware (auto-fetched)
+generated/              Agent output (gitignored)
 ```
 
-Packages are consumed as TypeScript source, so only the web app has a build step.
-More detail in [docs/reference/workspace-layout.md](docs/reference/workspace-layout.md)
-and [docs/reference/scripts.md](docs/reference/scripts.md).
+Packages are consumed as TypeScript source — only the web app (and desktop packaging) have a build step.  
+More detail: [docs/README.md](docs/README.md) · [workspace layout](docs/reference/workspace-layout.md) · [scripts](docs/reference/scripts.md)
 
 ## Environment variables
 
-| Variable               | Required | Description                                 |
-| ---------------------- | -------- | ------------------------------------------- |
-| `CURSOR_API_KEY`       | Yes      | Cursor API key for generation               |
-| `GENERATOR_API_SECRET` | No       | Protects API routes when set                |
-| `SKIP_WASM_SYNC`       | No       | Set to `1` to skip WASM download on install |
+| Variable               | Required | Description                                       |
+| ---------------------- | -------- | ------------------------------------------------- |
+| `CURSOR_API_KEY`       | Yes*     | Cursor API key for generation (*web generate)     |
+| `GENERATOR_API_SECRET` | No       | Protects API routes when set                      |
+| `SKIP_WASM_SYNC`       | No       | Set to `1` to skip WASM download on install/dev   |
+| `WIDGET_GEN_DATA_DIR`  | No       | Override data dir (desktop sidecar uses app data) |
+| `EDGETX_NODE_PATH`     | No       | Node binary for desktop release sidecar           |
 
 ## License
 
