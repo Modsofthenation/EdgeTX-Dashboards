@@ -7,7 +7,7 @@ depends on package build ordering.
 | Path                          | Purpose                                                                                                            |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `apps/web/`                   | Next.js UI and API routes (`/api/generate`, `/api/refine`, `/api/download`, `/api/validate`, `/api/widget-source`) |
-| `apps/desktop/`               | Tauri 2 desktop shell (native window around the web app; see [desktop-tauri.md](./desktop-tauri.md))              |
+| `apps/desktop/`               | Tauri 2 desktop shell (native window around the web app; see [desktop-tauri.md](./desktop-tauri.md))               |
 | `packages/generator/`         | Cursor SDK agent, prompt composition, validation, zip packaging, CLI                                               |
 | `packages/shared/`            | Shared TS types, `@simulate` layout profiles, `drawSurface` contract                                               |
 | `packages/sim-preview/`       | EdgeTX WASM runtime (`SimRuntime`), virtual SD card, CRSF telemetry bridge                                         |
