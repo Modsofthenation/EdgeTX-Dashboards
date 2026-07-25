@@ -12,9 +12,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const status = await syncSimFirmware(ROOT, {
   onProgress: (event) => {
     if (event.phase === "download") {
-      process.stdout.write(
-        `[${event.step}/${event.total}] ${event.message}\n`,
-      );
+      process.stdout.write(`[${event.step}/${event.total}] ${event.message}\n`);
     } else if (event.phase === "done") {
       console.log(`\n${event.message}`);
     }
