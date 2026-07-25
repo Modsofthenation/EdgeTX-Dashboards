@@ -1,5 +1,5 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { deleteChat, getChat, updateChat, type UpdateChatInput } from "@/lib/db/chatStore";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { deleteChat, getChat, updateChat, type UpdateChatInput } from "~/lib/db/chatStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

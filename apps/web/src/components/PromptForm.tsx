@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { EDGE_TX_VERSION_OPTIONS, DEFAULT_EDGE_TX_VERSION } from "@/lib/edgeTxVersions";
+import { EDGE_TX_VERSION_OPTIONS, DEFAULT_EDGE_TX_VERSION } from "~/lib/edgeTxVersions";
 import styles from "./PromptForm.module.css";
 
 interface PromptFormProps {

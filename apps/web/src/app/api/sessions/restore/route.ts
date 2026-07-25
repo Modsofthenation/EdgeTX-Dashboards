@@ -1,6 +1,6 @@
-import { getSessionStore, writeWidgetLuaSource } from "@/server/generatorFacade";
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { getChat, updateChat } from "@/lib/db/chatStore";
+import { getSessionStore, writeWidgetLuaSource } from "~/server/generatorFacade";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { getChat, updateChat } from "~/lib/db/chatStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

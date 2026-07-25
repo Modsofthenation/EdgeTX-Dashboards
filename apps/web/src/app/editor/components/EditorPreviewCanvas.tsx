@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { getPreviewScenario, type LayoutScenario } from "@widget-gen/layout-verify";
 import { recordsForDisplay } from "@widget-gen/editor-core";
 import type { ZoneOffset } from "@widget-gen/editor-core";
-import { parseLuaToDrawCommands, renderPreviewCommands } from "@/lib/luaPreviewEngine";
+import { parseLuaToDrawCommands, renderPreviewCommands } from "~/lib/luaPreviewEngine";
 import type { CanvasLayout } from "../lib/canvasLayout";
 import styles from "../editor.module.css";
 

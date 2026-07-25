@@ -6,8 +6,8 @@ import dynamic from "next/dynamic";
 import { resolvePreviewDimensions, getSimulateLayoutProfile, isFullLcdSimulateZone } from "@widget-gen/shared";
 import type { MockTelemetryValues, SimFrameData, SimKeyboardMode } from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
-import { useRadioSim } from "@/lib/radioSim/useRadioSim";
-import { SimFrameCanvas } from "@/components/SimFrameCanvas";
+import { useRadioSim } from "~/lib/radioSim/useRadioSim";
+import { SimFrameCanvas } from "~/components/SimFrameCanvas";
 import styles from "./Preview480x320.module.css";
 
 const SimulatorThemeProvider = dynamic(

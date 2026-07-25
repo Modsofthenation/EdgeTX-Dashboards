@@ -1,4 +1,4 @@
-import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel, type ModelCatalog } from "@/lib/chatModels";
+import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel, type ModelCatalog } from "~/lib/chatModels";
 
 export type { ChatModel, ModelCatalog };
 

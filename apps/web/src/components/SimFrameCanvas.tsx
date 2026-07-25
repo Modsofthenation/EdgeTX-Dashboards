@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import type { SimFrameData } from "@widget-gen/sim-preview";
-import { isChatScrolling } from "@/lib/chatScrollPause";
-import { paintSimFrame, type SimFrameZone } from "@/lib/radioSim/paintSimFrame";
+import { isChatScrolling } from "~/lib/chatScrollPause";
+import { paintSimFrame, type SimFrameZone } from "~/lib/radioSim/paintSimFrame";
 import styles from "./Preview480x320.module.css";
 
 interface SimFrameCanvasProps {

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ChatMessage } from "@/lib/chatTypes";
-import { markChatScrolling } from "@/lib/chatScrollPause";
-import { TEMPLATE_GALLERY } from "@/lib/templateGallery";
+import type { ChatMessage } from "~/lib/chatTypes";
+import { markChatScrolling } from "~/lib/chatScrollPause";
+import { TEMPLATE_GALLERY } from "~/lib/templateGallery";
 import { ChatMessageBubble } from "./ChatMessage";
 import styles from "./ChatMessageList.module.css";
 

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { StreamingMarkdown } from "./StreamingMarkdown";
 import { TodoPanel, ToolActivityStream } from "./ToolActivity";
-import { collectToolEntries, formatEventContent, groupStreamLines, type StreamLine } from "@/lib/streamLines";
+import { collectToolEntries, formatEventContent, groupStreamLines, type StreamLine } from "~/lib/streamLines";
 import styles from "./AssistantStream.module.css";
 
 interface AssistantStreamProps {

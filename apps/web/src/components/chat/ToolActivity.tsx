@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { StreamTodoItem } from "@widget-gen/shared";
-import type { ToolChipEntry } from "@/lib/streamLines";
+import type { ToolChipEntry } from "~/lib/streamLines";
 import styles from "./ToolActivity.module.css";
 
 function ToolLineContent({ tool, shimmer }: { tool: ToolChipEntry; shimmer?: boolean }) {

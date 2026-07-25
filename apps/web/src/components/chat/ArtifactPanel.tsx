@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
+import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
 import { PanelCollapseButton } from "./CollapsibleAside";

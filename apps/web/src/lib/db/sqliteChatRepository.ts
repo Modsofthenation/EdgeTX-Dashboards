@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
-import type { ChatRepository, CreateChatInput, UpdateChatInput } from "@/lib/db/chatRepository";
+import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
+import type { ChatRepository, CreateChatInput, UpdateChatInput } from "~/lib/db/chatRepository";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS chats (

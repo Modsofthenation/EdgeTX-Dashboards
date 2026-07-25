@@ -7,9 +7,9 @@ import {
   useChatSession,
   useSessionSettings,
   WidgetChatProvider,
-} from "@/lib/useWidgetChat";
-import type { PendingPromptImage } from "@/lib/promptImages";
-import { usePanelCollapse } from "@/lib/usePanelCollapse";
+} from "~/lib/useWidgetChat";
+import type { PendingPromptImage } from "~/lib/promptImages";
+import { usePanelCollapse } from "~/lib/usePanelCollapse";
 import { ArtifactPanel } from "./ArtifactPanel";
 import { ChatComposer } from "./ChatComposer";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";

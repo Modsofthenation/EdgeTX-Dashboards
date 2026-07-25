@@ -2,19 +2,19 @@
 
 import { memo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { ChatModel } from "@/lib/chatModels";
+import type { ChatModel } from "~/lib/chatModels";
 import {
   groupRadiosByLayout,
   LAYOUT_GROUP_LABELS,
   type RadioCatalogEntry,
-} from "@/lib/radioCatalog";
-import { PROTOCOL_BADGE_LABELS } from "@/lib/protocolLabels";
-import { EDGE_TX_VERSION_OPTIONS } from "@/lib/edgeTxVersions";
+} from "~/lib/radioCatalog";
+import { PROTOCOL_BADGE_LABELS } from "~/lib/protocolLabels";
+import { EDGE_TX_VERSION_OPTIONS } from "~/lib/edgeTxVersions";
 import {
   maxPromptImages,
   readPromptImageFile,
   type PendingPromptImage,
-} from "@/lib/promptImages";
+} from "~/lib/promptImages";
 import styles from "./ChatComposer.module.css";
 
 interface ChatComposerProps {

@@ -9,9 +9,9 @@ import {
   tickMock,
 } from "@widget-gen/layout-verify";
 import { resolvePreviewDimensions, getSimulateLayoutProfile } from "@widget-gen/shared";
-import { isChatScrolling } from "@/lib/chatScrollPause";
-import { RadioSimPreview } from "@/components/RadioSimPreview";
-import { renderPreviewCommands } from "@/lib/luaPreviewEngine";
+import { isChatScrolling } from "~/lib/chatScrollPause";
+import { RadioSimPreview } from "~/components/RadioSimPreview";
+import { renderPreviewCommands } from "~/lib/luaPreviewEngine";
 import styles from "./Preview480x320.module.css";
 
 interface Preview480x320Props {

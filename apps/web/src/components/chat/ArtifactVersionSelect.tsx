@@ -1,7 +1,7 @@
 "use client";
 
-import type { WidgetVersionEntry } from "@/lib/chatTypes";
-import { formatVersionOptionLabel } from "@/lib/chatTypes";
+import type { WidgetVersionEntry } from "~/lib/chatTypes";
+import { formatVersionOptionLabel } from "~/lib/chatTypes";
 import styles from "./ArtifactVersionSelect.module.css";
 
 interface ArtifactVersionSelectProps {

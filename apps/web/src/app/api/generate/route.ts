@@ -1,7 +1,7 @@
-import { CursorAgentError, getSessionStore, listModelCatalog, validateGenerateRequest } from "@/server/generatorFacade";
-import { checkApiAuth, checkRateLimit, checkSessionCapacity } from "@/lib/apiSecurity";
-import { createSseResponse, createSseStream } from "@/lib/sse";
-import { createRunCallbacks, emitRunCompletion } from "@/lib/widgetSession";
+import { CursorAgentError, getSessionStore, listModelCatalog, validateGenerateRequest } from "~/server/generatorFacade";
+import { checkApiAuth, checkRateLimit, checkSessionCapacity } from "~/lib/apiSecurity";
+import { createSseResponse, createSseStream } from "~/lib/sse";
+import { createRunCallbacks, emitRunCompletion } from "~/lib/widgetSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

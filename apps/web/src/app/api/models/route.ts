@@ -1,5 +1,5 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { listModelCatalog } from "@/server/generatorFacade";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { listModelCatalog } from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

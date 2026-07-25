@@ -12,13 +12,13 @@ import {
   type ReactNode,
 } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { consumeGenerationStream, type GenerationSsePayload } from "@/lib/generationStreamClient";
+import { consumeGenerationStream, type GenerationSsePayload } from "~/lib/generationStreamClient";
 import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
-import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel } from "@/lib/chatModels";
+import { DEFAULT_CHAT_MODEL, FALLBACK_CHAT_MODELS, type ChatModel } from "~/lib/chatModels";
 import {
   fetchModelCatalog,
   findModel,
-} from "@/lib/modelCatalog";
+} from "~/lib/modelCatalog";
 import {
   createChatRecord,
   fetchChat,
@@ -26,12 +26,12 @@ import {
   removeChatRecord,
   restoreGeneratorSession,
   syncChatRecord,
-} from "@/lib/chatHistoryApi";
+} from "~/lib/chatHistoryApi";
 import {
   fetchRadioCatalog,
   findRadio,
   type RadioCatalogEntry,
-} from "@/lib/radioCatalog";
+} from "~/lib/radioCatalog";
 import {
   appendAssistantLine,
   createAssistantPlaceholder,
@@ -44,15 +44,15 @@ import {
   type ChatSummary,
   type WidgetSnapshot,
   type WidgetVersionEntry,
-} from "@/lib/chatTypes";
-import { toPromptImages, type PendingPromptImage } from "@/lib/promptImages";
+} from "~/lib/chatTypes";
+import { toPromptImages, type PendingPromptImage } from "~/lib/promptImages";
 import {
   commitVersionSnapshot,
   buildVersionTimeline,
   resolveDisplayArtifact,
   resolveLatestVersion,
-} from "@/lib/artifactVersionHistory";
-import type { StreamLine } from "@/lib/streamLines";
+} from "~/lib/artifactVersionHistory";
+import type { StreamLine } from "~/lib/streamLines";
 
 function shouldRenderStreamEvent(type: string): boolean {
   return type !== "widget" && type !== "status" && type !== "done";

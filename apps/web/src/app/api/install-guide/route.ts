@@ -1,7 +1,7 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { buildInstallGuide } from "@/lib/installGuide";
+import { buildInstallGuide } from "~/lib/installGuide";
 
-import { checkApiAuth } from "@/lib/apiSecurity";
+import { checkApiAuth } from "~/lib/apiSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

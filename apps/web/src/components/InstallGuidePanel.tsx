@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import { buildInstallGuide } from "@/lib/installGuide";
+import { buildInstallGuide } from "~/lib/installGuide";
 import styles from "./InstallGuidePanel.module.css";
 
 interface InstallGuidePanelProps {

@@ -1,4 +1,4 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
+import { checkApiAuth } from "~/lib/apiSecurity";
 import {
   getSessionStore,
   isTelemetryProtocol,
@@ -8,7 +8,7 @@ import {
   sanitizeWidgetName,
   validateWidgetRelease,
   WidgetValidationError,
-} from "@/server/generatorFacade";
+} from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

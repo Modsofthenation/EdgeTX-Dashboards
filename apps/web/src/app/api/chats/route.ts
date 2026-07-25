@@ -1,5 +1,5 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { createChat, listChats, type CreateChatInput } from "@/lib/db/chatStore";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { createChat, listChats, type CreateChatInput } from "~/lib/db/chatStore";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export const runtime = "nodejs";

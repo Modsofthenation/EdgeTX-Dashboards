@@ -1,5 +1,5 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { listRadioCatalog } from "@/server/generatorFacade";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { listRadioCatalog } from "~/server/generatorFacade";
 import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
 
 export const runtime = "nodejs";

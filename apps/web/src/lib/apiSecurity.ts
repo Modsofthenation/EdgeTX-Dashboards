@@ -1,4 +1,4 @@
-import { MAX_ACTIVE_SESSIONS } from "@/server/generatorFacade";
+import { MAX_ACTIVE_SESSIONS } from "~/server/generatorFacade";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 8;

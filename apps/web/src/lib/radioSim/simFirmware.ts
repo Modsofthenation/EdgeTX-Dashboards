@@ -1,4 +1,4 @@
-import { DEFAULT_EDGE_TX_VERSION, normalizeEdgeTxVersion } from "@/lib/edgeTxVersions";
+import { DEFAULT_EDGE_TX_VERSION, normalizeEdgeTxVersion } from "~/lib/edgeTxVersions";
 
 export interface SimDisplayProfile {
   w: number;

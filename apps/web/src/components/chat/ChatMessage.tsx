@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import type { ChatMessage } from "@/lib/chatTypes";
+import type { ChatMessage } from "~/lib/chatTypes";
 import { AssistantStream } from "./AssistantStream";
 import styles from "./ChatMessage.module.css";
 

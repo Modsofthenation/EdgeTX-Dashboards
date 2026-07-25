@@ -1,5 +1,5 @@
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
-import { appendStreamLine, type StreamLine } from "@/lib/streamLines";
+import { appendStreamLine, type StreamLine } from "~/lib/streamLines";
 
 export interface WidgetSnapshot {
   /** EdgeTX radio display name (≤10 chars). */

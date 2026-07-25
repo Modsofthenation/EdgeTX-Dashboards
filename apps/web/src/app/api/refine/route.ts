@@ -1,10 +1,10 @@
-import { CursorAgentError, getSessionStore, validatePromptImages, writeWidgetLuaSource, readWidgetLuaSource } from "@/server/generatorFacade";
+import { CursorAgentError, getSessionStore, validatePromptImages, writeWidgetLuaSource, readWidgetLuaSource } from "~/server/generatorFacade";
 import type { RefineHistoryInput } from "@widget-gen/generator";
-import { checkApiAuth } from "@/lib/apiSecurity";
-import { getChat } from "@/lib/db/chatStore";
-import { buildRefineHistoryInput } from "@/lib/refineChatContext";
-import { createSseResponse, createSseStream } from "@/lib/sse";
-import { createRunCallbacks, emitRunCompletion } from "@/lib/widgetSession";
+import { checkApiAuth } from "~/lib/apiSecurity";
+import { getChat } from "~/lib/db/chatStore";
+import { buildRefineHistoryInput } from "~/lib/refineChatContext";
+import { createSseResponse, createSseStream } from "~/lib/sse";
+import { createRunCallbacks, emitRunCompletion } from "~/lib/widgetSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

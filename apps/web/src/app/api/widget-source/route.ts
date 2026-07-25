@@ -1,11 +1,11 @@
-import { checkApiAuth } from "@/lib/apiSecurity";
+import { checkApiAuth } from "~/lib/apiSecurity";
 import {
   isTelemetryProtocol,
   readWidgetLuaSource,
   resolveWidgetWorkspaceFromSession,
   validateWidgetSource,
   writeWidgetLuaSource,
-} from "@/server/generatorFacade";
+} from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

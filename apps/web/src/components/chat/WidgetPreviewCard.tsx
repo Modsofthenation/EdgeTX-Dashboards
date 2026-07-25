@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
-import type { WidgetSnapshot } from "@/lib/chatTypes";
+import type { WidgetSnapshot } from "~/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
 import styles from "./WidgetPreviewCard.module.css";
 

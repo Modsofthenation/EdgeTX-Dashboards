@@ -1,5 +1,5 @@
 import type { RefineHistoryInput } from "@widget-gen/generator";
-import type { ChatMessage, StoredChat } from "@/lib/chatTypes";
+import type { ChatMessage, StoredChat } from "~/lib/chatTypes";
 
 function messageText(message: ChatMessage): string {
   const direct = message.content.trim();

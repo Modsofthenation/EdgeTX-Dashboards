@@ -10,13 +10,13 @@ import type {
   SimWorkerResponse,
   WidgetSimulateZone,
 } from "@widget-gen/sim-preview";
-import { DEFAULT_EDGE_TX_VERSION } from "@/lib/edgeTxVersions";
+import { DEFAULT_EDGE_TX_VERSION } from "~/lib/edgeTxVersions";
 import {
   resolveSimFirmware,
   type SimFirmwareResolution,
   type SimManifest,
-} from "@/lib/radioSim/simFirmware";
-import { resolveReachableWasmUrl } from "@/lib/radioSim/resolveWasmUrl";
+} from "~/lib/radioSim/simFirmware";
+import { resolveReachableWasmUrl } from "~/lib/radioSim/resolveWasmUrl";
 
 const DEFAULT_STATE: RadioSimState = {
   phase: "idle",

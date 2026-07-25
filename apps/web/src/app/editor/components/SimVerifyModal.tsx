@@ -5,7 +5,7 @@ import { getPreviewScenario } from "@widget-gen/layout-verify";
 import styles from "../editor.module.css";
 
 const RadioSimPreview = dynamic(
-  () => import("@/components/RadioSimPreview").then((m) => m.RadioSimPreview),
+  () => import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
   { ssr: false }
 );
 

@@ -1,5 +1,5 @@
-import type { WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
-import { snapshotToVersionEntry, versionEntryToSnapshot } from "@/lib/chatTypes";
+import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
+import { snapshotToVersionEntry, versionEntryToSnapshot } from "~/lib/chatTypes";
 
 /** Latest version number from head snapshot or version history. */
 export function resolveLatestVersion(

@@ -1,8 +1,8 @@
 "use client";
 
 import { memo, useState } from "react";
-import type { ChatSummary } from "@/lib/chatTypes";
-import { PROTOCOL_BADGE_LABELS, protocolBadgeClass } from "@/lib/protocolLabels";
+import type { ChatSummary } from "~/lib/chatTypes";
+import { PROTOCOL_BADGE_LABELS, protocolBadgeClass } from "~/lib/protocolLabels";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import styles from "./ChatHistorySidebar.module.css";

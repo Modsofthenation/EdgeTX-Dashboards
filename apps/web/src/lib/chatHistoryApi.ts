@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "@/lib/chatTypes";
+import type { ChatMessage, ChatSummary, StoredChat, WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export async function fetchChatList(): Promise<ChatSummary[]> {

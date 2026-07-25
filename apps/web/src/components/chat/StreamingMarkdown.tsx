@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
-import { splitStreamingMarkdownBlocks } from "@/lib/streamLines";
+import { splitStreamingMarkdownBlocks } from "~/lib/streamLines";
 import { MarkdownContent } from "./MarkdownContent";
 
 const TAIL_THROTTLE_MS = 200;

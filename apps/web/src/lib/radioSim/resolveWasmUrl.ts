@@ -1,4 +1,4 @@
-import type { SimFirmwareResolution, SimManifest } from "@/lib/radioSim/simFirmware";
+import type { SimFirmwareResolution, SimManifest } from "~/lib/radioSim/simFirmware";
 
 /** Prefer local /sim blobs; fall back to manifest CDN when dev server has no public/sim yet. */
 export async function resolveReachableWasmUrl(
