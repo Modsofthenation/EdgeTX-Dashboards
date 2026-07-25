@@ -358,16 +358,12 @@ export function RecordPropertiesPanel({
                 <NumField
                   label="X2"
                   value={(record.x2 ?? 0) - zone.zoneX}
-                  onChange={(x2) =>
-                    onPatchRecord(record, { x2: toLcdX(x2) })
-                  }
+                  onChange={(x2) => onPatchRecord(record, { x2: toLcdX(x2) })}
                 />
                 <NumField
                   label="Y2"
                   value={(record.y2 ?? 0) - zone.zoneY}
-                  onChange={(y2) =>
-                    onPatchRecord(record, { y2: toLcdY(y2) })
-                  }
+                  onChange={(y2) => onPatchRecord(record, { y2: toLcdY(y2) })}
                 />
               </div>
             </>

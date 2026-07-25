@@ -91,8 +91,17 @@ export function EditorApp() {
   const loadRequestIdRef = useRef(0);
   const savedSourceRef = useRef<string | null>(null);
 
-  const { source, setSource, replaceSource, beginTransient, endTransient, undo, redo, canUndo, canRedo } =
-    useSourceUndoStack(createStarterSource());
+  const {
+    source,
+    setSource,
+    replaceSource,
+    beginTransient,
+    endTransient,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useSourceUndoStack(createStarterSource());
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
   const previewScenario = useMemo(
@@ -242,13 +251,16 @@ export function EditorApp() {
 
   const handleResize = useCallback(
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
-      setSource((prev) => {
-        const record = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === id,
-        );
-        if (!record) return prev;
-        return resizeRecord(prev, record, box, zone);
-      }, { history: false });
+      setSource(
+        (prev) => {
+          const record = interpretDocument(prev, previewScenario).find(
+            (r) => r.id === id,
+          );
+          if (!record) return prev;
+          return resizeRecord(prev, record, box, zone);
+        },
+        { history: false },
+      );
       markDirty();
     },
     [setSource, zone, markDirty, previewScenario],
