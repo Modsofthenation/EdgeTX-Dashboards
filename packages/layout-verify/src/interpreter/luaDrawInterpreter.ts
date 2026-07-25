@@ -1763,7 +1763,7 @@ export function applyMockToCommands(
     const annulusParsed = parseLcdCallWithSource(line, "drawAnnulus");
     if (annulusParsed && annulusParsed.args.length >= 7) {
       const annulusArgs = annulusParsed.args;
-      const flags = annulusArgs[7] ?? "CYAN";
+      const flags = annulusArgs[6] ?? annulusArgs[7] ?? "CYAN";
       const r1 = evalNumberExpr(annulusArgs[2]!, ctx, evalDims);
       const r2 = evalNumberExpr(annulusArgs[3]!, ctx, evalDims);
       let rIn = Math.min(r1, r2);
