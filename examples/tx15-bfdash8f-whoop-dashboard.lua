@@ -586,7 +586,7 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledRectangle(chipX, footerY + 4, chipW, footerH - 8, armed and ORANGE or WHITE)
 
   -- === phase 2: text ===
-  lcd.drawText(pad, 12, "BfDash8f", MIDSIZE + DARKBLUE)
+  lcd.drawText(pad, 12, "WHOOP", MIDSIZE + DARKBLUE)
   lcd.drawText(w - pad, 12, "1S WHOOP", SMLSIZE + RIGHT + BLACK)
 
   lcd.drawText(w / 2, rArm.y + 6, statusLabel, MIDSIZE + CENTER + statusColor)
