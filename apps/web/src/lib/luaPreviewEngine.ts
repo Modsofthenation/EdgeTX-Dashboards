@@ -137,7 +137,7 @@ export function renderPreviewCommands(
       case "circle": {
         const cx = cmd.x ?? 0;
         const cy = cmd.y ?? 0;
-        const r = cmd.r ?? 0;
+        const r = Math.max(0, cmd.r ?? 0);
         ctx.strokeStyle = cmd.color ?? "#ffffff";
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -148,7 +148,7 @@ export function renderPreviewCommands(
       case "filledCircle": {
         const cx = cmd.x ?? 0;
         const cy = cmd.y ?? 0;
-        const r = cmd.r ?? 0;
+        const r = Math.max(0, cmd.r ?? 0);
         ctx.fillStyle = cmd.color ?? "#808080";
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -158,7 +158,7 @@ export function renderPreviewCommands(
       case "arc": {
         const cx = cmd.x ?? 0;
         const cy = cmd.y ?? 0;
-        const r = cmd.r ?? 0;
+        const r = Math.max(0, cmd.r ?? 0);
         ctx.strokeStyle = cmd.color ?? "#ffffff";
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -175,8 +175,8 @@ export function renderPreviewCommands(
       case "annulus": {
         const cx = cmd.x ?? 0;
         const cy = cmd.y ?? 0;
-        const rOut = cmd.rOut ?? 0;
-        const rIn = cmd.rIn ?? 0;
+        const rOut = Math.max(0, cmd.rOut ?? 0);
+        const rIn = Math.max(0, Math.min(rOut, cmd.rIn ?? 0));
         const midR = (rOut + rIn) / 2;
         const width = Math.max(1, rOut - rIn);
         ctx.strokeStyle = cmd.color ?? "#00ffff";

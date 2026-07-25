@@ -498,7 +498,8 @@ export function RecordPropertiesPanel({
                   </label>
                   <p className={styles.propEmptyHint}>
                     Binds with the Format above. Caches the sensor in create()
-                    and rewrites this drawText.
+                    and rewrites this drawText. Sensor menu resets after bind —
+                    check Static text / canvas for the live value.
                   </p>
                 </div>
               )}
