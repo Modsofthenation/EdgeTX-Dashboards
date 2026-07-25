@@ -124,10 +124,10 @@ test("removeRecordLines deletes multiple lines without shifting targets", () => 
 });
 
 test("remapRecordIdsAfterLineRemoval shifts later L-ids", () => {
-  assert.deepEqual(remapRecordIdsAfterLineRemoval(["L10", "L12", "L15"], [12]), [
-    "L10",
-    "L14",
-  ]);
+  assert.deepEqual(
+    remapRecordIdsAfterLineRemoval(["L10", "L12", "L15"], [12]),
+    ["L10", "L14"],
+  );
 });
 
 test("insertDrawLineWithId returns the new record id", () => {

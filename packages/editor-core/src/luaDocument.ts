@@ -217,7 +217,9 @@ export function setRecordColor(
     const ref = record.sourceRef;
     const flagsSpan = ref?.args[3];
     const line = ref ? getSourceLine(source, ref.sourceLine) : "";
-    const existing = flagsSpan ? line.slice(flagsSpan.start, flagsSpan.end) : "";
+    const existing = flagsSpan
+      ? line.slice(flagsSpan.start, flagsSpan.end)
+      : "";
     const colorNames = new Set(EDGE_COLOR_NAMES);
     const withoutColor = existing
       .split("+")
@@ -329,7 +331,9 @@ export function insertDrawLineWithId(
 ): { source: string; insertedId: string | null } {
   const next = insertDrawLine(source, kind);
   if (next === source) return { source, insertedId: null };
-  const before = new Set(interpretDocument(source, mockOrScenario).map((r) => r.id));
+  const before = new Set(
+    interpretDocument(source, mockOrScenario).map((r) => r.id),
+  );
   const after = interpretDocument(next, mockOrScenario);
   const inserted = after
     .toReversed()
