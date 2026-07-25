@@ -173,7 +173,7 @@ export class SqliteChatRepository implements ChatRepository {
          LEFT JOIN chat_messages m ON m.chat_id = c.id
          LEFT JOIN chat_artifacts a ON a.chat_id = c.id
          GROUP BY c.id
-         ORDER BY c.created_at ASC
+         ORDER BY c.created_at ASC, c.rowid ASC
          LIMIT ?`,
       )
       .all(limit) as Array<{
