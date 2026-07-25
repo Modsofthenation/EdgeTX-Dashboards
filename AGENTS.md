@@ -118,6 +118,14 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 - Do not commit `generated/`, `dist-output/`, or `.agents/`
 - Do not add `require()` or filesystem access to generated Lua
 
+## Cursor Cloud specific instructions
+
+Environment is refreshed by the startup update script `npm install` (its `postinstall` patches `@edgetx/simulator-ui` and downloads the EdgeTX WASM firmware into `apps/web/public/sim/`). No extra setup is needed. Non-obvious caveats:
+
+- **`CURSOR_API_KEY` gates only AI generation.** Without it, `npm run dev` still boots at `http://localhost:3000` and the editor, `/api/validate`, layout preview, and EdgeTX WASM simulator all work; only `/api/generate` (500) and `/api/refine` are blocked. Add it as a Secret to exercise the chat generation flow.
+- **The `/editor` center canvas is a scene/layers editor, not a live pixel preview** — it looks blank/black even for a valid widget. To see the widget actually rendered, use **Run in simulator** / **Verify in sim** in the editor (or the home-page **Preview** tab), which run the real EdgeTX firmware via WASM. A blank editor canvas is expected, not a bug.
+- **Verify the WASM sim runtime headlessly** with `npm run test:wasm` (executes real firmware against the golden example widgets). Use `SKIP_WASM_SYNC=1` only if the firmware download is unavailable — the Sim/Preview tabs won't render without it.
+
 ## Reference links
 
 - [Documentation index](docs/README.md)
