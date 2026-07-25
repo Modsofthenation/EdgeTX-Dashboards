@@ -25,6 +25,13 @@ const SENSOR_TO_KEY: Record<string, string> = {
   RPM: "rpm",
   EscT: "esct",
   MotT: "mott",
+  Tspd: "tspd",
+  Vbec: "vbec",
+  Vcel: "vcel",
+  Vbat: "vbat",
+  Gov: "gov",
+  "Cel#": "celn",
+  "BAT#": "batn",
 };
 
 export function sensorKeyForLabel(sensor: string): string {

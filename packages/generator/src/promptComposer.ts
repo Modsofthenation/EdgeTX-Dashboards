@@ -9,6 +9,7 @@ import {
   readTemplate,
   readDesignGuideForArchetype,
   readRotorflightStyleGuide,
+  readStacyDashSectionsGuide,
   readCompanionScriptsGuide,
   readModelImageGuide,
   readModelHeroDashboardGuide,
@@ -158,6 +159,8 @@ export function buildGenerationPrompt(
     catalog.protocol === "rotorflight" && archetype.id === "heli-rotorflight"
       ? readRotorflightStyleGuide()
       : "";
+  const stacyDashGuide =
+    catalog.protocol === "rotorflight" ? readStacyDashSectionsGuide() : "";
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt)
     ? readModelImageGuide()
@@ -262,6 +265,8 @@ ${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API on
 
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling — layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
+${stacyDashGuide ? `\n## StacyDash / Rotorflight prefab sections (TX15 — prefer these modular blocks)\n${stacyDashGuide}` : ""}
+
 ## Companion scripts (when user asks for tools, loggers, selectors)
 
 ${companionGuide}
@@ -354,6 +359,8 @@ export function buildRefinePrompt(
     resolvedProtocol === "rotorflight" && archetype.id === "heli-rotorflight"
       ? readRotorflightStyleGuide()
       : "";
+  const stacyDashGuide =
+    resolvedProtocol === "rotorflight" ? readStacyDashSectionsGuide() : "";
   const companionGuide = readCompanionScriptsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt)
@@ -408,6 +415,7 @@ ${themePalettesGuide ? `\n## EdgeTX theme palettes and gauges\n${themePalettesGu
 ${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API only)\n${roundedCornersGuide}` : ""}
 
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
+${stacyDashGuide ? `\n## StacyDash / Rotorflight prefab sections (TX15)\n${stacyDashGuide}` : ""}
 
 ## Companion scripts
 

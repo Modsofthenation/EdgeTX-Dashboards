@@ -58,7 +58,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     summary:
       "Heli-specific: link blocks, battery, headspeed hero, motor temps, current/power footer.",
     layoutNotes:
-      "Follow rotorflight DBK telemetry idioms (RQLY blocks, HSpd/RPM hero, Cur/Pwr footer) but vary layout per creative brief — not a fixed two-card clone.",
+      "Prefer StacyDash TX15 prefab sections (`rf-topbar-link`, `rf-model-panel`, `rf-governor-card`, `rf-headspeed-hero`, `rf-motor-tiles`, `rf-battery-bar`) when the user wants a StacyDash-style board. Otherwise follow rotorflight DBK idioms (RQLY blocks, HSpd hero, Cur/Pwr footer) and vary layout per creative brief. Call out rf2bg + Discover new for HSpd/EscT/Vbec/Vcel/Gov.",
   },
   "telemetry-dense": {
     id: "telemetry-dense",
@@ -202,7 +202,7 @@ export function readLayoutArchetypesGuide(): string {
 
 export const EXAMPLE_BY_ARCHETYPE: Record<LayoutArchetypeId, string> = {
   "card-grid": "tx15-minimal-dashboard.lua",
-  "heli-rotorflight": "tx15-rotorflight-heli.lua",
+  "heli-rotorflight": "tx15-stacydash-sections.lua",
   "hero-minimal": "tx15-hero-minimal.lua",
   "strip-board": "tx15-strip-board.lua",
   "telemetry-dense": "tx15-telemetry-dense.lua",

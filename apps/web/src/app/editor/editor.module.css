@@ -247,14 +247,34 @@
 .insertDropdown {
   position: fixed;
   z-index: 2000;
-  min-width: min(260px, calc(100vw - 2rem));
-  max-height: min(360px, calc(100vh - 5rem));
+  min-width: min(300px, calc(100vw - 2rem));
+  max-height: min(420px, calc(100vh - 5rem));
   overflow-y: auto;
   padding: 0.35rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
   background: var(--surface-solid);
   box-shadow: var(--shadow-lg);
+}
+
+.insertGroupLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.6rem 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.insertGroupHint {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent, #2aa198);
 }
 
 .insertItem {

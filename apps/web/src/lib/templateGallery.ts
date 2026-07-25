@@ -16,7 +16,8 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
   {
     id: "heli",
     title: "Rotorflight heli",
-    prompt: "Rotorflight heli board with headspeed hero and motor temps",
+    prompt:
+      "StacyDash-style Rotorflight TX15 board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
     archetype: "heli-rotorflight",
   },
   {
