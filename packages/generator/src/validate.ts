@@ -147,6 +147,23 @@ function validateLayoutGeometry(
   return issues;
 }
 
+function validateNoWidgetNameChrome(
+  source: string,
+  widgetName: string | undefined,
+  issues: ValidationIssue[],
+): void {
+  if (!widgetName) return;
+  const literal = new RegExp(
+    `drawText\\([^\\n]*["']${widgetName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`,
+  );
+  if (literal.test(source)) {
+    issues.push({
+      severity: "error",
+      message: `Do not draw the widget name "${widgetName}" as on-screen chrome — use short metric labels (VOLTAGE, LINK, GPS) or omit the title; the radio already shows the widget name in the UI`,
+    });
+  }
+}
+
 function validateVisualDesign(
   source: string,
   issues: ValidationIssue[],
@@ -400,6 +417,7 @@ export function validateWidgetLua(
   validateLcdOnlyInRefresh(source, issues);
   const widgetName = validateWidgetName(source, issues);
   validateOptions(source, options?.maxOptions ?? 10, issues);
+  validateNoWidgetNameChrome(source, widgetName, issues);
 
   if (!source.includes("getSourceIndex") && !source.includes("cacheSource")) {
     issues.push({

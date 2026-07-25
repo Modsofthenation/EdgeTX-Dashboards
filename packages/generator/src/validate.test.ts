@@ -77,3 +77,24 @@ describe("archetype-aware validateVisualDesign", () => {
     assert.ok(panelWarn);
   });
 });
+
+describe("validateNoWidgetNameChrome", () => {
+  it("errors when the widget display name is drawn on screen", () => {
+    const source = [
+      "---@type WidgetScript",
+      "---@simulate Layout1x1 zone=0",
+      'local name = "BfGPSBatbi"',
+      "local function create(zone, opts) return { zone = zone, options = opts } end",
+      "local function refresh(widget)",
+      "  lcd.clear(BLACK)",
+      '  lcd.drawText(10, 12, "BfGPSBatbi", MIDSIZE + WHITE)',
+      '  lcd.drawText(10, 40, "16.2", DBLSIZE + YELLOW)',
+      "end",
+      "return { name = name, create = create, refresh = refresh }",
+    ].join("\n");
+    const result = validateWidgetLua(source);
+    const issue = result.issues.find((i) => /widget name/i.test(i.message));
+    assert.ok(issue);
+    assert.equal(issue!.severity, "error");
+  });
+});
