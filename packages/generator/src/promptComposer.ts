@@ -12,7 +12,6 @@ import {
   readLayoutReservedRectsGuide,
   readRuntimeApiPitfallsGuide,
   readThemePalettesGuide,
-  readExampleSnippet,
   readExampleSnippetForArchetype,
   readLayoutExampleSnippet,
   loadTelemetryCatalog,

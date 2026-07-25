@@ -204,7 +204,7 @@ function resolveColorToken(
   token: string,
   rgbMap: Record<string, string>,
   ctx: EvalCtx,
-  fallback: string
+  _fallback: string
 ): string | null {
   if (/^#[0-9a-fA-F]{6}$/.test(token)) return token;
   if (token in COLOR_MAP) return COLOR_MAP[token as EdgeColor];

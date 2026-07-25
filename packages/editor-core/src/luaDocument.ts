@@ -96,7 +96,7 @@ function argMapForRecord(record: DrawRecord): Record<string, number> {
   }
 }
 
-function formatPatchValue(key: string, value: string | number, record: DrawRecord): string {
+function formatPatchValue(key: string, value: string | number, _record: DrawRecord): string {
   if (key === "text" && typeof value === "string") return formatTextLiteral(value);
   if (key === "flags" && typeof value === "string") return value;
   if (key === "color" && typeof value === "string") return value;
