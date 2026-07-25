@@ -14,7 +14,10 @@ import {
   removeRecordLine,
   removeRecordLines,
   remapRecordIdsAfterLineRemoval,
+  insertDrawLine,
   insertDrawLineWithId,
+  createStarterSource,
+  setRecordColor,
 } from "./luaDocument.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -135,4 +138,23 @@ test("insertDrawLineWithId returns the new record id", () => {
   assert.ok(insertedId);
   const rec = interpretDocument(source).find((r) => r.id === insertedId);
   assert.equal(rec?.kind, "rect");
+});
+
+test("insertDrawLine keeps a newline before the refresh end keyword", () => {
+  const after = insertDrawLine(createStarterSource(), "annulus");
+  const line = after.split("\n").find((l) => l.includes("drawAnnulus"));
+  assert.ok(line);
+  assert.match(line!, /CYAN\)\s*$/);
+  assert.ok(!line!.includes(")end"));
+});
+
+test("setRecordColor patches annulus color on 7-arg drawAnnulus", () => {
+  const zone = zoneFor(createStarterSource());
+  const source = insertDrawLine(createStarterSource(), "annulus");
+  const record = interpretDocument(source).find((r) => r.kind === "annulus");
+  assert.ok(record);
+  const colored = setRecordColor(source, record!, "RED", zone);
+  const line = colored.split("\n")[record!.sourceLine! - 1]!;
+  assert.match(line, /RED/);
+  assert.doesNotMatch(line, /CYAN/);
 });

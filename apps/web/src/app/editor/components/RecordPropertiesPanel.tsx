@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EDGE_COLOR_NAMES } from "@widget-gen/editor-core";
+import { EDGE_COLOR_NAMES, hexToEdgeColor } from "@widget-gen/editor-core";
 import type {
   DocumentRecord,
   TextFormat,
@@ -308,7 +308,7 @@ export function RecordPropertiesPanel({
             </div>
           </div>
 
-          {record.x != null && record.y != null && (
+          {record.x != null && record.y != null && record.kind !== "line" && (
             <div className={styles.fieldRow}>
               <NumField
                 label="X"
@@ -369,14 +369,67 @@ export function RecordPropertiesPanel({
             </>
           )}
 
-          {(record.kind === "circle" ||
-            record.kind === "filledCircle" ||
-            record.kind === "arc") && (
+          {(record.kind === "circle" || record.kind === "filledCircle") && (
             <NumField
               label="Radius"
               value={record.r ?? 0}
               onChange={(r) => onPatchRecord(record, { r })}
             />
+          )}
+
+          {record.kind === "arc" && (
+            <>
+              <NumField
+                label="Radius"
+                value={record.r ?? 0}
+                onChange={(r) => onPatchRecord(record, { r })}
+              />
+              <div className={styles.fieldRow}>
+                <NumField
+                  label="Start °"
+                  value={record.startAngle ?? 0}
+                  onChange={(startAngle) =>
+                    onPatchRecord(record, { startAngle })
+                  }
+                />
+                <NumField
+                  label="End °"
+                  value={record.endAngle ?? 0}
+                  onChange={(endAngle) => onPatchRecord(record, { endAngle })}
+                />
+              </div>
+            </>
+          )}
+
+          {record.kind === "annulus" && (
+            <>
+              <div className={styles.fieldRow}>
+                <NumField
+                  label="Inner R"
+                  value={record.rIn ?? 0}
+                  onChange={(rIn) => onPatchRecord(record, { rIn })}
+                />
+                <NumField
+                  label="Outer R"
+                  value={record.rOut ?? 0}
+                  onChange={(rOut) => onPatchRecord(record, { rOut })}
+                />
+              </div>
+              <div className={styles.fieldRow}>
+                <NumField
+                  label="Start °"
+                  value={record.startAngle ?? 0}
+                  onChange={(startAngle) =>
+                    onPatchRecord(record, { startAngle })
+                  }
+                />
+                <NumField
+                  label="End °"
+                  value={record.endAngle ?? 0}
+                  onChange={(endAngle) => onPatchRecord(record, { endAngle })}
+                />
+              </div>
+            </>
           )}
 
           {record.kind === "gauge" && (
@@ -452,16 +505,12 @@ export function RecordPropertiesPanel({
             </>
           )}
 
-          {record.color && (
+          {record.kind !== "bitmap" && (
             <label className={styles.propField}>
               <FieldLabel>Color</FieldLabel>
               <select
                 className={styles.fieldInput}
-                value={
-                  EDGE_COLOR_NAMES.includes(record.color as EdgeColor)
-                    ? record.color
-                    : EDGE_COLOR_NAMES[0]
-                }
+                value={hexToEdgeColor(record.color)}
                 onChange={(e) =>
                   onSetColor(record, e.target.value as EdgeColor)
                 }

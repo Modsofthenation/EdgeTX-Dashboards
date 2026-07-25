@@ -110,7 +110,8 @@ function argMapForRecord(record: DrawRecord): Record<string, number> {
         rOut: 3,
         startAngle: 4,
         endAngle: 5,
-        color: 7,
+        // 7-arg form: color/flags at index 6; 8-arg form keeps color at 7.
+        color: record.sourceRef?.args.length === 8 ? 7 : 6,
       };
     case "bitmap":
       return { x: 1, y: 2 };
@@ -320,7 +321,11 @@ export function insertDrawLine(
   if (bodyEnd < 0) return source;
   const indent = "  ";
   const line = `${indent}${template}`;
-  return source.slice(0, bodyEnd) + "\n" + line + source.slice(bodyEnd);
+  const prefix = source.slice(0, bodyEnd);
+  const needsLeadingNl = prefix.length > 0 && !prefix.endsWith("\n");
+  return (
+    prefix + (needsLeadingNl ? "\n" : "") + line + "\n" + source.slice(bodyEnd)
+  );
 }
 
 /** Insert a draw line and return the new source plus the inserted record id when parseable. */
