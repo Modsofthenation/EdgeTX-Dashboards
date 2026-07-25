@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  bindTextRecordToSensor,
+  bindTextRecordToSensorDetailed,
   createStarterSource,
   interpretDocument,
   insertDrawLineWithId,
@@ -318,13 +318,22 @@ export function EditorApp() {
 
   const handleBindTelemetry = useCallback(
     (record: DocumentRecord, sensor: string, format: TextFormat) => {
+      let nextSelectedId: string | null = null;
       setSource((prev) => {
         const live = interpretDocument(prev, previewScenario).find(
           (r) => r.id === record.id,
         );
         if (!live) return prev;
-        return bindTextRecordToSensor(prev, live, sensor, format);
+        const result = bindTextRecordToSensorDetailed(
+          prev,
+          live,
+          sensor,
+          format,
+        );
+        nextSelectedId = result.recordId;
+        return result.source;
       });
+      if (nextSelectedId) setSelectedIds([nextSelectedId]);
       markDirty();
     },
     [setSource, markDirty, previewScenario],
@@ -536,6 +545,12 @@ export function EditorApp() {
   );
 
   useEffect(() => {
+    const nudgeActive = { current: false };
+    const endNudge = () => {
+      if (!nudgeActive.current) return;
+      nudgeActive.current = false;
+      endTransient();
+    };
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
@@ -574,18 +589,41 @@ export function EditorApp() {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         e.preventDefault();
+        if (!nudgeActive.current) {
+          nudgeActive.current = true;
+          beginTransient();
+        }
         const step = e.shiftKey ? 1 : 12;
         const dx =
           e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy =
           e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
-        applyToRecords(selectedIds, (current, record) =>
-          translateRecord(current, record, dx, dy, zone),
+        applyToRecords(
+          selectedIds,
+          (current, record) => translateRecord(current, record, dx, dy, zone),
+          { history: false },
         );
       }
     };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown"
+      ) {
+        endNudge();
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", endNudge);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", endNudge);
+      endNudge();
+    };
   }, [
     undo,
     redo,
@@ -594,6 +632,8 @@ export function EditorApp() {
     markDirty,
     applyToRecords,
     zone,
+    beginTransient,
+    endTransient,
   ]);
 
   const openSim = useCallback(() => {

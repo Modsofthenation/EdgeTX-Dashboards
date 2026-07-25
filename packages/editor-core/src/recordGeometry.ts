@@ -1,6 +1,11 @@
 import { bboxForRecord, type DrawRecord } from "@widget-gen/layout-verify";
 import type { DocumentRecord, ZoneOffset } from "./luaDocument.ts";
-import { snapToGrid, type BoundingBox, type ResizeHandle } from "./geometry.ts";
+import {
+  SNAP_GRID,
+  snapToGrid,
+  type BoundingBox,
+  type ResizeHandle,
+} from "./geometry.ts";
 
 export type TextSizeFn = (
   text: string,
@@ -98,6 +103,8 @@ export function isRectLike(record: DrawRecord): boolean {
   );
 }
 
+const MIN_RESIZE = 4;
+
 export function resizeRecordBox(
   start: BoundingBox,
   handle: ResizeHandle,
@@ -105,24 +112,39 @@ export function resizeRecordBox(
   pointerY: number,
   snap: boolean,
 ): BoundingBox {
-  const box = { ...start };
-  if (handle.includes("e")) box.w = Math.max(4, pointerX - box.x);
-  if (handle.includes("s")) box.h = Math.max(4, pointerY - box.y);
+  const right = start.x + start.w;
+  const bottom = start.y + start.h;
+  const minSize = snap ? SNAP_GRID : MIN_RESIZE;
+  let x = start.x;
+  let y = start.y;
+  let w = start.w;
+  let h = start.h;
+
+  if (handle.includes("e")) w = Math.max(minSize, pointerX - x);
+  if (handle.includes("s")) h = Math.max(minSize, pointerY - y);
   if (handle.includes("w")) {
-    box.w = Math.max(4, box.x + box.w - pointerX);
-    box.x = pointerX;
+    w = Math.max(minSize, right - pointerX);
+    x = right - w;
   }
   if (handle.includes("n")) {
-    box.h = Math.max(4, box.y + box.h - pointerY);
-    box.y = pointerY;
+    h = Math.max(minSize, bottom - pointerY);
+    y = bottom - h;
   }
+
   if (snap) {
-    box.x = snapToGrid(box.x);
-    box.y = snapToGrid(box.y);
-    box.w = snapToGrid(box.w);
-    box.h = snapToGrid(box.h);
+    x = snapToGrid(x);
+    y = snapToGrid(y);
+    w = snapToGrid(w);
+    h = snapToGrid(h);
   }
-  return box;
+
+  w = Math.max(minSize, w);
+  h = Math.max(minSize, h);
+  // Keep the opposite edge fixed after snap/min clamps.
+  if (handle.includes("w")) x = right - w;
+  if (handle.includes("n")) y = bottom - h;
+
+  return { x, y, w, h };
 }
 
 export function recordLayerLabel(record: DrawRecord): string {

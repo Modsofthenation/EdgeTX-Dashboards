@@ -62,6 +62,12 @@ function defaultFormatForSensor(sensor: string): TextFormat {
   return "raw";
 }
 
+export interface BindTelemetryResult {
+  source: string;
+  /** Line-id of the bound drawText after cache/local inserts (`L{n}`), if found. */
+  recordId: string | null;
+}
+
 /**
  * Ensure create() caches the sensor and refresh() has a local value, then rewrite
  * the selected drawText third argument to a formatted telemetry expression.
@@ -72,7 +78,18 @@ export function bindTextRecordToSensor(
   sensor: string,
   format?: TextFormat,
 ): string {
-  if (record.kind !== "text" || !record.sourceRef) return source;
+  return bindTextRecordToSensorDetailed(source, record, sensor, format).source;
+}
+
+export function bindTextRecordToSensorDetailed(
+  source: string,
+  record: DocumentRecord,
+  sensor: string,
+  format?: TextFormat,
+): BindTelemetryResult {
+  if (record.kind !== "text" || !record.sourceRef) {
+    return { source, recordId: record.id ?? null };
+  }
   const key = sensorKeyForLabel(sensor);
   const fmt = format ?? defaultFormatForSensor(sensor);
   const localVar = `v_${key}`;
@@ -81,10 +98,12 @@ export function bindTextRecordToSensor(
   const lineNum = record.sourceRef.sourceLine;
   const line = getSourceLine(source, lineNum);
   const drawMatch = line.match(/lcd\.drawText\s*\(/);
-  if (!drawMatch || drawMatch.index === undefined) return source;
+  if (!drawMatch || drawMatch.index === undefined) {
+    return { source, recordId: record.id ?? null };
+  }
   const argsStart = drawMatch.index + drawMatch[0].length;
   const args = splitTopLevelArgs(line.slice(argsStart));
-  if (args.length < 3) return source;
+  if (args.length < 3) return { source, recordId: record.id ?? null };
   const third = args[2]!;
   const expr = formatExpr(localVar, fmt);
   const patchedLine =
@@ -95,7 +114,26 @@ export function bindTextRecordToSensor(
 
   next = ensureTelemetryCache(next, key, sensor);
   next = ensureRefreshLocal(next, key, localVar);
-  return next;
+
+  const recordId = findDrawTextRecordId(next, expr);
+  return { source: next, recordId };
+}
+
+/** Locate the drawText line whose third arg matches `expr` after binding inserts. */
+export function findDrawTextRecordId(
+  source: string,
+  expr: string,
+): string | null {
+  const lines = source.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const drawMatch = line.match(/lcd\.drawText\s*\(/);
+    if (!drawMatch || drawMatch.index === undefined) continue;
+    const argsStart = drawMatch.index + drawMatch[0].length;
+    const args = splitTopLevelArgs(line.slice(argsStart));
+    if (args.length >= 3 && args[2]!.text === expr) return `L${i + 1}`;
+  }
+  return null;
 }
 
 function hasSensorCache(source: string, key: string, sensor: string): boolean {
@@ -134,11 +172,24 @@ function ensureTelemetryCache(
     }
   }
 
+  // No src = { ... } table — inject a minimal create() cache assignment before return.
+  const createReturn = source.match(
+    /local\s+function\s+create\s*\([^)]*\)[\s\S]*?\breturn\s*\{/,
+  );
+  if (createReturn && createReturn.index !== undefined) {
+    const insertAt = createReturn.index + createReturn[0].length;
+    const snippet = `\n    src = { ${key} = cacheSource("${sensor}") },`;
+    // If return already has fields, prefer a preceding local assignment instead.
+    const after = source.slice(insertAt, insertAt + 80);
+    if (/\bsrc\s*=/.test(after)) return source;
+    return source.slice(0, insertAt) + snippet + source.slice(insertAt);
+  }
+
   const createMatch = source.match(/local\s+function\s+create\s*\([^)]*\)/);
   if (!createMatch || createMatch.index === undefined) return source;
-  const insertAt = createMatch.index + createMatch[0].length;
-  const snippet = `\n  -- telemetry: ${sensor}\n  -- (add src.${key} = cacheSource("${sensor}") in create)\n`;
-  return source.slice(0, insertAt) + snippet + source.slice(insertAt);
+  const bodyStart = createMatch.index + createMatch[0].length;
+  const snippet = `\n  local ${key} = cacheSource("${sensor}")\n`;
+  return source.slice(0, bodyStart) + snippet + source.slice(bodyStart);
 }
 
 function ensureRefreshLocal(

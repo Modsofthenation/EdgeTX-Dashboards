@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { getPreviewScenario } from "@widget-gen/layout-verify";
 import styles from "../editor.module.css";
@@ -26,6 +27,10 @@ export function SimVerifyModal({
   onReload,
   scenarioId = "editor-preview",
 }: SimVerifyModalProps) {
+  const [interactiveControls, setInteractiveControls] = useState<{
+    openInteractive: () => void;
+  } | null>(null);
+
   if (!open) return null;
   const scenario = getPreviewScenario(scenarioId);
 
@@ -53,7 +58,8 @@ export function SimVerifyModal({
         </div>
         <p className={styles.modalHint}>
           EdgeTX WASM preview using the same mock telemetry as the canvas.
-          Reload after edits to refresh the sim.
+          Reload after edits to refresh the sim. Use interactive sim for touch,
+          keys, and sticks (Esc to close).
         </p>
         <div className={styles.simModalBody}>
           <RadioSimPreview
@@ -62,6 +68,7 @@ export function SimVerifyModal({
             mock={scenario.mock}
             active={open}
             live
+            onInteractiveControls={setInteractiveControls}
           />
         </div>
         <div className={styles.modalActions}>
@@ -79,6 +86,15 @@ export function SimVerifyModal({
               onClick={onReload}
             >
               Reload
+            </button>
+          ) : null}
+          {interactiveControls ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={interactiveControls.openInteractive}
+            >
+              Open interactive sim
             </button>
           ) : null}
           <button type="button" className={styles.primaryBtn} onClick={onClose}>
