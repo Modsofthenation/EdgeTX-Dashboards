@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, IBM_Plex_Mono } from "next/font/google";
+import { AiSettingsProvider } from "~/components/AiSettingsProvider";
 import { ThemeProvider } from "~/lib/theme/ThemeProvider";
 import "./globals.css";
 
@@ -40,7 +41,9 @@ export default function RootLayout({
             __html: `(function(){try{var k='etx-dashboards-theme';var t=localStorage.getItem(k);var ok=['light','dark','midnight','slate','forest','ocean','contrast'];if(ok.indexOf(t)>=0)document.documentElement.dataset.theme=t;}catch(e){}})();`,
           }}
         />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AiSettingsProvider>{children}</AiSettingsProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

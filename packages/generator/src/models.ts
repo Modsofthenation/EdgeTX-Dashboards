@@ -128,15 +128,20 @@ export function getDefaultModelId(models: ModelCatalogEntry[]): string {
 export async function listAvailableModels(
   apiKey?: string,
 ): Promise<ModelCatalogEntry[]> {
-  const key = apiKey ?? process.env.CURSOR_API_KEY;
+  const envKey = process.env.CURSOR_API_KEY;
+  const key = apiKey ?? envKey;
   if (!key) {
     return [...FALLBACK_MODELS];
   }
 
+  // Browser-supplied keys skip the shared disk cache to avoid cross-key leakage.
+  const useSharedCache = !apiKey || apiKey === envKey;
   const now = Date.now();
-  hydrateMemoryCache();
-  if (memoryCache && memoryCache.expires > now) {
-    return memoryCache.models;
+  if (useSharedCache) {
+    hydrateMemoryCache();
+    if (memoryCache && memoryCache.expires > now) {
+      return memoryCache.models;
+    }
   }
 
   try {
@@ -144,8 +149,10 @@ export async function listAvailableModels(
     const models =
       sdkModels.length > 0 ? sdkModels.map(mapSdkModel) : [...FALLBACK_MODELS];
 
-    memoryCache = toMemoryCache(models, now);
-    writeDiskCache(models, now);
+    if (useSharedCache) {
+      memoryCache = toMemoryCache(models, now);
+      writeDiskCache(models, now);
+    }
     return models;
   } catch {
     return [...FALLBACK_MODELS];

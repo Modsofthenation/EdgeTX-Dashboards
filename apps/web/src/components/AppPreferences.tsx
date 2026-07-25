@@ -1,35 +1,80 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { AiSettingsPanel } from "~/components/AiSettingsPanel";
 import { SimFirmwarePanel } from "~/components/SimFirmwarePanel";
 import { useTheme } from "~/lib/theme/ThemeProvider";
 import { THEME_OPTIONS, type ThemeId } from "~/lib/theme/themes";
 import styles from "./AppPreferences.module.css";
 
-type Tab = "appearance" | "simulator";
+export type PreferencesTab = "appearance" | "ai" | "simulator";
+
+export const OPEN_PREFERENCES_EVENT = "widget-gen:open-preferences";
+
+export type OpenPreferencesDetail = {
+  tab?: PreferencesTab;
+};
+
+export function openAppPreferences(tab: PreferencesTab = "appearance"): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<OpenPreferencesDetail>(OPEN_PREFERENCES_EVENT, {
+      detail: { tab },
+    }),
+  );
+}
 
 export function AppPreferencesButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
+  const [initialTab, setInitialTab] = useState<PreferencesTab>("appearance");
+
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<OpenPreferencesDetail>).detail;
+      setInitialTab(detail?.tab ?? "appearance");
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_PREFERENCES_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_PREFERENCES_EVENT, onOpen);
+  }, []);
 
   return (
     <>
       <button
         type="button"
         className={className}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setInitialTab("appearance");
+          setOpen(true);
+        }}
         aria-haspopup="dialog"
       >
         Preferences
       </button>
-      {open ? <AppPreferencesModal onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <AppPreferencesModal
+          initialTab={initialTab}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </>
   );
 }
 
-function AppPreferencesModal({ onClose }: { onClose: () => void }) {
+function AppPreferencesModal({
+  onClose,
+  initialTab = "appearance",
+}: {
+  onClose: () => void;
+  initialTab?: PreferencesTab;
+}) {
   const titleId = useId();
-  const [tab, setTab] = useState<Tab>("appearance");
+  const [tab, setTab] = useState<PreferencesTab>(initialTab);
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,6 +120,15 @@ function AppPreferencesModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             role="tab"
+            aria-selected={tab === "ai"}
+            className={tab === "ai" ? styles.tabActive : styles.tab}
+            onClick={() => setTab("ai")}
+          >
+            AI
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={tab === "simulator"}
             className={tab === "simulator" ? styles.tabActive : styles.tab}
             onClick={() => setTab("simulator")}
@@ -115,9 +169,9 @@ function AppPreferencesModal({ onClose }: { onClose: () => void }) {
                 ))}
               </div>
             </section>
-          ) : (
-            <SimFirmwarePanel />
-          )}
+          ) : null}
+          {tab === "ai" ? <AiSettingsPanel /> : null}
+          {tab === "simulator" ? <SimFirmwarePanel /> : null}
         </div>
       </div>
     </div>

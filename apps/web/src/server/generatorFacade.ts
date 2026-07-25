@@ -57,8 +57,9 @@ export function getDistOutputDirectory(): string {
   return join(getRepoRoot(), "dist-output");
 }
 
-export async function listModelCatalog() {
-  if (!process.env.CURSOR_API_KEY) {
+export async function listModelCatalog(apiKey?: string) {
+  const key = apiKey ?? process.env.CURSOR_API_KEY;
+  if (!key) {
     return {
       defaultId: DEFAULT_MODEL_ID,
       models: FALLBACK_MODELS,
@@ -66,7 +67,7 @@ export async function listModelCatalog() {
     };
   }
 
-  const models = await listAvailableModels();
+  const models = await listAvailableModels(apiKey);
   const usingFallback =
     models.length === FALLBACK_MODELS.length &&
     models.every((model, index) => model.id === FALLBACK_MODELS[index]?.id);

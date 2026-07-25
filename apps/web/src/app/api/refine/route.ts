@@ -7,6 +7,7 @@ import {
 } from "~/server/generatorFacade";
 import type { RefineHistoryInput } from "@widget-gen/generator";
 import { checkApiAuth } from "~/lib/apiSecurity";
+import { resolveCursorApiKey } from "~/server/cursorApiKey";
 import { getChat } from "~/lib/db/chatStore";
 import { buildRefineHistoryInput } from "~/lib/refineChatContext";
 import { createSseResponse, createSseStream } from "~/lib/sse";
@@ -15,7 +16,11 @@ import { createRunCallbacks, emitRunCompletion } from "~/lib/widgetSession";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function resolveRefineSession(sessionId: string, chatId?: string) {
+function resolveRefineSession(
+  sessionId: string,
+  chatId?: string,
+  apiKey?: string,
+) {
   const store = getSessionStore();
   let effectiveSessionId = sessionId;
   let stored = store.get(sessionId);
@@ -40,6 +45,7 @@ function resolveRefineSession(sessionId: string, chatId?: string) {
         widgetInstanceId:
           chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
         widgetVersion: chat.widgetVersion ?? chat.artifact?.version,
+        apiKey,
       });
       effectiveSessionId = restored.id;
       stored = store.get(restored.id);
@@ -53,10 +59,14 @@ export async function POST(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 
-  if (!process.env.CURSOR_API_KEY) {
+  const apiKey = resolveCursorApiKey(request);
+  if (!apiKey) {
     return Response.json(
-      { error: "CURSOR_API_KEY is not configured on the server" },
-      { status: 500 },
+      {
+        error:
+          "No Cursor API key configured. Add one in Preferences → AI, or set CURSOR_API_KEY on the server.",
+      },
+      { status: 503 },
     );
   }
 
@@ -105,7 +115,7 @@ export async function POST(request: Request): Promise<Response> {
     store,
     stored,
     sessionId: effectiveSessionId,
-  } = resolveRefineSession(data.sessionId, data.chatId?.trim());
+  } = resolveRefineSession(data.sessionId, data.chatId?.trim(), apiKey);
   if (!stored) {
     return Response.json(
       { error: "Session not found or expired" },

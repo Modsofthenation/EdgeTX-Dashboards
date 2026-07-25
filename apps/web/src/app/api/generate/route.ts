@@ -4,6 +4,7 @@ import {
   listModelCatalog,
   validateGenerateRequest,
 } from "~/server/generatorFacade";
+import { resolveCursorApiKey } from "~/server/cursorApiKey";
 import {
   checkApiAuth,
   checkRateLimit,
@@ -22,10 +23,14 @@ export async function POST(request: Request): Promise<Response> {
   const rateErr = checkRateLimit(request);
   if (rateErr) return rateErr;
 
-  if (!process.env.CURSOR_API_KEY) {
+  const apiKey = resolveCursorApiKey(request);
+  if (!apiKey) {
     return Response.json(
-      { error: "CURSOR_API_KEY is not configured on the server" },
-      { status: 500 },
+      {
+        error:
+          "No Cursor API key configured. Add one in Preferences → AI, or set CURSOR_API_KEY on the server.",
+      },
+      { status: 503 },
     );
   }
 
@@ -36,7 +41,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const catalog = await listModelCatalog();
+  const catalog = await listModelCatalog(apiKey);
   const allowedModelIds = catalog.models.map((m) => m.id);
   const validated = validateGenerateRequest(body as Record<string, unknown>, {
     allowedModelIds,
@@ -53,6 +58,7 @@ export async function POST(request: Request): Promise<Response> {
     validated.request.radioId,
     validated.request.protocol,
     validated.request.modelId,
+    apiKey,
   );
   const stored = store.get(session.id)!;
 
