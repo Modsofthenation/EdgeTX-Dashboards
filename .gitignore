@@ -89,3 +89,7 @@ luac.out
 *.so
 *.so.*
 *.x86_64
+
+# Tauri
+apps/desktop/src-tauri/target/
+apps/desktop/fallback/

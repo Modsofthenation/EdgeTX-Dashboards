@@ -68,7 +68,7 @@
   font-size: 0.6875rem;
   font-weight: 700;
   color: white;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
+  background: var(--accent);
 }
 
 .galleryTitle {

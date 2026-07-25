@@ -126,7 +126,7 @@
   justify-content: center;
   gap: 0.35rem;
   border-radius: inherit;
-  background: rgba(7, 8, 12, 0.82);
+  background: var(--bg-elevated);
   backdrop-filter: blur(2px);
   pointer-events: none;
 }
@@ -194,9 +194,9 @@
   width: 1.375rem;
   height: 1.375rem;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(7, 8, 12, 0.78);
+  background: var(--surface);
   color: #fff;
   opacity: 0;
   transform: scale(0.92);
@@ -294,12 +294,12 @@
   margin-bottom: 0.125rem;
   border: none;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-hover);
   color: var(--muted);
 }
 
 .sendBtnActive {
-  background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+  background: var(--accent);
   color: white;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
@@ -315,7 +315,7 @@
   width: 1rem;
   height: 1rem;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  border: 2px solid var(--border-strong);
   border-top-color: #fff;
   animation: sendSpin 0.7s linear infinite;
 }

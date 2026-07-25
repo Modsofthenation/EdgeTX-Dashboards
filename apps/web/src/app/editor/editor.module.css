@@ -1,11 +1,11 @@
-/* Dashboard Editor — matches generator design tokens from globals.css */
+/* Dashboard Editor — light instrument chrome, dark LCD canvas */
 
 .editorRoot {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: rgba(7, 8, 12, 0.92);
+  background: transparent;
   color: var(--text);
   overflow: hidden;
 }
@@ -38,10 +38,11 @@
   place-items: center;
   font-size: 0.5625rem;
   font-weight: 800;
+  letter-spacing: 0.02em;
   color: white;
   text-decoration: none;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
-  box-shadow: 0 0 20px var(--accent-glow);
+  background: var(--accent);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 
@@ -51,9 +52,9 @@
 
 .editorTitle {
   margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
   line-height: 1.2;
 }
 
@@ -90,15 +91,16 @@
   padding: 0.45rem 0.85rem;
   border-radius: var(--radius-sm);
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 550;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
 }
 
 .ghostBtn {
   background: transparent;
+  box-shadow: none;
 }
 
 .ghostBtn:hover,
@@ -108,15 +110,11 @@
 }
 
 .primaryBtn {
-  background: linear-gradient(
-    135deg,
-    var(--accent) 0%,
-    var(--accent-hover) 100%
-  );
-  border-color: transparent;
+  background: var(--accent);
+  border-color: var(--accent);
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 12px var(--accent-glow);
+  box-shadow: var(--shadow-sm);
 }
 
 .primaryBtn:hover:not(:disabled) {
@@ -151,8 +149,7 @@
   gap: 1rem;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: rgba(13, 15, 20, 0.85);
-  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
   flex-shrink: 0;
   position: relative;
   z-index: 20;
@@ -187,7 +184,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.2rem 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
 }
 
 .statusPillOk {
@@ -318,8 +315,7 @@
   flex-direction: column;
   min-height: 0;
   padding: 0.75rem;
-  background: rgba(13, 15, 20, 0.6);
-  backdrop-filter: blur(12px);
+  background: var(--bg-elevated);
 }
 
 .layersPanel {
@@ -335,7 +331,7 @@
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--border);
-  background: rgba(13, 15, 20, 0.6);
+  background: var(--bg-elevated);
   overflow: hidden;
 }
 
@@ -365,8 +361,8 @@
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
   border: 1px solid var(--border);
   color: var(--muted);
 }
@@ -426,12 +422,12 @@
 }
 
 .layerItem:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-hover);
 }
 
 .layerItemSelected {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.35);
+  background: color-mix(in srgb, var(--accent) 10%, white);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .layerItemHidden {
@@ -583,11 +579,7 @@
   width: 2rem;
   height: 2rem;
   border-radius: var(--radius-sm);
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.2),
-    rgba(34, 211, 238, 0.15)
-  );
+  background: color-mix(in srgb, var(--accent) 12%, white);
   border: 1px solid var(--border);
   font-size: 0.9rem;
 }
@@ -650,25 +642,25 @@
   overflow: hidden;
   background:
     radial-gradient(
-      ellipse 70% 50% at 50% 50%,
-      rgba(59, 130, 246, 0.06),
-      transparent
+      ellipse 65% 50% at 50% 45%,
+      rgba(13, 148, 136, 0.08),
+      transparent 60%
     ),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 11px,
-      rgba(255, 255, 255, 0.03) 11px,
-      rgba(255, 255, 255, 0.03) 12px
+      rgba(15, 23, 42, 0.04) 11px,
+      rgba(15, 23, 42, 0.04) 12px
     ),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 11px,
-      rgba(255, 255, 255, 0.03) 11px,
-      rgba(255, 255, 255, 0.03) 12px
+      rgba(15, 23, 42, 0.04) 11px,
+      rgba(15, 23, 42, 0.04) 12px
     ),
-    #08090d;
+    var(--bg);
 }
 
 .simWrapper {
@@ -679,11 +671,9 @@
   justify-content: center;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
-  box-shadow:
-    var(--shadow-lg),
-    0 0 0 1px rgba(0, 0, 0, 0.5) inset;
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
-  background: #000;
+  background: var(--canvas-bg);
 }
 
 .simWrapper > :first-child {
@@ -734,16 +724,14 @@
 .selectionBox {
   position: absolute;
   box-sizing: border-box;
-  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border: 1px dashed rgba(255, 255, 255, 0.28);
   pointer-events: none;
   border-radius: 2px;
 }
 
 .selectionBoxActive {
   border: 2px solid var(--accent-bright);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.5),
-    0 0 12px var(--accent-glow);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
 }
 
 .resizeHandle {
@@ -766,14 +754,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
   font-size: 0.6875rem;
   font-weight: 500;
   color: var(--text-secondary);
-  background: rgba(13, 15, 20, 0.85);
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
-  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
   z-index: 3;
 }
@@ -800,16 +788,16 @@
 }
 
 .errorBanner {
-  background: rgba(248, 113, 113, 0.1);
-  color: #fecaca;
-  border-bottom: 1px solid rgba(248, 113, 113, 0.2);
+  background: color-mix(in srgb, var(--error) 10%, white);
+  color: #991b1b;
+  border-bottom: 1px solid color-mix(in srgb, var(--error) 22%, transparent);
 }
 
 .warnBanner {
   flex-direction: column;
-  background: rgba(251, 191, 36, 0.08);
-  color: #fde68a;
-  border-bottom: 1px solid rgba(251, 191, 36, 0.15);
+  background: color-mix(in srgb, var(--warning) 12%, white);
+  color: #92400e;
+  border-bottom: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
 }
 
 .warnBanner ul {
@@ -881,8 +869,8 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
 }
 
 .modal {
@@ -1064,7 +1052,7 @@
     gap: 0.25rem;
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--border);
-    background: rgba(13, 15, 20, 0.85);
+    background: var(--bg-elevated);
     flex-shrink: 0;
   }
 
