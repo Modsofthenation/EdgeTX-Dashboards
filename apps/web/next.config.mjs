@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
+const desktopBuild = process.env.DESKTOP_BUILD === "1";
+
 const nextConfig = {
+  ...(desktopBuild ? { output: "standalone" } : {}),
   transpilePackages: [
     "@widget-gen/shared",
     "@widget-gen/layout-verify",

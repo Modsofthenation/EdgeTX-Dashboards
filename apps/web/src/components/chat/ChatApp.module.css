@@ -131,6 +131,7 @@
   }
 }
 
+.prefsBtn,
 .newChatBtn {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -141,6 +142,7 @@
   font-weight: 500;
 }
 
+.prefsBtn:hover,
 .newChatBtn:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--border-strong);

@@ -1,4 +1,5 @@
-:root {
+:root,
+:root[data-theme="light"] {
   /* Cool light instrument bench — dark LCD canvas stays separate */
   --bg: #eef1f4;
   --bg-elevated: #ffffff;
@@ -37,6 +38,201 @@
   --scrollbar-thumb: rgba(15, 23, 42, 0.18);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
   --scrollbar-thumb-active: rgba(13, 148, 136, 0.55);
+  --body-wash-a: rgba(13, 148, 136, 0.06);
+  --body-wash-b: rgba(8, 145, 178, 0.07);
+  --body-grid: rgba(15, 23, 42, 0.03);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c0e13;
+  --bg-elevated: #151922;
+  --surface: #181d28;
+  --surface-solid: #181d28;
+  --surface-hover: #1f2633;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #e8eef7;
+  --text-secondary: #9aa8bc;
+  --text-muted: #7b8a9e;
+  --muted: #7b8a9e;
+  --accent: #14b8a6;
+  --accent-bright: #2dd4bf;
+  --accent-glow: rgba(45, 212, 191, 0.28);
+  --accent-hover: #0f766e;
+  --cyan: #22d3ee;
+  --success: #34d399;
+  --success-glow: rgba(52, 211, 153, 0.16);
+  --warning: #fbbf24;
+  --error: #f87171;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.5);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
+  --scrollbar-thumb-active: rgba(45, 212, 191, 0.55);
+  --body-wash-a: rgba(20, 184, 166, 0.1);
+  --body-wash-b: rgba(34, 211, 238, 0.06);
+  --body-grid: rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme="midnight"] {
+  --bg: #070b16;
+  --bg-elevated: #0f172a;
+  --surface: #111c33;
+  --surface-solid: #111c33;
+  --surface-hover: #182744;
+  --border: rgba(148, 163, 184, 0.16);
+  --border-strong: rgba(148, 163, 184, 0.28);
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --muted: #64748b;
+  --accent: #0ea5e9;
+  --accent-bright: #38bdf8;
+  --accent-glow: rgba(56, 189, 248, 0.28);
+  --accent-hover: #0284c7;
+  --cyan: #22d3ee;
+  --success: #4ade80;
+  --success-glow: rgba(74, 222, 128, 0.14);
+  --warning: #fbbf24;
+  --error: #fb7185;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 22px 50px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(148, 163, 184, 0.28);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.4);
+  --scrollbar-thumb-active: rgba(56, 189, 248, 0.55);
+  --body-wash-a: rgba(14, 165, 233, 0.12);
+  --body-wash-b: rgba(56, 189, 248, 0.06);
+  --body-grid: rgba(148, 163, 184, 0.05);
+}
+
+:root[data-theme="slate"] {
+  --bg: #16181d;
+  --bg-elevated: #1e2229;
+  --surface: #242933;
+  --surface-solid: #242933;
+  --surface-hover: #2c3240;
+  --border: rgba(226, 232, 240, 0.1);
+  --border-strong: rgba(226, 232, 240, 0.18);
+  --text: #f1f5f9;
+  --text-secondary: #a8b3c4;
+  --text-muted: #8793a6;
+  --muted: #8793a6;
+  --accent: #cbd5e1;
+  --accent-bright: #e2e8f0;
+  --accent-glow: rgba(226, 232, 240, 0.18);
+  --accent-hover: #94a3b8;
+  --cyan: #94a3b8;
+  --success: #86efac;
+  --success-glow: rgba(134, 239, 172, 0.12);
+  --warning: #fcd34d;
+  --error: #fca5a5;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.5);
+  --scrollbar-thumb: rgba(226, 232, 240, 0.18);
+  --scrollbar-thumb-hover: rgba(226, 232, 240, 0.28);
+  --scrollbar-thumb-active: rgba(226, 232, 240, 0.45);
+  --body-wash-a: rgba(148, 163, 184, 0.08);
+  --body-wash-b: rgba(100, 116, 139, 0.08);
+  --body-grid: rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme="forest"] {
+  --bg: #0c120e;
+  --bg-elevated: #121a14;
+  --surface: #172119;
+  --surface-solid: #172119;
+  --surface-hover: #1e2b21;
+  --border: rgba(167, 243, 208, 0.12);
+  --border-strong: rgba(167, 243, 208, 0.22);
+  --text: #ecfdf5;
+  --text-secondary: #a7f3d0;
+  --text-muted: #6ee7b7;
+  --muted: #6ee7b7;
+  --accent: #22c55e;
+  --accent-bright: #4ade80;
+  --accent-glow: rgba(74, 222, 128, 0.24);
+  --accent-hover: #16a34a;
+  --cyan: #34d399;
+  --success: #4ade80;
+  --success-glow: rgba(74, 222, 128, 0.16);
+  --warning: #fbbf24;
+  --error: #fb7185;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(167, 243, 208, 0.2);
+  --scrollbar-thumb-hover: rgba(167, 243, 208, 0.3);
+  --scrollbar-thumb-active: rgba(74, 222, 128, 0.5);
+  --body-wash-a: rgba(34, 197, 94, 0.1);
+  --body-wash-b: rgba(52, 211, 153, 0.06);
+  --body-grid: rgba(167, 243, 208, 0.04);
+}
+
+:root[data-theme="ocean"] {
+  --bg: #e8f4f8;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-hover: #eef8fb;
+  --border: rgba(3, 105, 161, 0.12);
+  --border-strong: rgba(3, 105, 161, 0.2);
+  --text: #0c4a6e;
+  --text-secondary: #0369a1;
+  --text-muted: #0284c7;
+  --muted: #0284c7;
+  --accent: #0284c7;
+  --accent-bright: #0ea5e9;
+  --accent-glow: rgba(14, 165, 233, 0.22);
+  --accent-hover: #0369a1;
+  --cyan: #06b6d4;
+  --success: #059669;
+  --success-glow: rgba(5, 150, 105, 0.12);
+  --warning: #d97706;
+  --error: #dc2626;
+  --shadow-sm: 0 1px 2px rgba(3, 105, 161, 0.08);
+  --shadow-md: 0 8px 24px rgba(3, 105, 161, 0.1);
+  --shadow-lg: 0 20px 48px rgba(3, 105, 161, 0.14);
+  --scrollbar-thumb: rgba(3, 105, 161, 0.2);
+  --scrollbar-thumb-hover: rgba(3, 105, 161, 0.3);
+  --scrollbar-thumb-active: rgba(14, 165, 233, 0.55);
+  --body-wash-a: rgba(14, 165, 233, 0.1);
+  --body-wash-b: rgba(6, 182, 212, 0.08);
+  --body-grid: rgba(3, 105, 161, 0.04);
+}
+
+:root[data-theme="contrast"] {
+  --bg: #ffffff;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-hover: #f3f3f3;
+  --border: #111111;
+  --border-strong: #000000;
+  --text: #000000;
+  --text-secondary: #111111;
+  --text-muted: #222222;
+  --muted: #222222;
+  --accent: #000000;
+  --accent-bright: #000000;
+  --accent-glow: rgba(0, 0, 0, 0.18);
+  --accent-hover: #222222;
+  --cyan: #000000;
+  --success: #006600;
+  --success-glow: rgba(0, 102, 0, 0.12);
+  --warning: #7a4d00;
+  --error: #990000;
+  --shadow-sm: 0 0 0 1px #000;
+  --shadow-md: 0 4px 0 #000;
+  --shadow-lg: 0 8px 0 #000;
+  --scrollbar-thumb: #000000;
+  --scrollbar-thumb-hover: #333333;
+  --scrollbar-thumb-active: #000000;
+  --body-wash-a: transparent;
+  --body-wash-b: transparent;
+  --body-grid: rgba(0, 0, 0, 0.06);
 }
 
 * {
@@ -61,24 +257,19 @@ body {
 body {
   background-color: var(--bg);
   background-image:
-    linear-gradient(180deg, rgba(13, 148, 136, 0.06) 0%, transparent 28%),
+    linear-gradient(180deg, var(--body-wash-a) 0%, transparent 28%),
     radial-gradient(
       ellipse 70% 45% at 100% 0%,
-      rgba(8, 145, 178, 0.07),
+      var(--body-wash-b),
       transparent 55%
     ),
-    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+    linear-gradient(var(--body-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--body-grid) 1px, transparent 1px);
   background-size:
     auto,
     auto,
     24px 24px,
     24px 24px;
-  background-position:
-    0 0,
-    0 0,
-    0 0,
-    0 0;
 }
 
 button,
@@ -119,7 +310,7 @@ code {
 }
 
 ::selection {
-  background: rgba(13, 148, 136, 0.22);
+  background: var(--accent-glow);
   color: var(--text);
 }
 
@@ -128,7 +319,6 @@ code {
   outline-offset: 2px;
 }
 
-/* Shared thin scrollbars for chat panels, history, previews, and code blocks */
 .appScrollbar {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);

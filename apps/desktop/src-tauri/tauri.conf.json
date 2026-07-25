@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "cd ../.. && SKIP_WASM_SYNC=1 npm run dev",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "node ./scripts/prepare-fallback.mjs",
+    "beforeBuildCommand": "node ./scripts/prepare-standalone.mjs",
     "frontendDist": "../fallback"
   },
   "app": {
@@ -35,8 +35,9 @@
       "icons/128x128@2x.png",
       "icons/icon.ico"
     ],
+    "resources": ["../resources/standalone"],
     "category": "DeveloperTool",
     "shortDescription": "Generate and edit EdgeTX Lua dashboards",
-    "longDescription": "Desktop shell for the EdgeTX Dashboard Generator \u2014 wraps the Next.js web app in a native window via Tauri 2."
+    "longDescription": "Desktop shell for EdgeTX Dashboards — Tauri 2 window plus a local Next.js standalone sidecar."
   }
 }
