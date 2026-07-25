@@ -96,7 +96,7 @@ npm run desktop:prepare   # Next standalone + WASM for packaging
 npm run desktop:build     # Native installer (needs platform toolchains)
 ```
 
-Merges to `main` build Windows, Linux, and macOS packages in CI (see [desktop docs](docs/reference/desktop-tauri.md)). Release sidecars currently expect Node 22+ on PATH (or `EDGETX_NODE_PATH`).
+Merges to `main` build Windows, Linux, and macOS packages in CI. Each green **Desktop packages** run uploads downloadable installers under **Actions → Artifacts** (`edgetx-dashboards-<os>`), and refreshes the `desktop-nightly` prerelease. See [desktop docs](docs/reference/desktop-tauri.md). Release sidecars currently expect Node 22+ on PATH (or `EDGETX_NODE_PATH`).
 
 ## Put it on your radio
 

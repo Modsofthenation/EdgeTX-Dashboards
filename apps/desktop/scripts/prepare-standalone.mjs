@@ -24,7 +24,13 @@ function run(command, args, env = {}) {
     cwd: REPO_ROOT,
     env: { ...process.env, ...env },
     stdio: "inherit",
+    // Windows resolves npm.cmd only when shell is enabled.
+    shell: process.platform === "win32",
   });
+  if (result.error) {
+    console.error(result.error);
+    process.exit(1);
+  }
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
