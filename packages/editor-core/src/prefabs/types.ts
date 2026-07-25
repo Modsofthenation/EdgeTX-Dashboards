@@ -34,8 +34,10 @@ export interface PrefabSection {
   optionalSensors: string[];
   /** User-facing setup callouts (rf2bg, naming quirks, etc.). */
   telemetryNotes: string[];
-  /** create() src key → catalog sensor name. */
+  /** create() src key → catalog sensor name (defaults; remappable in the editor). */
   createSrcBindings: Record<string, string>;
+  /** Optional UI labels for src keys (e.g. hspd → "Headspeed"). */
+  srcSlotLabels?: Record<string, string>;
   /**
    * Lines inserted into refresh() (no leading indent).
    * Must use direct lcd.* calls; prefer locals then drawText for preview.

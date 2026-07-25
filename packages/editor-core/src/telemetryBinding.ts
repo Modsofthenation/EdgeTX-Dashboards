@@ -248,6 +248,47 @@ function escapeReg(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Remap an existing `src` cache key to a different catalog sensor name.
+ * Keeps the Lua field (`widget.src.hspd`) stable so prefab refresh locals keep working.
+ */
+export function remapSrcSensor(
+  source: string,
+  key: string,
+  newSensor: string,
+): string {
+  if (!key || !newSensor) return source;
+  const keyRe = escapeReg(key);
+  const patterns = [
+    new RegExp(`(\\b${keyRe}\\s*=\\s*cacheSource\\s*\\(\\s*")([^"]*)(")`),
+    new RegExp(`(\\b${keyRe}\\s*=\\s*getSourceIndex\\s*\\(\\s*")([^"]*)(")`),
+  ];
+  for (const re of patterns) {
+    if (re.test(source)) {
+      return source.replace(re, `$1${newSensor}$3`);
+    }
+  }
+  return source;
+}
+
+/** Read current create() src key → sensor pairs (cacheSource or getSourceIndex). */
+export function listSrcBindings(
+  source: string,
+): { key: string; sensor: string }[] {
+  const bindings: { key: string; sensor: string }[] = [];
+  const seen = new Set<string>();
+  const re =
+    /\b(\w+)\s*=\s*(?:cacheSource|getSourceIndex)\s*\(\s*"([^"]+)"\s*\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(source)) !== null) {
+    const key = match[1]!;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    bindings.push({ key, sensor: match[2]! });
+  }
+  return bindings;
+}
+
 function splitTopLevelArgs(
   argsSrc: string,
 ): { start: number; end: number; text: string }[] {

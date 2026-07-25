@@ -21,3 +21,11 @@ export {
   STACYDASH_TX15_LAYOUT_ORDER,
   type InsertPrefabResult,
 } from "./insertPrefab.ts";
+export {
+  getPrefabSensorSlotsForId,
+  listPrefabSpans,
+  prefabIdForSourceLine,
+  resolvePrefabSensorSlots,
+  type PrefabSensorSlot,
+  type PrefabSourceSpan,
+} from "./prefabContext.ts";

@@ -111,15 +111,8 @@ function insertRefreshLines(source: string, lines: string[]): string {
   const block = lines.map((l) => `${indent}${l}`).join("\n");
   const prefix = source.slice(0, bodyEnd);
   const needsLeadingNl = prefix.length > 0 && !prefix.endsWith("\n");
-  const marker = `${indent}-- prefab section`;
   return (
-    prefix +
-    (needsLeadingNl ? "\n" : "") +
-    marker +
-    "\n" +
-    block +
-    "\n" +
-    source.slice(bodyEnd)
+    prefix + (needsLeadingNl ? "\n" : "") + block + "\n" + source.slice(bodyEnd)
   );
 }
 
@@ -140,7 +133,10 @@ export function insertPrefabSection(
 
   let next = ensureHelpers(source);
   next = ensureSrcBindings(next, prefab.createSrcBindings);
-  next = insertRefreshLines(next, prefab.refreshLines);
+  next = insertRefreshLines(next, [
+    `-- prefab:${prefab.id}`,
+    ...prefab.refreshLines,
+  ]);
 
   const drawCount = prefab.refreshLines.filter((l) =>
     /^\s*lcd\.draw/.test(l),

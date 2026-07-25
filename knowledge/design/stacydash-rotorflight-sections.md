@@ -55,3 +55,5 @@ Canonical TX15 assembly order:
 ## Editor
 
 Layout → Insert → **Rotorflight sections** inserts the same blocks the generator knows about.
+
+Select any draw inside a prefab to edit that block’s **Prefab sensors** in Properties (defaults = hardcoded catalog names). Changing a sensor remaps `cacheSource("…")` for that src key only — refresh locals keep using `widget.src.<key>`. Expand **All telemetry sources** to edit every cached sensor on the widget.

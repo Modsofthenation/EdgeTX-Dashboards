@@ -9,10 +9,13 @@ import {
   insertPrefabSections,
   listPrefabCatalog,
   listPrefabSections,
+  listPrefabSpans,
+  prefabIdForSourceLine,
   STACYDASH_TX15_LAYOUT_ORDER,
   STACYDASH_ROTORFLIGHT_PREFABS,
 } from "./prefabs/index.ts";
 import { interpretDocument } from "./luaDocument.ts";
+import { listSrcBindings, remapSrcSensor } from "./telemetryBinding.ts";
 import { validateWidgetLua, loadTelemetryCatalog } from "@widget-gen/generator";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -165,5 +168,33 @@ describe("StacyDash Rotorflight prefabs", () => {
         );
       }
     }
+  });
+
+  it("tags inserted sections with prefab ids and supports sensor remap", () => {
+    const { source } = insertPrefabSections(MINIMAL_SHELL, [
+      "rf-headspeed-hero",
+      "rf-motor-tiles",
+    ]);
+    assert.match(source, /--\s*prefab:rf-headspeed-hero/);
+    assert.match(source, /--\s*prefab:rf-motor-tiles/);
+    const spans = listPrefabSpans(source);
+    assert.equal(spans.length, 2);
+    assert.equal(spans[0]!.prefabId, "rf-headspeed-hero");
+
+    const records = interpretDocument(source);
+    const heroText = records.find(
+      (r) => r.kind === "text" && r.text?.includes("HEADSPEED"),
+    );
+    assert.ok(heroText?.sourceLine);
+    assert.equal(
+      prefabIdForSourceLine(source, heroText!.sourceLine),
+      "rf-headspeed-hero",
+    );
+
+    const remapped = remapSrcSensor(source, "hspd", "RPM");
+    assert.match(remapped, /hspd\s*=\s*cacheSource\("RPM"\)/);
+    const bindings = listSrcBindings(remapped);
+    assert.equal(bindings.find((b) => b.key === "hspd")?.sensor, "RPM");
+    assert.equal(bindings.find((b) => b.key === "curr")?.sensor, "Curr");
   });
 });

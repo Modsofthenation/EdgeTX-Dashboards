@@ -29,6 +29,10 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
       rqly: "RQLY",
       rss1: "1RSS",
     },
+    srcSlotLabels: {
+      rqly: "Link quality",
+      rss1: "RSSI 1",
+    },
     defaultBounds: { x: 0, y: 0, w: 480, h: 36 },
     refreshLines: [
       "local rqlyTop = telem(widget.src.rqly)",
@@ -95,6 +99,10 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
       fm: "FM",
       gov: "Gov",
     },
+    srcSlotLabels: {
+      fm: "Flight mode",
+      gov: "Governor",
+    },
     defaultBounds: { x: 12, y: 180, w: 156, h: 72 },
     refreshLines: [
       "local govRaw = telem(widget.src.gov)",
@@ -129,6 +137,11 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
       hspd: "HSpd",
       rpm: "RPM",
       tspd: "Tspd",
+    },
+    srcSlotLabels: {
+      hspd: "Headspeed",
+      rpm: "RPM fallback",
+      tspd: "Tail RPM",
     },
     defaultBounds: { x: 180, y: 48, w: 288, h: 100 },
     refreshLines: [
@@ -168,6 +181,14 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
       vbec: "Vbec",
       esct: "EscT",
       mott: "MotT",
+    },
+    srcSlotLabels: {
+      curr: "Current (AMPS)",
+      rxbt: "Pack voltage",
+      vcel: "Cell voltage",
+      vbec: "BEC voltage",
+      esct: "ESC temp",
+      mott: "Motor temp",
     },
     defaultBounds: { x: 180, y: 160, w: 288, h: 72 },
     refreshLines: [
@@ -217,6 +238,12 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
       rxbt: "RxBt",
       capa: "Capa",
       vbat: "Vbat",
+    },
+    srcSlotLabels: {
+      batp: "Battery %",
+      rxbt: "Pack voltage (RxBt)",
+      capa: "Capacity used",
+      vbat: "Pack voltage (Vbat)",
     },
     defaultBounds: { x: 12, y: 248, w: 456, h: 60 },
     refreshLines: [

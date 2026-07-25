@@ -14,6 +14,7 @@ import {
   patchWidgetName,
   removeRecordLines,
   remapRecordIdsAfterLineRemoval,
+  remapSrcSensor,
   resizeRecord,
   setRecordColor,
   setRecordText,
@@ -340,6 +341,14 @@ export function EditorApp() {
       markDirty();
     },
     [setSource, markDirty, previewScenario],
+  );
+
+  const handleRemapSrcSensor = useCallback(
+    (key: string, sensor: string) => {
+      setSource((prev) => remapSrcSensor(prev, key, sensor));
+      markDirty();
+    },
+    [setSource, markDirty],
   );
 
   const handleAdd = useCallback(
@@ -896,6 +905,7 @@ export function EditorApp() {
         >
           <RecordPropertiesPanel
             meta={meta}
+            source={source}
             selectedRecords={selectedRecords}
             zone={zone}
             protocol={protocol}
@@ -912,6 +922,7 @@ export function EditorApp() {
             onSetColor={handleSetColor}
             onSetText={handleSetText}
             onBindTelemetry={handleBindTelemetry}
+            onRemapSrcSensor={handleRemapSrcSensor}
             onPatchSimulate={(layout, zoneIdx) => {
               setSource((prev) =>
                 prev.replace(

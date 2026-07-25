@@ -646,6 +646,33 @@
   line-height: 1.45;
 }
 
+.propDetails {
+  margin: 0.5rem 0 0;
+  padding: 0 0.15rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.propDetailsSummary {
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.propDetailsSummary::-webkit-details-marker {
+  display: none;
+}
+
+.propDetailsBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
 .emptyState {
   padding: 2rem 0.75rem;
   text-align: center;

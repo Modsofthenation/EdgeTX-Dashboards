@@ -53,7 +53,7 @@ end
 
 local function refresh(widget, event, touchState)
   lcd.clear(BLACK)
-  -- prefab section
+  -- prefab:rf-topbar-link
   local rqlyTop = telem(widget.src.rqly)
   local rqlyTopStr = rqlyTop > 0 and (tostring(math.floor(rqlyTop + 0.5)) .. "%") or "---"
   local t1 = model.getTimer(1)
@@ -70,7 +70,7 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledRectangle(sigX + 20, sigY - 14, 6, 14, rqlyTop > 0 and activeBars >= 3 and YELLOW or DARKGREY)
   lcd.drawFilledRectangle(sigX + 30, sigY - 18, 6, 18, rqlyTop > 0 and activeBars >= 4 and GREEN or DARKGREY)
   lcd.drawText(430, 10, rqlyTopStr, SMLSIZE + WHITE)
-  -- prefab section
+  -- prefab:rf-model-panel
   lcd.drawFilledRectangle(12, 48, 156, 120, DARKGREY)
   lcd.drawRectangle(12, 48, 156, 120, GREY)
   lcd.drawText(20, 56, "MODEL", SMLSIZE + GREY)
@@ -78,7 +78,7 @@ local function refresh(widget, event, touchState)
   lcd.drawText(90, 98, "IMG", SMLSIZE + CENTER + GREY)
   lcd.drawFilledRectangle(20, 148, 140, 1, GREY)
   lcd.drawText(90, 152, "0 Flights", SMLSIZE + CENTER + WHITE)
-  -- prefab section
+  -- prefab:rf-governor-card
   local govRaw = telem(widget.src.gov)
   local fmRaw = widget.src.fm and getValue(widget.src.fm) or nil
   local govStr = "--"
@@ -89,7 +89,7 @@ local function refresh(widget, event, touchState)
   lcd.drawRectangle(12, 180, 156, 72, GREY)
   lcd.drawText(90, 188, "GOVERNOR", SMLSIZE + CENTER + GREY)
   lcd.drawText(90, 208, govStr, MIDSIZE + CENTER + WHITE)
-  -- prefab section
+  -- prefab:rf-headspeed-hero
   local hspd = telem(widget.src.hspd)
   local tspd = telem(widget.src.tspd)
   local hspdStr = hspd > 0 and tostring(math.floor(hspd + 0.5)) or "--"
@@ -101,7 +101,7 @@ local function refresh(widget, event, touchState)
   lcd.drawText(360, 72, "tail", SMLSIZE + GREY)
   lcd.drawText(456, 72, tspdStr, SMLSIZE + RIGHT + WHITE)
   lcd.drawText(360, 96, "rpm", SMLSIZE + GREY)
-  -- prefab section
+  -- prefab:rf-motor-tiles
   local amps = telem(widget.src.curr)
   local vcel = telem(widget.src.vcel)
   local vpack = telem(widget.src.rxbt)
@@ -125,7 +125,7 @@ local function refresh(widget, event, touchState)
   lcd.drawText(330, 188, becStr, MIDSIZE + WHITE)
   lcd.drawText(402, 168, "ESC T", SMLSIZE + GREY)
   lcd.drawText(402, 188, escStr, MIDSIZE + WHITE)
-  -- prefab section
+  -- prefab:rf-battery-bar
   local batp = telem(widget.src.batp)
   local volts = telem(widget.src.vbat)
   if volts <= 0 then volts = telem(widget.src.rxbt) end
