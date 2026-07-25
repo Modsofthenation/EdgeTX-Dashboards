@@ -481,10 +481,7 @@ export function RecordPropertiesPanel({
                       onChange={(e) => {
                         const sensor = e.target.value;
                         if (!sensor) return;
-                        const hint =
-                          sensors.find((s) => s.label === sensor)?.formatHint ??
-                          bindFormat;
-                        onBindTelemetry(record, sensor, hint);
+                        onBindTelemetry(record, sensor, bindFormat);
                         e.target.value = "";
                       }}
                     >
@@ -492,13 +489,17 @@ export function RecordPropertiesPanel({
                       {sensors.map((s) => (
                         <option key={s.label} value={s.label}>
                           {s.label}
+                          {s.formatHint !== bindFormat
+                            ? ` (${s.formatHint})`
+                            : ""}
                         </option>
                       ))}
                     </select>
                   </label>
                   <p className={styles.propEmptyHint}>
-                    Rewrites this drawText to getValue() with create() sensor
-                    cache.
+                    Binds with the Format above. Caches the sensor in create()
+                    and rewrites this drawText. Sensor menu resets after bind —
+                    check Static text / canvas for the live value.
                   </p>
                 </div>
               )}
