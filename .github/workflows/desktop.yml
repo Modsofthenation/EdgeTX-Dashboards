@@ -1,0 +1,117 @@
+# Build native desktop packages (Windows / Linux / macOS) via Tauri.
+# Runs on pushes to main (including merges) and on demand.
+
+name: Desktop packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/**"
+      - "packages/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            os_name: macos-arm64
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            os_name: macos-x64
+          - platform: ubuntu-22.04
+            target: ""
+            os_name: linux-x64
+          - platform: windows-latest
+            target: ""
+            os_name: windows-x64
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          shared-key: desktop-${{ matrix.os_name }}
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Sync EdgeTX WASM firmware
+        run: npm run sync-wasm
+
+      - name: Build desktop packages
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sidecar + Next standalone build
+          DESKTOP_BUILD: "1"
+          SKIP_WASM_SYNC: "1"
+        with:
+          projectPath: apps/desktop
+          tauriScript: npm run tauri --
+          args: ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
+          # Rolling prerelease updated on each main build (same version tag).
+          tagName: desktop-nightly
+          releaseName: Desktop nightly
+          releaseBody: |
+            Continuous desktop builds from `main`.
+
+            Installers include the Tauri shell plus a Next.js standalone sidecar.
+            Runtime still needs **Node.js 22+** on PATH (or `EDGETX_NODE_PATH`).
+
+            Commit: ${{ github.sha }}
+          releaseDraft: false
+          prerelease: true
+          includeUpdaterJson: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: edgetx-dashboards-${{ matrix.os_name }}
+          path: |
+            apps/desktop/src-tauri/target/${{ matrix.target != '' && format('{0}/', matrix.target) || '' }}release/bundle
+          if-no-files-found: warn
+          retention-days: 30

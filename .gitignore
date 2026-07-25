@@ -93,3 +93,5 @@ luac.out
 # Tauri
 apps/desktop/src-tauri/target/
 apps/desktop/fallback/
+apps/desktop/resources/standalone/*
+!apps/desktop/resources/standalone/README.md

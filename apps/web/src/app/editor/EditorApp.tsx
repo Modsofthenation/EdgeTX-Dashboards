@@ -41,6 +41,7 @@ import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
 import { EditorToolbar } from "./components/EditorToolbar";
 import { SimVerifyModal } from "./components/SimVerifyModal";
 import type { InsertDrawKind } from "./elementMeta";
+import { AppPreferencesButton } from "~/components/AppPreferences";
 import styles from "./editor.module.css";
 
 type MobileTab = "layers" | "canvas" | "properties";
@@ -675,6 +676,7 @@ export function EditorApp() {
           </div>
         </div>
         <div className={styles.headerActions}>
+          <AppPreferencesButton className={styles.ghostBtn} />
           <Link
             href={backHref}
             className={styles.ghostBtn}

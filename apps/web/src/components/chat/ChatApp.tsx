@@ -15,6 +15,7 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { ChatMessageList } from "./ChatMessageList";
 import { CollapsibleAside } from "./CollapsibleAside";
+import { AppPreferencesButton } from "~/components/AppPreferences";
 import styles from "./ChatApp.module.css";
 
 export function ChatApp() {
@@ -100,6 +101,7 @@ function ChatAppHeader() {
             Generating
           </span>
         )}
+        <AppPreferencesButton className={styles.prefsBtn} />
         <button
           type="button"
           className={styles.newChatBtn}

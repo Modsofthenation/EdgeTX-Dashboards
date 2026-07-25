@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Tauri 2 desktop shell for EdgeTX Dashboards",
   "scripts": {
+    "prepare:standalone": "node ./scripts/prepare-standalone.mjs",
     "dev": "tauri dev",
     "build": "tauri build",
     "tauri": "tauri"
