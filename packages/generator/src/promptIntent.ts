@@ -140,7 +140,7 @@ export function validatePromptIntent(
     issues.push({
       severity: "warning",
       message:
-        'Prompt asks for a large/hero voltage readout but source has no DBLSIZE text — use lcd.drawText(..., DBLSIZE + color) for the primary value',
+        "Prompt asks for a large/hero voltage readout but source has no DBLSIZE text — use lcd.drawText(..., DBLSIZE + color) for the primary value",
     });
   }
 

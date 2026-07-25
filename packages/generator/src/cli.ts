@@ -41,7 +41,11 @@ export function parseGenerateCliArgs(args: string[]): GenerateCliFlags | null {
 
   // Defense: nested `npm run` sometimes eats `--protocol`/`--radio` and leaves
   // bare tokens first in the prompt (`rotorflight tx15 …`).
-  if (!protocolExplicit && positional.length > 0 && PROTOCOLS.has(positional[0])) {
+  if (
+    !protocolExplicit &&
+    positional.length > 0 &&
+    PROTOCOLS.has(positional[0])
+  ) {
     flags.protocol = positional.shift() as GenerateCliFlags["protocol"];
   }
   if (

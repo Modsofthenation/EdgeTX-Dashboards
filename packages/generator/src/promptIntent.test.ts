@@ -54,12 +54,14 @@ end`;
 
   it("skips sensors not in the protocol catalog", () => {
     const source = 'cacheSource("RxBt")';
-    const issues = validatePromptIntent(
-      "Show headspeed and ESC temp",
-      source,
-      { knownSensors: ["RxBt", "RQLY"], strict: true },
+    const issues = validatePromptIntent("Show headspeed and ESC temp", source, {
+      knownSensors: ["RxBt", "RQLY"],
+      strict: true,
+    });
+    assert.equal(
+      issues.filter((i) => /headspeed|ESC/i.test(i.message)).length,
+      0,
     );
-    assert.equal(issues.filter((i) => /headspeed|ESC/i.test(i.message)).length, 0);
   });
 
   it("warns when large voltage readout lacks DBLSIZE", () => {

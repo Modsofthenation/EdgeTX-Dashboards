@@ -80,7 +80,7 @@ lcd.drawArc(x + cr, y + cr, cr, 180, 270, GREY)
 
   it("is idempotent on clean source", () => {
     const src =
-      "lcd.drawLine(0, 0, 10, 0, SOLID, GREY)\nlcd.drawText(0, 0, \"ok\", SMLSIZE + WHITE)\n";
+      'lcd.drawLine(0, 0, 10, 0, SOLID, GREY)\nlcd.drawText(0, 0, "ok", SMLSIZE + WHITE)\n';
     const once = autoFixLua(src);
     const twice = autoFixLua(once.source);
     assert.equal(twice.applied.length, 0);
