@@ -186,13 +186,10 @@ function fixTopLeftArcAngles(source: string, applied: string[]): string {
     /drawArc\(\s*([^,]+)\s*\+\s*(\w*cr\w*)\s*,\s*([^,]+)\s*\+\s*(\w*cr\w*)\s*,\s*([^,]+)\s*,\s*180\s*,\s*270\b/gi;
 
   let count = 0;
-  const next = source.replace(
-    wrongTopLeft,
-    (_m, x, cr1, y, cr2, r) => {
-      count++;
-      return `drawArc(${x} + ${cr1}, ${y} + ${cr2}, ${r}, 270, 360`;
-    },
-  );
+  const next = source.replace(wrongTopLeft, (_m, x, cr1, y, cr2, r) => {
+    count++;
+    return `drawArc(${x} + ${cr1}, ${y} + ${cr2}, ${r}, 270, 360`;
+  });
 
   if (count > 0) {
     applied.push(
@@ -228,7 +225,9 @@ function fixAnnulusRadii(source: string, applied: string[]): string {
   );
 
   if (count > 0) {
-    applied.push(`swapped inner/outer radii on ${count} lcd.drawAnnulus call(s)`);
+    applied.push(
+      `swapped inner/outer radii on ${count} lcd.drawAnnulus call(s)`,
+    );
   }
   return next;
 }
@@ -239,7 +238,7 @@ function fixModelsBitmapPaths(source: string, applied: string[]): string {
   }
   const next = source.replace(
     /(["'])\/MODELS\/([^"']+\.(?:png|bmp))\1/gi,
-    '$1/IMAGES/$2$1',
+    "$1/IMAGES/$2$1",
   );
   if (next !== source) {
     applied.push("rewrote /MODELS/*.png paths to /IMAGES/");
@@ -318,7 +317,8 @@ function fixMathDeg(source: string, applied: string[]): string {
 function fixCyanMagentaAliases(source: string, applied: string[]): string {
   // Prefer existing widget color fields when present; otherwise map to safe literals.
   let out = source;
-  const hasAccent = /\bC_ACCENT\b/.test(out) || /\bwidget\.C_ACCENT\b/.test(out);
+  const hasAccent =
+    /\bC_ACCENT\b/.test(out) || /\bwidget\.C_ACCENT\b/.test(out);
   const hasHero = /\bC_HERO\b/.test(out) || /\bwidget\.C_HERO\b/.test(out);
 
   if (/\bCYAN\b/.test(out)) {
