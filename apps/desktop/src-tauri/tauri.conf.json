@@ -7,7 +7,7 @@
     "beforeDevCommand": "cd ../.. && SKIP_WASM_SYNC=1 npm run dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "node ./scripts/prepare-standalone.mjs",
-    "frontendDist": "../fallback"
+    "frontendDist": "./fallback"
   },
   "app": {
     "windows": [

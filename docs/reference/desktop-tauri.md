@@ -19,6 +19,23 @@ In-app **Preferences** (Generate + Layout headers) covers:
 - **Appearance** — multiple UI themes
 - **Simulator WASM** — download / refresh EdgeTX TX15 firmware for radio preview
 
+## CI packages (main)
+
+GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml) builds installers on every push/merge to `main` (path-filtered) and on `workflow_dispatch`:
+
+| Runner           | Artifact                                 |
+| ---------------- | ---------------------------------------- |
+| `macos-latest`   | macOS arm64 + x64                        |
+| `ubuntu-22.04`   | Linux x64 (deb/AppImage/rpm as produced) |
+| `windows-latest` | Windows x64                              |
+
+Outputs:
+
+- **Actions artifacts** — `edgetx-dashboards-<os>` (30-day retention)
+- **GitHub Release** — prerelease tag `desktop-nightly` (assets refreshed each run)
+
+Versioned production releases can be added later via tags such as `desktop-v*`.
+
 ## Platforms
 
 Install [platform prerequisites](https://v2.tauri.app/start/prerequisites/), then:

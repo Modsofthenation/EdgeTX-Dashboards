@@ -25,13 +25,14 @@ Release sidecars currently require **Node on PATH** (or `EDGETX_NODE_PATH`). Bun
 
 Tauri’s Next.js guide assumes `output: 'export'`. This app needs API routes, SQLite, and WASM, so production uses Next **standalone** as a sidecar instead.
 
-## Layout
+## CI packages (main)
 
-```
-apps/desktop/
-  scripts/prepare-standalone.mjs
-  resources/standalone/     # generated, gitignored
-  src-tauri/
-    src/lib.rs              # sidecar spawn + health wait
-    tauri.conf.json
-```
+On each merge/push to `main` (and via **Actions → Desktop packages → Run workflow**), CI builds native installers for:
+
+- macOS arm64 + x64
+- Linux x64 (`ubuntu-22.04`)
+- Windows x64
+
+Artifacts upload to the workflow run; assets also refresh the `desktop-nightly` prerelease.
+
+See [docs/reference/desktop-tauri.md](../../docs/reference/desktop-tauri.md).
