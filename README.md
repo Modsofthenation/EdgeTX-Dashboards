@@ -206,7 +206,7 @@ Failed validation blocks download (HTTP 422). Fix in chat or the layout editor, 
 
 | Symptom                            | Try this                                               |
 | ---------------------------------- | ------------------------------------------------------ |
-| Stuck on "Booting EdgeTX preview…" | Restart `npm run dev`, hard-refresh the browser        |
+| Stuck on "Booting EdgeTX preview..." | Restart `npm run dev`, hard-refresh the browser        |
 | WASM 404 / Preferences incomplete  | `npm run sync-wasm` or Preferences → Download firmware |
 | `simuAuxSerialStart` errors        | `npm run setup:sim`, restart dev server                |
 | After changing `packages/*`        | Restart the dev server (packages compile from source)  |
