@@ -28,6 +28,7 @@ import {
   translateRecord,
   duplicateRecordLine,
   moveRecordLine,
+  remapPreviewOnlyColorLiterals,
   type DocumentRecord,
   type TextFormat,
   type ZoneOffset,
@@ -298,12 +299,13 @@ export function EditorApp() {
 
   const loadFromSource = useCallback(
     (nextSource: string, markClean = false) => {
-      replaceSource(nextSource);
+      const remapped = remapPreviewOnlyColorLiterals(nextSource).source;
+      replaceSource(remapped);
       setSelectedIds([]);
       setValid(null);
       setValidationIssues([]);
       if (markClean) {
-        savedSourceRef.current = nextSource;
+        savedSourceRef.current = remapped;
         setDirty(false);
       } else {
         setDirty(true);
@@ -1124,10 +1126,14 @@ export function EditorApp() {
     const body = (await res.json()) as {
       valid: boolean;
       issues: ValidationIssue[];
+      source?: string;
     };
+    if (body.source && body.source !== source) {
+      replaceSource(body.source);
+    }
     setValid(body.valid);
     setValidationIssues(body.issues ?? []);
-  }, [source, protocol]);
+  }, [source, protocol, replaceSource]);
 
   const handleSave = useCallback(async (): Promise<string | null> => {
     setSaving(true);
@@ -1152,6 +1158,7 @@ export function EditorApp() {
         issues?: ValidationIssue[];
         error?: string;
         workspaceKey?: string;
+        source?: string;
       };
       if (!res.ok) {
         setLoadError(body.error ?? `Save failed (${res.status})`);
@@ -1159,13 +1166,18 @@ export function EditorApp() {
         setValidationIssues(body.issues ?? []);
         return null;
       }
+      if (body.source && body.source !== source) {
+        replaceSource(body.source);
+        savedSourceRef.current = body.source;
+      } else {
+        savedSourceRef.current = source;
+      }
       const nextKey = body.workspaceKey ?? workspaceKey;
       if (nextKey && nextKey !== workspaceKey) {
         setWorkspaceKey(nextKey);
       }
       setValid(body.valid);
       setValidationIssues(body.issues ?? []);
-      savedSourceRef.current = source;
       setDirty(false);
       return nextKey ?? null;
     } catch (err) {
@@ -1174,7 +1186,7 @@ export function EditorApp() {
     } finally {
       setSaving(false);
     }
-  }, [workspaceKey, sessionId, source, protocol, radioId, chatId]);
+  }, [workspaceKey, sessionId, source, protocol, radioId, chatId, replaceSource]);
 
   const handleDownload = useCallback(async () => {
     if (valid === false) {

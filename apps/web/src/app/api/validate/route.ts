@@ -5,6 +5,7 @@ import {
   sanitizeWidgetName,
   validateWidgetRelease,
   validateWidgetSource,
+  autoFixLua,
 } from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
@@ -80,9 +81,15 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const radioId = body.radioId ?? "tx15";
-  const result = validateWidgetSource(source, protocol, {
+  const fixed = autoFixLua(source);
+  const result = validateWidgetSource(fixed.source, protocol, {
     radioId,
     strictTelemetry: true,
   });
-  return Response.json(result);
+  return Response.json({
+    ...result,
+    ...(fixed.applied.length > 0
+      ? { source: fixed.source, autoFixes: fixed.applied }
+      : {}),
+  });
 }

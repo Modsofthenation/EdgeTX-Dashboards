@@ -10,6 +10,7 @@ import {
   sanitizeWidgetName,
   validateWidgetSource,
   writeWidgetLuaSource,
+  autoFixLua,
 } from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
@@ -95,6 +96,11 @@ export async function PUT(request: Request): Promise<Response> {
     return Response.json({ error: "source is required" }, { status: 400 });
   }
 
+  // Rewrite preview-only color globals (CYAN/LIME/…) before validate+persist so
+  // Layout color mistakes from older pickers do not block Save/Download.
+  const fixed = autoFixLua(source);
+  const sourceToSave = fixed.source;
+
   let resolved = resolveWidgetWorkspaceFromSession(
     body.sessionId ?? null,
     body.instanceId ?? null,
@@ -103,7 +109,7 @@ export async function PUT(request: Request): Promise<Response> {
 
   if ((resolved.pending || !resolved.workspaceKey) && body.allocate) {
     const id = randomUUID();
-    const displayName = displayNameFromSource(source);
+    const displayName = displayNameFromSource(sourceToSave);
     ensureWidgetInstanceDir(id, displayName, 0);
     resolved = { workspaceKey: id, displayName };
   }
@@ -118,7 +124,7 @@ export async function PUT(request: Request): Promise<Response> {
   }
 
   const radioId = body.radioId ?? "tx15";
-  const validation = validateWidgetSource(source, protocol, {
+  const validation = validateWidgetSource(sourceToSave, protocol, {
     radioId,
     strictTelemetry: true,
   });
@@ -130,7 +136,7 @@ export async function PUT(request: Request): Promise<Response> {
     );
   }
 
-  writeWidgetLuaSource(resolved.workspaceKey, source);
+  writeWidgetLuaSource(resolved.workspaceKey, sourceToSave);
 
   const chatId = body.chatId?.trim();
   if (chatId) {
@@ -138,7 +144,7 @@ export async function PUT(request: Request): Promise<Response> {
     if (chat) {
       const displayName =
         resolved.displayName ??
-        displayNameFromSource(source) ??
+        displayNameFromSource(sourceToSave) ??
         chat.widgetName ??
         chat.artifact?.name ??
         "DashStart";
@@ -158,7 +164,7 @@ export async function PUT(request: Request): Promise<Response> {
           name: displayName,
           instanceId,
           version,
-          luaSource: source,
+          luaSource: sourceToSave,
           validated: true,
           validationIssues: validation.issues,
         },
@@ -170,5 +176,8 @@ export async function PUT(request: Request): Promise<Response> {
     valid: true,
     issues: validation.issues,
     workspaceKey: resolved.workspaceKey,
+    ...(fixed.applied.length > 0
+      ? { source: sourceToSave, autoFixes: fixed.applied }
+      : {}),
   });
 }

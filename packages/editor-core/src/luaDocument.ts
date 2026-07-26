@@ -12,7 +12,7 @@ import {
   findRefreshBodyStartLine,
 } from "@widget-gen/shared";
 import { STARTER_WIDGET_SOURCE } from "./starterSource.ts";
-import { EDGE_COLOR_NAMES } from "./colors.ts";
+import { EDGE_COLOR_NAMES, toRadioSafeColor } from "./colors.ts";
 
 export interface DocumentRecord extends DrawRecord {
   id: string;
@@ -214,6 +214,7 @@ export function setRecordColor(
   color: EdgeColor,
   zone: ZoneOffset,
 ): string {
+  const safeColor = toRadioSafeColor(color);
   if (record.kind === "text") {
     const ref = record.sourceRef;
     const flagsSpan = ref?.args[3];
@@ -234,10 +235,10 @@ export function setRecordColor(
           ? "MIDSIZE"
           : "SMLSIZE";
     const base = withoutColor || sizeFallback;
-    const flags = base.includes(color) ? base : `${base} + ${color}`;
+    const flags = base.includes(safeColor) ? base : `${base} + ${safeColor}`;
     return patchRecordArgs(source, record, { flags }, zone);
   }
-  return patchRecordArgs(source, record, { color }, zone);
+  return patchRecordArgs(source, record, { color: safeColor }, zone);
 }
 
 export function setRecordText(
@@ -303,11 +304,11 @@ export const INSERT_LINE_TEMPLATES: Record<string, string> = {
   filledRect: "lcd.drawFilledRectangle(12, 48, 80, 40, DARKGREY)",
   rect: "lcd.drawRectangle(12, 48, 80, 40, GREY)",
   line: "lcd.drawLine(12, 12, 100, 100, SOLID, WHITE)",
-  gauge: "lcd.drawGauge(12, 48, 40, 80, 50, 100, CYAN)",
+  gauge: "lcd.drawGauge(12, 48, 40, 80, 50, 100, BRIGHTGREEN)",
   circle: "lcd.drawCircle(60, 60, 24, WHITE)",
   filledCircle: "lcd.drawFilledCircle(60, 60, 24, GREEN)",
-  arc: "lcd.drawArc(120, 80, 40, 0, 270, CYAN)",
-  annulus: "lcd.drawAnnulus(120, 80, 30, 40, 0, 270, CYAN)",
+  arc: "lcd.drawArc(120, 80, 40, 0, 270, BRIGHTGREEN)",
+  annulus: "lcd.drawAnnulus(120, 80, 30, 40, 0, 270, BRIGHTGREEN)",
   bitmap: "lcd.drawBitmap(widget.modelBmp, 12, 48)",
 };
 
