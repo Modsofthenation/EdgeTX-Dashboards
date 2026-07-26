@@ -1,15 +1,19 @@
 # Build native desktop packages (Windows / Linux / macOS) via Tauri.
-# Runs on every push to main (including merges), on desktop-v* tags, and on demand.
+# Manual only (Actions → Desktop packages → Run workflow) to save CI minutes.
+# Also runs on desktop-v* tags for stable releases.
 # Green runs upload downloadable installers as Actions artifacts.
-# Tag pushes also publish a non-prerelease GitHub Release (stable pilots build).
 
 name: Desktop packages
 
 on:
   push:
-    branches: [main]
     tags: ["desktop-v*"]
   workflow_dispatch:
+    inputs:
+      publish_nightly:
+        description: "Publish/refresh the desktop-nightly GitHub prerelease"
+        type: boolean
+        default: true
 
 concurrency:
   group: desktop-packages-${{ github.ref }}
@@ -153,10 +157,12 @@ jobs:
           retention-days: 30
           compression-level: 6
 
-  # Aggregate matrix installers onto the rolling prerelease after all platforms succeed.
+  # Aggregate matrix installers onto the rolling prerelease after a manual run.
   publish-nightly:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish_nightly == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -178,7 +184,7 @@ jobs:
           name: Desktop nightly
           prerelease: true
           body: |
-            Continuous desktop builds from `main`.
+            Manually triggered desktop builds (not every `main` merge).
 
             Download installers from this release, or from the **Actions artifacts**
             on the corresponding Desktop packages workflow run (exact commit build).

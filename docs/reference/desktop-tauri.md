@@ -31,9 +31,9 @@ In-app **Preferences** (Generate + Layout headers) covers:
 - **Appearance** — multiple UI themes
 - **Simulator WASM** — download / refresh EdgeTX TX15 firmware for radio preview
 
-## CI packages (main)
+## CI packages (manual)
 
-GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml) builds installers on **every push/merge to `main`** and on `workflow_dispatch`:
+GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml) builds installers **on demand** (Actions → **Desktop packages** → **Run workflow**) and on `desktop-v*` tags. It does **not** run on every merge to `main` (saves Actions minutes).
 
 | Runner           | Artifact               |
 | ---------------- | ---------------------- |
@@ -44,7 +44,7 @@ GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflow
 Outputs (from each green run):
 
 - **Actions artifacts** — `edgetx-dashboards-<os>` on the workflow run (30-day retention). Open the run → **Artifacts**.
-- **GitHub Release (nightly)** — prerelease tag `desktop-nightly` (refreshed after all matrix jobs succeed on `main`)
+- **GitHub Release (nightly)** — prerelease tag `desktop-nightly` (optional; enabled by default on manual runs via the `publish_nightly` input)
 - **GitHub Release (stable)** — non-prerelease when a `desktop-v*` tag is pushed (e.g. `desktop-v1.2.0`)
 
 ### Cutting a stable desktop release
@@ -54,7 +54,7 @@ git tag desktop-v1.2.0
 git push origin desktop-v1.2.0
 ```
 
-That triggers the same matrix build as `main`, then the `publish-release` job attaches installers to a normal (non-prerelease) GitHub Release named after the tag. Prefer these tagged builds when giving pilots a durable installer; use `desktop-nightly` only for continuous smoke-testing.
+That triggers the same matrix build as a manual run, then the `publish-release` job attaches installers to a normal (non-prerelease) GitHub Release named after the tag. Prefer these tagged builds when giving pilots a durable installer; use a manual run (or `desktop-nightly`) for occasional smoke builds.
 
 ## Platforms
 

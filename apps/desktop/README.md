@@ -27,14 +27,14 @@ Release sidecars embed a portable Node under `$RESOURCE/node/` (override with `E
 
 Tauri’s Next.js guide assumes `output: 'export'`. This app needs API routes, SQLite, and WASM, so production uses Next **standalone** as a sidecar instead.
 
-## CI packages (main)
+## CI packages (manual)
 
-On each merge/push to `main` (and via **Actions → Desktop packages → Run workflow**), CI builds native installers for:
+Trigger builds from **Actions → Desktop packages → Run workflow** (not on every merge to `main`). Optional input refreshes the `desktop-nightly` prerelease. Native installers:
 
 - macOS arm64 + x64
 - Linux x64 (`ubuntu-22.04`)
 - Windows x64
 
-Artifacts upload to the workflow run; assets also refresh the `desktop-nightly` prerelease.
+Artifacts upload to the workflow run. Push a `desktop-v*` tag for a stable GitHub Release.
 
 See [docs/reference/desktop-tauri.md](../../docs/reference/desktop-tauri.md).

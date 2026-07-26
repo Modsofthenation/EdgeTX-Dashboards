@@ -162,7 +162,7 @@ npm run desktop:prepare   # Next standalone + WASM for packaging
 npm run desktop:build     # Native installer (needs platform toolchains)
 ```
 
-Merges to `main` build Windows, Linux, and macOS packages in CI. Each green **Desktop packages** run uploads downloadable installers under **Actions → Artifacts** (`edgetx-dashboards-<os>`), and refreshes the `desktop-nightly` prerelease.
+Desktop packages are built **manually** from **Actions → Desktop packages → Run workflow** (not on every merge to `main`). Each green run uploads installers under **Actions → Artifacts** (`edgetx-dashboards-<os>`), and can refresh the `desktop-nightly` prerelease. Push a `desktop-v*` tag for a stable release.
 
 See [desktop docs](docs/reference/desktop-tauri.md). Release sidecars currently expect Node 22+ on PATH (or `EDGETX_NODE_PATH`).
 
