@@ -26,6 +26,12 @@ end
 
 Ideal size for the Model Info widget: **192×114** (thumbnails **156×92**).
 
+## Layout / simulator preview
+
+In the Layout editor, use toolbar **Model PNG…** to drop a PNG into the WASM sim virtual SD (`/IMAGES/simmodel.png`). That path matches `model.getInfo().bitmap` in the simulator model YAML so `lcd.drawBitmap(widget.modelBmp, …)` shows the uploaded image instead of the grey placeholder.
+
+On the radio, continue to assign the bitmap under **Model Setup → Assign Bitmap** (real `/IMAGES/<name>.png` on the SD card). Desktop install may also copy a PNG under `IMAGES/` when included in the package file list.
+
 ## Widget pattern (required for web preview)
 
 Load once in `create()`, reload in `update()` if the model bitmap may change, draw in `refresh()` with a **placeholder fallback** when width/height are 0.

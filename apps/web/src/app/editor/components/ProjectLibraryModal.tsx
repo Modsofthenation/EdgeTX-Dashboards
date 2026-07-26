@@ -4,9 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectSummary } from "~/lib/projectLibrary";
 import {
   downloadProjectPack,
+  exportProjectPack,
   importProjectPack,
   listRecentProjects,
 } from "~/lib/projectLibrary";
+import {
+  isTauriDesktop,
+  openProjectPackFromDisk,
+  saveProjectPackToDisk,
+  syncProjectPackToAppData,
+} from "~/lib/desktopProjectIo";
 import styles from "../editor.module.css";
 
 export type ProjectLibraryMode = "save" | "recent";
@@ -15,6 +22,7 @@ interface ProjectLibraryModalProps {
   open: boolean;
   mode: ProjectLibraryMode;
   defaultName?: string;
+  projectId?: string | null;
   onClose: () => void;
   onSave: (name: string) => void;
   onOpen: (id: string) => void;
@@ -27,6 +35,7 @@ export function ProjectLibraryModal({
   open,
   mode,
   defaultName = "Dashboard",
+  projectId = null,
   onClose,
   onSave,
   onOpen,
@@ -38,6 +47,8 @@ export function ProjectLibraryModal({
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [listTick, setListTick] = useState(0);
+  const [desktop, setDesktop] = useState(false);
+  const [diskNote, setDiskNote] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recent = useMemo(
     () => (open && mode === "recent" ? listRecentProjects() : []),
@@ -49,11 +60,71 @@ export function ProjectLibraryModal({
     if (open && mode === "save") setName(defaultName);
     if (open) {
       setRenameId(null);
+      setDiskNote(null);
       setListTick((t) => t + 1);
+      void isTauriDesktop().then(setDesktop);
     }
   }, [open, mode, defaultName]);
 
   if (!open) return null;
+
+  const saveCurrentToDisk = async (id: string) => {
+    const pack = exportProjectPack(id);
+    if (!pack) {
+      setDiskNote("Save the project in-browser first (needs Lua source).");
+      return;
+    }
+    const result = await saveProjectPackToDisk(
+      pack.project.name,
+      JSON.stringify(pack, null, 2),
+    );
+    if ("cancelled" in result) return;
+    if ("error" in result) {
+      setDiskNote(result.error);
+      return;
+    }
+    setDiskNote(`Saved to ${result.path}`);
+  };
+
+  const syncCurrentToAppData = async (id: string) => {
+    const pack = exportProjectPack(id);
+    if (!pack) {
+      setDiskNote("Save the project in-browser first (needs Lua source).");
+      return;
+    }
+    const fileName = `${pack.project.name.replace(/[^\w.-]+/g, "_") || "dashboard"}.edgetx-project.json`;
+    const result = await syncProjectPackToAppData(
+      fileName,
+      JSON.stringify(pack, null, 2),
+    );
+    if ("error" in result) {
+      setDiskNote(result.error);
+      return;
+    }
+    setDiskNote(`Synced to app data: ${result.path}`);
+  };
+
+  const openFromDisk = async () => {
+    const result = await openProjectPackFromDisk();
+    if ("cancelled" in result) return;
+    if ("error" in result) {
+      setDiskNote(result.error);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(result.json) as unknown;
+      const imported = importProjectPack(parsed);
+      if ("error" in imported) {
+        setDiskNote(imported.error);
+        return;
+      }
+      setListTick((t) => t + 1);
+      setDiskNote(`Opened ${result.path}`);
+      onImported?.(imported.project.id);
+    } catch {
+      setDiskNote("Could not parse project pack JSON.");
+    }
+  };
 
   return (
     <div className={styles.modalBackdrop} role="presentation" onClick={onClose}>
@@ -81,8 +152,8 @@ export function ProjectLibraryModal({
         {mode === "save" ? (
           <>
             <p className={styles.modalHint}>
-              Named boards are stored in this browser (and desktop app). Export
-              a pack from Recent to keep a durable copy.
+              Named boards are stored in this browser (and desktop app). On
+              desktop, also save to a folder or app data for a durable copy.
             </p>
             <label className={styles.projectField}>
               <span className={styles.projectFieldLabel}>Name</span>
@@ -116,6 +187,25 @@ export function ProjectLibraryModal({
                 Save
               </button>
             </div>
+            {desktop && projectId ? (
+              <div className={styles.projectToolbar}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => void saveCurrentToDisk(projectId)}
+                >
+                  Save to disk…
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => void syncCurrentToAppData(projectId)}
+                >
+                  Sync to app data
+                </button>
+              </div>
+            ) : null}
+            {diskNote ? <p className={styles.modalHint}>{diskNote}</p> : null}
           </>
         ) : (
           <>
@@ -127,6 +217,35 @@ export function ProjectLibraryModal({
               >
                 Import pack…
               </button>
+              {desktop ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => void openFromDisk()}
+                  >
+                    Open from disk…
+                  </button>
+                  {projectId ? (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => void saveCurrentToDisk(projectId)}
+                      >
+                        Save current to disk…
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => void syncCurrentToAppData(projectId)}
+                      >
+                        Sync to app data
+                      </button>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
               <input
                 ref={fileRef}
                 type="file"
@@ -151,6 +270,7 @@ export function ProjectLibraryModal({
                 }}
               />
             </div>
+            {diskNote ? <p className={styles.modalHint}>{diskNote}</p> : null}
             {recent.length === 0 ? (
               <p className={styles.modalHint}>
                 No recent projects yet — use Save as… first, or Import a pack.
@@ -231,6 +351,16 @@ export function ProjectLibraryModal({
                           >
                             Export
                           </button>
+                          {desktop ? (
+                            <button
+                              type="button"
+                              className={styles.ghostBtn}
+                              title="Save to disk"
+                              onClick={() => void saveCurrentToDisk(p.id)}
+                            >
+                              Disk
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             className={styles.ghostBtn}

@@ -34,9 +34,17 @@ GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflow
 Outputs (from each green run):
 
 - **Actions artifacts** — `edgetx-dashboards-<os>` on the workflow run (30-day retention). Open the run → **Artifacts**.
-- **GitHub Release** — prerelease tag `desktop-nightly` (refreshed after all matrix jobs succeed)
+- **GitHub Release (nightly)** — prerelease tag `desktop-nightly` (refreshed after all matrix jobs succeed on `main`)
+- **GitHub Release (stable)** — non-prerelease when a `desktop-v*` tag is pushed (e.g. `desktop-v1.2.0`)
 
-Versioned production releases can be added later via tags such as `desktop-v*`.
+### Cutting a stable desktop release
+
+```bash
+git tag desktop-v1.2.0
+git push origin desktop-v1.2.0
+```
+
+That triggers the same matrix build as `main`, then the `publish-release` job attaches installers to a normal (non-prerelease) GitHub Release named after the tag. Prefer these tagged builds when giving pilots a durable installer; use `desktop-nightly` only for continuous smoke-testing.
 
 ## Platforms
 

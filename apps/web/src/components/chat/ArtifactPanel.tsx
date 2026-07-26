@@ -18,9 +18,12 @@ import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
 import { InstallWizard } from "../InstallWizard";
 import { RefineDiffPanel } from "./RefineDiffPanel";
+import { RadioFeedbackPanel } from "./RadioFeedbackPanel";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import { ArtifactVersionSelect } from "./ArtifactVersionSelect";
 import styles from "./ArtifactPanel.module.css";
+import { useChatSession } from "~/lib/useWidgetChat";
+import type { PendingPromptImage } from "~/lib/promptImages";
 
 function InstallGuideInline({
   protocol,
@@ -94,6 +97,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
   const liveSupported =
     typeof window !== "undefined" ? isWebSerialSupported() : false;
+  const { sendMessage, running: chatRunning, canRefine } = useChatSession();
 
   const showPreviewLoader = running || artifactLoading;
   const installMd = useMemo(() => {
@@ -127,7 +131,11 @@ export const ArtifactPanel = memo(function ArtifactPanel({
       );
       liveHandleRef.current = handle;
       setLiveRadioActive(true);
-      setLiveNote("Live · waiting for CRSF");
+      setLiveNote(
+        protocol === "rotorflight"
+          ? "Live · CRSF on wire; HSpd/Gov/Vbec may be preview-enriched (not true FC sensors until rf2bg)"
+          : "Live · waiting for CRSF",
+      );
     } catch (err) {
       setLiveNote(
         err instanceof Error ? err.message : "Failed to open serial port",
@@ -286,6 +294,12 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 {liveNote}
               </p>
             ) : null}
+            {liveRadioActive && protocol === "rotorflight" ? (
+              <p className={styles.liveRadioNote} role="note">
+                Preview enrich fills missing HSpd/Gov/Vbec/EscT from CRSF
+                heuristics — enable rf2bg + Discover new for true radio sensors.
+              </p>
+            ) : null}
             {showPreviewLoader && (
               <div
                 className={styles.previewOverlay}
@@ -402,6 +416,14 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                   sessionId={sessionId}
                 />
               </div>
+              {canRefine ? (
+                <RadioFeedbackPanel
+                  disabled={chatRunning || running}
+                  onSubmit={(prompt, images?: PendingPromptImage[]) => {
+                    void sendMessage(prompt, images ? { images } : undefined);
+                  }}
+                />
+              ) : null}
             </>
           )}
         </>

@@ -30,6 +30,23 @@ When the user asks for **battery selection**, **flight logging**, **log viewing*
 - Scrollable list of recent log files; show last N lines of selected file on screen.
 - Keep UI simple (SMLSIZE lines, PAGE to scroll) — monochrome-friendly patterns.
 
+## Flights counter (`tools/flt_count.lua`)
+
+- Tool script that bumps / displays a flight count (Global Variable or simple counter).
+- Pairs with the StacyDash **model panel** footer (“N Flights”); Layout Insert → **Flights counter** adds the stub for SD install.
+
+## Editor Insert + install
+
+Layout → Insert → **Companion suites** adds first-class stubs:
+
+| Suite            | Files                                             |
+| ---------------- | ------------------------------------------------- |
+| Flight logger    | `telemetry/flight_log.lua` + `tools/log_view.lua` |
+| Battery selector | `tools/batt_select.lua`                           |
+| Flights counter  | `tools/flt_count.lua`                             |
+
+When a workspace/session is open, suites are written under `generated/<key>/` so zip download and the desktop install wizard copy them to `SCRIPTS/TOOLS/` / `SCRIPTS/TELEMETRY/`.
+
 ## Rules
 
 1. **Always** generate `main.lua` dashboard even when companions are requested.

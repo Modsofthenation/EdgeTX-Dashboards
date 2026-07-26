@@ -87,12 +87,15 @@ export type SimWorkerRequest =
       source?: string;
       zone?: WidgetSimulateZone;
       mock?: MockTelemetryValues;
+      /** Optional custom model PNG bytes written to /IMAGES/simmodel.png */
+      modelPng?: ArrayBuffer;
     }
   | {
       type: "loadWidget";
       source: string;
       zone?: WidgetSimulateZone;
       requestId: number;
+      modelPng?: ArrayBuffer;
     }
   | { type: "setMock"; mock: MockTelemetryValues }
   | { type: "input"; msg: SimInputMessage }

@@ -3,7 +3,7 @@
  * Import generator symbols here only — not from individual route files.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   CursorAgentError,
   DEFAULT_MODEL_ID,
@@ -180,6 +180,37 @@ export function writeWidgetLuaSource(
   const key = normalizeWorkspaceKey(workspaceKey);
   mkdirSync(getGeneratedDirForKey(key), { recursive: true });
   writeFileSync(getWidgetLuaPathForKey(key), source, "utf-8");
+}
+
+/**
+ * Write companion scripts under generated/<key>/tools|telemetry/.
+ * Rel paths must be tools/*.lua or telemetry/*.lua (no traversal).
+ */
+export function writeWidgetCompanionFiles(
+  workspaceKey: string,
+  files: { relPath: string; content: string }[],
+): string[] {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  const root = getGeneratedDirForKey(key);
+  mkdirSync(root, { recursive: true });
+  const written: string[] = [];
+  for (const file of files) {
+    const rel = file.relPath.replace(/\\/g, "/").replace(/^\/+/, "");
+    if (
+      rel.includes("..") ||
+      !(
+        (rel.startsWith("tools/") || rel.startsWith("telemetry/")) &&
+        rel.endsWith(".lua")
+      )
+    ) {
+      throw new Error(`Refusing companion path: ${file.relPath}`);
+    }
+    const dest = join(root, rel);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, file.content, "utf-8");
+    written.push(rel);
+  }
+  return written;
 }
 
 export async function readOrBuildWidgetZip(

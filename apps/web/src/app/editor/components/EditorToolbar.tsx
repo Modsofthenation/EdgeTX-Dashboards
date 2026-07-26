@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { InsertDrawKind } from "../elementMeta";
 import { InsertMenu } from "./InsertMenu";
@@ -22,6 +23,8 @@ interface EditorToolbarProps {
   onAddPrefab?: (prefabId: string) => void;
   onAddFullStacyDash?: () => void;
   onAddNitroStacyDash?: () => void;
+  onAddCompanionSuite?: (suiteId: string) => void;
+  companionSuiteIds?: string[];
   onSave: () => void;
   onSaveNamed?: () => void;
   onOpenRecent?: () => void;
@@ -37,6 +40,12 @@ interface EditorToolbarProps {
   liveTelemetryActive?: boolean;
   onToggleLiveTelemetry?: () => void;
   liveTelemetrySupported?: boolean;
+  modelPngName?: string | null;
+  onModelPngChange?: (file: File | null) => void;
+  onAlign?: (mode: string) => void;
+  onDistribute?: (mode: string) => void;
+  canAlign?: boolean;
+  canDistribute?: boolean;
 }
 
 export function EditorToolbar({
@@ -48,6 +57,8 @@ export function EditorToolbar({
   onAddPrefab,
   onAddFullStacyDash,
   onAddNitroStacyDash,
+  onAddCompanionSuite,
+  companionSuiteIds,
   onSave,
   onSaveNamed,
   onOpenRecent,
@@ -63,7 +74,14 @@ export function EditorToolbar({
   liveTelemetryActive,
   onToggleLiveTelemetry,
   liveTelemetrySupported,
+  modelPngName,
+  onModelPngChange,
+  onAlign,
+  onDistribute,
+  canAlign,
+  canDistribute,
 }: EditorToolbarProps) {
+  const modelFileRef = useRef<HTMLInputElement>(null);
   return (
     <div className={styles.toolbar}>
       <div className={styles.toolbarLeft}>
@@ -138,7 +156,114 @@ export function EditorToolbar({
           onInsertPrefab={onAddPrefab}
           onInsertFullStacyDash={onAddFullStacyDash}
           onInsertNitroStacyDash={onAddNitroStacyDash}
+          onInsertCompanionSuite={onAddCompanionSuite}
+          companionSuiteIds={companionSuiteIds}
         />
+
+        {onAlign ? (
+          <div className={styles.toolCluster} role="group" aria-label="Align">
+            <button
+              type="button"
+              className={styles.iconBtn}
+              disabled={!canAlign}
+              title="Align left"
+              onClick={() => onAlign("left")}
+            >
+              ⟸
+            </button>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              disabled={!canAlign}
+              title="Align center X"
+              onClick={() => onAlign("center-x")}
+            >
+              ↔
+            </button>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              disabled={!canAlign}
+              title="Align right"
+              onClick={() => onAlign("right")}
+            >
+              ⟹
+            </button>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              disabled={!canAlign}
+              title="Align top"
+              onClick={() => onAlign("top")}
+            >
+              ⟰
+            </button>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              disabled={!canAlign}
+              title="Align bottom"
+              onClick={() => onAlign("bottom")}
+            >
+              ⟱
+            </button>
+            {onDistribute ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.iconBtn}
+                  disabled={!canDistribute}
+                  title="Distribute horizontally"
+                  onClick={() => onDistribute("horizontal")}
+                >
+                  ⇔
+                </button>
+                <button
+                  type="button"
+                  className={styles.iconBtn}
+                  disabled={!canDistribute}
+                  title="Distribute vertically"
+                  onClick={() => onDistribute("vertical")}
+                >
+                  ⇕
+                </button>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+
+        {onModelPngChange ? (
+          <>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              title="PNG for sim SD /IMAGES/simmodel.png (drawBitmap)"
+              onClick={() => modelFileRef.current?.click()}
+            >
+              {modelPngName ? `PNG: ${modelPngName}` : "Model PNG…"}
+            </button>
+            <input
+              ref={modelFileRef}
+              type="file"
+              accept="image/png"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                e.target.value = "";
+                onModelPngChange(file);
+              }}
+            />
+            {modelPngName ? (
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={() => onModelPngChange(null)}
+              >
+                Clear PNG
+              </button>
+            ) : null}
+          </>
+        ) : null}
 
         <label className={styles.toolbarSelect}>
           <span className={styles.toolbarSelectLabel}>Protocol</span>
@@ -247,7 +372,9 @@ export function EditorToolbar({
           onClick={onSave}
           disabled={saving || valid === false}
           title={
-            valid === false ? "Fix validation errors before saving" : undefined
+            valid === false
+              ? "Fix validation errors before saving"
+              : "Save (Ctrl+S)"
           }
         >
           {saving ? "Saving…" : "Save"}
