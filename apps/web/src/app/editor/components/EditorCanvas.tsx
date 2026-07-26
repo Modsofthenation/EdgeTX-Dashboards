@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   getSimulateLayoutProfile,
   resolvePreviewDimensions,
@@ -35,7 +42,7 @@ interface EditorCanvasProps {
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
   layoutProfileId?: string;
-  /** Optional WASM preview layered under the parser canvas. */
+  /** Optional WASM preview layered under the selection overlay. */
   inlineSim?: React.ReactNode;
   onContextMenu?: (info: {
     clientX: number;
@@ -65,6 +72,7 @@ export function EditorCanvas({
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
   const [activeGuides, setActiveGuides] = useState<SnapGuide[]>([]);
+  /** Single owner for live drag — preview + overlay both consume this. */
   const [liveDrag, setLiveDrag] = useState<LiveDragState | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -76,9 +84,10 @@ export function EditorCanvas({
     originY: number;
   } | null>(null);
 
-  useEffect(() => {
+  // Clear keep-alive live transform once records reflect the committed Lua edit.
+  useLayoutEffect(() => {
     setLiveDrag(null);
-  }, [source]);
+  }, [records]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -132,15 +141,12 @@ export function EditorCanvas({
     return () => ro.disconnect();
   }, [updateLayout]);
 
-  const onWheel = useCallback(
-    (event: React.WheelEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-      event.preventDefault();
-      const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-      setZoom((z) => Math.min(4, Math.max(0.25, Number((z * factor).toFixed(3)))));
-    },
-    [],
-  );
+  const onWheel = useCallback((event: React.WheelEvent) => {
+    if (!(event.ctrlKey || event.metaKey)) return;
+    event.preventDefault();
+    const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+    setZoom((z) => Math.min(4, Math.max(0.25, Number((z * factor).toFixed(3)))));
+  }, []);
 
   const onPointerDownPan = useCallback(
     (event: React.PointerEvent) => {
@@ -175,6 +181,8 @@ export function EditorCanvas({
     setPan({ x: 0, y: 0 });
   }, []);
 
+  const showParserPreview = !inlineSim || liveDrag != null;
+
   return (
     <div className={styles.canvasStage}>
       <div
@@ -187,8 +195,14 @@ export function EditorCanvas({
         onPointerCancel={onPointerUpPan}
       >
         {inlineSim ? (
-          <div className={styles.inlineSimHost}>{inlineSim}</div>
-        ) : (
+          <div
+            className={styles.inlineSimHost}
+            data-dimmed={liveDrag ? "true" : undefined}
+          >
+            {inlineSim}
+          </div>
+        ) : null}
+        {showParserPreview ? (
           <EditorPreviewCanvas
             source={source}
             zone={zone}
@@ -197,7 +211,7 @@ export function EditorCanvas({
             scenarioOverride={scenarioOverride}
             liveDrag={liveDrag}
           />
-        )}
+        ) : null}
         {showSnapGuides && layout ? (
           <div
             className={styles.snapGrid}
@@ -248,6 +262,7 @@ export function EditorCanvas({
           onResize={onResize}
           onGestureStart={onGestureStart}
           onGestureEnd={onGestureEnd}
+          liveDrag={liveDrag}
           onLiveDragChange={setLiveDrag}
           snapEnabled={snapEnabled}
           onSnapGuidesChange={setActiveGuides}

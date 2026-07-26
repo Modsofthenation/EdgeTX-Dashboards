@@ -188,6 +188,97 @@
   font-weight: 400;
 }
 
+.sceneAssist {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent, #1f6feb) 8%, transparent);
+}
+
+.sceneAssistBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.sceneAssistBody {
+  padding: 0 1rem 0.65rem;
+  max-height: 11rem;
+  overflow: auto;
+}
+
+.sceneAssistNote {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.sceneAssistWarnings {
+  margin: 0 0 0.45rem;
+  padding-left: 1.1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.sceneAssistList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sceneAssistItem,
+.sceneAssistItemSelected {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: center;
+  padding: 0.28rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sceneAssistItem:hover:not(:disabled),
+.sceneAssistItemSelected {
+  background: color-mix(in srgb, var(--bg-elevated) 80%, var(--accent));
+  border-color: var(--border);
+}
+
+.sceneAssistItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sceneAssistKind {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sceneAssistLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sceneAssistMeta {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .toolbarLeft,
 .toolbarRight {
   display: flex;
@@ -492,7 +583,7 @@
 
 .editorBodyResizable {
   /* left | handle | canvas | handle | right — widths set inline */
-  grid-template-columns: 240px 12px minmax(0, 1fr) 12px 280px;
+  grid-template-columns: 240px 12px minmax(280px, 1fr) 12px 280px;
   overflow: hidden;
 }
 
@@ -1144,6 +1235,7 @@
 .previewHost {
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
   overflow: hidden;
 }
@@ -1151,11 +1243,16 @@
 .inlineSimHost {
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.inlineSimHost[data-dimmed="true"] {
+  opacity: 0.35;
 }
 
 .inlineSimHost > * {

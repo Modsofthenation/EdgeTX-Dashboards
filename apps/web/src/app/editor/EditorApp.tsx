@@ -66,6 +66,7 @@ import { useResizableEditorPanels } from "./hooks/useResizableEditorPanels";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
+import { SceneAssistPanel } from "./components/SceneAssistPanel";
 import { EditorToolbar } from "./components/EditorToolbar";
 import { EditorMenu } from "./components/EditorMenu";
 import { SimVerifyModal } from "./components/SimVerifyModal";
@@ -289,12 +290,13 @@ export function EditorApp() {
     canRedo,
   } = useSourceUndoStack(createStarterSource());
 
+  const editorBodyRef = useRef<HTMLDivElement>(null);
   const {
     gridTemplateColumns,
     activeSide,
     onHandlePointerDown,
     resetWidths,
-  } = useResizableEditorPanels();
+  } = useResizableEditorPanels(editorBodyRef);
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
   const previewScenario: LayoutScenario = useMemo(() => {
@@ -1289,14 +1291,9 @@ export function EditorApp() {
     markDirty();
   }, [previewScenario, setSource, markDirty]);
 
-  const sceneSummary = useMemo(() => {
+  const sceneAssist = useMemo(() => {
     try {
-      const { scene } = luaToScene(source);
-      return {
-        elements: scene.elements.length,
-        options: scene.options.length,
-        name: scene.name,
-      };
+      return luaToScene(source);
     } catch {
       return null;
     }
@@ -2052,13 +2049,12 @@ export function EditorApp() {
         canDistribute={selectedIds.length >= 3}
       />
 
-      {sceneSummary ? (
-        <div className={styles.protocolCallout} role="status">
-          Scene assist (read-only): <strong>{sceneSummary.name}</strong> ·{" "}
-          {sceneSummary.elements} elements · {sceneSummary.options} options.
-          Lua remains the edit source of truth.
-        </div>
-      ) : null}
+      <SceneAssistPanel
+        assist={sceneAssist}
+        records={records}
+        selectedIds={selectedIds}
+        onSelectRecord={(id) => setSelectedIds([id])}
+      />
       {protocol === "rotorflight" ? (
         <div className={styles.protocolCallout} role="status">
           Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
@@ -2130,6 +2126,7 @@ export function EditorApp() {
       </div>
 
       <div
+        ref={editorBodyRef}
         className={`${styles.editorBody} ${styles.editorBodyResizable}`}
         data-mobile-tab={mobileTab}
         style={{ gridTemplateColumns }}

@@ -42,6 +42,8 @@ export interface BaseElement {
   optionGate?: string;
   label?: string;
   importConfidence?: ImportConfidence;
+  /** Lua source line when imported from interpret — bridges scene → record selection. */
+  sourceLine?: number;
 }
 
 export interface TextElement extends BaseElement {
