@@ -66,4 +66,7 @@
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }

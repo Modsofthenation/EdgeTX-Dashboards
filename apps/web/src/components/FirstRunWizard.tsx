@@ -52,14 +52,14 @@ export function FirstRunWizard() {
           Set up AI generation
         </h2>
         <p className={styles.lead}>
-          EdgeTX Dashboards needs a Cursor API key to generate Lua. Add one in
-          Preferences → AI (browser key), or set <code>CURSOR_API_KEY</code> on
-          the server for shared installs.
+          Add a Cursor API key to generate Lua from chat, or skip AI and build
+          visually in Layout (Insert / prefabs). You can also set{" "}
+          <code>CURSOR_API_KEY</code> on the server for shared installs.
         </p>
         <ol className={styles.steps}>
-          <li>Open Preferences → AI</li>
-          <li>Paste your Cursor API key and Save</li>
-          <li>Pick a default model, then describe a dashboard</li>
+          <li>Open Preferences → AI (optional for generate)</li>
+          <li>Paste your Cursor API key and Save — or open Layout instead</li>
+          <li>Describe a dashboard, or place elements by hand</li>
         </ol>
         <div className={styles.actions}>
           <button
@@ -69,6 +69,13 @@ export function FirstRunWizard() {
           >
             Skip for now
           </button>
+          <a
+            href="/editor"
+            className={styles.secondary}
+            onClick={() => dismiss(true)}
+          >
+            Open Layout
+          </a>
           <button
             type="button"
             className={styles.primary}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useArtifactPanel,
@@ -11,6 +12,7 @@ import {
 } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
 import type { TemplateGalleryItem } from "~/lib/templateGallery";
+import { buildBlankEditorHref, buildEditorHref } from "~/lib/editorHref";
 import { usePanelCollapse } from "~/lib/usePanelCollapse";
 import { AppChrome } from "../AppChrome";
 import { ArtifactPanel } from "./ArtifactPanel";
@@ -126,24 +128,38 @@ function ChatAppLayout() {
 
 function AiSetupBanner() {
   const ai = useOptionalAiSettings();
+  const { protocol, radioId, layoutProfileId } = useSessionSettings();
+  const { chatId } = useChatSession();
   if (!ai || ai.statusLoading || ai.ready) return null;
+
+  const layoutHref = buildBlankEditorHref({
+    protocol,
+    radioId,
+    layoutProfileId,
+    chatId,
+  });
 
   return (
     <div className={styles.aiBanner} role="status">
       <div className={styles.aiBannerCopy}>
         <strong>AI not configured</strong>
         <span>
-          Add a Cursor API key in Preferences to generate dashboards, or set{" "}
-          <code>CURSOR_API_KEY</code> on the server.
+          Add a Cursor API key to generate, or open Layout to build a dashboard
+          by hand (Insert / prefabs — no AI required).
         </span>
       </div>
-      <button
-        type="button"
-        className={styles.aiBannerBtn}
-        onClick={() => openAppPreferences("ai")}
-      >
-        Open AI settings
-      </button>
+      <div className={styles.aiBannerActions}>
+        <Link href={layoutHref} className={styles.aiBannerBtnSecondary}>
+          Open Layout
+        </Link>
+        <button
+          type="button"
+          className={styles.aiBannerBtn}
+          onClick={() => openAppPreferences("ai")}
+        >
+          Open AI settings
+        </button>
+      </div>
     </div>
   );
 }
@@ -163,15 +179,23 @@ function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
   const activeModelLabel = selectedModel?.label ?? modelId;
 
   const layoutHref = useMemo(() => {
-    if (!artifact?.luaSource) return null;
-    const params = new URLSearchParams({ protocol });
-    if (chatId) params.set("chatId", chatId);
-    if (sessionId) params.set("sessionId", sessionId);
-    if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
-    else if (artifact.name) params.set("name", artifact.name);
-    params.set("layoutProfile", layoutProfileId);
-    params.set("radioId", radioId);
-    return `/editor?${params.toString()}`;
+    if (artifact?.luaSource) {
+      return buildEditorHref({
+        protocol,
+        chatId,
+        sessionId,
+        instanceId: artifact.instanceId,
+        name: artifact.name,
+        layoutProfileId,
+        radioId,
+      });
+    }
+    return buildBlankEditorHref({
+      protocol,
+      radioId,
+      layoutProfileId,
+      chatId,
+    });
   }, [artifact, chatId, sessionId, protocol, layoutProfileId, radioId]);
 
   const subtitle = (
@@ -193,7 +217,6 @@ function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
       surface="generate"
       subtitle={subtitle}
       layoutHref={layoutHref}
-      layoutDisabledReason="Generate a dashboard first to open Layout"
       actions={
         <>
           {running && (
@@ -266,8 +289,19 @@ function ChatHistoryAside({
 
 function ChatMessageListSection() {
   const { messages, scrollRevision } = useChatMessages();
-  const { running, sendMessage } = useChatSession();
+  const { running, sendMessage, chatId } = useChatSession();
   const { artifact } = useArtifactPanel();
+  const { protocol, radioId, layoutProfileId } = useSessionSettings();
+  const blankLayoutHref = useMemo(
+    () =>
+      buildBlankEditorHref({
+        protocol,
+        radioId,
+        layoutProfileId,
+        chatId,
+      }),
+    [protocol, radioId, layoutProfileId, chatId],
+  );
   const handleSuggestion = useCallback(
     (item: TemplateGalleryItem) =>
       void sendMessage(item.prompt, { protocol: item.protocol }),
@@ -291,6 +325,7 @@ function ChatMessageListSection() {
       onSuggestion={handleSuggestion}
       dashboardReadyCue={Boolean(artifact?.luaSource) && !running}
       onRetry={handleRetry}
+      blankLayoutHref={blankLayoutHref}
     />
   );
 }

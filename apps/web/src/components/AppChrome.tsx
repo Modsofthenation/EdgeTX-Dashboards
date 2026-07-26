@@ -72,7 +72,7 @@ export function AppChrome({
               className={styles.navItemDisabled}
               title={
                 layoutDisabledReason ??
-                "Generate a dashboard first to open the layout editor"
+                "Open Layout to build or edit a dashboard"
               }
             >
               Layout

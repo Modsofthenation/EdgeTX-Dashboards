@@ -25,6 +25,7 @@ import { ArtifactVersionSelect } from "./ArtifactVersionSelect";
 import styles from "./ArtifactPanel.module.css";
 import { useChatSession } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
+import { buildBlankEditorHref } from "~/lib/editorHref";
 
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
 
@@ -315,9 +316,20 @@ export const ArtifactPanel = memo(function ArtifactPanel({
           </span>
           <h3 className={styles.emptyTitle}>No preview yet</h3>
           <p className={styles.emptyText}>
-            Describe a dashboard in chat. When the agent writes{" "}
-            <code>main.lua</code>, the radio preview, Layout editor, and
-            download zip show up here.
+            Describe a dashboard in chat, or{" "}
+            <Link
+              href={buildBlankEditorHref({
+                protocol,
+                radioId,
+                layoutProfileId,
+                chatId,
+              })}
+              className={styles.emptyLink}
+            >
+              open Layout
+            </Link>{" "}
+            to build one by hand (Insert / prefabs — no AI). When{" "}
+            <code>main.lua</code> is ready, preview and download show up here.
           </p>
         </div>
       ) : (

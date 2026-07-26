@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { ChatMessage } from "~/lib/chatTypes";
 import { markChatScrolling } from "~/lib/chatScrollPause";
 import {
@@ -27,6 +28,8 @@ interface ChatMessageListProps {
   onSuggestion: (item: TemplateGalleryItem) => void;
   dashboardReadyCue?: boolean;
   onRetry?: () => void;
+  /** Open Layout with a starter dashboard (no AI generate). */
+  blankLayoutHref?: string | null;
 }
 
 export function ChatMessageList({
@@ -36,6 +39,7 @@ export function ChatMessageList({
   onSuggestion,
   dashboardReadyCue = false,
   onRetry,
+  blankLayoutHref = null,
 }: ChatMessageListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
@@ -83,15 +87,21 @@ export function ChatMessageList({
           </h2>
           <p className={styles.emptyText}>
             Describe a full-screen dashboard for your radio — the agent writes
-            Lua, validates it, and shows the preview in the panel on the right.
-            Ask for companion tools (battery selector, flight logger) when you
-            need them.
+            Lua, validates it, and shows the preview on the right. Or skip AI
+            and build visually in Layout with Insert / prefabs.
           </p>
+          {blankLayoutHref ? (
+            <div className={styles.emptyActions}>
+              <Link href={blankLayoutHref} className={styles.buildManualBtn}>
+                Build in Layout (no AI)
+              </Link>
+            </div>
+          ) : null}
           <ol className={styles.steps} aria-label="How it works">
             <li>
               <span className={styles.stepNum}>1</span>
               <span>
-                <strong>Describe</strong> the telemetry and layout you want
+                <strong>Describe</strong> or open Layout to place elements
               </span>
             </li>
             <li>

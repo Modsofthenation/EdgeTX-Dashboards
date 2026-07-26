@@ -187,7 +187,31 @@
   padding: 0.4rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  flex-shrink: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.aiBannerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.aiBannerBtnSecondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.aiBannerBtnSecondary:hover {
+  background: var(--surface-hover);
 }
 
 .aiBannerBtn:hover {
