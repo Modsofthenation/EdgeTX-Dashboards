@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage } from "~/lib/chatTypes";
 import { markChatScrolling } from "~/lib/chatScrollPause";
-import { TEMPLATE_GALLERY } from "~/lib/templateGallery";
+import {
+  TEMPLATE_GALLERY,
+  type TemplateGalleryItem,
+} from "~/lib/templateGallery";
 import { ChatMessageBubble } from "./ChatMessage";
 import styles from "./ChatMessageList.module.css";
 
@@ -21,7 +24,7 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   scrollRevision: number;
   running: boolean;
-  onSuggestion: (text: string) => void;
+  onSuggestion: (item: TemplateGalleryItem) => void;
   dashboardReadyCue?: boolean;
   onRetry?: () => void;
 }
@@ -140,13 +143,14 @@ export function ChatMessageList({
                 type="button"
                 className={styles.galleryCard}
                 disabled={running}
-                onClick={() => onSuggestion(item.prompt)}
+                onClick={() => onSuggestion(item)}
               >
                 <span className={styles.galleryCardTitle}>{item.title}</span>
                 <span className={styles.galleryCardArchetype}>
                   {item.variant
                     ? `${item.variant} · ${item.archetype}`
                     : item.archetype}
+                  {` · ${item.protocol}`}
                 </span>
               </button>
             ))}
@@ -159,7 +163,7 @@ export function ChatMessageList({
                 type="button"
                 className={styles.suggestion}
                 disabled={running}
-                onClick={() => onSuggestion(item.prompt)}
+                onClick={() => onSuggestion(item)}
               >
                 {item.prompt}
               </button>

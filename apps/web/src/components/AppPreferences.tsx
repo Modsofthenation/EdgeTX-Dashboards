@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { AiSettingsPanel } from "~/components/AiSettingsPanel";
+import { useAiSettings } from "~/components/AiSettingsProvider";
 import { SimFirmwarePanel } from "~/components/SimFirmwarePanel";
 import { useTheme } from "~/lib/theme/ThemeProvider";
 import { THEME_OPTIONS, type ThemeId } from "~/lib/theme/themes";
@@ -70,7 +71,9 @@ function AppPreferencesModal({
 }) {
   const titleId = useId();
   const [tab, setTab] = useState<PreferencesTab>(initialTab);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, hydrated: themeHydrated } = useTheme();
+  const { hydrated: aiHydrated } = useAiSettings();
+  const prefsReady = themeHydrated && aiHydrated;
 
   useEffect(() => {
     setTab(initialTab);
@@ -138,40 +141,51 @@ function AppPreferencesModal({
         </div>
 
         <div className={styles.body}>
-          {tab === "appearance" ? (
-            <section className={styles.themeSection}>
-              <p className={styles.sectionHint}>
-                Themes apply across Generate and Layout. The radio LCD canvas
-                stays dark in every theme.
-              </p>
-              <div className={styles.themeGrid}>
-                {THEME_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={
-                      theme === option.id
-                        ? styles.themeCardActive
-                        : styles.themeCard
-                    }
-                    onClick={() => setTheme(option.id as ThemeId)}
-                  >
-                    <span
-                      className={styles.swatch}
-                      data-theme-preview={option.id}
-                      aria-hidden
-                    />
-                    <span className={styles.themeLabel}>{option.label}</span>
-                    <span className={styles.themeDesc}>
-                      {option.description}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-          {tab === "ai" ? <AiSettingsPanel /> : null}
-          {tab === "simulator" ? <SimFirmwarePanel /> : null}
+          {!prefsReady ? (
+            <div className={styles.loading} role="status" aria-live="polite">
+              <span className={styles.loadingSpinner} aria-hidden />
+              <p className={styles.loadingText}>Loading preferences…</p>
+            </div>
+          ) : (
+            <>
+              {tab === "appearance" ? (
+                <section className={styles.themeSection}>
+                  <p className={styles.sectionHint}>
+                    Themes apply across Generate and Layout. The radio LCD
+                    canvas stays dark in every theme.
+                  </p>
+                  <div className={styles.themeGrid}>
+                    {THEME_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={
+                          theme === option.id
+                            ? styles.themeCardActive
+                            : styles.themeCard
+                        }
+                        onClick={() => setTheme(option.id as ThemeId)}
+                      >
+                        <span
+                          className={styles.swatch}
+                          data-theme-preview={option.id}
+                          aria-hidden
+                        />
+                        <span className={styles.themeLabel}>
+                          {option.label}
+                        </span>
+                        <span className={styles.themeDesc}>
+                          {option.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {tab === "ai" ? <AiSettingsPanel /> : null}
+              {tab === "simulator" ? <SimFirmwarePanel /> : null}
+            </>
+          )}
         </div>
       </div>
     </div>

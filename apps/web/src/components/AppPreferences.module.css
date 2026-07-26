@@ -58,7 +58,15 @@
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  /* Hide the thin/orphan scrollbar that appears under the tab headers */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
 }
 
 .tab,
@@ -83,6 +91,37 @@
 .body {
   padding: 1rem 1.15rem 1.25rem;
   overflow: auto;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 8rem;
+  padding: 1.5rem 0;
+}
+
+.loadingSpinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: prefsSpin 0.7s linear infinite;
+}
+
+.loadingText {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+@keyframes prefsSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sectionHint {

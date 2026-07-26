@@ -19,6 +19,7 @@ export function AiSettingsPanel() {
     statusLoading,
     statusError,
     ready,
+    hydrated,
     saveApiKey,
     clearApiKey,
     setPreferredModelId,
@@ -36,11 +37,13 @@ export function AiSettingsPanel() {
   const [modelsLoading, setModelsLoading] = useState(false);
 
   useEffect(() => {
+    if (!hydrated) return;
     setDraftKey(apiKey);
     setDraftRemember(rememberKey);
-  }, [apiKey, rememberKey]);
+  }, [apiKey, rememberKey, hydrated]);
 
   useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
     setModelsLoading(true);
     void fetchModelCatalog({ apiKey, force: true })
@@ -54,7 +57,15 @@ export function AiSettingsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [apiKey, ready]);
+  }, [apiKey, ready, hydrated]);
+
+  if (!hydrated) {
+    return (
+      <section className={styles.panel} aria-busy="true">
+        <p className={styles.hint}>Loading saved AI settings…</p>
+      </section>
+    );
+  }
 
   const dirty =
     draftKey.trim() !== apiKey.trim() || draftRemember !== rememberKey;
