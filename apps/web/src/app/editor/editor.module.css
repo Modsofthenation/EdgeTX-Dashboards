@@ -694,13 +694,15 @@
 /* ── Properties ── */
 
 .propSection {
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
-.propSection:last-child {
-  border-bottom: none;
+.propSection + .propSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
 .fieldLabel {
