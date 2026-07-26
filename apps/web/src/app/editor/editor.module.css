@@ -500,6 +500,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   border-left: 1px solid var(--border);
   background: var(--bg-elevated);
   overflow: hidden;
@@ -507,6 +508,8 @@
 
 .rightColumn .sidePanel {
   flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -742,13 +745,15 @@
 /* ── Properties ── */
 
 .propSection {
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
-.propSection:last-child {
-  border-bottom: none;
+.propSection + .propSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
 .fieldLabel {
@@ -859,8 +864,8 @@
 
 .propDetails {
   margin: 0.5rem 0 0;
-  padding: 0 0.15rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0 0.15rem;
+  border-bottom: none;
 }
 
 .propDetailsSummary {
@@ -1106,7 +1111,9 @@
   padding: 0.75rem;
   border-top: 1px solid var(--border);
   max-height: 320px;
+  overflow-x: hidden;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .validationList {

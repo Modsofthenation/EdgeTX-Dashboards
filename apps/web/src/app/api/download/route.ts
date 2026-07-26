@@ -36,22 +36,15 @@ export async function GET(request: Request): Promise<Response> {
         { status: 404 },
       );
     }
-    if (version === undefined && !stored.session.validated) {
-      return Response.json(
-        {
-          error: "Widget has not passed validation",
-          validationIssues: stored.session.validationIssues ?? [],
-        },
-        { status: 422 },
-      );
-    }
+    // Prefer live disk validation below over a stale session.validated flag —
+    // Layout edits may have fixed the widget since generate/refine.
     workspaceKey =
       workspaceKey ??
       stored.session.widgetInstanceId ??
       stored.session.widgetName ??
       null;
     protocol = protocol ?? stored.session.protocol;
-    radioId = stored.session.radioId;
+    radioId = searchParams.get("radioId") ?? stored.session.radioId ?? radioId;
   }
 
   if (!workspaceKey) {
@@ -89,8 +82,27 @@ export async function GET(request: Request): Promise<Response> {
 
   const validation = validateWidgetRelease(safeKey, protocol, radioId);
   if (!validation.valid && version === undefined) {
+    const errors = (validation.issues ?? []).filter(
+      (i) => i.severity === "error",
+    );
+    const warnings = (validation.issues ?? []).filter(
+      (i) => i.severity === "warning",
+    );
     return Response.json(
-      { error: "Widget failed validation", validation },
+      {
+        error: "Widget failed validation",
+        message:
+          errors.length > 0
+            ? `Download blocked: ${errors.length} validation error${errors.length === 1 ? "" : "s"} must be fixed first.`
+            : "Download blocked: widget validation failed.",
+        hint: "Open Layout → fix the listed issues (or Properties / Validation panel), Save, then try Download again. Check telemetry protocol and radio match the sensors used in Lua.",
+        validation,
+        issues: validation.issues ?? [],
+        errorCount: errors.length,
+        warningCount: warnings.length,
+        protocol,
+        radioId,
+      },
       { status: 422 },
     );
   }

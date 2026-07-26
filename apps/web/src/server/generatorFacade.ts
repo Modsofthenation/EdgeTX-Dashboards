@@ -40,6 +40,7 @@ import {
   validateWidgetSource,
   WidgetValidationError,
   listWidgetPackageEntries,
+  autoFixLua,
 } from "@widget-gen/generator";
 
 export {
@@ -57,6 +58,7 @@ export {
   sanitizeWidgetInstanceId,
   validateWidgetSource,
   ensureWidgetInstanceDir,
+  autoFixLua,
 };
 
 export function getDataDirectory(): string {

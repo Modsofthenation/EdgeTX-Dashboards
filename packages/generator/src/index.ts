@@ -108,3 +108,4 @@ export {
   type ZipEntry,
   type CompanionManifest,
 } from "./packageEntries.ts";
+export { autoFixLua, wouldAutoFixLua } from "./autoFixLua.ts";

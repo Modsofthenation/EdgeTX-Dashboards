@@ -18,6 +18,11 @@ import {
 import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
 import { InstallWizard } from "../InstallWizard";
+import {
+  parseDownloadValidationFailure,
+  ValidationFailureDialog,
+  type DownloadValidationFailure,
+} from "../ValidationFailureDialog";
 import { RefineDiffPanel } from "./RefineDiffPanel";
 import { RadioFeedbackPanel } from "./RadioFeedbackPanel";
 import { PanelCollapseButton } from "./CollapsibleAside";
@@ -127,6 +132,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
 }: ArtifactPanelProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [validationFailure, setValidationFailure] =
+    useState<DownloadValidationFailure | null>(null);
   const [liveRadioActive, setLiveRadioActive] = useState(false);
   const [liveSensors, setLiveSensors] = useState<LiveSensorMap | null>(null);
   const [liveWireKeys, setLiveWireKeys] = useState<string[]>([]);
@@ -233,19 +240,27 @@ export const ArtifactPanel = memo(function ArtifactPanel({
     if (!artifact?.validated) return;
     setDownloading(true);
     setDownloadError(null);
+    setValidationFailure(null);
 
     try {
       const params = new URLSearchParams({ protocol });
-      if (sessionId) params.set("sessionId", sessionId);
-      else if (artifact.instanceId)
-        params.set("instanceId", artifact.instanceId);
+      if (radioId) params.set("radioId", radioId);
+      if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
+      else if (sessionId) params.set("sessionId", sessionId);
       else params.set("name", artifact.name);
       if (!isViewingLatest) params.set("version", String(viewingVersion));
 
       const res = await fetch(`/api/download?${params}`);
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setDownloadError(body.error ?? `Download failed (${res.status})`);
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 422) {
+          setValidationFailure(parseDownloadValidationFailure(body, res.status));
+          return;
+        }
+        const errBody = body as { error?: string; message?: string };
+        setDownloadError(
+          errBody.message ?? errBody.error ?? `Download failed (${res.status})`,
+        );
         return;
       }
 
@@ -267,6 +282,11 @@ export const ArtifactPanel = memo(function ArtifactPanel({
 
   return (
     <aside className={styles.panel}>
+      <ValidationFailureDialog
+        open={validationFailure != null}
+        failure={validationFailure}
+        onClose={() => setValidationFailure(null)}
+      />
       <div className={styles.header}>
         <div className={styles.headerMain}>
           {onTogglePanel && (
@@ -523,6 +543,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                   workspaceKey={artifact.instanceId ?? null}
                   sessionId={sessionId}
                   protocol={protocol}
+                  radioId={radioId ?? null}
                   companionLabels={[]}
                   hasModelImage={/drawBitmap|Bitmap\.open|\/IMAGES\//.test(
                     artifact.luaSource ?? "",

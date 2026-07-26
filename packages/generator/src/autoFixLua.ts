@@ -3,6 +3,7 @@
  * Applied during workspace prepare (before validation) so agent mid-run
  * validateWidget and finalize both benefit.
  */
+import { remapPreviewOnlyColorLiterals } from "@widget-gen/editor-core";
 import {
   extractCallArgStrings,
   extractLcdCallArgStrings,
@@ -23,12 +24,6 @@ interface CallSite {
 }
 
 const DRAW_LINE_PATTERN = /^(SOLID|DOTTED|\d+)$/;
-
-const COLOR_ALIASES: Array<{ from: RegExp; to: string; label: string }> = [
-  { from: /\bGRAY\b/g, to: "GREY", label: "GRAY→GREY" },
-  { from: /\bLIME\b/g, to: "BRIGHTGREEN", label: "LIME→BRIGHTGREEN" },
-  { from: /\bLIGHTRED\b/g, to: "RED", label: "LIGHTRED→RED" },
-];
 
 function looksLikeColorArg(arg: string): boolean {
   const trimmed = arg.trim();
@@ -146,15 +141,9 @@ function rewriteNamespacedCalls(
 }
 
 function fixColorAliases(source: string, applied: string[]): string {
-  let out = source;
-  for (const alias of COLOR_ALIASES) {
-    const next = out.replace(alias.from, alias.to);
-    if (next !== out) {
-      applied.push(`color alias ${alias.label}`);
-      out = next;
-    }
-  }
-  return out;
+  const remapped = remapPreviewOnlyColorLiterals(source);
+  applied.push(...remapped.applied);
+  return remapped.source;
 }
 
 function fixDrawLinePattern(source: string, applied: string[]): string {
@@ -314,33 +303,12 @@ function fixMathDeg(source: string, applied: string[]): string {
   return next;
 }
 
-function fixCyanMagentaAliases(source: string, applied: string[]): string {
-  // Prefer existing widget color fields when present; otherwise map to safe literals.
-  let out = source;
-  const hasAccent =
-    /\bC_ACCENT\b/.test(out) || /\bwidget\.C_ACCENT\b/.test(out);
-  const hasHero = /\bC_HERO\b/.test(out) || /\bwidget\.C_HERO\b/.test(out);
-
-  if (/\bCYAN\b/.test(out)) {
-    const replacement = hasAccent ? "widget.C_ACCENT" : "BRIGHTGREEN";
-    out = out.replace(/\bCYAN\b/g, replacement);
-    applied.push(`CYAN→${replacement}`);
-  }
-  if (/\bMAGENTA\b/.test(out)) {
-    const replacement = hasHero ? "widget.C_HERO" : "ORANGE";
-    out = out.replace(/\bMAGENTA\b/g, replacement);
-    applied.push(`MAGENTA→${replacement}`);
-  }
-  return out;
-}
-
 /** Apply safe, deterministic Lua repairs. Idempotent for already-correct source. */
 export function autoFixLua(source: string): AutoFixResult {
   const applied: string[] = [];
   let out = source;
 
   out = fixColorAliases(out, applied);
-  out = fixCyanMagentaAliases(out, applied);
   out = fixDrawLinePattern(out, applied);
   out = fixTopLeftArcAngles(out, applied);
   out = fixAnnulusRadii(out, applied);

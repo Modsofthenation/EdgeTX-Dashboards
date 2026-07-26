@@ -147,7 +147,7 @@ test("insertDrawLine keeps a newline before the refresh end keyword", () => {
   const after = insertDrawLine(createStarterSource(), "annulus");
   const line = after.split("\n").find((l) => l.includes("drawAnnulus"));
   assert.ok(line);
-  assert.match(line!, /CYAN\)\s*$/);
+  assert.match(line!, /BRIGHTGREEN\)\s*$/);
   assert.ok(!line!.includes(")end"));
 });
 
@@ -159,7 +159,7 @@ test("setRecordColor patches annulus color on 7-arg drawAnnulus", () => {
   const colored = setRecordColor(source, record!, "RED", zone);
   const line = colored.split("\n")[record!.sourceLine! - 1]!;
   assert.match(line, /RED/);
-  assert.doesNotMatch(line, /CYAN/);
+  assert.doesNotMatch(line, /BRIGHTGREEN/);
 });
 
 test("duplicateRecordLine copies an anchored draw line into refresh", () => {

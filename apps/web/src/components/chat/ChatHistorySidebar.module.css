@@ -71,9 +71,10 @@
 }
 
 .item {
+  position: relative;
   display: flex;
-  align-items: stretch;
-  gap: 0.15rem;
+  align-items: flex-start;
+  gap: 0;
   border-radius: var(--radius-sm);
 }
 
@@ -87,7 +88,7 @@
   text-align: left;
   border: none;
   background: transparent;
-  padding: 0.55rem 0.5rem;
+  padding: 0.55rem 2.1rem 0.55rem 0.5rem;
   border-radius: var(--radius-sm);
   color: var(--text);
 }
@@ -112,15 +113,31 @@
 
 .itemMeta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.2rem;
+  gap: 0.25rem 0.35rem;
+  margin-top: 0.3rem;
   font-size: 0.75rem;
   color: var(--muted);
+  min-width: 0;
+}
+
+.itemWhen {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .dot {
   opacity: 0.6;
+}
+
+.widgetName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 7.5rem;
 }
 
 .protocolBadge {
@@ -167,8 +184,14 @@
 }
 
 .deleteBtn {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0.4rem;
+  right: 0.25rem;
+  z-index: 1;
   width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -176,11 +199,13 @@
   line-height: 1;
   border-radius: var(--radius-sm);
   opacity: 0;
+  pointer-events: none;
 }
 
 .item:hover .deleteBtn,
 .item:focus-within .deleteBtn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .deleteBtn:hover:not(:disabled) {
@@ -216,6 +241,7 @@
 
   .deleteBtn {
     opacity: 1;
+    pointer-events: auto;
   }
 }
 

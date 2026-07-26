@@ -14,7 +14,7 @@
 }
 
 .left {
-  width: 15rem;
+  width: 17.5rem;
   border-right: 1px solid var(--border);
 }
 
@@ -33,7 +33,7 @@
 /* Tablet: keep a usable chat column between the asides */
 @media (max-width: 1200px) and (min-width: 961px) {
   .left {
-    width: 12.5rem;
+    width: 15.5rem;
   }
 
   .right {
@@ -43,7 +43,7 @@
 
 @media (max-width: 1100px) and (min-width: 961px) {
   .left {
-    width: 11.5rem;
+    width: 14.5rem;
   }
 
   .right {
