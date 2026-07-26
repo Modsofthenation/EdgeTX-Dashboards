@@ -220,14 +220,9 @@ export function readRotorflightStyleGuide(): string {
   );
 }
 
-export function readStacyDashSectionsGuide(): string {
+export function readRotorflightHeliSectionsGuide(): string {
   return readCachedTextIfExists(
-    join(
-      getRepoRoot(),
-      "knowledge",
-      "design",
-      "stacydash-rotorflight-sections.md",
-    ),
+    join(getRepoRoot(), "knowledge", "design", "rotorflight-heli-sections.md"),
   );
 }
 

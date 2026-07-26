@@ -33,7 +33,7 @@ When the user asks for **battery selection**, **flight logging**, **log viewing*
 ## Flights counter (`tools/flt_count.lua`)
 
 - Tool script that bumps / displays a flight count (Global Variable or simple counter).
-- Pairs with the StacyDash **model panel** footer (“N Flights”); Layout Insert → **Flights counter** adds the stub for SD install.
+- Pairs with the Rotorflight heli **model panel** footer (“N Flights”); Layout Insert → **Flights counter** adds the stub for SD install.
 
 ## Editor Insert + install
 

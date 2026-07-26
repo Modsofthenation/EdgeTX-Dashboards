@@ -10,8 +10,8 @@ import {
   insertDrawLineWithId,
   insertPrefabSection,
   insertPrefabSections,
-  STACYDASH_TX15_LAYOUT_ORDER,
-  STACYDASH_NITRO_LAYOUT_ORDER,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
   parseDocumentMeta,
   patchRecordArgs,
   patchWidgetName,
@@ -359,15 +359,15 @@ export function EditorApp() {
     templateAppliedRef.current = templateId;
     const prefab: TemplateLayoutPrefab = template.layoutPrefab ?? "starter";
     setProtocol(template.protocol);
-    if (prefab === "stacy-electric") {
+    if (prefab === "rf-heli-electric") {
       const { source: next } = insertPrefabSections(createStarterSource(), [
-        ...STACYDASH_TX15_LAYOUT_ORDER,
+        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
       ]);
       loadFromSource(next, true);
-      setCompanions((prev) => addCompanionSuite(prev, "stacy-electric"));
-    } else if (prefab === "stacy-nitro") {
+      setCompanions((prev) => addCompanionSuite(prev, "rf-heli-electric"));
+    } else if (prefab === "rf-heli-nitro") {
       const { source: next } = insertPrefabSections(createStarterSource(), [
-        ...STACYDASH_NITRO_LAYOUT_ORDER,
+        ...ROTORFLIGHT_NITRO_LAYOUT_ORDER,
       ]);
       loadFromSource(next, true);
     } else {
@@ -535,39 +535,39 @@ export function EditorApp() {
     [setSource, markDirty, previewScenario],
   );
 
-  const handleAddFullStacyDash = useCallback(() => {
+  const handleAddFullRfHeliElectric = useCallback(() => {
     // Starter has 2 draw records; confirm when the board already has work.
     const busy = source.includes("-- prefab:") || records.length > 2;
     if (
       busy &&
       !window.confirm(
-        "Add all 6 StacyDash sections to this board? Existing elements stay; prefabs are appended.",
+        "Add all 6 RF heli sections to this board? Existing elements stay; prefabs are appended.",
       )
     ) {
       return;
     }
     setSource((prev) => {
       const { source: next } = insertPrefabSections(prev, [
-        ...STACYDASH_TX15_LAYOUT_ORDER,
+        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
       ]);
       return next;
     });
     markDirty();
   }, [setSource, markDirty, source, records]);
 
-  const handleAddNitroStacyDash = useCallback(() => {
+  const handleAddRfHeliNitro = useCallback(() => {
     const busy = source.includes("-- prefab:") || records.length > 2;
     if (
       busy &&
       !window.confirm(
-        "Add StacyDash nitro sections (RX pack tiles + voltage bar)? Existing elements stay.",
+        "Add RF heli nitro sections (RX pack tiles + voltage bar)? Existing elements stay.",
       )
     ) {
       return;
     }
     setSource((prev) => {
       const { source: next } = insertPrefabSections(prev, [
-        ...STACYDASH_NITRO_LAYOUT_ORDER,
+        ...ROTORFLIGHT_NITRO_LAYOUT_ORDER,
       ]);
       return next;
     });
@@ -1422,11 +1422,11 @@ export function EditorApp() {
         }}
         onAdd={handleAdd}
         onAddPrefab={handleAddPrefab}
-        onAddFullStacyDash={
-          protocol === "rotorflight" ? handleAddFullStacyDash : undefined
+        onAddFullRfHeliElectric={
+          protocol === "rotorflight" ? handleAddFullRfHeliElectric : undefined
         }
-        onAddNitroStacyDash={
-          protocol === "rotorflight" ? handleAddNitroStacyDash : undefined
+        onAddRfHeliNitro={
+          protocol === "rotorflight" ? handleAddRfHeliNitro : undefined
         }
         onAddCompanionSuite={handleAddCompanionSuite}
         companionSuiteIds={companions.suites}
@@ -1462,7 +1462,7 @@ export function EditorApp() {
         <div className={styles.protocolCallout} role="status">
           Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
           On), then Telemetry → Discover new for HSpd / EscT / Vbec / Vcel /
-          Gov. Insert → Full StacyDash (electric) or StacyDash nitro board.
+          Gov. Insert → Full RF heli (electric) or RF heli nitro board.
         </div>
       ) : null}
       {lastProjectOffer ? (

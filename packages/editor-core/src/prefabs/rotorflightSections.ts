@@ -1,28 +1,29 @@
 import type { PrefabSection } from "./types.ts";
 
 /**
- * TX15-adapted modular sections distilled from StacyDashV4.
+ * TX15-adapted modular Rotorflight heli sections.
  *
- * Original StacyDash targets 800×480 with LVGL. These prefabs keep the same
- * information architecture on 480×320 using lcd.* so preview + editor work.
+ * Many community heli dashboards target 800×480 with LVGL. These prefabs keep
+ * the same information architecture on 480×320 using lcd.* so preview + editor
+ * work.
  *
  * Sensor names follow this repo's Rotorflight catalog (HSpd, EscT, RQLY, …).
- * StacyDash / rf2bg may discover aliases (Hspd, Tesc, RQly) — see telemetryNotes.
+ * rf2bg may discover aliases (Hspd, Tesc, RQly) — see telemetryNotes.
  */
-export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
+export const ROTORFLIGHT_HELI_PREFABS: PrefabSection[] = [
   {
     id: "rf-topbar-link",
     label: "RF top bar + link",
     shortLabel: "TB",
     description:
-      "StacyDash-style header: title, flight timer slot, and 4-block RQLY signal bars",
-    family: "stacydash-rotorflight",
+      "RF heli-style header: title, flight timer slot, and 4-block RQLY signal bars",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "header",
     requiredSensors: ["RQLY"],
     optionalSensors: ["1RSS"],
     telemetryNotes: [
-      "Needs CRSF link telemetry (RQLY). StacyDash also accepts RQly / LQ aliases.",
+      "Needs CRSF link telemetry (RQLY). EdgeTX may also expose RQly / LQ aliases.",
       "Timer uses EdgeTX model timer 1 when present; shows 0:00 otherwise.",
     ],
     createSrcBindings: {
@@ -58,8 +59,8 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     label: "RF model panel",
     shortLabel: "MD",
     description:
-      "Left model card with placeholder image area and flight-count footer (StacyDash pic panel)",
-    family: "stacydash-rotorflight",
+      "Left model card with placeholder image area and flight-count footer (RF heli pic panel)",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "panel",
     requiredSensors: [],
@@ -89,16 +90,15 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     id: "rf-governor-card",
     label: "RF governor card",
     shortLabel: "GV",
-    description:
-      "Governor / flight-mode status tile (StacyDash GOVERNOR panel)",
-    family: "stacydash-rotorflight",
+    description: "Governor / flight-mode status tile (RF heli GOVERNOR panel)",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "card",
     requiredSensors: ["FM"],
     optionalSensors: ["Gov"],
     telemetryNotes: [
       "Prefers FM (flight mode). Rotorflight custom CRSF may also publish Gov (governor enum) via rf2bg — enable Discover new after rf2bg is running.",
-      "StacyDash maps Gov states OFF/IDLE/SPOOLUP/ACTIVE/… — this TX15 card shows the FM string (or Gov when bound).",
+      "RF heli maps Gov states OFF/IDLE/SPOOLUP/ACTIVE/… — this TX15 card shows the FM string (or Gov when bound).",
     ],
     createSrcBindings: {
       fm: "FM",
@@ -127,8 +127,8 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     label: "RF headspeed hero",
     shortLabel: "HS",
     description:
-      "Large headspeed readout with max/tail secondaries (StacyDash hero)",
-    family: "stacydash-rotorflight",
+      "Large headspeed readout with max/tail secondaries (RF heli hero)",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "hero",
     requiredSensors: ["HSpd"],
@@ -168,15 +168,15 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     label: "RF motor tiles",
     shortLabel: "MT",
     description:
-      "Four metric tiles: AMPS · CELL · BEC · ESC T (StacyDash tile row); GV2 motor gate dims values when off",
-    family: "stacydash-rotorflight",
+      "Four metric tiles: AMPS · CELL · BEC · ESC T (RF heli tile row); GV2 motor gate dims values when off",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "strip",
     requiredSensors: ["Curr", "RxBt", "EscT"],
     optionalSensors: ["Vbec", "Vcel", "MotT"],
     telemetryNotes: [
       "AMPS uses Curr. CELL prefers Vcel when present, else approximates from RxBt/Vbat.",
-      "BEC uses Vbec (custom CRSF via rf2bg). ESC T uses EscT (StacyDash alias: Tesc).",
+      "BEC uses Vbec (custom CRSF via rf2bg). ESC T uses EscT (RF heli alias: Tesc).",
       "Motor switch gate: Insert → Motor switch gate companion sets GV2; tiles show -- when GV2 is 0.",
       "Nitro setups may hide AMPS/ESC and show receiver pack cell voltage instead.",
     ],
@@ -229,8 +229,8 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     label: "RF battery bar",
     shortLabel: "BB",
     description:
-      "Full-width battery % bar with pack header (StacyDash bottom fuel bar)",
-    family: "stacydash-rotorflight",
+      "Full-width battery % bar with pack header (RF heli bottom fuel bar)",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "footer",
     requiredSensors: ["Bat%", "RxBt"],
@@ -238,7 +238,7 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     telemetryNotes: [
       "Bat% is Rotorflight Smart Fuel charge level when enabled on the FC.",
       "Header shows pack voltage (RxBt / Vbat) and used mAh (Capa) when available.",
-      "StacyDash also supports a Nitro RX-pack mode with configurable min/max volts — not included in this TX15 prefab.",
+      "RF heli also supports a Nitro RX-pack mode with configurable min/max volts — not included in this TX15 prefab.",
     ],
     createSrcBindings: {
       batp: "Bat%",
@@ -280,8 +280,8 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     label: "RF nitro pack tiles",
     shortLabel: "NP",
     description:
-      "Nitro metric tiles: RX V · CELL · BEC (no AMPS/ESC — StacyDash nitro)",
-    family: "stacydash-rotorflight",
+      "Nitro metric tiles: RX V · CELL · BEC (no AMPS/ESC — RF heli nitro)",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "strip",
     requiredSensors: ["RxBt"],
@@ -330,8 +330,8 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
     label: "RF nitro RX pack bar",
     shortLabel: "NX",
     description:
-      "Full-width RX pack voltage bar (nitro StacyDash fuel substitute)",
-    family: "stacydash-rotorflight",
+      "Full-width RX pack voltage bar (nitro RF heli fuel substitute)",
+    family: "rotorflight-heli",
     protocol: "rotorflight",
     category: "footer",
     requiredSensors: ["RxBt"],
@@ -374,6 +374,6 @@ export const STACYDASH_ROTORFLIGHT_PREFABS: PrefabSection[] = [
   },
 ];
 
-export function listStacyDashPrefabIds(): string[] {
-  return STACYDASH_ROTORFLIGHT_PREFABS.map((p) => p.id);
+export function listRotorflightHeliPrefabIds(): string[] {
+  return ROTORFLIGHT_HELI_PREFABS.map((p) => p.id);
 }

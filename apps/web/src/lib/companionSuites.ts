@@ -17,7 +17,7 @@ export type CompanionSuiteId =
   | "batt-voice"
   | "motor-gate"
   | "sensor-dump"
-  | "stacy-electric";
+  | "rf-heli-electric";
 
 export interface CompanionSuite {
   id: CompanionSuiteId;
@@ -315,9 +315,9 @@ export const COMPANION_SUITES: CompanionSuite[] = [
     files: [{ relPath: "tools/sensor_dump.lua", content: SENSOR_DUMP }],
   },
   {
-    id: "stacy-electric",
-    label: "StacyDash electric pack",
-    shortLabel: "SE",
+    id: "rf-heli-electric",
+    label: "RF heli electric pack",
+    shortLabel: "HE",
     description:
       "One-click: flights + batt-voice + motor-gate + logger (+ sensor dump)",
     files: [

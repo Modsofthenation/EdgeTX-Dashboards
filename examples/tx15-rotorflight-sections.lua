@@ -1,8 +1,8 @@
 ---@type WidgetScript
 ---@simulate Layout1x1 zone=0
--- TX15 StacyDash-style Rotorflight sections (prefab assembly)
+-- TX15 RF heli-style Rotorflight sections (prefab assembly)
 
-local name = "RfStacyTx"
+local name = "RfHeliTx"
 
 local options = {
   { "ShowLink", BOOL, 1 },

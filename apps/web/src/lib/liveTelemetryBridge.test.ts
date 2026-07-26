@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { enrichRotorflightLiveSensors } from "./liveTelemetryBridge.ts";
 
 describe("enrichRotorflightLiveSensors", () => {
-  it("fills StacyDash RF sensors from pack voltage", () => {
+  it("fills RF heli RF sensors from pack voltage", () => {
     const out = enrichRotorflightLiveSensors({
       RxBt: 22.2,
       FM: "HOLD",

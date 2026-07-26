@@ -3,7 +3,7 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export type TemplateLayoutPrefab =
-  "starter" | "stacy-electric" | "stacy-nitro" | "minimal";
+  "starter" | "rf-heli-electric" | "rf-heli-nitro" | "minimal";
 
 export interface TemplateGalleryItem {
   id: string;
@@ -35,11 +35,11 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     id: "heli-electric",
     title: "RF heli (electric)",
     prompt:
-      "StacyDash-style Rotorflight TX15 electric board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
+      "RF heli-style Rotorflight TX15 electric board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
     archetype: "heli-rotorflight",
     protocol: "rotorflight",
     variant: "electric",
-    layoutPrefab: "stacy-electric",
+    layoutPrefab: "rf-heli-electric",
   },
   {
     id: "heli-nitro",
@@ -49,7 +49,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "heli-rotorflight",
     protocol: "rotorflight",
     variant: "nitro",
-    layoutPrefab: "stacy-nitro",
+    layoutPrefab: "rf-heli-nitro",
   },
   {
     id: "dense-crsf",

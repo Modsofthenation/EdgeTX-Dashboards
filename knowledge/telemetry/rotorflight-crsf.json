@@ -6,7 +6,7 @@
     "Delete all sensors, select Discover new, then power on the flight controller.",
     "Rotorflight Tools scripts (rf2.lua) are separate from dashboard widgets.",
     "For adjustment teller: set crsf_flight_mode_reuse = ADJFUNC in Rotorflight CLI and save.",
-    "StacyDash-style sensors (HSpd/Hspd, EscT/Tesc, Vbec, Vcel, Tspd, Gov, Vbat) require rf2bg custom CRSF — discover after the FC is powered.",
+    "Rotorflight custom sensors (HSpd/Hspd, EscT/Tesc, Vbec, Vcel, Tspd, Gov, Vbat) require rf2bg custom CRSF — discover after the FC is powered.",
     "Model images for the model panel must live in /IMAGES/ and match the RF Configurator model name exactly (including capitalization)."
   ],
   "sensors": [

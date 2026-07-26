@@ -5,7 +5,7 @@
  * Rotorflight custom sensors (HSpd, Gov, Vbec, …) are published by rf2bg on the
  * radio — they are not standard CRSF frame types on the wire. When
  * `enrichRotorflight` is enabled, missing RF keys are derived/filled so
- * StacyDash previews stay meaningful while standard CRSF streams live.
+ * Rotorflight heli previews stay meaningful while standard CRSF streams live.
  */
 
 export type LiveSensorMap = Record<string, number | string>;
@@ -21,7 +21,7 @@ export interface LiveTelemetryHandle {
 export interface OpenLiveTelemetryOptions {
   /**
    * Fill HSpd/Gov/Vbec/Vcel/Tspd/EscT/Vbat when absent from the CRSF stream.
-   * Default true — needed for Rotorflight / StacyDash boards in preview.
+   * Default true — needed for Rotorflight heli boards in preview.
    * Turn off to show only sensors present on the wire (true live CRSF).
    */
   enrichRotorflight?: boolean;
@@ -74,7 +74,7 @@ function parseFrame(frame: Uint8Array, into: LiveSensorMap): void {
     into.Alt = i16be(payload, 10);
     into.Sats = payload[14] || 0;
   } else if (type === VARIO_ID && payload.length >= 2) {
-    // Vertical speed (cm/s) — unused by StacyDash but keeps map fresh
+    // Vertical speed (cm/s) — unused by typical heli boards but keeps map fresh
     into.VSpd = i16be(payload, 0) / 10;
   } else if (type === FLIGHT_MODE_ID && payload.length > 0) {
     const end = payload.indexOf(0);
