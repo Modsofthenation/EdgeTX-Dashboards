@@ -18,6 +18,7 @@ describe("useResizableEditorPanels contract", () => {
     assert.match(src, /HANDLE = 12/);
     assert.match(src, /col-resize/);
     assert.match(src, /minmax\(0, 1fr\)/);
-    assert.match(src, /pointermove/);
+    assert.match(src, /addEventListener\("pointermove"/);
+    assert.match(src, /Attach synchronously/);
   });
 });

@@ -64,6 +64,7 @@ export function useResizableEditorPanels() {
   } | null>(null);
   const widthsRef = useRef(widths);
   widthsRef.current = widths;
+  const detachRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setWidths(readStored());
@@ -75,47 +76,22 @@ export function useResizableEditorPanels() {
     writeStored(widths);
   }, [widths, hydrated]);
 
-  const endDrag = useCallback(() => {
-    if (!dragRef.current) return;
-    dragRef.current = null;
-    setActiveSide(null);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  }, []);
-
   useEffect(() => {
-    if (!activeSide) return;
-
-    const onMove = (event: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag) return;
-      const dx = event.clientX - drag.startX;
-      if (drag.side === "left") {
-        const next = clamp(drag.origin + dx, LEFT_MIN, LEFT_MAX);
-        setWidths((w) => (w.left === next ? w : { ...w, left: next }));
-      } else {
-        // Dragging the right handle: moving left shrinks the right panel.
-        const next = clamp(drag.origin - dx, RIGHT_MIN, RIGHT_MAX);
-        setWidths((w) => (w.right === next ? w : { ...w, right: next }));
-      }
-    };
-
-    const onUp = () => endDrag();
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
     return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      detachRef.current?.();
+      detachRef.current = null;
     };
-  }, [activeSide, endDrag]);
+  }, []);
 
   const onHandlePointerDown = useCallback(
     (side: DragSide, event: React.PointerEvent) => {
       if (event.button !== 0) return;
       event.preventDefault();
+      event.stopPropagation();
+
+      // Tear down any prior drag listeners before starting a new one.
+      detachRef.current?.();
+
       const current = widthsRef.current;
       dragRef.current = {
         side,
@@ -125,6 +101,39 @@ export function useResizableEditorPanels() {
       setActiveSide(side);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
+
+      const onMove = (moveEvent: PointerEvent) => {
+        const drag = dragRef.current;
+        if (!drag) return;
+        const dx = moveEvent.clientX - drag.startX;
+        if (drag.side === "left") {
+          const next = clamp(drag.origin + dx, LEFT_MIN, LEFT_MAX);
+          setWidths((w) => (w.left === next ? w : { ...w, left: next }));
+        } else {
+          // Dragging the right handle: moving left shrinks the right panel.
+          const next = clamp(drag.origin - dx, RIGHT_MIN, RIGHT_MAX);
+          setWidths((w) => (w.right === next ? w : { ...w, right: next }));
+        }
+      };
+
+      const endDrag = () => {
+        dragRef.current = null;
+        setActiveSide(null);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        detachRef.current?.();
+        detachRef.current = null;
+      };
+
+      // Attach synchronously so fast drags aren't lost waiting for useEffect.
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", endDrag);
+      window.addEventListener("pointercancel", endDrag);
+      detachRef.current = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", endDrag);
+        window.removeEventListener("pointercancel", endDrag);
+      };
     },
     [],
   );
