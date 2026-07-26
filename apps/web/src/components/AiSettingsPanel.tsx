@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import type { AiProviderId } from "@widget-gen/shared";
+import { AI_PROVIDERS, providerMeta } from "@widget-gen/shared";
 import { useAiSettings } from "~/components/AiSettingsProvider";
 import {
   DEFAULT_CHAT_MODEL,
@@ -12,6 +14,7 @@ import styles from "./AiSettingsPanel.module.css";
 
 export function AiSettingsPanel() {
   const {
+    provider,
     apiKey,
     rememberKey,
     preferredModelId,
@@ -20,11 +23,13 @@ export function AiSettingsPanel() {
     statusError,
     ready,
     hydrated,
+    setProvider,
     saveApiKey,
     clearApiKey,
     setPreferredModelId,
   } = useAiSettings();
 
+  const providerFieldId = useId();
   const keyFieldId = useId();
   const rememberId = useId();
   const modelFieldId = useId();
@@ -36,17 +41,19 @@ export function AiSettingsPanel() {
   const [models, setModels] = useState<ChatModel[]>(FALLBACK_CHAT_MODELS);
   const [modelsLoading, setModelsLoading] = useState(false);
 
+  const meta = providerMeta(provider);
+
   useEffect(() => {
     if (!hydrated) return;
     setDraftKey(apiKey);
     setDraftRemember(rememberKey);
-  }, [apiKey, rememberKey, hydrated]);
+  }, [apiKey, rememberKey, hydrated, provider]);
 
   useEffect(() => {
     if (!hydrated) return;
     let cancelled = false;
     setModelsLoading(true);
-    void fetchModelCatalog({ apiKey, force: true })
+    void fetchModelCatalog({ apiKey, provider, force: true })
       .then((catalog) => {
         if (cancelled) return;
         setModels(catalog.models);
@@ -57,7 +64,7 @@ export function AiSettingsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [apiKey, ready, hydrated]);
+  }, [apiKey, provider, ready, hydrated]);
 
   if (!hydrated) {
     return (
@@ -70,6 +77,20 @@ export function AiSettingsPanel() {
   const dirty =
     draftKey.trim() !== apiKey.trim() || draftRemember !== rememberKey;
 
+  const handleProviderChange = async (next: AiProviderId) => {
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      await setProvider(next);
+    } catch (error) {
+      setSaveMessage(
+        error instanceof Error ? error.message : "Failed to switch provider",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveMessage(null);
@@ -78,7 +99,7 @@ export function AiSettingsPanel() {
       setSaveMessage(
         next.ready
           ? "API key saved. Generation is ready."
-          : "Saved, but no usable Cursor API key was accepted yet.",
+          : `Saved, but no usable ${meta.label} API key was accepted yet.`,
       );
     } catch (error) {
       setSaveMessage(
@@ -117,9 +138,30 @@ export function AiSettingsPanel() {
   return (
     <section className={styles.panel}>
       <p className={styles.hint}>
-        Generation uses the Cursor Agent API. Configure a key here for this
-        browser, or set <code>CURSOR_API_KEY</code> on the server.
+        Generation supports Cursor, Anthropic, and OpenAI. Configure a browser
+        key here, or set the matching server env var (
+        <code>CURSOR_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>,{" "}
+        <code>OPENAI_API_KEY</code>).
       </p>
+
+      <label className={styles.label} htmlFor={providerFieldId}>
+        AI provider
+      </label>
+      <select
+        id={providerFieldId}
+        className={styles.select}
+        value={provider}
+        disabled={saving}
+        onChange={(e) =>
+          void handleProviderChange(e.target.value as AiProviderId)
+        }
+      >
+        {AI_PROVIDERS.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
+        ))}
+      </select>
 
       <div className={styles.statusRow} role="status">
         <span
@@ -127,7 +169,9 @@ export function AiSettingsPanel() {
           aria-hidden
         />
         <div className={styles.statusCopy}>
-          <strong>{statusLabel}</strong>
+          <strong>
+            {meta.label}: {statusLabel}
+          </strong>
           {status ? (
             <span className={styles.statusMeta}>
               {status.modelCount} models · catalog {status.catalogSource}
@@ -141,7 +185,7 @@ export function AiSettingsPanel() {
       </div>
 
       <label className={styles.label} htmlFor={keyFieldId}>
-        Cursor API key
+        {meta.keyLabel}
       </label>
       <input
         id={keyFieldId}
@@ -149,13 +193,13 @@ export function AiSettingsPanel() {
         type="password"
         autoComplete="off"
         spellCheck={false}
-        placeholder="key_…"
+        placeholder={meta.keyPlaceholder}
         value={draftKey}
         onChange={(e) => setDraftKey(e.target.value)}
       />
       <p className={styles.fieldHint}>
-        Sent only as the <code>x-cursor-api-key</code> header to this app’s API
-        routes. Never stored in chat history.
+        Sent as <code>{meta.header}</code> with <code>x-ai-provider</code> to
+        this app’s API routes. Never stored in chat history.
       </p>
 
       <label className={styles.checkRow} htmlFor={rememberId}>
@@ -215,8 +259,8 @@ export function AiSettingsPanel() {
         ))}
       </select>
       <p className={styles.fieldHint}>
-        Used for new chats. You can still change the model per message in the
-        composer.
+        Used for new chats with {meta.label}. You can still change the model per
+        message in the composer.
       </p>
     </section>
   );

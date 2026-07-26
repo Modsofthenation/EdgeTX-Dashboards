@@ -84,6 +84,13 @@ export {
   type ModelCatalogEntry,
 } from "./models.ts";
 export {
+  ANTHROPIC_MODELS,
+  OPENAI_MODELS,
+  defaultModelForProvider,
+  listModelsForProvider,
+  isAllowedModelForProvider,
+} from "./providers/providerModels.ts";
+export {
   validateGenerateRequest,
   isTelemetryProtocol,
 } from "./requestValidate.ts";

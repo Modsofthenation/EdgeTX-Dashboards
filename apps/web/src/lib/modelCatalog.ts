@@ -1,10 +1,11 @@
+import type { AiProviderId } from "@widget-gen/shared";
 import {
   DEFAULT_CHAT_MODEL,
   FALLBACK_CHAT_MODELS,
   type ChatModel,
   type ModelCatalog,
 } from "~/lib/chatModels";
-import { withCursorApiKeyHeaders } from "~/lib/aiSettings";
+import { withProviderAuthHeaders } from "~/lib/aiSettings";
 
 export type { ChatModel, ModelCatalog };
 
@@ -16,6 +17,7 @@ interface ClientCacheEntry {
   catalog: ModelCatalog;
   /** Fingerprint of the API key used when caching (empty = server/default). */
   keyFingerprint: string;
+  provider: AiProviderId;
 }
 
 function keyFingerprint(apiKey: string | null | undefined): string {
@@ -26,6 +28,7 @@ function keyFingerprint(apiKey: string | null | undefined): string {
 }
 
 function readClientCache(
+  provider: AiProviderId,
   apiKey: string | null | undefined,
 ): ModelCatalog | null {
   if (typeof window === "undefined") return null;
@@ -37,6 +40,7 @@ function readClientCache(
     const entry = JSON.parse(raw) as ClientCacheEntry;
     if (!entry.catalog?.models?.length) return null;
     if (Date.now() - entry.fetchedAt > CLIENT_CACHE_MS) return null;
+    if ((entry.provider ?? "cursor") !== provider) return null;
     if ((entry.keyFingerprint ?? "") !== keyFingerprint(apiKey)) return null;
 
     return entry.catalog;
@@ -47,6 +51,7 @@ function readClientCache(
 
 function writeClientCache(
   catalog: ModelCatalog,
+  provider: AiProviderId,
   apiKey: string | null | undefined,
 ): void {
   if (typeof window === "undefined") return;
@@ -55,6 +60,7 @@ function writeClientCache(
     const entry: ClientCacheEntry = {
       fetchedAt: Date.now(),
       catalog,
+      provider,
       keyFingerprint: keyFingerprint(apiKey),
     };
     window.localStorage.setItem(CLIENT_CACHE_KEY, JSON.stringify(entry));
@@ -74,16 +80,18 @@ export function invalidateModelCatalogCache(): void {
 
 export async function fetchModelCatalog(options?: {
   apiKey?: string | null;
+  provider?: AiProviderId;
   force?: boolean;
 }): Promise<ModelCatalog> {
   const apiKey = options?.apiKey ?? null;
+  const provider = options?.provider ?? "cursor";
   if (!options?.force) {
-    const cached = readClientCache(apiKey);
+    const cached = readClientCache(provider, apiKey);
     if (cached) return cached;
   }
 
   const res = await fetch("/api/models", {
-    headers: withCursorApiKeyHeaders(undefined, apiKey),
+    headers: withProviderAuthHeaders(undefined, provider, apiKey),
     cache: "no-store",
   });
   if (!res.ok) {
@@ -103,7 +111,7 @@ export async function fetchModelCatalog(options?: {
     };
   }
 
-  writeClientCache(data, apiKey);
+  writeClientCache(data, provider, apiKey);
   return data;
 }
 

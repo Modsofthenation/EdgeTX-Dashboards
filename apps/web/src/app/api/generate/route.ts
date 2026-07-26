@@ -4,7 +4,8 @@ import {
   listModelCatalog,
   validateGenerateRequest,
 } from "~/server/generatorFacade";
-import { resolveCursorApiKey } from "~/server/cursorApiKey";
+import { resolveProviderApiKey } from "~/server/aiProviderKey";
+import { parseAiProviderId, providerMeta } from "@widget-gen/shared";
 import {
   checkApiAuth,
   checkRateLimit,
@@ -23,17 +24,6 @@ export async function POST(request: Request): Promise<Response> {
   const rateErr = checkRateLimit(request);
   if (rateErr) return rateErr;
 
-  let apiKey = resolveCursorApiKey(request);
-  if (!apiKey) {
-    return Response.json(
-      {
-        error:
-          "No Cursor API key configured. Add one in Preferences → AI, or set CURSOR_API_KEY on the server.",
-      },
-      { status: 503 },
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -41,13 +31,36 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  const bodyProvider =
+    body && typeof body === "object" && "provider" in body
+      ? (body as { provider?: unknown }).provider
+      : undefined;
+  const provider = parseAiProviderId(
+    request.headers.get("x-ai-provider") ?? bodyProvider,
+  );
+
+  const apiKey = resolveProviderApiKey(request, provider);
+  if (!apiKey) {
+    const meta = providerMeta(provider);
+    return Response.json(
+      {
+        error: `No ${meta.label} API key configured. Add one in Preferences → AI, or set ${meta.envVar} on the server.`,
+      },
+      { status: 503 },
+    );
+  }
+
   let validated: ReturnType<typeof validateGenerateRequest>;
   try {
-    const catalog = await listModelCatalog(apiKey);
+    const catalog = await listModelCatalog(apiKey, provider);
     const allowedModelIds = catalog.models.map((m) => m.id);
-    validated = validateGenerateRequest(body as Record<string, unknown>, {
-      allowedModelIds,
-    });
+    validated = validateGenerateRequest(
+      {
+        ...(body as Record<string, unknown>),
+        provider,
+      },
+      { allowedModelIds },
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[api/generate] startup failed:", message);
@@ -76,6 +89,7 @@ export async function POST(request: Request): Promise<Response> {
       validated.request.protocol,
       validated.request.modelId,
       apiKey,
+      validated.request.provider ?? provider,
     );
     stored = store.get(session.id)!;
   } catch (err) {

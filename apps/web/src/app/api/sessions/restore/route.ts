@@ -4,6 +4,10 @@ import {
   writeWidgetLuaSource,
 } from "~/server/generatorFacade";
 import { checkApiAuth } from "~/lib/apiSecurity";
+import {
+  readBrowserProvider,
+  resolveProviderApiKey,
+} from "~/server/aiProviderKey";
 import { getChat, updateChat } from "~/lib/db/chatStore";
 
 export const runtime = "nodejs";
@@ -49,12 +53,17 @@ export async function POST(request: Request): Promise<Response> {
     writeWidgetLuaSource(workspaceKey, chat.artifact.luaSource);
   }
 
+  const provider = readBrowserProvider(request);
+  const apiKey = resolveProviderApiKey(request, provider);
+
   const store = getSessionStore();
   const session = store.restoreSession({
     id: chat.sessionId ?? undefined,
     radioId: chat.radioId,
     protocol: chat.protocol,
     modelId: chat.modelId,
+    provider,
+    apiKey,
     widgetName: chat.widgetName ?? chat.artifact?.name ?? undefined,
     widgetInstanceId:
       chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,

@@ -1,8 +1,12 @@
 import type { GenerateRequest, TelemetryProtocol } from "@widget-gen/shared";
+import { parseAiProviderId } from "@widget-gen/shared";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { getRepoRoot } from "./knowledge.ts";
-import { DEFAULT_MODEL_ID, isAllowedModelId } from "./models.ts";
+import {
+  defaultModelForProvider,
+  isAllowedModelForProvider,
+} from "./providers/providerModels.ts";
 import { validatePromptImages } from "./promptImages.ts";
 
 const PROTOCOLS: TelemetryProtocol[] = [
@@ -66,8 +70,9 @@ export function validateGenerateRequest(
     return { ok: false, error: `Invalid protocol: ${protocol}` };
   }
 
-  const modelId = body.modelId ?? DEFAULT_MODEL_ID;
-  if (!isAllowedModelId(modelId, options?.allowedModelIds)) {
+  const provider = parseAiProviderId(body.provider);
+  const modelId = body.modelId ?? defaultModelForProvider(provider);
+  if (!isAllowedModelForProvider(provider, modelId, options?.allowedModelIds)) {
     return { ok: false, error: `Invalid model: ${modelId}` };
   }
 
@@ -79,6 +84,7 @@ export function validateGenerateRequest(
       protocol,
       edgeTxVersion: body.edgeTxVersion,
       modelId,
+      provider,
       ...(imagesResult.images.length > 0
         ? { images: imagesResult.images }
         : {}),

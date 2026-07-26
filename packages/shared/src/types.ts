@@ -47,6 +47,8 @@ export interface GenerateRequest {
   protocol: TelemetryProtocol;
   edgeTxVersion?: string;
   modelId?: string;
+  /** AI backend — defaults to cursor when omitted. */
+  provider?: import("./aiProvider.ts").AiProviderId;
   images?: PromptImage[];
 }
 
@@ -95,6 +97,8 @@ export interface GenerateSession {
   radioId: string;
   protocol: TelemetryProtocol;
   modelId: string;
+  /** AI backend used for this session. */
+  provider?: import("./aiProvider.ts").AiProviderId;
   createdAt: number;
   lastRunId?: string;
   /** EdgeTX radio display name (≤10 chars). */

@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
-import type { GenerateSession, TelemetryProtocol } from "@widget-gen/shared";
+import type {
+  AiProviderId,
+  GenerateSession,
+  TelemetryProtocol,
+} from "@widget-gen/shared";
+import { parseAiProviderId } from "@widget-gen/shared";
 import { WidgetGenerator } from "./agent.ts";
 import { deriveVariationSeed } from "./designVariation.ts";
+import { defaultModelForProvider } from "./providers/providerModels.ts";
 
 const SESSION_TTL_MS = 60 * 60 * 1000;
 export const MAX_ACTIVE_SESSIONS = 10;
@@ -17,6 +23,7 @@ export interface RestoreSessionInput {
   radioId: string;
   protocol: TelemetryProtocol;
   modelId?: string;
+  provider?: AiProviderId;
   widgetName?: string;
   widgetInstanceId?: string;
   widgetVersion?: number;
@@ -33,18 +40,23 @@ export class SessionStore {
   createSession(
     radioId: string,
     protocol: TelemetryProtocol,
-    modelId = "composer-2.5",
+    modelId?: string,
     apiKey?: string,
+    provider: AiProviderId = "cursor",
   ): GenerateSession {
     this.evictExpired();
     const id = randomUUID();
-    const generator = new WidgetGenerator(apiKey, { protocol, radioId });
+    const resolvedProvider = parseAiProviderId(provider);
+    const resolvedModel =
+      modelId?.trim() || defaultModelForProvider(resolvedProvider);
+    const generator = new WidgetGenerator(apiKey, { protocol, radioId }, resolvedProvider);
     const session: GenerateSession = {
       id,
       agentId: "",
       radioId,
       protocol,
-      modelId,
+      modelId: resolvedModel,
+      provider: resolvedProvider,
       createdAt: Date.now(),
       runIndex: 0,
       variationSeed: deriveVariationSeed(id, 0),
@@ -80,14 +92,19 @@ export class SessionStore {
       return existing.session;
     }
 
-    const modelId = input.modelId ?? "composer-2.5";
-    const generator = new WidgetGenerator(input.apiKey, {
-      protocol: input.protocol,
-      radioId: input.radioId,
-      widgetName: input.widgetName,
-      widgetInstanceId: input.widgetInstanceId,
-      widgetVersion: input.widgetVersion,
-    });
+    const provider = parseAiProviderId(input.provider);
+    const modelId = input.modelId ?? defaultModelForProvider(provider);
+    const generator = new WidgetGenerator(
+      input.apiKey,
+      {
+        protocol: input.protocol,
+        radioId: input.radioId,
+        widgetName: input.widgetName,
+        widgetInstanceId: input.widgetInstanceId,
+        widgetVersion: input.widgetVersion,
+      },
+      provider,
+    );
     if (input.widgetInstanceId ?? input.widgetName) {
       generator.resolveWidgetWorkspaceKey(
         input.widgetInstanceId ?? input.widgetName,
@@ -100,6 +117,7 @@ export class SessionStore {
       radioId: input.radioId,
       protocol: input.protocol,
       modelId,
+      provider,
       createdAt: Date.now(),
       runIndex: 0,
       variationSeed: deriveVariationSeed(id, 0),

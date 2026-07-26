@@ -89,6 +89,7 @@ Warnings do not block download; errors do. Download returns **HTTP 422** when in
 - **Preview tab:** EdgeTX WASM framebuffer (cropped to `@simulate` zone) via `SimFrameCanvas` + `paintSimFrame.ts`. **Open interactive sim** button below the preview opens the full `@edgetx/simulator-ui` overlay (touch/keys/sticks).
 - Mock telemetry: `apps/web/src/lib/mockTelemetry.ts` (shared with CRSF bridge in sim-preview)
 - Optional API auth: `GENERATOR_API_SECRET` (see `.env.example`)
+- AI providers: Cursor (default), Anthropic, OpenAI — Preferences → AI or env `CURSOR_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` (request headers `x-ai-provider` + provider key header)
 - Radio sim firmware: auto-downloaded by `scripts/ensure-edgetx-wasm.mjs` on postinstall and `npm run dev` → `apps/web/public/sim/`. Manual refresh: `npm run sync-wasm`. Set `SKIP_WASM_SYNC=1` to skip fetch (e.g. CI without sim).
 - API routes reach the generator only through `apps/web/src/server/generatorFacade.ts`.
 
@@ -125,7 +126,7 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 
 Environment is refreshed by the startup update script `npm install` (its `postinstall` patches `@edgetx/simulator-ui` and downloads the EdgeTX WASM firmware into `apps/web/public/sim/`). No extra setup is needed. Non-obvious caveats:
 
-- **`CURSOR_API_KEY` gates only AI generation.** Without it, `npm run dev` still boots at `http://localhost:3000` and the editor, `/api/validate`, layout preview, and EdgeTX WASM simulator all work; only `/api/generate` (500) and `/api/refine` are blocked. Add it as a Secret to exercise the chat generation flow.
+- **`CURSOR_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` gate AI generation** (provider selected in Preferences → AI). Without a key for the selected provider, `npm run dev` still boots at `http://localhost:3000` and the editor, `/api/validate`, layout preview, and EdgeTX WASM simulator all work; only `/api/generate` and `/api/refine` are blocked. Add the matching secret to exercise the chat generation flow.
 - **The `/editor` center canvas is a scene/layers editor, not a live pixel preview** — it looks blank/black even for a valid widget. To see the widget actually rendered, use **Run in simulator** / **Verify in sim** in the editor (or the home-page **Preview** tab), which run the real EdgeTX firmware via WASM. A blank editor canvas is expected, not a bug.
 - **Verify the WASM sim runtime headlessly** with `npm run test:wasm` (executes real firmware against the golden example widgets). Use `SKIP_WASM_SYNC=1` only if the firmware download is unavailable — the Sim/Preview tabs won't render without it.
 
