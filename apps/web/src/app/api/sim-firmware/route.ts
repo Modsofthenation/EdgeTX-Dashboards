@@ -37,7 +37,7 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const status = downloadSimFirmware();
+    const status = await downloadSimFirmware();
     return NextResponse.json({
       ...toClientStatus(status),
       downloaded: true,

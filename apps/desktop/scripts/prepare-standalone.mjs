@@ -78,6 +78,16 @@ mkdirSync(join(webOut, ".next"), { recursive: true });
 cpSync(staticDir, join(webOut, ".next", "static"), { recursive: true });
 cpSync(publicDir, join(webOut, "public"), { recursive: true });
 
+const stagedSim = join(webOut, "public", "sim");
+const stagedManifest = join(stagedSim, "manifest.json");
+if (!existsSync(stagedManifest)) {
+  console.warn(
+    `Warning: ${stagedManifest} missing — Preferences → Simulator WASM will need Download after install.`,
+  );
+} else {
+  console.log(`WASM sim assets staged under ${stagedSim}`);
+}
+
 writeFileSync(
   join(OUT_ROOT, "SIDECAR.json"),
   JSON.stringify(
