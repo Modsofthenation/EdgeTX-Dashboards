@@ -46,6 +46,11 @@ function run(command, args, env = {}) {
 console.log("→ Ensuring EdgeTX WASM assets…");
 run(process.execPath, [join(REPO_ROOT, "scripts", "ensure-edgetx-wasm.mjs")]);
 
+console.log("→ Fetching bundled Node for the sidecar…");
+run(process.execPath, [
+  join(DESKTOP_ROOT, "scripts", "fetch-bundled-node.mjs"),
+]);
+
 console.log("→ Building Next.js standalone (DESKTOP_BUILD=1)…");
 run("npm", ["run", "build", "-w", "@widget-gen/web"], {
   DESKTOP_BUILD: "1",
@@ -107,12 +112,40 @@ const mappedOk =
       String(from).replace(/\\/g, "/").includes("resources/standalone") &&
       String(to).replace(/\\/g, "/").replace(/\/+$/, "") === "standalone",
   );
+const nodeMapped =
+  resources &&
+  !Array.isArray(resources) &&
+  typeof resources === "object" &&
+  Object.entries(resources).some(
+    ([from, to]) =>
+      String(from).replace(/\\/g, "/").includes("resources/node") &&
+      String(to).replace(/\\/g, "/").replace(/\/+$/, "") === "node",
+  );
 if (!mappedOk) {
   console.error(
     "tauri.conf.json bundle.resources must map ../resources/standalone/ → standalone/ so the installer embeds $RESOURCE/standalone/apps/web/server.js",
   );
   process.exit(1);
 }
+if (!nodeMapped) {
+  console.error(
+    "tauri.conf.json bundle.resources must map ../resources/node/ → node/ so the installer embeds a portable Node binary",
+  );
+  process.exit(1);
+}
+
+const nodeDir = join(DESKTOP_ROOT, "resources", "node");
+const bundledNode =
+  ["node", "node.exe"]
+    .map((n) => join(nodeDir, n))
+    .find((p) => existsSync(p)) ?? null;
+if (!bundledNode && process.env.SKIP_BUNDLED_NODE !== "1") {
+  console.error(
+    `Bundled Node binary missing under ${nodeDir}. fetch-bundled-node.mjs should have staged it.`,
+  );
+  process.exit(1);
+}
 
 console.log(`Standalone staged at ${OUT_ROOT}`);
-console.log("Tauri resource map OK → $RESOURCE/standalone/");
+console.log("Tauri resource map OK → $RESOURCE/standalone/ + $RESOURCE/node/");
+if (bundledNode) console.log(`Bundled Node: ${bundledNode}`);

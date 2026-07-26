@@ -6,6 +6,7 @@
   "description": "Tauri 2 desktop shell for EdgeTX Dashboards",
   "scripts": {
     "prepare:standalone": "node ./scripts/prepare-standalone.mjs",
+    "fetch:node": "node ./scripts/fetch-bundled-node.mjs",
     "verify:standalone": "node ./scripts/verify-bundled-standalone.mjs",
     "dev": "tauri dev",
     "build": "tauri build",

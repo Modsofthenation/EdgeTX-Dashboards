@@ -1,23 +1,41 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { listPrefabCatalog } from "@widget-gen/editor-core";
+import {
+  listPrefabCatalog,
+  STACYDASH_TX15_LAYOUT_ORDER,
+} from "@widget-gen/editor-core";
+import type { TelemetryProtocol } from "@widget-gen/shared";
 import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
 import styles from "../editor.module.css";
 
 interface InsertMenuProps {
+  protocol: TelemetryProtocol;
   onInsert: (kind: InsertDrawKind) => void;
   onInsertPrefab?: (prefabId: string) => void;
+  /** Insert every StacyDash TX15 section in canonical order. */
+  onInsertFullStacyDash?: () => void;
 }
 
-const ROTORFLIGHT_PREFABS = listPrefabCatalog({ protocol: "rotorflight" });
-
-export function InsertMenu({ onInsert, onInsertPrefab }: InsertMenuProps) {
+export function InsertMenu({
+  protocol,
+  onInsert,
+  onInsertPrefab,
+  onInsertFullStacyDash,
+}: InsertMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const rotorflightPrefabs = useMemo(
+    () =>
+      protocol === "rotorflight"
+        ? listPrefabCatalog({ protocol: "rotorflight" })
+        : [],
+    [protocol],
+  );
 
   const updateMenuPosition = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -95,7 +113,7 @@ export function InsertMenu({ onInsert, onInsertPrefab }: InsertMenuProps) {
             </span>
           </button>
         ))}
-        {onInsertPrefab && ROTORFLIGHT_PREFABS.length > 0 ? (
+        {onInsertPrefab && rotorflightPrefabs.length > 0 ? (
           <>
             <div className={styles.insertGroupLabel}>
               Rotorflight sections
@@ -103,7 +121,32 @@ export function InsertMenu({ onInsert, onInsertPrefab }: InsertMenuProps) {
                 Needs rf2bg · Discover new
               </span>
             </div>
-            {ROTORFLIGHT_PREFABS.map((prefab) => (
+            {onInsertFullStacyDash ? (
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.insertItem}
+                title={`Insert ${STACYDASH_TX15_LAYOUT_ORDER.length} sections in order`}
+                onClick={() => {
+                  onInsertFullStacyDash();
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.insertItemIcon} aria-hidden>
+                  SD
+                </span>
+                <span className={styles.insertItemCopy}>
+                  <span className={styles.insertItemLabel}>
+                    Full StacyDash board
+                  </span>
+                  <span className={styles.insertItemDesc}>
+                    All {STACYDASH_TX15_LAYOUT_ORDER.length} TX15 sections in
+                    order
+                  </span>
+                </span>
+              </button>
+            ) : null}
+            {rotorflightPrefabs.map((prefab) => (
               <button
                 key={prefab.id}
                 type="button"

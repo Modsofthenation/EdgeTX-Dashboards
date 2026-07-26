@@ -25,6 +25,21 @@ describe("desktop Tauri standalone resources", () => {
     );
   });
 
+  it("maps bundled Node into $RESOURCE/node", () => {
+    const conf = JSON.parse(
+      readFileSync(join(root, "src-tauri", "tauri.conf.json"), "utf8"),
+    );
+    const resources = conf.bundle.resources;
+    const entry = Object.entries(resources).find(([from]) =>
+      String(from).replace(/\\/g, "/").includes("resources/node"),
+    );
+    assert.ok(entry, "missing node resource mapping");
+    assert.equal(
+      String(entry[1]).replace(/\\/g, "/").replace(/\/+$/, ""),
+      "node",
+    );
+  });
+
   it("documents the sidecar entry in SIDECAR staging contract", () => {
     const prepare = readFileSync(
       join(root, "scripts", "prepare-standalone.mjs"),

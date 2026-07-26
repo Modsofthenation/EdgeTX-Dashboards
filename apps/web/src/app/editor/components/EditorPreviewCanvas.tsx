@@ -19,6 +19,8 @@ interface EditorPreviewCanvasProps {
   zone: ZoneOffset;
   layout: CanvasLayout | null;
   scenarioId?: string;
+  /** When set (e.g. live radio), overrides the named scenario. */
+  scenarioOverride?: LayoutScenario;
 }
 
 export function EditorPreviewCanvas({
@@ -26,12 +28,13 @@ export function EditorPreviewCanvas({
   zone,
   layout,
   scenarioId = "editor-preview",
+  scenarioOverride,
 }: EditorPreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const scenario: LayoutScenario = useMemo(
-    () => getPreviewScenario(scenarioId),
-    [scenarioId],
+    () => scenarioOverride ?? getPreviewScenario(scenarioId),
+    [scenarioId, scenarioOverride],
   );
 
   const commands = useMemo(

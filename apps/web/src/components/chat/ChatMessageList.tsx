@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage } from "~/lib/chatTypes";
 import { markChatScrolling } from "~/lib/chatScrollPause";
 import { TEMPLATE_GALLERY } from "~/lib/templateGallery";
 import { ChatMessageBubble } from "./ChatMessage";
 import styles from "./ChatMessageList.module.css";
+
+const VARIANT_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "electric", label: "RF electric" },
+  { id: "nitro", label: "RF nitro" },
+  { id: "whoop", label: "BF whoop" },
+  { id: "freestyle", label: "BF freestyle" },
+] as const;
+
+type VariantFilterId = (typeof VARIANT_FILTERS)[number]["id"];
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -27,6 +37,12 @@ export function ChatMessageList({
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const lastScrollHeightRef = useRef(0);
+  const [variantFilter, setVariantFilter] = useState<VariantFilterId>("all");
+
+  const galleryItems = useMemo(() => {
+    if (variantFilter === "all") return TEMPLATE_GALLERY;
+    return TEMPLATE_GALLERY.filter((item) => item.variant === variantFilter);
+  }, [variantFilter]);
 
   const handleScroll = () => {
     markChatScrolling();
@@ -96,8 +112,29 @@ export function ChatMessageList({
           </ol>
 
           <h3 className={styles.galleryTitle}>Start from a template</h3>
+          <div
+            className={styles.galleryFilters}
+            role="group"
+            aria-label="Template variants"
+          >
+            {VARIANT_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className={
+                  variantFilter === f.id
+                    ? styles.galleryFilterActive
+                    : styles.galleryFilter
+                }
+                disabled={running}
+                onClick={() => setVariantFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           <div className={styles.gallery}>
-            {TEMPLATE_GALLERY.map((item) => (
+            {galleryItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -107,14 +144,16 @@ export function ChatMessageList({
               >
                 <span className={styles.galleryCardTitle}>{item.title}</span>
                 <span className={styles.galleryCardArchetype}>
-                  {item.archetype}
+                  {item.variant
+                    ? `${item.variant} · ${item.archetype}`
+                    : item.archetype}
                 </span>
               </button>
             ))}
           </div>
 
           <div className={styles.suggestions}>
-            {TEMPLATE_GALLERY.map((item) => (
+            {galleryItems.map((item) => (
               <button
                 key={`s-${item.id}`}
                 type="button"
