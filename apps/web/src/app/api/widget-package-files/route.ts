@@ -5,6 +5,7 @@ import {
   sanitizeWidgetInstanceId,
   sanitizeWidgetName,
 } from "~/server/generatorFacade";
+import { checkApiAuth } from "~/lib/apiSecurity";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,9 @@ function resolveKey(req: NextRequest): string | null {
 
 /** List package files mapped to SD paths for desktop install. */
 export async function GET(req: NextRequest) {
+  const authErr = checkApiAuth(req);
+  if (authErr) return authErr;
+
   const key = resolveKey(req);
   if (!key) {
     return Response.json(

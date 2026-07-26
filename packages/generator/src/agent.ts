@@ -39,6 +39,7 @@ import {
 import type { ToolSessionDefaults } from "./agentTools.ts";
 import type { RefineHistoryInput } from "./refineHistory.ts";
 import { buildRefineHistorySections } from "./refineHistory.ts";
+import { isCursorSandboxEnabled } from "./cursorSandbox.ts";
 
 export type { RunCallbacks };
 
@@ -64,9 +65,7 @@ export class WidgetGenerator {
 
   async createAgent(modelId = "composer-2.5"): Promise<string> {
     const store = resolveLocalAgentStore(this.repoRoot);
-    const sandboxEnabled =
-      process.env.CURSOR_SANDBOX_ENABLED === "1" ||
-      process.env.CURSOR_SANDBOX_ENABLED === "true";
+    const sandboxEnabled = isCursorSandboxEnabled();
 
     this.agent = await Agent.create({
       apiKey: this.apiKey,

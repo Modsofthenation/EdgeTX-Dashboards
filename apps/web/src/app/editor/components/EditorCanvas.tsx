@@ -305,6 +305,15 @@ export function EditorCanvas({
             <span className={styles.canvasHint}>Inline radio sim</span>
           </>
         ) : null}
+        {records.length === 0 && !inlineSim ? (
+          <>
+            <span className={styles.canvasHint}>·</span>
+            <span className={styles.canvasHint}>
+              Empty board — Insert elements, or View → Inline radio sim / Run in
+              simulator for pixels
+            </span>
+          </>
+        ) : null}
       </div>
     </div>
   );

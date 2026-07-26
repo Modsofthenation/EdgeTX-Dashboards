@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   downloadSimFirmware,
   formatBytes,
   getSimFirmwareStatus,
 } from "~/server/simFirmware";
+import { checkApiAuth, checkRateLimit } from "~/lib/apiSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +37,10 @@ function toClientStatus(status: ReturnType<typeof getSimFirmwareStatus>) {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authErr = checkApiAuth(request);
+  if (authErr) return authErr;
+
   try {
     const status = getSimFirmwareStatus();
     return NextResponse.json(toClientStatus(status));
@@ -46,7 +50,12 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const authErr = checkApiAuth(request);
+  if (authErr) return authErr;
+  const rateErr = checkRateLimit(request);
+  if (rateErr) return rateErr;
+
   try {
     const status = await downloadSimFirmware();
     return NextResponse.json({

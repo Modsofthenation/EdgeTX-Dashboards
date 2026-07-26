@@ -10,6 +10,11 @@ interface RateBucket {
 
 const rateBuckets = new Map<string, RateBucket>();
 
+/** Test-only: clear in-memory rate buckets. */
+export function resetRateLimitBucketsForTests(): void {
+  rateBuckets.clear();
+}
+
 export function checkApiAuth(request: Request): Response | null {
   const secret = process.env.GENERATOR_API_SECRET;
   if (!secret) {

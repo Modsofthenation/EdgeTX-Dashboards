@@ -14,20 +14,14 @@ export async function saveProjectPackToDisk(
   json: string,
 ): Promise<{ path: string } | { cancelled: true } | { error: string }> {
   try {
-    const { save } = await import("@tauri-apps/plugin-dialog");
     const { invoke } = await import("@tauri-apps/api/core");
-    const path = await save({
-      defaultPath: `${defaultName.replace(/[^\w.-]+/g, "_") || "dashboard"}.edgetx-project.json`,
-      filters: [
-        {
-          name: "EdgeTX project",
-          extensions: ["edgetx-project.json", "json"],
-        },
-      ],
-      title: "Save project pack",
+    const path = await invoke<string | null>("save_text_with_dialog", {
+      contents: json,
+      defaultName: `${defaultName.replace(/[^\w.-]+/g, "_") || "dashboard"}.edgetx-project.json`,
+      filterName: "EdgeTX project",
+      extensions: ["edgetx-project.json", "json"],
     });
     if (typeof path !== "string" || !path) return { cancelled: true };
-    await invoke("write_text_file", { path, contents: json });
     return { path };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
@@ -38,21 +32,18 @@ export async function openProjectPackFromDisk(): Promise<
   { json: string; path: string } | { cancelled: true } | { error: string }
 > {
   try {
-    const { open } = await import("@tauri-apps/plugin-dialog");
     const { invoke } = await import("@tauri-apps/api/core");
-    const selected = await open({
-      multiple: false,
-      filters: [
-        {
-          name: "EdgeTX project",
-          extensions: ["edgetx-project.json", "json"],
-        },
-      ],
-      title: "Open project pack",
-    });
-    if (typeof selected !== "string" || !selected) return { cancelled: true };
-    const json = await invoke<string>("read_text_file", { path: selected });
-    return { json, path: selected };
+    const picked = await invoke<{ path: string; contents: string } | null>(
+      "open_text_with_dialog",
+      {
+        filterName: "EdgeTX project",
+        extensions: ["edgetx-project.json", "json"],
+      },
+    );
+    if (!picked || typeof picked.contents !== "string") {
+      return { cancelled: true };
+    }
+    return { json: picked.contents, path: picked.path };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
   }

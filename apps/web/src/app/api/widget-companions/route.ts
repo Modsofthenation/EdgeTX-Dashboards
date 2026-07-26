@@ -7,6 +7,7 @@ import {
   sanitizeWidgetName,
   writeWidgetCompanionFiles,
 } from "~/server/generatorFacade";
+import { checkApiAuth } from "~/lib/apiSecurity";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,9 @@ function resolveKey(body: {
 
 /** Load companion scripts / model images from generated/<key>/. */
 export async function GET(req: NextRequest) {
+  const authErr = checkApiAuth(req);
+  if (authErr) return authErr;
+
   const { searchParams } = new URL(req.url);
   const workspaceKey = searchParams.get("workspaceKey");
   const sessionId = searchParams.get("sessionId");
@@ -55,6 +59,9 @@ export async function GET(req: NextRequest) {
 
 /** Persist companion suite Lua under generated/<key>/ for zip + SD install. */
 export async function POST(req: NextRequest) {
+  const authErr = checkApiAuth(req);
+  if (authErr) return authErr;
+
   let body: {
     workspaceKey?: string;
     sessionId?: string;

@@ -6,7 +6,7 @@ import {
   readWidgetLuaSource,
 } from "~/server/generatorFacade";
 import type { RefineHistoryInput } from "@widget-gen/generator";
-import { checkApiAuth } from "~/lib/apiSecurity";
+import { checkApiAuth, checkRateLimit } from "~/lib/apiSecurity";
 import { resolveCursorApiKey } from "~/server/cursorApiKey";
 import { getChat } from "~/lib/db/chatStore";
 import { buildRefineHistoryInput } from "~/lib/refineChatContext";
@@ -58,6 +58,9 @@ function resolveRefineSession(
 export async function POST(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
+
+  const rateErr = checkRateLimit(request);
+  if (rateErr) return rateErr;
 
   const apiKey = resolveCursorApiKey(request);
   if (!apiKey) {
