@@ -62,7 +62,7 @@ import {
   type ProjectLibraryMode,
 } from "./components/ProjectLibraryModal";
 import type { InsertDrawKind } from "./elementMeta";
-import { openAppPreferences } from "~/components/AppPreferences";
+import { openAppPreferences, AppPreferencesHost } from "~/components/AppPreferences";
 import {
   deleteProject,
   getLastOpenProjectId,
@@ -1397,6 +1397,7 @@ export function EditorApp() {
 
   return (
     <div className={styles.editorRoot}>
+      <AppPreferencesHost />
       <AppChrome
         surface="layout"
         subtitle={subtitle}
