@@ -114,19 +114,18 @@ export const ChatHistorySidebar = memo(function ChatHistorySidebar({
                     {PROTOCOL_BADGE_LABELS[chat.protocol]}
                   </span>
                   {chat.widgetName ? (
-                    <>
-                      <span className={styles.dot}>·</span>
-                      <span
-                        className={
-                          chat.validated ? styles.badgeOk : styles.badgeDraft
-                        }
-                      >
-                        {chat.widgetName}
-                      </span>
-                    </>
+                    <span
+                      className={`${styles.widgetName} ${
+                        chat.validated ? styles.badgeOk : styles.badgeDraft
+                      }`}
+                      title={chat.widgetName}
+                    >
+                      {chat.widgetName}
+                    </span>
                   ) : null}
-                  <span className={styles.dot}>·</span>
-                  <span>{formatWhen(chat.updatedAt)}</span>
+                  <span className={styles.itemWhen}>
+                    {formatWhen(chat.updatedAt)}
+                  </span>
                 </span>
               </button>
               <button
