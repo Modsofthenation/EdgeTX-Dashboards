@@ -6,6 +6,12 @@ export const THEME_IDS = [
   "forest",
   "ocean",
   "contrast",
+  "graphite",
+  "meadow",
+  "fog",
+  "ember",
+  "volt",
+  "copper",
 ] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
@@ -49,6 +55,36 @@ export const THEME_OPTIONS: {
     id: "contrast",
     label: "High contrast",
     description: "Strong borders and text",
+  },
+  {
+    id: "graphite",
+    label: "Graphite",
+    description: "Cool light gray workshop",
+  },
+  {
+    id: "meadow",
+    label: "Meadow",
+    description: "Soft daylight green",
+  },
+  {
+    id: "fog",
+    label: "Fog",
+    description: "Misty blue-gray bench",
+  },
+  {
+    id: "ember",
+    label: "Ember",
+    description: "Dark panels with amber accents",
+  },
+  {
+    id: "volt",
+    label: "Volt",
+    description: "Racing dark with electric lime",
+  },
+  {
+    id: "copper",
+    label: "Copper",
+    description: "Warm bronze instrument chrome",
   },
 ];
 

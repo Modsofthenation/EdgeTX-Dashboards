@@ -203,6 +203,30 @@
   --preview-bg: #ffffff;
   --preview-accent: #000000;
 }
+.swatch[data-theme-preview="graphite"] {
+  --preview-bg: #e8eaee;
+  --preview-accent: #374151;
+}
+.swatch[data-theme-preview="meadow"] {
+  --preview-bg: #eef6ef;
+  --preview-accent: #15803d;
+}
+.swatch[data-theme-preview="fog"] {
+  --preview-bg: #e7eef5;
+  --preview-accent: #475569;
+}
+.swatch[data-theme-preview="ember"] {
+  --preview-bg: #1c1511;
+  --preview-accent: #f59e0b;
+}
+.swatch[data-theme-preview="volt"] {
+  --preview-bg: #111811;
+  --preview-accent: #a3e635;
+}
+.swatch[data-theme-preview="copper"] {
+  --preview-bg: #1c1613;
+  --preview-accent: #d97756;
+}
 
 .themeLabel {
   font-size: 0.8125rem;
