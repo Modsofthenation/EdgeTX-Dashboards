@@ -12,7 +12,7 @@
 
 .toolChip {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   background: rgba(251, 191, 36, 0.1);
@@ -41,7 +41,7 @@
 }
 
 .status .badge {
-  background: rgba(59, 130, 246, 0.18);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent-bright);
 }
 
@@ -82,7 +82,7 @@
   80%,
   100% {
     transform: translateY(0);
-    opacity: 0.45;
+    opacity: 0.72;
   }
   40% {
     transform: translateY(-4px);

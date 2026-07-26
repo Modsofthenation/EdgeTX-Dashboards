@@ -14,8 +14,8 @@
 
 .lead {
   margin: 0 0 0.5rem;
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: var(--text-muted, #9aa3b2);
 }
 
@@ -54,11 +54,11 @@
 .primary {
   border: none;
   background: var(--accent, #3d8bfd);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .primary:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -87,6 +87,6 @@
 
 .error {
   margin: 0.4rem 0 0;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--danger, #f07178);
 }

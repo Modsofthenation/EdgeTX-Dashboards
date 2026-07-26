@@ -53,7 +53,7 @@
 }
 
 .selectLabel {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -71,7 +71,7 @@
 
 .metaChip {
   margin-left: auto;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
@@ -79,14 +79,14 @@
 }
 
 .protocolChip {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--accent-glow);
 }
 
 .inputArea {
@@ -107,13 +107,13 @@
 }
 
 .inputShell:focus-within {
-  border-color: rgba(59, 130, 246, 0.55);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .inputShellDragging {
-  border-color: rgba(59, 130, 246, 0.65);
-  background: rgba(59, 130, 246, 0.06);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .dropOverlay {
@@ -138,7 +138,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.15);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent-bright);
 }
 
@@ -177,7 +177,7 @@
 
 .attachmentName {
   display: block;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -197,7 +197,7 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
-  color: #fff;
+  color: var(--on-accent);
   opacity: 0;
   transform: scale(0.92);
   transition:
@@ -258,7 +258,7 @@
 }
 
 .iconBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -300,12 +300,12 @@
 
 .sendBtnActive {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .sendBtn:disabled {
-  opacity: 0.55;
+  opacity: 0.72;
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -316,7 +316,7 @@
   height: 1rem;
   border-radius: 50%;
   border: 2px solid var(--border-strong);
-  border-top-color: #fff;
+  border-top-color: var(--on-accent);
   animation: sendSpin 0.7s linear infinite;
 }
 
@@ -328,7 +328,7 @@
 
 .hint {
   margin: 0.45rem 0.75rem 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
   text-align: center;
 }

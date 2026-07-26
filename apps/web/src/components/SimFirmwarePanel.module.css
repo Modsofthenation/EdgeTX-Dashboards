@@ -37,7 +37,7 @@
   padding: 0.2rem 0.5rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -81,7 +81,7 @@
 
 .meta dt {
   margin: 0 0 0.15rem;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -145,7 +145,7 @@
 }
 
 .radioMeta {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
   font-family: var(--font-mono);
 }
@@ -212,7 +212,7 @@
 .primaryBtn {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -222,7 +222,7 @@
 
 .primaryBtn:disabled,
 .secondaryBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 

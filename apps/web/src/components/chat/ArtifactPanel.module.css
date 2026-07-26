@@ -34,7 +34,7 @@
 
 .label {
   display: block;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -54,7 +54,7 @@
 .badgeOk,
 .badgeWarn {
   flex-shrink: 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
@@ -250,7 +250,7 @@
   gap: 0.35rem;
   margin-top: 0.55rem;
   flex-shrink: 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -266,7 +266,7 @@
 }
 
 .workflowSep {
-  opacity: 0.45;
+  opacity: 0.72;
 }
 
 .editLayoutBtn {
@@ -295,14 +295,14 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .liveRadioBtn:disabled {
-  opacity: 0.55;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -311,7 +311,7 @@
   align-items: center;
   gap: 0.25rem;
   margin-left: 0.35rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted);
   cursor: pointer;
@@ -342,7 +342,7 @@
 }
 
 .downloadBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -361,7 +361,7 @@
 }
 
 .hint code {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
 }
 
 @media (max-width: 960px) {

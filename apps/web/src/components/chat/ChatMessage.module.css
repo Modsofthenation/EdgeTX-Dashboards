@@ -43,7 +43,7 @@
   padding: 0.75rem 1rem;
   border-radius: 1.125rem 1.125rem 0.35rem 1.125rem;
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   font-size: 0.9375rem;
   line-height: 1.55;
   box-shadow: 0 4px 20px var(--accent-glow);
@@ -77,7 +77,7 @@
   font-size: 0.5625rem;
   font-weight: 800;
   letter-spacing: 0.04em;
-  color: white;
+  color: var(--on-accent);
   background: var(--accent-bright);
   margin-top: 0.15rem;
 }
