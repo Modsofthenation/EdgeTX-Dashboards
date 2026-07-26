@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   bboxForRecordInZone,
   hitTestRecords,
@@ -9,6 +9,7 @@ import {
   snapDeltaToGuides,
   type BoundingBox,
   type DocumentRecord,
+  type LiveDragState,
   type ResizeHandle,
   type SnapGuide,
   type ZoneOffset,
@@ -25,10 +26,14 @@ interface RecordSelectionOverlayProps {
   zone: ZoneOffset;
   frameRef: React.RefObject<HTMLDivElement | null>;
   onSelect: (ids: string[]) => void;
+  /** Commit translate once on pointerup (total delta from gesture start). */
   onTranslate: (ids: string[], dx: number, dy: number) => void;
+  /** Commit resize once on pointerup (zone-relative box). */
   onResize: (id: string, box: BoundingBox) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
+  /** Live geometry for preview paint — no Lua rewrite until commit. */
+  onLiveDragChange?: (live: LiveDragState | null) => void;
   /** When true (default), snap to element/LCD edges then grid. */
   snapEnabled?: boolean;
   onSnapGuidesChange?: (guides: SnapGuide[]) => void;
@@ -53,6 +58,20 @@ function screenToZone(
   };
 }
 
+type DragSession = {
+  mode: "move" | "resize";
+  handle?: ResizeHandle;
+  originX: number;
+  originY: number;
+  startBox?: BoundingBox;
+  recordIds: string[];
+  shiftKey: boolean;
+  moved: boolean;
+  dx: number;
+  dy: number;
+  liveBox?: BoundingBox;
+};
+
 export function RecordSelectionOverlay({
   records,
   selectedIds,
@@ -64,21 +83,16 @@ export function RecordSelectionOverlay({
   onResize,
   onGestureStart,
   onGestureEnd,
+  onLiveDragChange,
   snapEnabled = true,
   onSnapGuidesChange,
   onContextMenu,
 }: RecordSelectionOverlayProps) {
-  const dragRef = useRef<{
-    mode: "move" | "resize";
-    handle?: ResizeHandle;
-    startX: number;
-    startY: number;
-    startBox?: BoundingBox;
-    recordIds: string[];
-    shiftKey: boolean;
-    moved: boolean;
-  } | null>(null);
+  const dragRef = useRef<DragSession | null>(null);
+  const [liveDrag, setLiveDrag] = useState<LiveDragState | null>(null);
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const pendingLiveRef = useRef<LiveDragState | null>(null);
 
   const measureText = useCallback((text: string, fontSize: number) => {
     if (!measureCtxRef.current) {
@@ -88,12 +102,81 @@ export function RecordSelectionOverlay({
     return measurePreviewText(text, fontSize, measureCtxRef.current);
   }, []);
 
+  const publishLive = useCallback(
+    (next: LiveDragState | null) => {
+      pendingLiveRef.current = next;
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const live = pendingLiveRef.current;
+        setLiveDrag(live);
+        onLiveDragChange?.(live);
+      });
+    },
+    [onLiveDragChange],
+  );
+
   const finishGesture = useCallback(() => {
-    if (!dragRef.current) return;
+    const drag = dragRef.current;
     dragRef.current = null;
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    pendingLiveRef.current = null;
     onSnapGuidesChange?.([]);
+
+    let committed = false;
+    if (drag?.moved) {
+      if (drag.mode === "move" && (drag.dx !== 0 || drag.dy !== 0)) {
+        // Keep final live transform painted until source re-interprets.
+        setLiveDrag({
+          mode: "move",
+          ids: drag.recordIds,
+          dx: drag.dx,
+          dy: drag.dy,
+        });
+        onLiveDragChange?.({
+          mode: "move",
+          ids: drag.recordIds,
+          dx: drag.dx,
+          dy: drag.dy,
+        });
+        onTranslate(drag.recordIds, drag.dx, drag.dy);
+        committed = true;
+      } else if (
+        drag.mode === "resize" &&
+        drag.liveBox &&
+        drag.recordIds.length === 1
+      ) {
+        setLiveDrag({
+          mode: "resize",
+          ids: drag.recordIds,
+          box: drag.liveBox,
+        });
+        onLiveDragChange?.({
+          mode: "resize",
+          ids: drag.recordIds,
+          box: drag.liveBox,
+        });
+        onResize(drag.recordIds[0]!, drag.liveBox);
+        committed = true;
+      }
+    }
+
+    if (!committed) {
+      setLiveDrag(null);
+      onLiveDragChange?.(null);
+    }
+
     onGestureEnd?.();
-  }, [onGestureEnd, onSnapGuidesChange]);
+  }, [
+    onGestureEnd,
+    onLiveDragChange,
+    onResize,
+    onSnapGuidesChange,
+    onTranslate,
+  ]);
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent) => {
@@ -122,11 +205,13 @@ export function RecordSelectionOverlay({
         onGestureStart?.();
         dragRef.current = {
           mode: "move",
-          startX: pointer.x,
-          startY: pointer.y,
+          originX: pointer.x,
+          originY: pointer.y,
           recordIds: nextIds,
           shiftKey: event.shiftKey || event.metaKey || event.ctrlKey,
           moved: false,
+          dx: 0,
+          dy: 0,
         };
         (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
         return;
@@ -155,9 +240,11 @@ export function RecordSelectionOverlay({
       const snap = snapEnabled && !drag.shiftKey;
 
       if (drag.mode === "move") {
-        const rawDx = pointer.x - drag.startX;
-        const rawDy = pointer.y - drag.startY;
-        if (Math.abs(rawDx) < 0.5 && Math.abs(rawDy) < 0.5) return;
+        const rawDx = pointer.x - drag.originX;
+        const rawDy = pointer.y - drag.originY;
+        if (Math.abs(rawDx) < 0.5 && Math.abs(rawDy) < 0.5 && !drag.moved) {
+          return;
+        }
 
         let sdx = Math.round(rawDx);
         let sdy = Math.round(rawDy);
@@ -184,12 +271,16 @@ export function RecordSelectionOverlay({
         } else {
           onSnapGuidesChange?.([]);
         }
-        if (sdx === 0 && sdy === 0) return;
 
-        onTranslate(drag.recordIds, sdx, sdy);
-        drag.startX += sdx;
-        drag.startY += sdy;
+        drag.dx = sdx;
+        drag.dy = sdy;
         drag.moved = true;
+        publishLive({
+          mode: "move",
+          ids: drag.recordIds,
+          dx: sdx,
+          dy: sdy,
+        });
         return;
       }
 
@@ -206,20 +297,24 @@ export function RecordSelectionOverlay({
           pointer.y,
           snap,
         );
-        onResize(drag.recordIds[0]!, box);
+        drag.liveBox = box;
         drag.moved = true;
+        publishLive({
+          mode: "resize",
+          ids: drag.recordIds,
+          box,
+        });
       }
     },
     [
       layout,
-      onTranslate,
-      onResize,
       frameRef,
       snapEnabled,
       records,
       zone,
       measureText,
       onSnapGuidesChange,
+      publishLive,
     ],
   );
 
@@ -263,12 +358,15 @@ export function RecordSelectionOverlay({
       dragRef.current = {
         mode: "resize",
         handle,
-        startX: 0,
-        startY: 0,
+        originX: 0,
+        originY: 0,
         startBox: box,
         recordIds: [record.id],
         shiftKey: event.shiftKey,
         moved: false,
+        dx: 0,
+        dy: 0,
+        liveBox: box,
       };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
@@ -281,8 +379,20 @@ export function RecordSelectionOverlay({
       .map((id) => {
         const record = records.find((r) => r.id === id);
         if (!record) return null;
-        const box = bboxForRecordInZone(record, zone, measureText);
+        let box = bboxForRecordInZone(record, zone, measureText);
         if (!box) return null;
+        if (liveDrag?.mode === "move" && liveDrag.ids.includes(id)) {
+          box = {
+            ...box,
+            x: box.x + liveDrag.dx,
+            y: box.y + liveDrag.dy,
+          };
+        } else if (
+          liveDrag?.mode === "resize" &&
+          liveDrag.ids[0] === id
+        ) {
+          box = liveDrag.box;
+        }
         return { record, box };
       })
       .filter(
@@ -293,7 +403,7 @@ export function RecordSelectionOverlay({
           box: BoundingBox;
         } => row != null,
       );
-  }, [layout, selectedIds, records, zone, measureText]);
+  }, [layout, selectedIds, records, zone, measureText, liveDrag]);
 
   if (!layout) return null;
 

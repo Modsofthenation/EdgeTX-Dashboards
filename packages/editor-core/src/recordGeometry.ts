@@ -159,3 +159,56 @@ export function recordsForDisplay(
 ): DrawRecord[] {
   return records.map((r) => recordInZone(r, zone));
 }
+
+/** Transient geometry while dragging/resizing — applied visually before Lua commit. */
+export type LiveDragState =
+  | {
+      mode: "move";
+      ids: string[];
+      dx: number;
+      dy: number;
+    }
+  | {
+      mode: "resize";
+      ids: string[];
+      box: BoundingBox;
+    };
+
+/**
+ * Apply in-progress drag/resize to zone-space (or LCD-space) draw records.
+ * Used by the canvas preview + selection overlay so pointermove never rewrites Lua.
+ */
+export function applyLiveDragToRecords<T extends DrawRecord & { id?: string }>(
+  records: T[],
+  live: LiveDragState | null | undefined,
+): T[] {
+  if (!live || live.ids.length === 0) return records;
+
+  if (live.mode === "move") {
+    if (live.dx === 0 && live.dy === 0) return records;
+    const idSet = new Set(live.ids);
+    return records.map((r) => {
+      if (!r.id || !idSet.has(r.id)) return r;
+      const next = { ...r };
+      if (next.x != null) next.x += live.dx;
+      if (next.y != null) next.y += live.dy;
+      if (next.x2 != null) next.x2 += live.dx;
+      if (next.y2 != null) next.y2 += live.dy;
+      return next;
+    });
+  }
+
+  const id = live.ids[0];
+  if (!id) return records;
+  const { box } = live;
+  return records.map((r) => {
+    if (r.id !== id) return r;
+    return {
+      ...r,
+      x: box.x,
+      y: box.y,
+      w: box.w,
+      h: box.h,
+    };
+  });
+}

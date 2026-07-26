@@ -5,8 +5,12 @@ import {
   getPreviewScenario,
   type LayoutScenario,
 } from "@widget-gen/layout-verify";
-import { recordsForDisplay } from "@widget-gen/editor-core";
-import type { ZoneOffset } from "@widget-gen/editor-core";
+import {
+  applyLiveDragToRecords,
+  recordsForDisplay,
+  type LiveDragState,
+  type ZoneOffset,
+} from "@widget-gen/editor-core";
 import {
   parseLuaToDrawCommands,
   renderPreviewCommands,
@@ -21,6 +25,8 @@ interface EditorPreviewCanvasProps {
   scenarioId?: string;
   /** When set (e.g. live radio), overrides the named scenario. */
   scenarioOverride?: LayoutScenario;
+  /** In-progress drag/resize geometry (zone space) — does not re-parse Lua. */
+  liveDrag?: LiveDragState | null;
 }
 
 export function EditorPreviewCanvas({
@@ -29,6 +35,7 @@ export function EditorPreviewCanvas({
   layout,
   scenarioId = "editor-preview",
   scenarioOverride,
+  liveDrag = null,
 }: EditorPreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -37,10 +44,19 @@ export function EditorPreviewCanvas({
     [scenarioId, scenarioOverride],
   );
 
-  const commands = useMemo(
-    () => recordsForDisplay(parseLuaToDrawCommands(source, scenario), zone),
-    [source, zone, scenario],
-  );
+  /** Parse only when source/scenario change — never on live drag. */
+  const baseCommands = useMemo(() => {
+    const parsed = parseLuaToDrawCommands(source, scenario);
+    return parsed.map((cmd) => ({
+      ...cmd,
+      id: cmd.sourceLine != null ? `L${cmd.sourceLine}` : undefined,
+    }));
+  }, [source, scenario]);
+
+  const commands = useMemo(() => {
+    const zoneCmds = recordsForDisplay(baseCommands, zone);
+    return applyLiveDragToRecords(zoneCmds, liveDrag);
+  }, [baseCommands, zone, liveDrag]);
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
