@@ -161,7 +161,10 @@ export function RecordPropertiesPanel({
     setNameDraft(meta.name);
   }, [meta.name]);
 
-  const liveBindings = useMemo(() => listSrcBindings(source), [source]);
+  const liveBindings = useMemo(
+    () => (source ? listSrcBindings(source) : []),
+    [source],
+  );
 
   const activePrefabId = useMemo(() => {
     if (!record?.sourceLine) return null;
@@ -276,26 +279,42 @@ export function RecordPropertiesPanel({
         </div>
       </section>
 
-      {onRemapSrcSensor && prefabSlots && prefabSlots.length > 0 && (
+      {onRemapSrcSensor && liveBindings.length > 0 && (
         <section className={styles.propSection}>
           <h3 className={styles.sectionTitle}>
-            Prefab sensors
-            {prefabMeta ? ` · ${prefabMeta.shortLabel}` : ""}
+            {prefabSlots && prefabSlots.length > 0
+              ? `Prefab sensors${prefabMeta ? ` · ${prefabMeta.shortLabel}` : ""}`
+              : "Telemetry sources"}
           </h3>
           <p className={styles.propEmptyHint}>
-            Defaults match the inserted block. Change a sensor to point this
-            field at a different CRSF name (src key stays the same).
+            {prefabSlots && prefabSlots.length > 0
+              ? "Defaults match the inserted block. Change a sensor to use a different CRSF name (src key stays the same)."
+              : "Cached sensors in create(). Select a prefab draw to focus that block’s slots."}
           </p>
-          {prefabSlots.map((slot) => (
+          {(prefabSlots && prefabSlots.length > 0
+            ? prefabSlots
+            : liveBindings.map((b) => ({
+                key: b.key,
+                sensor: b.sensor,
+                label: b.key,
+                defaultSensor: b.sensor,
+              }))
+          ).map((slot) => (
             <label key={slot.key} className={styles.propField}>
               <FieldLabel>
                 {slot.label}
-                {slot.sensor !== slot.defaultSensor ? " *" : ""}
+                {"defaultSensor" in slot && slot.sensor !== slot.defaultSensor
+                  ? " *"
+                  : ""}
               </FieldLabel>
               <select
                 className={styles.fieldInput}
                 value={slot.sensor}
-                title={`src.${slot.key} (default ${slot.defaultSensor})`}
+                title={`src.${slot.key}${
+                  "defaultSensor" in slot
+                    ? ` (default ${slot.defaultSensor})`
+                    : ""
+                }`}
                 onChange={(e) => {
                   const next = e.target.value;
                   if (!next || next === slot.sensor) return;
@@ -305,84 +324,52 @@ export function RecordPropertiesPanel({
                 {sensorOptions(slot.sensor).map((s) => (
                   <option key={s.label} value={s.label}>
                     {s.label}
-                    {s.label === slot.defaultSensor ? " (default)" : ""}
+                    {"defaultSensor" in slot && s.label === slot.defaultSensor
+                      ? " (default)"
+                      : ""}
                   </option>
                 ))}
               </select>
             </label>
           ))}
-          {prefabMeta && prefabMeta.telemetryNotes.length > 0 && (
+          {prefabMeta && prefabMeta.telemetryNotes[0] ? (
             <p className={styles.propEmptyHint}>
               {prefabMeta.telemetryNotes[0]}
             </p>
-          )}
+          ) : null}
+          {prefabSlots &&
+            prefabSlots.length > 0 &&
+            liveBindings.length > prefabSlots.length && (
+              <details className={styles.propDetails}>
+                <summary className={styles.propDetailsSummary}>
+                  All telemetry sources ({liveBindings.length})
+                </summary>
+                <div className={styles.propDetailsBody}>
+                  {liveBindings.map((binding) => (
+                    <label key={binding.key} className={styles.propField}>
+                      <FieldLabel>{binding.key}</FieldLabel>
+                      <select
+                        className={styles.fieldInput}
+                        value={binding.sensor}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          if (!next || next === binding.sensor) return;
+                          onRemapSrcSensor(binding.key, next);
+                        }}
+                      >
+                        {sensorOptions(binding.sensor).map((s) => (
+                          <option key={s.label} value={s.label}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </details>
+            )}
         </section>
       )}
-
-      {onRemapSrcSensor &&
-        liveBindings.length > 0 &&
-        !(prefabSlots && prefabSlots.length > 0) && (
-          <section className={styles.propSection}>
-            <h3 className={styles.sectionTitle}>Telemetry sources</h3>
-            <p className={styles.propEmptyHint}>
-              Cached sensors in create(). Select a prefab draw to edit that
-              block&apos;s sensors, or change any source here.
-            </p>
-            {liveBindings.map((binding) => (
-              <label key={binding.key} className={styles.propField}>
-                <FieldLabel>{binding.key}</FieldLabel>
-                <select
-                  className={styles.fieldInput}
-                  value={binding.sensor}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    if (!next || next === binding.sensor) return;
-                    onRemapSrcSensor(binding.key, next);
-                  }}
-                >
-                  {sensorOptions(binding.sensor).map((s) => (
-                    <option key={s.label} value={s.label}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </section>
-        )}
-
-      {onRemapSrcSensor &&
-        liveBindings.length > 0 &&
-        prefabSlots &&
-        prefabSlots.length > 0 && (
-          <details className={styles.propDetails}>
-            <summary className={styles.propDetailsSummary}>
-              All telemetry sources ({liveBindings.length})
-            </summary>
-            <div className={styles.propDetailsBody}>
-              {liveBindings.map((binding) => (
-                <label key={binding.key} className={styles.propField}>
-                  <FieldLabel>{binding.key}</FieldLabel>
-                  <select
-                    className={styles.fieldInput}
-                    value={binding.sensor}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      if (!next || next === binding.sensor) return;
-                      onRemapSrcSensor(binding.key, next);
-                    }}
-                  >
-                    {sensorOptions(binding.sensor).map((s) => (
-                      <option key={s.label} value={s.label}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-          </details>
-        )}
 
       {sharedXY && !record && (
         <section className={styles.propSection}>
