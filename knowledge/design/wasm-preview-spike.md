@@ -6,7 +6,7 @@
 
 ## Summary
 
-Radio sim runs **EdgeTX 2.11 WASM firmware** for RadioMaster TX15 (480×320) in a Web Worker, using `@edgetx/simulator-ui` `WasmRunner` (same stack as [EdgeTX Dev Kit](https://github.com/JeffreyChix/edgetx-dev-kit)). **Preview tab** shows the live WASM framebuffer (cropped to `@simulate` zone); **Radio sim tab** opens the interactive overlay.
+Radio sim runs **EdgeTX WASM firmware** for color radios with matching LCD sizes (TX15 480×320; TX16S / T16 / T18 / X10 / X12S 480×272) in a Web Worker, using `@edgetx/simulator-ui` `WasmRunner`. Other knowledge radios stay on the parser canvas until B&W paint / catalog fixes land.
 
 ## Artifacts
 

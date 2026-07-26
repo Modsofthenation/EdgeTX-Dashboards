@@ -58,7 +58,7 @@ The generator web UI offers two preview modes:
 
 Both modes use the same mock telemetry catalog (`mockTelemetry.ts` → CRSF injection in Radio sim). `@simulate` zone cropping applies in Preview (overlay) and Radio sim (framebuffer crop).
 
-To enable Radio sim locally: `npm run sync-wasm` (downloads `edgetx-tx15-simulator.wasm` to `apps/web/public/sim/`).
+To enable Radio sim locally: `npm run sync-wasm` (downloads color EdgeTX WASM firmwares — TX15, TX16S, T16, T18, X10, X12S — to `apps/web/public/sim/`).
 
 For **Preview** (regex) parsing rules:
 

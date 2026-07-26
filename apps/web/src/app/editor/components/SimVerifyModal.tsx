@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { hasColorWasmSim } from "@widget-gen/shared";
 import {
   getPreviewScenario,
   type LayoutScenario,
@@ -22,6 +23,7 @@ interface SimVerifyModalProps {
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
   layoutProfileId?: string;
+  radioId?: string;
   modelPng?: Uint8Array | null;
 }
 
@@ -34,6 +36,7 @@ export function SimVerifyModal({
   scenarioId = "editor-preview",
   scenarioOverride,
   layoutProfileId = "tx15",
+  radioId = "tx15",
   modelPng = null,
 }: SimVerifyModalProps) {
   const [interactiveControls, setInteractiveControls] = useState<{
@@ -42,6 +45,7 @@ export function SimVerifyModal({
 
   if (!open) return null;
   const scenario = scenarioOverride ?? getPreviewScenario(scenarioId);
+  const wasmReady = hasColorWasmSim(radioId);
 
   return (
     <div className={styles.modalBackdrop} role="presentation" onClick={onClose}>
@@ -66,25 +70,35 @@ export function SimVerifyModal({
           </button>
         </div>
         <p className={styles.modalHint}>
-          EdgeTX WASM preview using the same mock telemetry as the canvas.
-          Reload after edits to refresh the sim. Use interactive sim for touch,
-          keys, and sticks (Esc to close).
-          {modelPng
+          {wasmReady
+            ? "EdgeTX WASM preview using the same mock telemetry as the canvas. Reload after edits to refresh the sim. Use interactive sim for touch, keys, and sticks (Esc to close)."
+            : `No color WASM firmware is mapped for radio "${radioId}" yet (B&W / mismatched LCD targets stay on the canvas parser). Color WASM: TX15, TX16S, T16, T18, X10, X12S.`}
+          {wasmReady && modelPng
             ? " Custom model PNG is mounted at /IMAGES/simmodel.png."
-            : " Upload a model PNG from the toolbar to preview drawBitmap."}
+            : wasmReady
+              ? " Upload a model PNG from the toolbar to preview drawBitmap."
+              : null}
         </p>
         <div className={styles.simModalBody}>
-          <RadioSimPreview
-            key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}-${modelPng ? modelPng.byteLength : 0}`}
-            luaSource={source}
-            mock={scenario.mock}
-            layoutProfileId={layoutProfileId}
-            modelPng={modelPng}
-            active={open}
-            live
-            fillHost
-            onInteractiveControls={setInteractiveControls}
-          />
+          {wasmReady ? (
+            <RadioSimPreview
+              key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}-${radioId}-${modelPng ? modelPng.byteLength : 0}`}
+              luaSource={source}
+              mock={scenario.mock}
+              layoutProfileId={layoutProfileId}
+              radioId={radioId}
+              modelPng={modelPng}
+              active={open}
+              live
+              fillHost
+              onInteractiveControls={setInteractiveControls}
+            />
+          ) : (
+            <p className={styles.modalHint}>
+              Close this dialog and use the Layout canvas preview for geometry
+              checks on this radio.
+            </p>
+          )}
         </div>
         <div className={styles.modalActions}>
           <button
@@ -94,7 +108,7 @@ export function SimVerifyModal({
           >
             Close
           </button>
-          {onReload ? (
+          {wasmReady && onReload ? (
             <button
               type="button"
               className={styles.secondaryBtn}

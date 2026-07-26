@@ -15,6 +15,9 @@ export async function resolveReachableWasmUrl(
     const base = manifest.source.replace(/\/$/, "");
     const file = local.replace(/^\/sim\//, "");
     candidates.push(`${base}/${file}`);
+    const radioWasm = manifest.radios?.[resolved.radioId]?.wasm;
+    if (radioWasm) candidates.push(`${base}/${radioWasm}`);
+    // Last-resort TX15 legacy (keeps old installs working).
     candidates.push(`${base}/edgetx-tx15-simulator.wasm`);
   }
 
