@@ -12,6 +12,16 @@ Native desktop packaging for EdgeTX Dashboards using [Tauri 2](https://v2.tauri.
 
 Static export is **not** used. Production embeds a Next.js standalone server and navigates the webview after `/api/health` succeeds. A portable **Node 22** binary is fetched into `apps/desktop/resources/node/` during prepare and mapped to `$RESOURCE/node/` so installers do not require a system Node (override with `EDGETX_NODE_PATH` if needed).
 
+`prepare-standalone.mjs` also stages generator filesystem assets (`knowledge/`, `templates/`, `examples/`, `stubs/`, `.cursor/rules/`) into the standalone tree. On launch, the Tauri shell copies those into a **writable** workspace under the OS app-data directory and sets:
+
+| Env                    | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `WIDGET_GEN_DATA_DIR`  | Chat SQLite + caches                                               |
+| `WIDGET_GEN_REPO_ROOT` | Writable workspace (knowledge + `generated/` for the Cursor agent) |
+| `WIDGET_GEN_SIM_DIR`   | EdgeTX WASM sim assets                                             |
+
+Without `knowledge/`, `/api/generate` fails looking up the repo root (historically shown as a bare **Internal Server Error** in the chat UI).
+
 `tauri.conf.json` maps `../resources/standalone/` → `standalone/` and `../resources/node/` → `node/` so release builds find `$RESOURCE/standalone/apps/web/server.js` plus the bundled Node binary. Do not use the array form `["../resources/standalone"]` — Tauri rewrites `../` to `_up_/`, which breaks the sidecar lookup.
 
 ## Preferences

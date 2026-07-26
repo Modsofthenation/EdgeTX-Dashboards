@@ -9,7 +9,7 @@ EdgeTX Dashboards can run as a native desktop window on Linux, Windows, and macO
 - **`npm run desktop:build`** — Runs prepare, then packs a native installer with `$RESOURCE/standalone/` sidecar resources
 - **`npm run verify:standalone -w @widget-gen/desktop`** — After a build, assert `standalone/apps/web/server.js` is bundled (not `_up_/`)
 
-Release builds spawn `node apps/web/server.js` from bundled resources, wait for `/api/health`, then navigate the webview to `http://127.0.0.1:<port>/`. Chat SQLite data goes under the OS app-data dir (`WIDGET_GEN_DATA_DIR`).
+Release builds spawn `node apps/web/server.js` from bundled resources, wait for `/api/health`, then navigate the webview to `http://127.0.0.1:<port>/`. Chat SQLite data goes under the OS app-data dir (`WIDGET_GEN_DATA_DIR`). Generator assets (`knowledge/`, templates, stubs, …) are staged into the standalone bundle and copied on launch into a writable `WIDGET_GEN_REPO_ROOT` workspace so AI generate can run offline from installer resources.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ Release builds spawn `node apps/web/server.js` from bundled resources, wait for 
 - **macOS:** Xcode CLT
 - **Windows:** WebView2 + MSVC build tools
 
-Release sidecars currently require **Node on PATH** (or `EDGETX_NODE_PATH`). Bundling a Node binary into the installer is a follow-up.
+Release sidecars embed a portable Node under `$RESOURCE/node/` (override with `EDGETX_NODE_PATH` if needed).
 
 ## Why not static export?
 

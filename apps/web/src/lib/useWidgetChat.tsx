@@ -545,12 +545,20 @@ export function useWidgetChatState() {
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: res.statusText }));
+          const raw = await res.text();
+          let message = res.statusText || "Request failed";
+          try {
+            const parsed = JSON.parse(raw) as { error?: string };
+            if (parsed.error) message = parsed.error;
+          } catch {
+            const trimmed = raw.trim();
+            if (trimmed) message = trimmed.slice(0, 280);
+          }
           setMessagesTracked((prev) =>
             patchAssistant(prev, assistantId, {
               isStreaming: false,
               error: true,
-              content: err.error ?? "Request failed",
+              content: message,
             }),
           );
           setArtifactLoading(false);

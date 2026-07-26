@@ -48,4 +48,22 @@ describe("desktop Tauri standalone resources", () => {
     assert.match(prepare, /apps\/web\/server\.js/);
     assert.match(prepare, /standalone/);
   });
+
+  it("stages knowledge and other generator repo assets into standalone", () => {
+    const prepare = readFileSync(
+      join(root, "scripts", "prepare-standalone.mjs"),
+      "utf8",
+    );
+    assert.match(prepare, /REPO_ASSET_DIRS/);
+    assert.match(prepare, /knowledge/);
+    assert.match(prepare, /templates/);
+    assert.match(prepare, /tx15\.json/);
+  });
+
+  it("sets WIDGET_GEN_REPO_ROOT for the production sidecar", () => {
+    const rust = readFileSync(join(root, "src-tauri", "src", "lib.rs"), "utf8");
+    assert.match(rust, /WIDGET_GEN_REPO_ROOT/);
+    assert.match(rust, /ensure_writable_workspace/);
+    assert.match(rust, /knowledge/);
+  });
 });

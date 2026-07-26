@@ -23,7 +23,7 @@ export async function POST(request: Request): Promise<Response> {
   const rateErr = checkRateLimit(request);
   if (rateErr) return rateErr;
 
-  const apiKey = resolveCursorApiKey(request);
+  let apiKey = resolveCursorApiKey(request);
   if (!apiKey) {
     return Response.json(
       {
@@ -41,26 +41,57 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const catalog = await listModelCatalog(apiKey);
-  const allowedModelIds = catalog.models.map((m) => m.id);
-  const validated = validateGenerateRequest(body as Record<string, unknown>, {
-    allowedModelIds,
-  });
+  let validated: ReturnType<typeof validateGenerateRequest>;
+  try {
+    const catalog = await listModelCatalog(apiKey);
+    const allowedModelIds = catalog.models.map((m) => m.id);
+    validated = validateGenerateRequest(body as Record<string, unknown>, {
+      allowedModelIds,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/generate] startup failed:", message);
+    return Response.json(
+      {
+        error: message.includes("repository root")
+          ? "Desktop package is missing generator assets (knowledge/). Reinstall from a fresh desktop build, or run from the repo with npm run desktop:dev."
+          : message,
+      },
+      { status: 500 },
+    );
+  }
   if (!validated.ok) {
     return Response.json({ error: validated.error }, { status: 400 });
   }
 
-  const store = getSessionStore();
-  const capacityErr = checkSessionCapacity(store.activeCount);
-  if (capacityErr) return capacityErr;
+  let session;
+  let stored;
+  try {
+    const store = getSessionStore();
+    const capacityErr = checkSessionCapacity(store.activeCount);
+    if (capacityErr) return capacityErr;
 
-  const session = store.createSession(
-    validated.request.radioId,
-    validated.request.protocol,
-    validated.request.modelId,
-    apiKey,
-  );
-  const stored = store.get(session.id)!;
+    session = store.createSession(
+      validated.request.radioId,
+      validated.request.protocol,
+      validated.request.modelId,
+      apiKey,
+    );
+    stored = store.get(session.id)!;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/generate] session create failed:", message);
+    return Response.json(
+      {
+        error: message.includes("repository root")
+          ? "Desktop package is missing generator assets (knowledge/). Reinstall from a fresh desktop build."
+          : message,
+      },
+      { status: 500 },
+    );
+  }
+
+  const store = getSessionStore();
 
   const stream = createSseStream(async (send) => {
     send({ type: "status", content: "Session ready", sessionId: session.id });
