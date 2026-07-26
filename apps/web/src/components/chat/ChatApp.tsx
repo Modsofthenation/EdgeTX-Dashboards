@@ -219,6 +219,7 @@ function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
     <AppChrome
       surface="generate"
       subtitle={subtitle}
+      generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
       layoutHref={layoutHref}
       actions={
         <>
@@ -340,6 +341,7 @@ function ChatMessageListSection() {
       messages={messages}
       scrollRevision={scrollRevision}
       running={running}
+      layoutProfileId={layoutProfileId}
       onSuggestion={handleSuggestion}
       onGenerateSuggestion={handleGenerateSuggestion}
       dashboardReadyCue={Boolean(artifact?.luaSource) && !running}

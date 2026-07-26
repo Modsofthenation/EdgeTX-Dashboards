@@ -88,6 +88,7 @@ import {
 import {
   addCompanionSuite,
   companionFilesToSd,
+  companionStateFromDiskFiles,
   getCompanionSuite,
   loadEditorCompanions,
   modelPngToSdFile,
@@ -196,6 +197,8 @@ export function EditorApp() {
   const [liveTelemetryActive, setLiveTelemetryActive] = useState(false);
   const [liveTelemetryValues, setLiveTelemetryValues] =
     useState<LiveSensorMap | null>(null);
+  const [liveWireKeys, setLiveWireKeys] = useState<string[]>([]);
+  const [liveEnrichKeys, setLiveEnrichKeys] = useState<string[]>([]);
   const [liveTelemetryNote, setLiveTelemetryNote] = useState<string | null>(
     null,
   );
@@ -276,6 +279,11 @@ export function EditorApp() {
     };
   }, [source, layoutProfileId]);
 
+  const prefabLcd = useMemo(() => {
+    const profile = getSimulateLayoutProfile(layoutProfileId);
+    return { lcdW: profile.lcdW, lcdH: profile.lcdH };
+  }, [layoutProfileId]);
+
   const markDirty = useCallback(() => {
     setDirty(true);
     setValid(null);
@@ -340,6 +348,57 @@ export function EditorApp() {
           "";
         setWorkspaceKey(wk);
         loadFromSource(text, true);
+
+        // Hydrate companions + model PNG from the same disk workspace.
+        if (wk) {
+          try {
+            const companionsRes = await fetch(
+              `/api/widget-companions?workspaceKey=${encodeURIComponent(wk)}`,
+              { signal: controller.signal },
+            );
+            if (
+              companionsRes.ok &&
+              requestId === loadRequestIdRef.current
+            ) {
+              const data = (await companionsRes.json()) as {
+                files?: {
+                  relPath: string;
+                  content: string;
+                  encoding?: "utf8" | "base64";
+                  kind?: string;
+                }[];
+              };
+              const files = Array.isArray(data.files) ? data.files : [];
+              const nextCompanions = companionStateFromDiskFiles(files);
+              if (nextCompanions.files.length > 0) {
+                setCompanions(nextCompanions);
+                saveEditorCompanions(wk, nextCompanions);
+              }
+              const image = files.find(
+                (f) =>
+                  f.kind === "image" ||
+                  (f.relPath.startsWith("images/") &&
+                    /\.png$/i.test(f.relPath)),
+              );
+              if (image?.content) {
+                try {
+                  const bin = atob(image.content);
+                  const bytes = new Uint8Array(bin.length);
+                  for (let i = 0; i < bin.length; i++)
+                    bytes[i] = bin.charCodeAt(i);
+                  setModelPngBytes(bytes);
+                  setModelPngName(
+                    image.relPath.split("/").pop() ?? "simmodel.png",
+                  );
+                } catch {
+                  /* ignore bad base64 */
+                }
+              }
+            }
+          } catch {
+            /* companions optional — Lua still loads */
+          }
+        }
       })
       .catch((err: Error) => {
         if (controller.signal.aborted || requestId !== loadRequestIdRef.current)
@@ -364,15 +423,19 @@ export function EditorApp() {
     const prefab: TemplateLayoutPrefab = template.layoutPrefab ?? "starter";
     setProtocol(template.protocol);
     if (prefab === "rf-heli-electric") {
-      const { source: next } = insertPrefabSections(createStarterSource(), [
-        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
-      ]);
+      const { source: next } = insertPrefabSections(
+        createStarterSource(),
+        [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER],
+        prefabLcd,
+      );
       loadFromSource(next, true);
       setCompanions((prev) => addCompanionSuite(prev, "rf-heli-electric"));
     } else if (prefab === "rf-heli-nitro") {
-      const { source: next } = insertPrefabSections(createStarterSource(), [
-        ...ROTORFLIGHT_NITRO_LAYOUT_ORDER,
-      ]);
+      const { source: next } = insertPrefabSections(
+        createStarterSource(),
+        [...ROTORFLIGHT_NITRO_LAYOUT_ORDER],
+        prefabLcd,
+      );
       loadFromSource(next, true);
     } else if (prefab === "battery-tool") {
       loadFromSource(getLayoutTemplateBoardSource("battery-tool"), true);
@@ -381,9 +444,9 @@ export function EditorApp() {
       loadFromSource(getLayoutTemplateBoardSource("flight-logger"), true);
       setCompanions((prev) => addCompanionSuite(prev, "flight-logger"));
     } else {
-      loadFromSource(getLayoutTemplateBoardSource(prefab), true);
+      loadFromSource(getLayoutTemplateBoardSource(prefab, prefabLcd), true);
     }
-  }, [templateId, hasRemoteWidget, loadFromSource]);
+  }, [templateId, hasRemoteWidget, loadFromSource, prefabLcd]);
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -557,13 +620,15 @@ export function EditorApp() {
       return;
     }
     setSource((prev) => {
-      const { source: next } = insertPrefabSections(prev, [
-        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
-      ]);
+      const { source: next } = insertPrefabSections(
+        prev,
+        [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER],
+        prefabLcd,
+      );
       return next;
     });
     markDirty();
-  }, [setSource, markDirty, source, records]);
+  }, [setSource, markDirty, source, records, prefabLcd]);
 
   const handleAddRfHeliNitro = useCallback(() => {
     const busy = source.includes("-- prefab:") || records.length > 2;
@@ -576,13 +641,15 @@ export function EditorApp() {
       return;
     }
     setSource((prev) => {
-      const { source: next } = insertPrefabSections(prev, [
-        ...ROTORFLIGHT_NITRO_LAYOUT_ORDER,
-      ]);
+      const { source: next } = insertPrefabSections(
+        prev,
+        [...ROTORFLIGHT_NITRO_LAYOUT_ORDER],
+        prefabLcd,
+      );
       return next;
     });
     markDirty();
-  }, [setSource, markDirty, source, records]);
+  }, [setSource, markDirty, source, records, prefabLcd]);
 
   const handleAddQuadBoard = useCallback(
     (boardId: string) => {
@@ -612,12 +679,12 @@ export function EditorApp() {
         return;
       }
       setSource((prev) => {
-        const { source: next } = insertPrefabSections(prev, [...order]);
+        const { source: next } = insertPrefabSections(prev, [...order], prefabLcd);
         return next;
       });
       markDirty();
     },
-    [setSource, markDirty, source, records],
+    [setSource, markDirty, source, records, prefabLcd],
   );
 
   const companionStorageKey = workspaceKey ?? projectId ?? "local-editor";
@@ -655,7 +722,7 @@ export function EditorApp() {
   const handleAddPrefab = useCallback(
     (prefabId: string) => {
       setSource((prev) => {
-        const result = insertPrefabSection(prev, prefabId);
+        const result = insertPrefabSection(prev, prefabId, prefabLcd);
         return result?.source ?? prev;
       });
       markDirty();
@@ -666,7 +733,7 @@ export function EditorApp() {
         handleAddCompanionSuite("motor-gate");
       }
     },
-    [setSource, markDirty, handleAddCompanionSuite],
+    [setSource, markDirty, handleAddCompanionSuite, prefabLcd],
   );
 
   const persistModelPngToWorkspace = useCallback(
@@ -918,17 +985,22 @@ export function EditorApp() {
       liveHandleRef.current = null;
       setLiveTelemetryActive(false);
       setLiveTelemetryValues(null);
+      setLiveWireKeys([]);
+      setLiveEnrichKeys([]);
       setLiveTelemetryNote(null);
       return;
     }
     try {
       const handle = await openLiveTelemetryPort(
-        (values) => {
+        (values, meta) => {
           setLiveTelemetryValues(values);
-          const keys = Object.keys(values);
+          const wireKeys = meta?.wireKeys ?? Object.keys(values);
+          const enrichKeys = meta?.enrichKeys ?? [];
+          setLiveWireKeys(wireKeys);
+          setLiveEnrichKeys(enrichKeys);
           setLiveTelemetryNote(
-            keys.length
-              ? `Live radio · ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""} (canvas + sim)`
+            wireKeys.length
+              ? `Live radio · ${wireKeys.slice(0, 6).join(", ")}${wireKeys.length > 6 ? "…" : ""} (canvas + sim)`
               : "Live radio · waiting for CRSF frames",
           );
         },
@@ -951,9 +1023,14 @@ export function EditorApp() {
   }, [liveTelemetryActive, protocol, enrichRotorflight]);
 
   const discoveredSensors = useMemo(() => {
-    if (!liveTelemetryValues) return [] as string[];
-    return Object.keys(liveTelemetryValues).sort();
-  }, [liveTelemetryValues]);
+    if (!liveTelemetryActive) return [] as string[];
+    return liveWireKeys;
+  }, [liveTelemetryActive, liveWireKeys]);
+
+  const enrichOnlySensors = useMemo(() => {
+    if (!liveTelemetryActive || !enrichRotorflight) return [] as string[];
+    return liveEnrichKeys;
+  }, [liveTelemetryActive, enrichRotorflight, liveEnrichKeys]);
 
   useEffect(() => {
     return () => {
@@ -1060,6 +1137,7 @@ export function EditorApp() {
           protocol,
           radioId,
           allocate,
+          ...(chatId ? { chatId } : {}),
         }),
       });
       const body = (await res.json()) as {
@@ -1089,7 +1167,7 @@ export function EditorApp() {
     } finally {
       setSaving(false);
     }
-  }, [workspaceKey, sessionId, source, protocol, radioId]);
+  }, [workspaceKey, sessionId, source, protocol, radioId, chatId]);
 
   const handleDownload = useCallback(async () => {
     if (valid === false) {
@@ -1322,6 +1400,9 @@ export function EditorApp() {
       <AppChrome
         surface="layout"
         subtitle={subtitle}
+        generateHref={
+          chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"
+        }
         layoutHref={layoutSelfHref}
         actions={
           <>
@@ -1608,6 +1689,7 @@ export function EditorApp() {
             zone={zone}
             protocol={protocol}
             discoveredSensors={discoveredSensors}
+            enrichOnlySensors={enrichOnlySensors}
             onPatchName={(name) => {
               setSource((prev) => patchWidgetName(prev, name));
               markDirty();

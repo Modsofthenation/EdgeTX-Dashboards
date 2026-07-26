@@ -56,8 +56,14 @@ describe("TEMPLATE_GALLERY", () => {
   it("ships a PNG preview for every gallery template", () => {
     for (const item of TEMPLATE_GALLERY) {
       assert.equal(templatePreviewSrc(item.id), `/templates/${item.id}.png`);
+      assert.equal(
+        templatePreviewSrc(item.id, "color272"),
+        `/templates/${item.id}-color272.png`,
+      );
       const file = join(publicTemplates, `${item.id}.png`);
       assert.ok(existsSync(file), `missing preview PNG: ${file}`);
+      const color272 = join(publicTemplates, `${item.id}-color272.png`);
+      assert.ok(existsSync(color272), `missing color272 preview PNG: ${color272}`);
     }
   });
 });

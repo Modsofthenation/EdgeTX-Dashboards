@@ -375,7 +375,12 @@ export const Preview480x320 = memo(function Preview480x320({
             )}
             {luaSource && useWasmSim && (
               <span className={styles.liveBadge}>
-                EdgeTX {firmwareLabel} WASM{live ? " · live mock" : ""}
+                EdgeTX {firmwareLabel} WASM
+                {liveSensors
+                  ? " · Live CRSF"
+                  : live
+                    ? " · mock telemetry"
+                    : ""}
               </span>
             )}
             {luaSource && !useWasmSim && (

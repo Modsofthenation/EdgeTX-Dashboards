@@ -129,6 +129,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [liveRadioActive, setLiveRadioActive] = useState(false);
   const [liveSensors, setLiveSensors] = useState<LiveSensorMap | null>(null);
+  const [liveWireKeys, setLiveWireKeys] = useState<string[]>([]);
+  const [liveEnrichKeys, setLiveEnrichKeys] = useState<string[]>([]);
   const [liveNote, setLiveNote] = useState<string | null>(null);
   const [enrichRotorflight, setEnrichRotorflight] = useState(
     readEnrichRotorflightPreference,
@@ -173,17 +175,27 @@ export const ArtifactPanel = memo(function ArtifactPanel({
       liveHandleRef.current = null;
       setLiveRadioActive(false);
       setLiveSensors(null);
+      setLiveWireKeys([]);
+      setLiveEnrichKeys([]);
       setLiveNote(null);
       return;
     }
     try {
       const handle = await openLiveTelemetryPort(
-        (values) => {
+        (values, meta) => {
           setLiveSensors(values);
-          const keys = Object.keys(values);
+          // discoveredSensors = wire only; enrichKeys tracked separately
+          const wireKeys = meta?.wireKeys ?? Object.keys(values);
+          const enrichKeys = meta?.enrichKeys ?? [];
+          setLiveWireKeys(wireKeys);
+          setLiveEnrichKeys(enrichKeys);
           setLiveNote(
-            keys.length
-              ? `Live · ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? "…" : ""}`
+            wireKeys.length
+              ? `Live · ${wireKeys.slice(0, 5).join(", ")}${wireKeys.length > 5 ? "…" : ""}${
+                  enrichKeys.length
+                    ? ` · preview fill: ${enrichKeys.slice(0, 3).join(", ")}${enrichKeys.length > 3 ? "…" : ""}`
+                    : ""
+                }`
               : "Live · waiting for CRSF",
           );
         },
@@ -389,7 +401,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               <p className={styles.liveRadioNote} role="note">
                 Enrich {enrichRotorflight ? "ON" : "OFF"} —{" "}
                 {enrichRotorflight
-                  ? "fills missing HSpd/Gov/Vbec/EscT from CRSF heuristics; enable rf2bg + Discover new for true radio sensors."
+                  ? `wire: ${liveWireKeys.length ? liveWireKeys.slice(0, 4).join(", ") : "none"}; preview fill: ${liveEnrichKeys.length ? liveEnrichKeys.join(", ") : "none"} — enable rf2bg + Discover new for true radio sensors.`
                   : "showing sensors present on the wire only."}
               </p>
             ) : null}

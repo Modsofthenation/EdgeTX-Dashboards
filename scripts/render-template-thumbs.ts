@@ -1,10 +1,11 @@
 /**
- * Bake TX15 gallery template thumbnails as PNG for the Generate empty state.
+ * Bake gallery template thumbnails as PNG for the Generate empty state.
  *
  * Usage: npm run render:template-thumbs
  *
  * Requires @napi-rs/canvas (root devDependency). Output:
- *   apps/web/public/templates/<gallery-id>.png
+ *   apps/web/public/templates/<gallery-id>.png          (TX15 480×320)
+ *   apps/web/public/templates/<gallery-id>-color272.png (480×272)
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -56,27 +57,37 @@ return {
 `;
 
 /** Gallery id → Lua source for the board shown in Layout for that template. */
-function sourceForGalleryId(id: string): string {
+function sourceForGalleryId(
+  id: string,
+  lcd: { lcdW: number; lcdH: number } = { lcdW: 480, lcdH: 320 },
+): string {
+  const opts = { lcdW: lcd.lcdW, lcdH: lcd.lcdH };
   switch (id) {
     case "heli-electric": {
       // Bake RF sections alone (cleaner than starter+append used at runtime).
-      const { source } = insertPrefabSections(PREFAB_SHELL, [
-        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
-      ]);
+      const { source } = insertPrefabSections(
+        PREFAB_SHELL,
+        [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER],
+        opts,
+      );
       return source;
     }
     case "heli-nitro": {
-      const { source } = insertPrefabSections(PREFAB_SHELL, [
-        ...ROTORFLIGHT_NITRO_LAYOUT_ORDER,
-      ]);
+      const { source } = insertPrefabSections(
+        PREFAB_SHELL,
+        [...ROTORFLIGHT_NITRO_LAYOUT_ORDER],
+        opts,
+      );
       return source;
     }
     case "minimal-quad":
     case "dense-crsf":
     case "whoop":
     case "freestyle-quad":
+      return getLayoutTemplateBoardSource(id, lcd);
     case "battery-tool":
     case "flight-logger":
+      // Monolith boards use LCD_W/LCD_H at runtime — bake at TX15 for thumbs.
       return getLayoutTemplateBoardSource(id);
     default:
       throw new Error(`Unknown gallery template id: ${id}`);
@@ -247,13 +258,17 @@ function renderPreviewCommands(
   ctx.restore();
 }
 
-function renderPng(source: string): Buffer {
+function renderPng(
+  source: string,
+  lcdW: number = LCD_W,
+  lcdH: number = LCD_H,
+): Buffer {
   const records = parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO);
-  const canvas = createCanvas(LCD_W, LCD_H);
+  const canvas = createCanvas(lcdW, lcdH);
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, LCD_W, LCD_H);
-  renderPreviewCommands(ctx, records, 1, LCD_W, LCD_H);
+  ctx.fillRect(0, 0, lcdW, lcdH);
+  renderPreviewCommands(ctx, records, 1, lcdW, lcdH);
   return canvas.toBuffer("image/png");
 }
 
@@ -268,12 +283,22 @@ const GALLERY_IDS = [
   "flight-logger",
 ] as const;
 
+const LCD_SIZES = [
+  { suffix: "", lcdW: 480, lcdH: 320 },
+  { suffix: "-color272", lcdW: 480, lcdH: 272 },
+] as const;
+
 mkdirSync(OUT_DIR, { recursive: true });
 
 for (const id of GALLERY_IDS) {
-  const source = sourceForGalleryId(id);
-  const png = renderPng(source);
-  const out = join(OUT_DIR, `${id}.png`);
-  writeFileSync(out, png);
-  console.log(`wrote ${out} (${png.length} bytes)`);
+  for (const size of LCD_SIZES) {
+    const source = sourceForGalleryId(id, {
+      lcdW: size.lcdW,
+      lcdH: size.lcdH,
+    });
+    const png = renderPng(source, size.lcdW, size.lcdH);
+    const out = join(OUT_DIR, `${id}${size.suffix}.png`);
+    writeFileSync(out, png);
+    console.log(`wrote ${out} (${png.length} bytes)`);
+  }
 }

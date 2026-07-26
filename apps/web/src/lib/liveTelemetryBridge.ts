@@ -10,6 +10,30 @@
 
 export type LiveSensorMap = Record<string, number | string>;
 
+/** RF keys that enrichRotorflightLiveSensors may synthesize when absent on the wire. */
+export const ROTORFLIGHT_ENRICH_KEYS = [
+  "HSpd",
+  "Gov",
+  "Vbec",
+  "Vcel",
+  "Tspd",
+  "EscT",
+  "MotT",
+  "Vbat",
+  "NR",
+] as const;
+
+export type RotorflightEnrichKey = (typeof ROTORFLIGHT_ENRICH_KEYS)[number];
+
+const ENRICH_KEY_SET = new Set<string>(ROTORFLIGHT_ENRICH_KEYS);
+
+export interface LiveTelemetryValuesMeta {
+  /** Sensors present from parsed CRSF frames (true wire). */
+  wireKeys: string[];
+  /** Sensors present only via Rotorflight enrich fill. */
+  enrichKeys: string[];
+}
+
 export interface LiveTelemetryHandle {
   close: () => Promise<void>;
   /** Update enrich-on-the-fly without reopening the serial port. */
@@ -25,6 +49,35 @@ export interface OpenLiveTelemetryOptions {
    * Turn off to show only sensors present on the wire (true live CRSF).
    */
   enrichRotorflight?: boolean;
+}
+
+/**
+ * Partition an enriched live map into wire-present vs enrich-only keys.
+ */
+export function partitionLiveSensorKeys(
+  wire: LiveSensorMap,
+  enriched: LiveSensorMap,
+): { wireKeys: string[]; enrichKeys: string[] } {
+  const wireKeys = Object.keys(wire).sort();
+  const wireSet = new Set(wireKeys);
+  const enrichKeys = Object.keys(enriched)
+    .filter((k) => !wireSet.has(k) && ENRICH_KEY_SET.has(k))
+    .sort();
+  return { wireKeys, enrichKeys };
+}
+
+/**
+ * Heuristic when only the enriched map is available: enrich-only keys present
+ * in values that belong to ROTORFLIGHT_ENRICH_KEYS (when enrich is on).
+ */
+export function listEnrichOnlyKeys(
+  values: LiveSensorMap,
+  enrichEnabled: boolean,
+): string[] {
+  if (!enrichEnabled) return [];
+  return Object.keys(values)
+    .filter((k) => ENRICH_KEY_SET.has(k))
+    .sort();
 }
 
 const CRSF_SYNC = 0xc8;
@@ -150,9 +203,13 @@ export function isWebSerialSupported(): boolean {
 
 /**
  * Prompt for a serial port and stream CRSF frames into `onValues`.
+ * `meta` partitions wire CRSF keys from Rotorflight enrich-only fill keys.
  */
 export async function openLiveTelemetryPort(
-  onValues: (values: LiveSensorMap) => void,
+  onValues: (
+    values: LiveSensorMap,
+    meta?: LiveTelemetryValuesMeta,
+  ) => void,
   options: OpenLiveTelemetryOptions = {},
 ): Promise<LiveTelemetryHandle> {
   if (!isWebSerialSupported()) {
@@ -188,7 +245,8 @@ export async function openLiveTelemetryPort(
       const out = enrichFlag.current
         ? enrichRotorflightLiveSensors(sensors, tick)
         : { ...sensors };
-      onValues(out);
+      const meta = partitionLiveSensorKeys(sensors, out);
+      onValues(out, meta);
     }
   };
 

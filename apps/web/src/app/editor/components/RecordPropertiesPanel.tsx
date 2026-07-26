@@ -26,6 +26,8 @@ const LAYOUT_OPTIONS = [
   "Layout2x2",
 ] as const;
 
+const EMPTY_SENSORS: string[] = [];
+
 interface RecordPropertiesPanelProps {
   meta: { name: string; layout: string; zone: number };
   source: string;
@@ -34,6 +36,8 @@ interface RecordPropertiesPanelProps {
   protocol?: TelemetryProtocol;
   /** Sensors seen on the live radio Web Serial stream. */
   discoveredSensors?: string[];
+  /** Enrich-only RF keys (preview fill — not on the CRSF wire). */
+  enrichOnlySensors?: string[];
   onPatchName: (name: string) => void;
   onPatchRecord: (
     record: DocumentRecord,
@@ -141,7 +145,8 @@ export function RecordPropertiesPanel({
   selectedRecords,
   zone,
   protocol = "betaflight",
-  discoveredSensors = [],
+  discoveredSensors = EMPTY_SENSORS,
+  enrichOnlySensors = EMPTY_SENSORS,
   onPatchName,
   onPatchRecord,
   onTranslateSelected,
@@ -156,15 +161,27 @@ export function RecordPropertiesPanel({
   const sensors = useMemo(() => {
     const base = SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight;
     const known = new Set(base.map((s) => s.label));
-    const extras = discoveredSensors
-      .filter((name) => name && !known.has(name))
-      .map((label) => ({
+    const extras = [
+      ...discoveredSensors.map((label) => ({
         label,
         formatHint: "raw" as const,
         hint: "Seen on live radio",
-      }));
-    return extras.length ? [...base, ...extras] : base;
-  }, [protocol, discoveredSensors]);
+      })),
+      ...enrichOnlySensors.map((label) => ({
+        label,
+        formatHint: "raw" as const,
+        hint: "Preview fill (not on wire)",
+      })),
+    ].filter((s) => s.label && !known.has(s.label));
+    // Dedupe enrich vs wire if both lists somehow overlap.
+    const seen = new Set(base.map((s) => s.label));
+    const uniqueExtras = extras.filter((s) => {
+      if (seen.has(s.label)) return false;
+      seen.add(s.label);
+      return true;
+    });
+    return uniqueExtras.length ? [...base, ...uniqueExtras] : base;
+  }, [protocol, discoveredSensors, enrichOnlySensors]);
   const [bindFormat, setBindFormat] = useState<TextFormat>("raw");
   const [nameDraft, setNameDraft] = useState(meta.name);
 
@@ -653,6 +670,28 @@ export function RecordPropertiesPanel({
                             key={sensor}
                             type="button"
                             className={styles.liveSeenChip}
+                            onClick={() =>
+                              onBindTelemetry(record, sensor, bindFormat)
+                            }
+                          >
+                            Bind {sensor}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {enrichOnlySensors.length > 0 ? (
+                    <div className={styles.liveSeenRow}>
+                      <p className={styles.sectionTitle}>
+                        Preview fill (not on wire)
+                      </p>
+                      <div className={styles.liveSeenChips}>
+                        {enrichOnlySensors.map((sensor) => (
+                          <button
+                            key={`enrich-${sensor}`}
+                            type="button"
+                            className={styles.liveSeenChip}
+                            title="Synthesized for Rotorflight preview — enable rf2bg + Discover new for true FC sensors"
                             onClick={() =>
                               onBindTelemetry(record, sensor, bindFormat)
                             }

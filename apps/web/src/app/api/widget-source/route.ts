@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { checkApiAuth } from "~/lib/apiSecurity";
+import { getChat, updateChat } from "~/lib/db/chatStore";
 import {
   ensureWidgetInstanceDir,
   isTelemetryProtocol,
+  isWidgetInstanceId,
   readWidgetLuaSource,
   resolveWidgetWorkspaceFromSession,
   sanitizeWidgetName,
@@ -77,6 +79,8 @@ export async function PUT(request: Request): Promise<Response> {
     name?: string;
     protocol?: string;
     radioId?: string;
+    /** Sync Layout save back into the Generate chat artifact when set. */
+    chatId?: string;
     /** When true and no workspace resolves, mint a new UUID instance. */
     allocate?: boolean;
   };
@@ -127,6 +131,40 @@ export async function PUT(request: Request): Promise<Response> {
   }
 
   writeWidgetLuaSource(resolved.workspaceKey, source);
+
+  const chatId = body.chatId?.trim();
+  if (chatId) {
+    const chat = getChat(chatId);
+    if (chat) {
+      const displayName =
+        resolved.displayName ??
+        displayNameFromSource(source) ??
+        chat.widgetName ??
+        chat.artifact?.name ??
+        "DashStart";
+      const instanceId = isWidgetInstanceId(resolved.workspaceKey)
+        ? resolved.workspaceKey
+        : (chat.widgetInstanceId ?? chat.artifact?.instanceId ?? null);
+      const version =
+        resolved.version ??
+        chat.widgetVersion ??
+        chat.artifact?.version ??
+        0;
+      updateChat(chatId, {
+        widgetName: displayName,
+        widgetInstanceId: instanceId,
+        widgetVersion: version,
+        artifact: {
+          name: displayName,
+          instanceId,
+          version,
+          luaSource: source,
+          validated: true,
+          validationIssues: validation.issues,
+        },
+      });
+    }
+  }
 
   return Response.json({
     valid: true,

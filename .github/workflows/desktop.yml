@@ -23,6 +23,26 @@ permissions:
   contents: read
 
 jobs:
+  # Cheap prepare+smoke before the native matrix (catches standalone staging bugs early).
+  smoke:
+    runs-on: ubuntu-latest
+    name: desktop-smoke
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Prepare standalone + smoke
+        run: |
+          npm run desktop:prepare
+          npm run desktop:smoke
+
   build:
     strategy:
       fail-fast: false
