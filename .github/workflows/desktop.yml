@@ -183,8 +183,8 @@ jobs:
 
             Platforms: Windows (NSIS/MSI), macOS (DMG arm64 + x64), Linux (deb).
 
-            Installers include the Tauri shell plus a Next.js standalone sidecar.
-            Runtime still needs **Node.js 22+** on PATH (or `EDGETX_NODE_PATH`).
+            Installers include the Tauri shell, a Next.js standalone sidecar, and a portable Node binary.
+            Override the embedded Node with **EDGETX_NODE_PATH** if needed.
 
             Commit: ${{ github.sha }}
           files: release-assets/*

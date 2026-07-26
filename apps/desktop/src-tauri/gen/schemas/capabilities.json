@@ -1,1 +1,17 @@
-{"default":{"identifier":"default","description":"Default desktop capabilities","local":true,"windows":["main"],"permissions":["core:default","core:webview:allow-set-webview-focus","core:webview:allow-webview-position","core:webview:allow-webview-size","shell:allow-open","dialog:default","dialog:allow-open"]}}
+{
+  "default": {
+    "identifier": "default",
+    "description": "Default desktop capabilities",
+    "local": true,
+    "windows": ["main"],
+    "permissions": [
+      "core:default",
+      "core:webview:allow-set-webview-focus",
+      "core:webview:allow-webview-position",
+      "core:webview:allow-webview-size",
+      "shell:allow-open",
+      "dialog:default",
+      "dialog:allow-open"
+    ]
+  }
+}
