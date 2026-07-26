@@ -10,6 +10,7 @@ import {
   WidgetChatProvider,
 } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
+import type { TemplateGalleryItem } from "~/lib/templateGallery";
 import { usePanelCollapse } from "~/lib/usePanelCollapse";
 import { AppChrome } from "../AppChrome";
 import { ArtifactPanel } from "./ArtifactPanel";
@@ -268,7 +269,8 @@ function ChatMessageListSection() {
   const { running, sendMessage } = useChatSession();
   const { artifact } = useArtifactPanel();
   const handleSuggestion = useCallback(
-    (text: string) => void sendMessage(text),
+    (item: TemplateGalleryItem) =>
+      void sendMessage(item.prompt, { protocol: item.protocol }),
     [sendMessage],
   );
   const handleRetry = useCallback(() => {

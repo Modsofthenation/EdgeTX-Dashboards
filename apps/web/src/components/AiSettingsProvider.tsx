@@ -29,6 +29,8 @@ type AiSettingsContextValue = {
   statusLoading: boolean;
   statusError: string | null;
   ready: boolean;
+  /** True after localStorage hydration (api key / preferred model). */
+  hydrated: boolean;
   saveApiKey: (apiKey: string, remember: boolean) => Promise<AiStatusResponse>;
   clearApiKey: () => Promise<void>;
   setPreferredModelId: (modelId: string) => void;
@@ -150,6 +152,7 @@ export function AiSettingsProvider({ children }: { children: ReactNode }) {
       statusLoading,
       statusError,
       ready: Boolean(status?.ready),
+      hydrated,
       saveApiKey,
       clearApiKey,
       setPreferredModelId,
@@ -163,6 +166,7 @@ export function AiSettingsProvider({ children }: { children: ReactNode }) {
       status,
       statusLoading,
       statusError,
+      hydrated,
       saveApiKey,
       clearApiKey,
       setPreferredModelId,
