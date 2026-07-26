@@ -1107,6 +1107,18 @@
   color: var(--muted);
 }
 
+.canvasMeta button {
+  pointer-events: auto;
+}
+
+.marqueeRect {
+  position: absolute;
+  border: 1px dashed var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  pointer-events: none;
+  z-index: 4;
+}
+
 /* ── Banners ── */
 
 .bannerStack {

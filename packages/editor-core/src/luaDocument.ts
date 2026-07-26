@@ -243,6 +243,50 @@ export function setRecordColor(
   return patchRecordArgs(source, record, { color: safeColor }, zone);
 }
 
+const TEXT_SIZE_FLAGS = new Set(["SMLSIZE", "MIDSIZE", "DBLSIZE", "XXLSIZE"]);
+const TEXT_ALIGN_FLAGS = new Set(["LEFT", "CENTER", "RIGHT"]);
+
+export type TextSizeFlag = "SMLSIZE" | "MIDSIZE" | "DBLSIZE";
+export type TextAlignFlag = "LEFT" | "CENTER" | "RIGHT";
+
+/** Patch drawText size / alignment flags while preserving color and other tokens. */
+export function setRecordTextFlags(
+  source: string,
+  record: DrawRecord,
+  opts: { size?: TextSizeFlag; align?: TextAlignFlag | null },
+  zone: ZoneOffset,
+): string {
+  if (record.kind !== "text") return source;
+  const ref = record.sourceRef;
+  const flagsSpan = ref?.args[3];
+  const line = ref ? getSourceLine(source, ref.sourceLine) : "";
+  const existing = flagsSpan
+    ? line.slice(flagsSpan.start, flagsSpan.end)
+    : "";
+
+  const tokens = existing
+    .split("+")
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .filter((t) => !TEXT_SIZE_FLAGS.has(t) && !TEXT_ALIGN_FLAGS.has(t));
+
+  if (opts.size) tokens.unshift(opts.size);
+  else {
+    const sizeFallback =
+      record.fontSize && record.fontSize >= 20
+        ? "DBLSIZE"
+        : record.fontSize && record.fontSize >= 14
+          ? "MIDSIZE"
+          : "SMLSIZE";
+    tokens.unshift(sizeFallback);
+  }
+
+  if (opts.align && opts.align !== "LEFT") tokens.push(opts.align);
+
+  const flags = tokens.join(" + ");
+  return patchRecordArgs(source, record, { flags }, zone);
+}
+
 export function setRecordText(
   source: string,
   record: DrawRecord,

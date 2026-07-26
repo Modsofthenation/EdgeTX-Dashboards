@@ -5,6 +5,8 @@ import {
   bboxForRecordInZone,
   hitTestRecords,
   isRectLike,
+  normalizeRect,
+  rectsIntersect,
   resizeRecordBox,
   snapDeltaToGuides,
   type BoundingBox,
@@ -59,7 +61,7 @@ function screenToZone(
 }
 
 type DragSession = {
-  mode: "move" | "resize";
+  mode: "move" | "resize" | "marquee";
   handle?: ResizeHandle;
   originX: number;
   originY: number;
@@ -70,6 +72,10 @@ type DragSession = {
   dx: number;
   dy: number;
   liveBox?: BoundingBox;
+  /** Marquee current corner in zone space. */
+  marqueeX?: number;
+  marqueeY?: number;
+  baseSelectedIds?: string[];
 };
 
 export function RecordSelectionOverlay({
@@ -90,6 +96,7 @@ export function RecordSelectionOverlay({
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<DragSession | null>(null);
   const [liveDrag, setLiveDrag] = useState<LiveDragState | null>(null);
+  const [marquee, setMarquee] = useState<BoundingBox | null>(null);
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const rafRef = useRef<number | null>(null);
   const pendingLiveRef = useRef<LiveDragState | null>(null);
@@ -127,6 +134,32 @@ export function RecordSelectionOverlay({
     onSnapGuidesChange?.([]);
 
     let committed = false;
+    if (drag?.mode === "marquee") {
+      const box = normalizeRect(
+        drag.originX,
+        drag.originY,
+        drag.marqueeX ?? drag.originX,
+        drag.marqueeY ?? drag.originY,
+      );
+      setMarquee(null);
+      if (drag.moved && (box.w > 2 || box.h > 2)) {
+        const hitIds = records
+          .filter((r) => {
+            const b = bboxForRecordInZone(r, zone, measureText);
+            return b ? rectsIntersect(box, b) : false;
+          })
+          .map((r) => r.id);
+        const next = drag.shiftKey
+          ? [...new Set([...(drag.baseSelectedIds ?? []), ...hitIds])]
+          : hitIds;
+        onSelect(next);
+      } else if (!drag.shiftKey) {
+        onSelect([]);
+      }
+      onGestureEnd?.();
+      return;
+    }
+
     if (drag?.moved) {
       if (drag.mode === "move" && (drag.dx !== 0 || drag.dy !== 0)) {
         // Keep final live transform painted until source re-interprets.
@@ -171,11 +204,15 @@ export function RecordSelectionOverlay({
 
     onGestureEnd?.();
   }, [
+    measureText,
     onGestureEnd,
     onLiveDragChange,
     onResize,
+    onSelect,
     onSnapGuidesChange,
     onTranslate,
+    records,
+    zone,
   ]);
 
   const onPointerDown = useCallback(
@@ -218,6 +255,21 @@ export function RecordSelectionOverlay({
       }
 
       if (!event.shiftKey) onSelect([]);
+      onGestureStart?.();
+      dragRef.current = {
+        mode: "marquee",
+        originX: pointer.x,
+        originY: pointer.y,
+        marqueeX: pointer.x,
+        marqueeY: pointer.y,
+        recordIds: [],
+        shiftKey: event.shiftKey || event.metaKey || event.ctrlKey,
+        moved: false,
+        dx: 0,
+        dy: 0,
+        baseSelectedIds: selectedIds,
+      };
+      (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
     },
     [
       records,
@@ -281,6 +333,16 @@ export function RecordSelectionOverlay({
           dx: sdx,
           dy: sdy,
         });
+        return;
+      }
+
+      if (drag.mode === "marquee") {
+        drag.marqueeX = pointer.x;
+        drag.marqueeY = pointer.y;
+        drag.moved = true;
+        setMarquee(
+          normalizeRect(drag.originX, drag.originY, pointer.x, pointer.y),
+        );
         return;
       }
 
@@ -419,6 +481,17 @@ export function RecordSelectionOverlay({
       onPointerCancel={onPointerUp}
       onContextMenu={handleContextMenu}
     >
+      {marquee && (
+        <div
+          className={styles.marqueeRect}
+          style={{
+            left: offsetX + marquee.x * scale,
+            top: offsetY + marquee.y * scale,
+            width: Math.max(1, marquee.w * scale),
+            height: Math.max(1, marquee.h * scale),
+          }}
+        />
+      )}
       {selectedBoxes.map(({ record, box }) => {
         const left = offsetX + box.x * scale;
         const top = offsetY + box.y * scale;
