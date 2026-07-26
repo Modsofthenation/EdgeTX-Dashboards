@@ -277,6 +277,7 @@
 }
 
 .insertDropdown {
+  composes: appScrollbar from global;
   position: fixed;
   z-index: 2000;
   min-width: min(300px, calc(100vw - 2rem));
@@ -390,6 +391,7 @@
 }
 
 .propsPanel {
+  composes: appScrollbar from global;
   border-left: none;
 }
 
@@ -468,6 +470,7 @@
 }
 
 .layerList {
+  composes: appScrollbar from global;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -937,6 +940,7 @@
 /* ── Validation ── */
 
 .validationPanel {
+  composes: appScrollbar from global;
   flex-shrink: 0;
   padding: 0.75rem;
   border-top: 1px solid var(--border);
@@ -945,6 +949,7 @@
 }
 
 .installPanel {
+  composes: appScrollbar from global;
   flex-shrink: 0;
   padding: 0.75rem;
   border-top: 1px solid var(--border);
@@ -1148,6 +1153,7 @@
 }
 
 .projectList {
+  composes: appScrollbar from global;
   list-style: none;
   margin: 0.25rem 0 0;
   padding: 0;
