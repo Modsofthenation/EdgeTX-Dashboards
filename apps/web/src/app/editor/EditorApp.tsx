@@ -1102,6 +1102,18 @@ export function EditorApp() {
     [handleDeleteIds],
   );
 
+  const handleClearAllLayers = useCallback(() => {
+    if (records.length === 0) return;
+    if (
+      !window.confirm(
+        `Remove all ${records.length} layer${records.length === 1 ? "" : "s"} from this board?`,
+      )
+    ) {
+      return;
+    }
+    handleDeleteIds(records.map((r) => r.id));
+  }, [records, handleDeleteIds]);
+
   const handleDuplicateSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
     setSource((prev) => {
@@ -1367,6 +1379,14 @@ export function EditorApp() {
       });
     }
 
+    items.push({
+      id: "clear-all",
+      label: "Clear all layers…",
+      separatorBefore: true,
+      disabled: records.length === 0,
+      onClick: () => handleClearAllLayers(),
+    });
+
     return items;
   }, [
     selectedIds,
@@ -1379,6 +1399,7 @@ export function EditorApp() {
     handleAlign,
     handleDistribute,
     handleSelectAll,
+    handleClearAllLayers,
   ]);
 
   const handleValidate = useCallback(async () => {
@@ -1711,6 +1732,12 @@ export function EditorApp() {
                   },
                 },
                 {
+                  id: "clear-all",
+                  label: "Clear all layers…",
+                  disabled: records.length === 0,
+                  onClick: () => handleClearAllLayers(),
+                },
+                {
                   id: "prefs",
                   label: "Preferences…",
                   separatorBefore: true,
@@ -1901,6 +1928,7 @@ export function EditorApp() {
             onMoveUp={(id) => handleMoveLayer(id, 1)}
             onMoveDown={(id) => handleMoveLayer(id, -1)}
             onReorder={handleReorderLayer}
+            onClearAll={handleClearAllLayers}
           />
         </div>
 

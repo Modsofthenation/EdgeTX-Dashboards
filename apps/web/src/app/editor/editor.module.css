@@ -542,6 +542,13 @@
   margin-bottom: 0.65rem;
 }
 
+.panelHeadMain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .panelTitle {
   margin: 0;
   font-size: 0.75rem;
@@ -559,6 +566,28 @@
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--muted);
+}
+
+.panelClearBtn {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.panelClearBtn:hover:not(:disabled) {
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 40%, var(--border));
+}
+
+.panelClearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .sectionTitle {

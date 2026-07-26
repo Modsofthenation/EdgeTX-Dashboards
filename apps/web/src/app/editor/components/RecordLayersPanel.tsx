@@ -22,6 +22,7 @@ interface RecordLayersPanelProps {
     targetId: string,
     place: "before" | "after",
   ) => void;
+  onClearAll?: () => void;
 }
 
 type DropHint = { id: string; place: "before" | "after" };
@@ -34,6 +35,7 @@ export function RecordLayersPanel({
   onMoveUp,
   onMoveDown,
   onReorder,
+  onClearAll,
 }: RecordLayersPanelProps) {
   const [filter, setFilter] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -121,8 +123,21 @@ export function RecordLayersPanel({
   return (
     <aside className={`${styles.sidePanel} ${styles.layersPanel}`}>
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle}>Layers</h2>
-        <span className={styles.panelBadge}>{records.length}</span>
+        <div className={styles.panelHeadMain}>
+          <h2 className={styles.panelTitle}>Layers</h2>
+          <span className={styles.panelBadge}>{records.length}</span>
+        </div>
+        {onClearAll ? (
+          <button
+            type="button"
+            className={styles.panelClearBtn}
+            disabled={records.length === 0}
+            title="Remove all layers from the board"
+            onClick={onClearAll}
+          >
+            Clear all
+          </button>
+        ) : null}
       </div>
 
       <div className={styles.searchWrap}>
