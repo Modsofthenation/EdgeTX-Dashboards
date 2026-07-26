@@ -13,10 +13,36 @@ import {
 } from "@widget-gen/editor-core";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { COMPANION_SUITES } from "~/lib/companionSuites";
+import {
+  prefabBoardPreviewSrc,
+  prefabPreviewSrc,
+} from "~/lib/prefabPreview";
 import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
 import styles from "../editor.module.css";
 
 const EMPTY_SUITE_IDS: string[] = [];
+
+function InsertThumb({
+  src,
+  fallback,
+}: {
+  src: string;
+  fallback: string;
+}) {
+  return (
+    <span className={styles.insertItemThumb} aria-hidden>
+      <img
+        src={src}
+        alt=""
+        width={96}
+        height={64}
+        loading="lazy"
+        decoding="async"
+      />
+      <span className={styles.insertItemThumbFallback}>{fallback}</span>
+    </span>
+  );
+}
 
 interface InsertMenuProps {
   protocol: TelemetryProtocol;
@@ -159,9 +185,10 @@ export function InsertMenu({
                   setOpen(false);
                 }}
               >
-                <span className={styles.insertItemIcon} aria-hidden>
-                  SD
-                </span>
+                <InsertThumb
+                  src={prefabBoardPreviewSrc("rf-heli-electric")}
+                  fallback="SD"
+                />
                 <span className={styles.insertItemCopy}>
                   <span className={styles.insertItemLabel}>
                     Full RF heli board
@@ -184,9 +211,10 @@ export function InsertMenu({
                   setOpen(false);
                 }}
               >
-                <span className={styles.insertItemIcon} aria-hidden>
-                  N2
-                </span>
+                <InsertThumb
+                  src={prefabBoardPreviewSrc("rf-heli-nitro")}
+                  fallback="N2"
+                />
                 <span className={styles.insertItemCopy}>
                   <span className={styles.insertItemLabel}>
                     RF heli nitro board
@@ -209,9 +237,10 @@ export function InsertMenu({
                   setOpen(false);
                 }}
               >
-                <span className={styles.insertItemIcon} aria-hidden>
-                  {prefab.shortLabel}
-                </span>
+                <InsertThumb
+                  src={prefabPreviewSrc(prefab.id)}
+                  fallback={prefab.shortLabel}
+                />
                 <span className={styles.insertItemCopy}>
                   <span className={styles.insertItemLabel}>{prefab.label}</span>
                   <span className={styles.insertItemDesc}>
@@ -245,9 +274,10 @@ export function InsertMenu({
                     setOpen(false);
                   }}
                 >
-                  <span className={styles.insertItemIcon} aria-hidden>
-                    WP
-                  </span>
+                  <InsertThumb
+                    src={prefabBoardPreviewSrc("whoop")}
+                    fallback="WP"
+                  />
                   <span className={styles.insertItemCopy}>
                     <span className={styles.insertItemLabel}>
                       Full whoop board
@@ -268,9 +298,10 @@ export function InsertMenu({
                     setOpen(false);
                   }}
                 >
-                  <span className={styles.insertItemIcon} aria-hidden>
-                    FS
-                  </span>
+                  <InsertThumb
+                    src={prefabBoardPreviewSrc("freestyle-quad")}
+                    fallback="FS"
+                  />
                   <span className={styles.insertItemCopy}>
                     <span className={styles.insertItemLabel}>
                       Full freestyle board
@@ -291,9 +322,10 @@ export function InsertMenu({
                     setOpen(false);
                   }}
                 >
-                  <span className={styles.insertItemIcon} aria-hidden>
-                    MN
-                  </span>
+                  <InsertThumb
+                    src={prefabBoardPreviewSrc("minimal-quad")}
+                    fallback="MN"
+                  />
                   <span className={styles.insertItemCopy}>
                     <span className={styles.insertItemLabel}>
                       Full minimal board
@@ -314,9 +346,10 @@ export function InsertMenu({
                     setOpen(false);
                   }}
                 >
-                  <span className={styles.insertItemIcon} aria-hidden>
-                    DG
-                  </span>
+                  <InsertThumb
+                    src={prefabBoardPreviewSrc("dense-crsf")}
+                    fallback="DG"
+                  />
                   <span className={styles.insertItemCopy}>
                     <span className={styles.insertItemLabel}>
                       Full dense CRSF board
@@ -341,9 +374,10 @@ export function InsertMenu({
                   setOpen(false);
                 }}
               >
-                <span className={styles.insertItemIcon} aria-hidden>
-                  {prefab.shortLabel}
-                </span>
+                <InsertThumb
+                  src={prefabPreviewSrc(prefab.id)}
+                  fallback={prefab.shortLabel}
+                />
                 <span className={styles.insertItemCopy}>
                   <span className={styles.insertItemLabel}>{prefab.label}</span>
                   <span className={styles.insertItemDesc}>
