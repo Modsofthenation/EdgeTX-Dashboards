@@ -212,3 +212,29 @@ export function applyLiveDragToRecords<T extends DrawRecord & { id?: string }>(
     };
   });
 }
+
+export function rectsIntersect(a: BoundingBox, b: BoundingBox): boolean {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+/** Normalize a rubber-band rect from two zone-space corners. */
+export function normalizeRect(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): BoundingBox {
+  const x = Math.min(x0, x1);
+  const y = Math.min(y0, y1);
+  return {
+    x,
+    y,
+    w: Math.abs(x1 - x0),
+    h: Math.abs(y1 - y0),
+  };
+}

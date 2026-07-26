@@ -28,10 +28,15 @@ interface EditorCanvasProps {
   onResize: (id: string, box: BoundingBox) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
+  /** Paint snap guide lines / grid. */
   showSnapGuides?: boolean;
+  /** Snap geometry while dragging (independent of guide visibility). */
+  snapEnabled?: boolean;
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
   layoutProfileId?: string;
+  /** Optional WASM preview layered under the parser canvas. */
+  inlineSim?: React.ReactNode;
   onContextMenu?: (info: {
     clientX: number;
     clientY: number;
@@ -50,20 +55,45 @@ export function EditorCanvas({
   onGestureStart,
   onGestureEnd,
   showSnapGuides = false,
+  snapEnabled = true,
   scenarioId = "editor-preview",
   scenarioOverride,
   layoutProfileId = "tx15",
+  inlineSim = null,
   onContextMenu,
 }: EditorCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
   const [activeGuides, setActiveGuides] = useState<SnapGuide[]>([]);
   const [liveDrag, setLiveDrag] = useState<LiveDragState | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const spaceDownRef = useRef(false);
+  const panDragRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
 
-  // Drop live overlay once Lua source catches up after pointerup commit.
   useEffect(() => {
     setLiveDrag(null);
   }, [source]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") spaceDownRef.current = true;
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") spaceDownRef.current = false;
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, []);
 
   const previewDims = useMemo(() => {
     try {
@@ -88,9 +118,10 @@ export function EditorCanvas({
         frame.clientHeight,
         previewDims.zoneW,
         previewDims.zoneH,
+        { zoom, panX: pan.x, panY: pan.y },
       ),
     );
-  }, [previewDims.zoneH, previewDims.zoneW]);
+  }, [previewDims.zoneH, previewDims.zoneW, zoom, pan.x, pan.y]);
 
   useEffect(() => {
     updateLayout();
@@ -101,17 +132,71 @@ export function EditorCanvas({
     return () => ro.disconnect();
   }, [updateLayout]);
 
+  const onWheel = useCallback(
+    (event: React.WheelEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+      setZoom((z) => Math.min(4, Math.max(0.25, Number((z * factor).toFixed(3)))));
+    },
+    [],
+  );
+
+  const onPointerDownPan = useCallback(
+    (event: React.PointerEvent) => {
+      if (!(event.button === 1 || spaceDownRef.current)) return;
+      event.preventDefault();
+      panDragRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: pan.x,
+        originY: pan.y,
+      };
+      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    },
+    [pan.x, pan.y],
+  );
+
+  const onPointerMovePan = useCallback((event: React.PointerEvent) => {
+    const drag = panDragRef.current;
+    if (!drag) return;
+    setPan({
+      x: drag.originX + (event.clientX - drag.startX),
+      y: drag.originY + (event.clientY - drag.startY),
+    });
+  }, []);
+
+  const onPointerUpPan = useCallback(() => {
+    panDragRef.current = null;
+  }, []);
+
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
   return (
     <div className={styles.canvasStage}>
-      <div className={styles.simWrapper} ref={frameRef}>
-        <EditorPreviewCanvas
-          source={source}
-          zone={zone}
-          layout={layout}
-          scenarioId={scenarioId}
-          scenarioOverride={scenarioOverride}
-          liveDrag={liveDrag}
-        />
+      <div
+        className={styles.simWrapper}
+        ref={frameRef}
+        onWheel={onWheel}
+        onPointerDown={onPointerDownPan}
+        onPointerMove={onPointerMovePan}
+        onPointerUp={onPointerUpPan}
+        onPointerCancel={onPointerUpPan}
+      >
+        {inlineSim}
+        {!inlineSim && (
+          <EditorPreviewCanvas
+            source={source}
+            zone={zone}
+            layout={layout}
+            scenarioId={scenarioId}
+            scenarioOverride={scenarioOverride}
+            liveDrag={liveDrag}
+          />
+        )}
         {showSnapGuides && layout ? (
           <div
             className={styles.snapGrid}
@@ -163,7 +248,7 @@ export function EditorCanvas({
           onGestureStart={onGestureStart}
           onGestureEnd={onGestureEnd}
           onLiveDragChange={setLiveDrag}
-          snapEnabled={showSnapGuides}
+          snapEnabled={snapEnabled}
           onSnapGuidesChange={setActiveGuides}
           onContextMenu={onContextMenu}
         />
@@ -177,8 +262,26 @@ export function EditorCanvas({
           {previewDims.layout} z{previewDims.zone}
         </span>
         <span className={styles.canvasHint}>·</span>
+        <button
+          type="button"
+          className={styles.canvasHint}
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            color: "inherit",
+            font: "inherit",
+          }}
+          onClick={resetView}
+          title="Reset zoom/pan"
+        >
+          {Math.round(zoom * 100)}%
+        </button>
+        <span className={styles.canvasHint}>·</span>
         <span className={styles.canvasHint}>
-          Canvas preview · Right-click for actions · Shift/Ctrl+click multi-select
+          Ctrl+wheel zoom · Space-drag pan · Shift+click multi · drag empty to
+          marquee
         </span>
       </div>
     </div>

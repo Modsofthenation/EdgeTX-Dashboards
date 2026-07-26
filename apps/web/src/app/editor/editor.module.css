@@ -633,6 +633,33 @@
   min-height: 0;
 }
 
+.layerGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0.45rem 0 0.2rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.layerGroupHeader button {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
 .layerItem {
   display: flex;
   align-items: center;
@@ -1105,6 +1132,18 @@
 
 .canvasHint {
   color: var(--muted);
+}
+
+.canvasMeta button {
+  pointer-events: auto;
+}
+
+.marqueeRect {
+  position: absolute;
+  border: 1px dashed var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  pointer-events: none;
+  z-index: 4;
 }
 
 /* ── Banners ── */

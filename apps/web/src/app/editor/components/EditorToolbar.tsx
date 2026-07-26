@@ -46,8 +46,12 @@ interface EditorToolbarProps {
   modelPngName?: string | null;
   modelPngUrl?: string | null;
   onModelPngChange?: (file: File | null) => void;
+  snapEnabled?: boolean;
+  onSnapEnabledChange?: (enabled: boolean) => void;
   showSnapGuides?: boolean;
   onSnapGuidesChange?: (show: boolean) => void;
+  inlineSim?: boolean;
+  onInlineSimChange?: (enabled: boolean) => void;
   onAlign?: (mode: string) => void;
   onDistribute?: (mode: string) => void;
   canAlign?: boolean;
@@ -85,8 +89,12 @@ export function EditorToolbar({
   modelPngName,
   modelPngUrl,
   onModelPngChange,
+  snapEnabled,
+  onSnapEnabledChange,
   showSnapGuides,
   onSnapGuidesChange,
+  inlineSim,
+  onInlineSimChange,
   onAlign,
   onDistribute,
   canAlign,
@@ -197,11 +205,25 @@ export function EditorToolbar({
 
   const viewItems = useMemo((): EditorMenuItem[] => {
     const items: EditorMenuItem[] = [];
-    if (onSnapGuidesChange) {
+    if (onSnapEnabledChange) {
       items.push({
         id: "snap",
-        label: showSnapGuides ? "Hide snap guides" : "Show snap guides",
+        label: "Snap to guides",
+        onClick: () => onSnapEnabledChange(!snapEnabled),
+      });
+    }
+    if (onSnapGuidesChange) {
+      items.push({
+        id: "snap-guides",
+        label: "Show snap guides",
         onClick: () => onSnapGuidesChange(!showSnapGuides),
+      });
+    }
+    if (onInlineSimChange) {
+      items.push({
+        id: "inline-sim",
+        label: "Inline radio sim",
+        onClick: () => onInlineSimChange(!inlineSim),
       });
     }
     if (onModelPngChange) {
@@ -220,7 +242,16 @@ export function EditorToolbar({
       }
     }
     return items;
-  }, [onSnapGuidesChange, showSnapGuides, onModelPngChange, modelPngName]);
+  }, [
+    onSnapEnabledChange,
+    snapEnabled,
+    onSnapGuidesChange,
+    showSnapGuides,
+    onInlineSimChange,
+    inlineSim,
+    onModelPngChange,
+    modelPngName,
+  ]);
 
   return (
     <div className={styles.toolbar}>

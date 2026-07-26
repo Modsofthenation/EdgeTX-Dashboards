@@ -289,6 +289,63 @@ export function listSrcBindings(
   return bindings;
 }
 
+export type DetectedTextBinding = {
+  key: string;
+  sensor: string;
+  format: TextFormat;
+};
+
+/** Infer telemetry binding from a drawText third argument, if present. */
+export function detectTextBinding(
+  source: string,
+  record: DocumentRecord,
+): DetectedTextBinding | null {
+  if (record.kind !== "text") return null;
+  const lineNum = record.sourceRef?.sourceLine ?? record.sourceLine;
+  if (!lineNum) return null;
+  const line = getSourceLine(source, lineNum);
+  const call = line.match(/lcd\.drawText\s*\((.*)$/);
+  if (!call) return null;
+  const args = splitTopLevelArgs(call[1] ?? "");
+  const textArg = args[2]?.text?.trim() ?? "";
+  if (!textArg || (textArg.startsWith('"') && textArg.endsWith('"'))) {
+    return null;
+  }
+
+  const bindings = listSrcBindings(source);
+  const byKey = new Map(bindings.map((b) => [b.key, b.sensor]));
+
+  let key: string | null = null;
+  let format: TextFormat = "raw";
+
+  let m = textArg.match(/^tostring\s*\(\s*v_(\w+)\s*\)\s*\.\.\s*"%"$/);
+  if (m) {
+    key = m[1]!;
+    format = "percent";
+  } else if (
+    (m = textArg.match(/^string\.format\s*\(\s*"%.1f A"\s*,\s*v_(\w+)\s*\)$/))
+  ) {
+    key = m[1]!;
+    format = "float1_amps";
+  } else if (
+    (m = textArg.match(/^string\.format\s*\(\s*"%.1f"\s*,\s*v_(\w+)\s*\)$/))
+  ) {
+    key = m[1]!;
+    format = "float1";
+  } else if ((m = textArg.match(/^tostring\s*\(\s*v_(\w+)\s*\)$/))) {
+    key = m[1]!;
+    format = "raw";
+  } else if ((m = textArg.match(/^v_(\w+)$/))) {
+    key = m[1]!;
+    format = "string";
+  }
+
+  if (!key) return null;
+  const sensor = byKey.get(key);
+  if (!sensor) return null;
+  return { key, sensor, format };
+}
+
 function splitTopLevelArgs(
   argsSrc: string,
 ): { start: number; end: number; text: string }[] {
