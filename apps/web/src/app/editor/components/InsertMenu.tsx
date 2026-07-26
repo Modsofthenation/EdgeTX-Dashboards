@@ -34,7 +34,7 @@ export function InsertMenu({
   onInsertFullStacyDash,
   onInsertNitroStacyDash,
   onInsertCompanionSuite,
-  companionSuiteIds = [],
+  companionSuiteIds = EMPTY_SUITE_IDS,
 }: InsertMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
