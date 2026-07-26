@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { saveBlobToDisk } from "~/lib/desktopDownload";
 import styles from "./InstallWizard.module.css";
 
 type SdFile = { path: string; content: string; encoding?: string };
@@ -11,6 +12,8 @@ interface InstallWizardProps {
   installMd?: string | null;
   workspaceKey?: string | null;
   sessionId?: string | null;
+  /** Telemetry protocol required by /api/download when no sessionId. */
+  protocol?: string;
   /** Extra SD files (companions / IMAGES) merged when package API is empty. */
   extraFiles?: SdFile[];
   /** Companion suite labels included in the package (shown in checklist). */
@@ -42,6 +45,7 @@ export function InstallWizard({
   installMd,
   workspaceKey,
   sessionId,
+  protocol = "betaflight",
   extraFiles,
   companionLabels = EMPTY_COMPANION_LABELS,
   hasModelImage = false,
@@ -166,12 +170,46 @@ export function InstallWizard({
     }
   }, [sdPath, luaSource, widgetName, installMd, fetchPackageFiles, extraFiles]);
 
-  const downloadZip = useCallback(() => {
-    const params = new URLSearchParams();
-    if (workspaceKey) params.set("workspaceKey", workspaceKey);
-    else if (sessionId) params.set("sessionId", sessionId);
-    window.open(`/api/download?${params.toString()}`, "_blank");
-  }, [workspaceKey, sessionId]);
+  const downloadZip = useCallback(async () => {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const params = new URLSearchParams({ protocol });
+      if (sessionId) params.set("sessionId", sessionId);
+      else if (workspaceKey) params.set("instanceId", workspaceKey);
+      else if (widgetName) params.set("name", widgetName);
+      else {
+        setStatus("Save the widget before downloading");
+        return;
+      }
+
+      const res = await fetch(`/api/download?${params}`);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setStatus(body.error ?? `Download failed (${res.status})`);
+        return;
+      }
+
+      const blob = await res.blob();
+      const fileName = `${(widgetName || "widget").replace(/[^\w.-]+/g, "_")}.zip`;
+      const saved = await saveBlobToDisk(blob, fileName, {
+        title: "Save widget zip",
+        filters: [{ name: "Zip archive", extensions: ["zip"] }],
+      });
+      if (!saved.ok && "error" in saved) {
+        setStatus(saved.error);
+        return;
+      }
+      if (saved.ok) {
+        setChecks((c) => ({ ...c, unzip: true }));
+        setStatus(saved.path ? `Saved zip to ${saved.path}` : "Zip downloaded");
+      }
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [protocol, sessionId, workspaceKey, widgetName]);
 
   return (
     <section className={styles.root} aria-label="Install to SD card">
@@ -325,9 +363,10 @@ export function InstallWizard({
         <button
           type="button"
           className={styles.secondary}
-          onClick={downloadZip}
+          disabled={busy}
+          onClick={() => void downloadZip()}
         >
-          Download zip
+          {busy ? "Downloading…" : "Download zip"}
         </button>
         {desktop ? (
           <button

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
+import { saveBlobToDisk } from "~/lib/desktopDownload";
 import styles from "./DownloadPanel.module.css";
 
 interface DownloadPanelProps {
@@ -54,12 +55,13 @@ export function DownloadPanel({
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${widgetName}.zip`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      const saved = await saveBlobToDisk(blob, `${widgetName}.zip`, {
+        title: "Save widget zip",
+        filters: [{ name: "Zip archive", extensions: ["zip"] }],
+      });
+      if (!saved.ok && "error" in saved) {
+        setDownloadError(saved.error);
+      }
     } catch (err) {
       setDownloadError(err instanceof Error ? err.message : "Download failed");
     } finally {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot } from "~/lib/chatTypes";
+import { saveBlobToDisk } from "~/lib/desktopDownload";
 import { Preview480x320 } from "../Preview480x320";
 import styles from "./WidgetPreviewCard.module.css";
 
@@ -41,12 +42,13 @@ export function WidgetPreviewCard({
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${widget.name}.zip`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      const saved = await saveBlobToDisk(blob, `${widget.name}.zip`, {
+        title: "Save widget zip",
+        filters: [{ name: "Zip archive", extensions: ["zip"] }],
+      });
+      if (!saved.ok && "error" in saved) {
+        setDownloadError(saved.error);
+      }
     } catch (err) {
       setDownloadError(err instanceof Error ? err.message : "Download failed");
     } finally {

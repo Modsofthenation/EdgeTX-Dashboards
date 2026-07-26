@@ -96,6 +96,7 @@ import {
   type TemplateLayoutPrefab,
 } from "~/lib/templateGallery";
 import { fetchRadioCatalog } from "~/lib/radioCatalog";
+import { saveBlobToDisk } from "~/lib/desktopDownload";
 import {
   buildInstallGuide,
   formatInstallGuideMarkdown,
@@ -1077,12 +1078,13 @@ export function EditorApp() {
         return;
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${meta.name}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const saved = await saveBlobToDisk(blob, `${meta.name}.zip`, {
+        title: "Save widget zip",
+        filters: [{ name: "Zip archive", extensions: ["zip"] }],
+      });
+      if (!saved.ok && "error" in saved) {
+        setLoadError(saved.error);
+      }
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Download failed");
     } finally {
@@ -1618,6 +1620,7 @@ export function EditorApp() {
               installMd={installMd}
               workspaceKey={workspaceKey}
               sessionId={sessionId}
+              protocol={protocol}
               extraFiles={installExtraFiles}
               companionLabels={companionLabels}
               hasModelImage={
