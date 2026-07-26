@@ -9,7 +9,7 @@ mod sidecar {
   use super::SidecarState;
   use std::io::{BufRead, BufReader};
   use std::net::TcpListener;
-  use std::path::PathBuf;
+  use std::path::{Path, PathBuf};
   use std::process::{Child, Command, Stdio};
   use std::thread;
   use std::time::{Duration, Instant};
@@ -21,6 +21,62 @@ mod sidecar {
       .local_addr()
       .expect("local addr")
       .port()
+  }
+
+  /// Recursively copy `src` into `dest` (creates parents; overwrites files).
+  fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
+    if !src.is_dir() {
+      return Err(format!("Not a directory: {}", src.display()));
+    }
+    std::fs::create_dir_all(dest).map_err(|e| e.to_string())?;
+    for entry in std::fs::read_dir(src).map_err(|e| e.to_string())? {
+      let entry = entry.map_err(|e| e.to_string())?;
+      let ty = entry.file_type().map_err(|e| e.to_string())?;
+      let from = entry.path();
+      let to = dest.join(entry.file_name());
+      if ty.is_dir() {
+        copy_dir_recursive(&from, &to)?;
+      } else if ty.is_file() {
+        if let Some(parent) = to.parent() {
+          std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        std::fs::copy(&from, &to).map_err(|e| e.to_string())?;
+      }
+    }
+    Ok(())
+  }
+
+  /// Seed a writable Cursor/agent workspace under app data from bundled standalone assets.
+  /// Installer resources may be read-only; generate writes `generated/` under this workspace.
+  fn ensure_writable_workspace(
+    standalone: &Path,
+    data_dir: &Path,
+  ) -> Result<PathBuf, String> {
+    let workspace = data_dir.join("workspace");
+    std::fs::create_dir_all(&workspace).map_err(|e| e.to_string())?;
+
+    let asset_dirs = ["knowledge", "templates", "examples", "stubs"];
+    for name in asset_dirs {
+      let src = standalone.join(name);
+      if src.is_dir() {
+        copy_dir_recursive(&src, &workspace.join(name))?;
+      }
+    }
+    let rules_src = standalone.join(".cursor").join("rules");
+    if rules_src.is_dir() {
+      copy_dir_recursive(&rules_src, &workspace.join(".cursor").join("rules"))?;
+    }
+
+    std::fs::create_dir_all(workspace.join("generated")).map_err(|e| e.to_string())?;
+
+    let marker = workspace.join("knowledge").join("radios").join("tx15.json");
+    if !marker.is_file() {
+      return Err(format!(
+        "Desktop workspace missing knowledge marker at {}. Rebuild the desktop package so prepare-standalone stages knowledge/.",
+        marker.display()
+      ));
+    }
+    Ok(workspace)
   }
 
   fn find_node(app: &tauri::AppHandle) -> PathBuf {
@@ -173,6 +229,7 @@ mod sidecar {
 
     let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    let workspace = ensure_writable_workspace(&standalone, &data_dir)?;
 
     let node = find_node(app);
     let mut child = Command::new(&node)
@@ -181,6 +238,7 @@ mod sidecar {
       .env("PORT", port.to_string())
       .env("HOSTNAME", "127.0.0.1")
       .env("WIDGET_GEN_DATA_DIR", &data_dir)
+      .env("WIDGET_GEN_REPO_ROOT", &workspace)
       .env(
         "WIDGET_GEN_SIM_DIR",
         standalone.join("apps/web/public/sim").to_string_lossy().as_ref(),

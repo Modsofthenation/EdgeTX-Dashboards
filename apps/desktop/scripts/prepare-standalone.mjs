@@ -78,6 +78,36 @@ mkdirSync(join(webOut, ".next"), { recursive: true });
 cpSync(staticDir, join(webOut, ".next", "static"), { recursive: true });
 cpSync(publicDir, join(webOut, "public"), { recursive: true });
 
+// Generator needs knowledge/templates/examples/stubs/.cursor on disk (getRepoRoot).
+// Next standalone does not include these — stage them so the desktop sidecar can
+// seed a writable workspace under WIDGET_GEN_DATA_DIR.
+const REPO_ASSET_DIRS = [
+  "knowledge",
+  "templates",
+  "examples",
+  "stubs",
+  join(".cursor", "rules"),
+];
+for (const rel of REPO_ASSET_DIRS) {
+  const src = join(REPO_ROOT, rel);
+  const dest = join(OUT_ROOT, rel);
+  if (!existsSync(src)) {
+    console.warn(`Warning: repo asset missing, skipping: ${rel}`);
+    continue;
+  }
+  mkdirSync(dirname(dest), { recursive: true });
+  cpSync(src, dest, { recursive: true });
+  console.log(`Staged repo asset → standalone/${rel}`);
+}
+
+const stagedMarker = join(OUT_ROOT, "knowledge", "radios", "tx15.json");
+if (!existsSync(stagedMarker)) {
+  console.error(
+    `Staging failed — missing ${stagedMarker}. Desktop generate requires knowledge/.`,
+  );
+  process.exit(1);
+}
+
 const stagedSim = join(webOut, "public", "sim");
 const stagedManifest = join(stagedSim, "manifest.json");
 if (!existsSync(stagedManifest)) {

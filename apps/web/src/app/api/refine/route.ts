@@ -111,11 +111,30 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "sessionId is required" }, { status: 400 });
   }
 
-  const {
-    store,
-    stored,
-    sessionId: effectiveSessionId,
-  } = resolveRefineSession(data.sessionId, data.chatId?.trim(), apiKey);
+  let store;
+  let stored;
+  let effectiveSessionId: string;
+  try {
+    const resolved = resolveRefineSession(
+      data.sessionId,
+      data.chatId?.trim(),
+      apiKey,
+    );
+    store = resolved.store;
+    stored = resolved.stored;
+    effectiveSessionId = resolved.sessionId;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/refine] session resolve failed:", message);
+    return Response.json(
+      {
+        error: message.includes("repository root")
+          ? "Desktop package is missing generator assets (knowledge/). Reinstall from a fresh desktop build."
+          : message,
+      },
+      { status: 500 },
+    );
+  }
   if (!stored) {
     return Response.json(
       { error: "Session not found or expired" },

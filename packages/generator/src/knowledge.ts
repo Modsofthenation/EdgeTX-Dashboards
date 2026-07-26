@@ -37,7 +37,7 @@ export function getRepoRoot(): string {
   }
 
   throw new Error(
-    `Could not locate repository root (missing ${REPO_MARKER}). cwd=${process.cwd()}`,
+    `Could not locate repository root (missing ${REPO_MARKER}). cwd=${process.cwd()}. For desktop releases, prepare-standalone must stage knowledge/ and the shell must set WIDGET_GEN_REPO_ROOT to a writable workspace.`,
   );
 }
 
