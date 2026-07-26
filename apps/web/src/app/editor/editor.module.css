@@ -302,7 +302,10 @@
 }
 
 .editorMenuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   width: 100%;
   text-align: left;
   padding: 0.5rem 0.65rem;
@@ -321,6 +324,24 @@
 .editorMenuItem:disabled {
   opacity: 0.72;
   cursor: not-allowed;
+}
+
+.contextMenuLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.contextMenuShortcut {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.canvasContextMenu {
+  min-width: 220px;
+  z-index: 2200;
 }
 
 .toolbarToggleOn {
@@ -521,6 +542,13 @@
   margin-bottom: 0.65rem;
 }
 
+.panelHeadMain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .panelTitle {
   margin: 0;
   font-size: 0.75rem;
@@ -538,6 +566,28 @@
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--muted);
+}
+
+.panelClearBtn {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.panelClearBtn:hover:not(:disabled) {
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 40%, var(--border));
+}
+
+.panelClearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .sectionTitle {
@@ -593,6 +643,75 @@
   transition:
     background var(--transition),
     border-color var(--transition);
+  position: relative;
+}
+
+.layerItem[draggable="true"] {
+  cursor: grab;
+}
+
+.layerItem[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.layerItemDragging {
+  opacity: 0.45;
+}
+
+.layerItemDropBefore::before,
+.layerItemDropAfter::after {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.layerItemDropBefore::before {
+  top: -1px;
+}
+
+.layerItemDropAfter::after {
+  bottom: -1px;
+}
+
+.layerDragHandle {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.75rem;
+  margin-left: 0.1rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 0.65rem;
+  letter-spacing: -0.08em;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.layerDragHandle:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.layerDragHandle:active {
+  cursor: grabbing;
+}
+
+.layerDragHint {
+  margin: 0 0 0.35rem;
+  padding: 0 0.15rem;
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
 .layerItem:hover {
@@ -1063,6 +1182,41 @@
   overflow-x: hidden;
   overflow-y: auto;
   min-width: 0;
+}
+
+.exportModal {
+  width: min(520px, 100%);
+  max-height: min(90vh, 40rem);
+}
+
+.exportModalBody {
+  composes: appScrollbar from global;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-top: 0.35rem;
+}
+
+.exportValidationBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin: 0.65rem 0 0.25rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--error) 35%, var(--border));
+  background: color-mix(in srgb, var(--error) 8%, var(--surface));
+}
+
+.exportValidationBanner p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--error);
+  overflow-wrap: anywhere;
 }
 
 .validationList {

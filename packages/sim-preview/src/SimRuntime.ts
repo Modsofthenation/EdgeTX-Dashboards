@@ -339,13 +339,13 @@ export class SimRuntime {
       ) as ArrayBuffer,
     );
     const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
-    await runner.fsWriteFile(
-      plan.paths.modelPngPath,
-      png.buffer.slice(
-        png.byteOffset,
-        png.byteOffset + png.byteLength,
-      ) as ArrayBuffer,
-    );
+    const pngBuf = png.buffer.slice(
+      png.byteOffset,
+      png.byteOffset + png.byteLength,
+    ) as ArrayBuffer;
+    await runner.fsWriteFile(plan.paths.modelPngPath, pngBuf);
+    // Mirror for custom BG_IMG dashboards (`/IMAGES/dashbg.png`).
+    await runner.fsWriteFile("/IMAGES/dashbg.png", pngBuf.slice(0));
   }
 
   private async backupModels(): Promise<void> {

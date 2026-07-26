@@ -20,6 +20,7 @@ import {
   setRecordColor,
   duplicateRecordLine,
   moveRecordLine,
+  reorderRecordLine,
 } from "./luaDocument.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -199,4 +200,32 @@ return { name = name, create = create, refresh = refresh }
   const circleIdx = lines.findIndex((l) => l.includes("drawCircle"));
   assert.ok(rectIdx >= 0 && circleIdx >= 0);
   assert.ok(circleIdx < rectIdx);
+});
+
+test("reorderRecordLine places a record after another", () => {
+  const minimal = `---@type WidgetScript
+---@simulate Layout1x1 zone=0
+local name = "T"
+local function create(zone, opts) return { zone = zone, options = opts } end
+local function refresh(widget, event, touchState)
+  lcd.clear(BLACK)
+end
+return { name = name, create = create, refresh = refresh }
+`;
+  let source = insertDrawLine(minimal, "rect");
+  source = insertDrawLine(source, "circle");
+  source = insertDrawLine(source, "gauge");
+  const records = interpretDocument(source);
+  const rect = records.find((r) => r.kind === "rect");
+  const gauge = records.find((r) => r.kind === "gauge");
+  assert.ok(rect && gauge);
+  // Move rect in front of gauge (after gauge in source).
+  const moved = reorderRecordLine(source, rect!, gauge!, "after");
+  const lines = moved
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("lcd.draw"));
+  const rectIdx = lines.findIndex((l) => l.includes("drawRectangle"));
+  const gaugeIdx = lines.findIndex((l) => l.includes("drawGauge"));
+  assert.ok(rectIdx > gaugeIdx);
 });

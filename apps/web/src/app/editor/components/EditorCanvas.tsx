@@ -31,6 +31,11 @@ interface EditorCanvasProps {
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
   layoutProfileId?: string;
+  onContextMenu?: (info: {
+    clientX: number;
+    clientY: number;
+    hitId: string | null;
+  }) => void;
 }
 
 export function EditorCanvas({
@@ -47,6 +52,7 @@ export function EditorCanvas({
   scenarioId = "editor-preview",
   scenarioOverride,
   layoutProfileId = "tx15",
+  onContextMenu,
 }: EditorCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
@@ -150,6 +156,7 @@ export function EditorCanvas({
           onGestureEnd={onGestureEnd}
           snapEnabled={showSnapGuides}
           onSnapGuidesChange={setActiveGuides}
+          onContextMenu={onContextMenu}
         />
       </div>
       <div className={styles.canvasMeta}>
@@ -162,7 +169,7 @@ export function EditorCanvas({
         </span>
         <span className={styles.canvasHint}>·</span>
         <span className={styles.canvasHint}>
-          Canvas preview · Shift+click multi-select
+          Canvas preview · Right-click for actions · Shift/Ctrl+click multi-select
         </span>
       </div>
     </div>

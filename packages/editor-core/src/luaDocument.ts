@@ -179,13 +179,15 @@ export function translateRecord(
   dy: number,
   zone: ZoneOffset,
 ): string {
+  if (dx === 0 && dy === 0) return source;
   const patch: ArgPatch = {};
-  if (record.x != null) patch.x = record.x + dx;
-  if (record.y != null) patch.y = record.y + dy;
+  if (record.x != null && dx !== 0) patch.x = record.x + dx;
+  if (record.y != null && dy !== 0) patch.y = record.y + dy;
   if (record.kind === "line") {
-    if (record.x2 != null) patch.x2 = record.x2 + dx;
-    if (record.y2 != null) patch.y2 = record.y2 + dy;
+    if (record.x2 != null && dx !== 0) patch.x2 = record.x2 + dx;
+    if (record.y2 != null && dy !== 0) patch.y2 = record.y2 + dy;
   }
+  if (Object.keys(patch).length === 0) return source;
   return patchRecordArgs(source, record, patch, zone);
 }
 
@@ -384,9 +386,58 @@ export function moveRecordLine(
 ): string {
   const lineNum = record.sourceRef?.sourceLine ?? record.sourceLine;
   if (!lineNum) return source;
+  const bounds = refreshBodyLineBounds(source);
+  if (!bounds) return source;
+  const from = lineNum - 1;
+  const to = from + dir;
+  if (from < bounds.startIdx || from > bounds.lastIdx) return source;
+  if (to < bounds.startIdx || to > bounds.lastIdx) return source;
+  const lines = source.split("\n");
+  const [row] = lines.splice(from, 1);
+  if (row == null) return source;
+  lines.splice(to, 0, row);
+  return lines.join("\n");
+}
+
+/**
+ * Move `moving` so it sits immediately before/after `target` in source order
+ * (`before` = earlier / behind, `after` = later / in front).
+ */
+export function reorderRecordLine(
+  source: string,
+  moving: DrawRecord,
+  target: DrawRecord,
+  place: "before" | "after",
+): string {
+  const fromLine = moving.sourceRef?.sourceLine ?? moving.sourceLine;
+  const targetLine = target.sourceRef?.sourceLine ?? target.sourceLine;
+  if (!fromLine || !targetLine || fromLine === targetLine) return source;
+
+  const bounds = refreshBodyLineBounds(source);
+  if (!bounds) return source;
+
+  const from = fromLine - 1;
+  let insertAt = place === "before" ? targetLine - 1 : targetLine;
+  if (from < bounds.startIdx || from > bounds.lastIdx) return source;
+  if (targetLine - 1 < bounds.startIdx || targetLine - 1 > bounds.lastIdx) {
+    return source;
+  }
+
+  const lines = source.split("\n");
+  const [row] = lines.splice(from, 1);
+  if (row == null) return source;
+  if (from < insertAt) insertAt -= 1;
+  insertAt = Math.max(bounds.startIdx, Math.min(insertAt, bounds.lastIdx));
+  lines.splice(insertAt, 0, row);
+  return lines.join("\n");
+}
+
+function refreshBodyLineBounds(
+  source: string,
+): { startIdx: number; lastIdx: number } | null {
   const startLine1 = findRefreshBodyStartLine(source);
   const endIdx = findRefreshBodyEndIndex(source);
-  if (startLine1 < 0 || endIdx < 0) return source;
+  if (startLine1 < 0 || endIdx < 0) return null;
   const startIdx = startLine1 - 1;
   const lines = source.split("\n");
   let endLine = startIdx;
@@ -398,14 +449,9 @@ export function moveRecordLine(
       break;
     }
   }
-  const from = lineNum - 1;
-  const to = from + dir;
-  if (from < startIdx || from >= lines.length) return source;
-  if (to < startIdx || to >= endLine) return source;
-  const [row] = lines.splice(from, 1);
-  if (row == null) return source;
-  lines.splice(to, 0, row);
-  return lines.join("\n");
+  // last drawable/body line index before the closing `end`
+  const lastIdx = Math.max(startIdx, endLine - 1);
+  return { startIdx, lastIdx };
 }
 
 export function patchWidgetName(source: string, name: string): string {

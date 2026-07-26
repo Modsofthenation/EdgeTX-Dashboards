@@ -9,6 +9,17 @@
   box-sizing: border-box;
 }
 
+.rootEmbedded {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
 .title {
   margin: 0;
   font-size: 1.05rem;

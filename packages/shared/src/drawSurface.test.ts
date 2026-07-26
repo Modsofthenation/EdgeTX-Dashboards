@@ -21,6 +21,18 @@ describe("extractRefreshBody", () => {
     assert.ok(body.includes('lcd.drawText(1, 2, "inner")'));
   });
 
+  it("preserves indentation on the first body line", () => {
+    const source = [
+      "local function refresh(widget)",
+      "  lcd.clear(BLACK)",
+      '  lcd.drawText(4, 4, "hi")',
+      "end",
+    ].join("\n");
+
+    const body = extractRefreshBody(source);
+    assert.equal(body.startsWith("  lcd.clear"), true);
+  });
+
   it("extracts refresh = function(...) form", () => {
     const source = [
       "refresh = function(widget)",
