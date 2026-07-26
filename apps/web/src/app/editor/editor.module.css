@@ -813,8 +813,8 @@
 
 .propDetails {
   margin: 0.5rem 0 0;
-  padding: 0 0.15rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0 0.15rem;
+  border-bottom: none;
 }
 
 .propDetailsSummary {

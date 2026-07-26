@@ -108,6 +108,11 @@ import {
 } from "~/lib/installGuide";
 import { InstallWizard } from "~/components/InstallWizard";
 import {
+  parseDownloadValidationFailure,
+  ValidationFailureDialog,
+  type DownloadValidationFailure,
+} from "~/components/ValidationFailureDialog";
+import {
   alignSelectedRecords,
   distributeSelectedRecords,
   type AlignMode,
@@ -182,6 +187,8 @@ export function EditorApp() {
   );
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadValidationFailure, setDownloadValidationFailure] =
+    useState<DownloadValidationFailure | null>(null);
   const [copyDone, setCopyDone] = useState(false);
   const [workspaceKey, setWorkspaceKey] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -1171,11 +1178,19 @@ export function EditorApp() {
 
   const handleDownload = useCallback(async () => {
     if (valid === false) {
-      setLoadError("Fix validation errors before downloading");
+      setDownloadValidationFailure({
+        title: "Download blocked",
+        message: "Fix validation errors before downloading.",
+        hint: "Use the Validation panel in Properties, fix each error, Save, then try again.",
+        issues: validationIssues,
+        protocol,
+        radioId,
+      });
       return;
     }
     setDownloading(true);
     setLoadError(null);
+    setDownloadValidationFailure(null);
     try {
       let key = workspaceKey;
       if (dirty || (!key && !sessionId)) {
@@ -1186,13 +1201,23 @@ export function EditorApp() {
         return;
       }
       const params = new URLSearchParams({ protocol });
-      if (sessionId) params.set("sessionId", sessionId);
-      else if (key) params.set("instanceId", key);
+      if (radioId) params.set("radioId", radioId);
+      if (key) params.set("instanceId", key);
+      else if (sessionId) params.set("sessionId", sessionId);
       else params.set("name", meta.name);
       const res = await fetch(`/api/download?${params}`);
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setLoadError(body.error ?? `Download failed (${res.status})`);
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 422) {
+          setDownloadValidationFailure(
+            parseDownloadValidationFailure(body, res.status),
+          );
+          return;
+        }
+        const errBody = body as { error?: string; message?: string };
+        setLoadError(
+          errBody.message ?? errBody.error ?? `Download failed (${res.status})`,
+        );
         return;
       }
       const blob = await res.blob();
@@ -1208,7 +1233,17 @@ export function EditorApp() {
     } finally {
       setDownloading(false);
     }
-  }, [valid, dirty, workspaceKey, sessionId, handleSave, protocol, meta.name]);
+  }, [
+    valid,
+    validationIssues,
+    dirty,
+    workspaceKey,
+    sessionId,
+    handleSave,
+    protocol,
+    radioId,
+    meta.name,
+  ]);
 
   const handleCopyLua = useCallback(async () => {
     try {
@@ -1398,6 +1433,20 @@ export function EditorApp() {
   return (
     <div className={styles.editorRoot}>
       <AppPreferencesHost />
+      <ValidationFailureDialog
+        open={downloadValidationFailure != null}
+        failure={downloadValidationFailure}
+        onClose={() => setDownloadValidationFailure(null)}
+        onReview={() => {
+          setMobileTab("properties");
+          const first = (
+            downloadValidationFailure?.issues ?? validationIssues
+          ).find((i) => i.severity === "error" && i.line != null);
+          if (first && "line" in first) {
+            selectIssue(first as ValidationIssue);
+          }
+        }}
+      />
       <AppChrome
         surface="layout"
         subtitle={subtitle}
@@ -1749,6 +1798,7 @@ export function EditorApp() {
               workspaceKey={workspaceKey}
               sessionId={sessionId}
               protocol={protocol}
+              radioId={radioId}
               extraFiles={installExtraFiles}
               companionLabels={companionLabels}
               hasModelImage={
@@ -1758,6 +1808,19 @@ export function EditorApp() {
               lcdW={getSimulateLayoutProfile(layoutProfileId).lcdW}
               lcdH={getSimulateLayoutProfile(layoutProfileId).lcdH}
               touch={radioTouch}
+              onBeforeDownload={async () => {
+                if (dirty || (!workspaceKey && !sessionId)) {
+                  return handleSave();
+                }
+                return workspaceKey;
+              }}
+              onReviewValidation={() => {
+                setMobileTab("properties");
+                const first = validationIssues.find(
+                  (i) => i.severity === "error" && i.line != null,
+                );
+                if (first) selectIssue(first);
+              }}
             />
           </div>
         </div>
