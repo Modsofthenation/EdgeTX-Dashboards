@@ -28,6 +28,8 @@ import {
   translateRecord,
   duplicateRecordLine,
   moveRecordLine,
+  reorderRecordLine,
+  getSourceLine,
   type DocumentRecord,
   type TextFormat,
   type ZoneOffset,
@@ -1104,6 +1106,32 @@ export function EditorApp() {
     [setSource, previewScenario, markDirty],
   );
 
+  const handleReorderLayer = useCallback(
+    (draggedId: string, targetId: string, place: "before" | "after") => {
+      // Panel is front→back (reversed source). Visual "before" (above) =
+      // later in source / in front of target.
+      const sourcePlace = place === "before" ? "after" : "before";
+      const live = interpretDocument(source, previewScenario);
+      const moving = live.find((r) => r.id === draggedId);
+      const target = live.find((r) => r.id === targetId);
+      if (!moving || !target) return;
+      const fromLine = moving.sourceRef?.sourceLine ?? moving.sourceLine;
+      if (!fromLine) return;
+      const lineText = getSourceLine(source, fromLine);
+      const next = reorderRecordLine(source, moving, target, sourcePlace);
+      if (next === source) return;
+      setSource(next);
+      markDirty();
+      const after = interpretDocument(next, previewScenario);
+      const match = after.find((r) => {
+        const line = r.sourceRef?.sourceLine ?? r.sourceLine;
+        return line != null && getSourceLine(next, line) === lineText;
+      });
+      setSelectedIds(match ? [match.id] : []);
+    },
+    [source, previewScenario, setSource, markDirty],
+  );
+
   const handleValidate = useCallback(async () => {
     const res = await fetch("/api/validate", {
       method: "POST",
@@ -1650,6 +1678,7 @@ export function EditorApp() {
             onDelete={handleDelete}
             onMoveUp={(id) => handleMoveLayer(id, 1)}
             onMoveDown={(id) => handleMoveLayer(id, -1)}
+            onReorder={handleReorderLayer}
           />
         </div>
 

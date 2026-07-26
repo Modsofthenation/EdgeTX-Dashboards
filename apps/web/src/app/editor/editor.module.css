@@ -590,6 +590,57 @@
   transition:
     background var(--transition),
     border-color var(--transition);
+  position: relative;
+}
+
+.layerItem[draggable="true"] {
+  cursor: grab;
+}
+
+.layerItem[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.layerItemDragging {
+  opacity: 0.45;
+}
+
+.layerItemDropBefore::before,
+.layerItemDropAfter::after {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.layerItemDropBefore::before {
+  top: -1px;
+}
+
+.layerItemDropAfter::after {
+  bottom: -1px;
+}
+
+.layerDragHandle {
+  flex-shrink: 0;
+  width: 1rem;
+  text-align: center;
+  font-size: 0.65rem;
+  letter-spacing: -0.08em;
+  color: var(--muted);
+  user-select: none;
+  padding-left: 0.15rem;
+}
+
+.layerDragHint {
+  margin: 0 0 0.35rem;
+  padding: 0 0.15rem;
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
 .layerItem:hover {

@@ -13,6 +13,15 @@ interface RecordLayersPanelProps {
   onDelete: (id: string) => void;
   onMoveUp?: (id: string) => void;
   onMoveDown?: (id: string) => void;
+  /**
+   * Reorder in the visual list (top = front). `place: "before"` drops above
+   * the target row; `"after"` drops below.
+   */
+  onReorder?: (
+    draggedId: string,
+    targetId: string,
+    place: "before" | "after",
+  ) => void;
 }
 
 export function RecordLayersPanel({
@@ -22,8 +31,14 @@ export function RecordLayersPanel({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onReorder,
 }: RecordLayersPanelProps) {
   const [filter, setFilter] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<{
+    id: string;
+    place: "before" | "after";
+  } | null>(null);
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -31,6 +46,8 @@ export function RecordLayersPanel({
     if (!q) return rows;
     return rows.filter((r) => recordLayerLabel(r).toLowerCase().includes(q));
   }, [records, filter]);
+
+  const canDragReorder = Boolean(onReorder) && filter.trim() === "";
 
   return (
     <aside className={`${styles.sidePanel} ${styles.layersPanel}`}>
@@ -50,6 +67,10 @@ export function RecordLayersPanel({
         />
       </div>
 
+      {canDragReorder ? (
+        <p className={styles.layerDragHint}>Drag rows to change draw order</p>
+      ) : null}
+
       {records.length === 0 ? (
         <div className={styles.emptyState}>
           <p className={styles.emptyTitle}>No drawable layers</p>
@@ -63,11 +84,90 @@ export function RecordLayersPanel({
           {filtered.map((record) => {
             const selected = selectedIds.includes(record.id);
             const meta = catalogForDrawKind(record.kind);
+            const isDragging = draggingId === record.id;
+            const hint =
+              dropHint?.id === record.id && draggingId !== record.id
+                ? dropHint.place
+                : null;
             return (
               <li
                 key={record.id}
-                className={`${styles.layerItem} ${selected ? styles.layerItemSelected : ""}`}
+                className={[
+                  styles.layerItem,
+                  selected ? styles.layerItemSelected : "",
+                  isDragging ? styles.layerItemDragging : "",
+                  hint === "before" ? styles.layerItemDropBefore : "",
+                  hint === "after" ? styles.layerItemDropAfter : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                draggable={canDragReorder}
+                onDragStart={(e) => {
+                  if (!canDragReorder) return;
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", record.id);
+                  setDraggingId(record.id);
+                  setDropHint(null);
+                }}
+                onDragEnd={() => {
+                  setDraggingId(null);
+                  setDropHint(null);
+                }}
+                onDragOver={(e) => {
+                  if (!canDragReorder || !draggingId || draggingId === record.id)
+                    return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
+                  const place: "before" | "after" =
+                    e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                  setDropHint({ id: record.id, place });
+                }}
+                onDragLeave={(e) => {
+                  if (
+                    dropHint?.id === record.id &&
+                    !(e.currentTarget as HTMLElement).contains(
+                      e.relatedTarget as Node,
+                    )
+                  ) {
+                    setDropHint(null);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!canDragReorder || !onReorder) return;
+                  const draggedId =
+                    e.dataTransfer.getData("text/plain") || draggingId;
+                  if (!draggedId || draggedId === record.id) {
+                    setDraggingId(null);
+                    setDropHint(null);
+                    return;
+                  }
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
+                  const place: "before" | "after" =
+                    dropHint?.id === record.id
+                      ? dropHint.place
+                      : e.clientY < rect.top + rect.height / 2
+                        ? "before"
+                        : "after";
+                  onReorder(draggedId, record.id, place);
+                  setDraggingId(null);
+                  setDropHint(null);
+                }}
               >
+                {canDragReorder ? (
+                  <span
+                    className={styles.layerDragHandle}
+                    title="Drag to reorder"
+                    aria-hidden
+                  >
+                    ⋮⋮
+                  </span>
+                ) : null}
                 <button
                   type="button"
                   className={styles.layerSelect}
