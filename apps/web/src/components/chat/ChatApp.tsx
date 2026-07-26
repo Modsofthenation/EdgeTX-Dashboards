@@ -150,8 +150,15 @@ function AiSetupBanner() {
 function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
   const { running, chatId } = useChatSession();
   const { artifact, sessionId } = useArtifactPanel();
-  const { modelsLoading, selectedModel, modelId, selectedRadio, protocol } =
-    useSessionSettings();
+  const {
+    modelsLoading,
+    selectedModel,
+    modelId,
+    selectedRadio,
+    protocol,
+    radioId,
+    layoutProfileId,
+  } = useSessionSettings();
   const activeModelLabel = selectedModel?.label ?? modelId;
 
   const layoutHref = useMemo(() => {
@@ -161,8 +168,10 @@ function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
     if (sessionId) params.set("sessionId", sessionId);
     if (artifact.instanceId) params.set("instanceId", artifact.instanceId);
     else if (artifact.name) params.set("name", artifact.name);
+    params.set("layoutProfile", layoutProfileId);
+    params.set("radioId", radioId);
     return `/editor?${params.toString()}`;
-  }, [artifact, chatId, sessionId, protocol]);
+  }, [artifact, chatId, sessionId, protocol, layoutProfileId, radioId]);
 
   const subtitle = (
     <>
@@ -351,7 +360,7 @@ function ExpandedArtifactPanel({
   onToggleArtifact: () => void;
 }) {
   const { chatId, running } = useChatSession();
-  const { protocol, layoutProfileId, selectedRadio, edgeTxVersion } =
+  const { protocol, layoutProfileId, selectedRadio, edgeTxVersion, radioId } =
     useSessionSettings();
   const {
     artifact,
@@ -376,6 +385,7 @@ function ExpandedArtifactPanel({
       running={running}
       artifactLoading={artifactLoading}
       layoutProfileId={layoutProfileId}
+      radioId={radioId}
       radioName={selectedRadio?.name ?? null}
       edgeTxVersion={edgeTxVersion}
       panelCollapsed={false}

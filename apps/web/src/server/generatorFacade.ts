@@ -31,6 +31,7 @@ import {
   validateWidgetForRelease,
   validateWidgetSource,
   WidgetValidationError,
+  listWidgetPackageEntries,
 } from "@widget-gen/generator";
 
 export {
@@ -224,6 +225,30 @@ export function validateWidgetRelease(
       strictTelemetry: true,
     },
   );
+}
+
+/** SD-relative file list for desktop install wizard (WIDGETS/ + SCRIPTS/). */
+export function listWidgetSdFiles(
+  workspaceKey: string,
+): { path: string; content: string; encoding: "utf8" | "base64" }[] {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  const entries = listWidgetPackageEntries(key);
+  return entries.map((entry) => {
+    const buf = readFileSync(entry.filePath);
+    const isText = /\.(lua|md|txt|json|yml|yaml|csv)$/i.test(entry.zipPath);
+    if (isText) {
+      return {
+        path: entry.zipPath,
+        content: buf.toString("utf-8"),
+        encoding: "utf8" as const,
+      };
+    }
+    return {
+      path: entry.zipPath,
+      content: buf.toString("base64"),
+      encoding: "base64" as const,
+    };
+  });
 }
 
 export { findLatestWidgetName, sanitizeWidgetName };

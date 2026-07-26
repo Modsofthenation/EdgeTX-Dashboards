@@ -24,6 +24,11 @@ export interface MockTelemetryValues {
   Ptch: number;
   Roll: number;
   Yaw: number;
+  Vbat?: number;
+  Vcel?: number;
+  Vbec?: number;
+  Tspd?: number;
+  Gov?: number;
 }
 
 export interface SimFrameData {

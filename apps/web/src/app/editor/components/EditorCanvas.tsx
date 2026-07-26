@@ -29,6 +29,7 @@ interface EditorCanvasProps {
   showSnapGuides?: boolean;
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
+  layoutProfileId?: string;
 }
 
 export function EditorCanvas({
@@ -44,17 +45,24 @@ export function EditorCanvas({
   showSnapGuides = false,
   scenarioId = "editor-preview",
   scenarioOverride,
+  layoutProfileId = "tx15",
 }: EditorCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
 
   const previewDims = useMemo(() => {
     try {
-      return resolvePreviewDimensions(source, getSimulateLayoutProfile("tx15"));
+      return resolvePreviewDimensions(
+        source,
+        getSimulateLayoutProfile(layoutProfileId),
+      );
     } catch {
-      return resolvePreviewDimensions("", getSimulateLayoutProfile("tx15"));
+      return resolvePreviewDimensions(
+        "",
+        getSimulateLayoutProfile(layoutProfileId),
+      );
     }
-  }, [source]);
+  }, [source, layoutProfileId]);
 
   const updateLayout = useCallback(() => {
     const frame = frameRef.current;

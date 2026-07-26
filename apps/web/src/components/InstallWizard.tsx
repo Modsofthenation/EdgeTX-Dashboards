@@ -13,6 +13,8 @@ interface InstallWizardProps {
 
 type WizardStep = "checklist" | "copy" | "done";
 
+type SdFile = { path: string; content: string; encoding?: string };
+
 async function isTauri(): Promise<boolean> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,6 +72,17 @@ export function InstallWizard({
     }
   }, []);
 
+  const fetchPackageFiles = useCallback(async (): Promise<SdFile[]> => {
+    const params = new URLSearchParams();
+    if (workspaceKey) params.set("workspaceKey", workspaceKey);
+    else if (sessionId) params.set("sessionId", sessionId);
+    else return [];
+    const res = await fetch(`/api/widget-package-files?${params}`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as { files?: SdFile[] };
+    return Array.isArray(data.files) ? data.files : [];
+  }, [workspaceKey, sessionId]);
+
   const copyToSd = useCallback(async () => {
     if (!sdPath) return;
     if (!luaSource || !widgetName) {
@@ -80,20 +93,46 @@ export function InstallWizard({
     setStatus(null);
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      const result = await invoke<{ dest: string }>("install_widget_to_sd", {
-        sdRoot: sdPath,
-        widgetName,
-        luaSource,
-        installMd: installMd ?? null,
-      });
-      setStatus(`Copied to ${result.dest}`);
+      let files = await fetchPackageFiles();
+      if (files.length === 0) {
+        files = [
+          {
+            path: `WIDGETS/${widgetName}/main.lua`,
+            content: luaSource,
+            encoding: "utf8",
+          },
+        ];
+        if (installMd?.trim()) {
+          files.push({
+            path: `WIDGETS/${widgetName}/INSTALL.md`,
+            content: installMd,
+            encoding: "utf8",
+          });
+        }
+      }
+      const result = await invoke<{ dest: string; files?: string[] }>(
+        "install_widget_to_sd",
+        {
+          sdRoot: sdPath,
+          widgetName,
+          luaSource,
+          installMd: installMd ?? null,
+          files,
+        },
+      );
+      const n = result.files?.length ?? files.length;
+      setStatus(
+        n > 1
+          ? `Copied ${n} files (widget + companions) to ${result.dest}`
+          : `Copied to ${result.dest}`,
+      );
       setStep("done");
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
-  }, [sdPath, luaSource, widgetName, installMd]);
+  }, [sdPath, luaSource, widgetName, installMd, fetchPackageFiles]);
 
   const downloadZip = useCallback(() => {
     const params = new URLSearchParams();
@@ -132,7 +171,8 @@ export function InstallWizard({
                 setChecks((c) => ({ ...c, widgets: e.target.checked }))
               }
             />
-            Copy into <code>WIDGETS/&lt;Name&gt;/</code> on the SD card
+            Copy into <code>WIDGETS/&lt;Name&gt;/</code> (plus{" "}
+            <code>SCRIPTS/</code> companions when present)
           </label>
         </li>
         <li>
@@ -190,7 +230,7 @@ export function InstallWizard({
             disabled={busy || !luaSource}
             onClick={() => void copyToSd()}
           >
-            Copy WIDGETS to SD
+            Copy package to SD
           </button>
         ) : null}
       </div>

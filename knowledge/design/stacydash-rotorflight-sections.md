@@ -27,22 +27,28 @@ Custom Rotorflight CRSF sensors need:
 | Governor / mode | `FM` / `Gov`    | `Gov` enum                | FM string always useful                 |
 | Model image     | —               | `/IMAGES/<ModelName>.png` | Name must match RF Configurator exactly |
 
-**Nitro / OMP variants:** StacyDash switches sensor contracts (e.g. `NR` headspeed, RX pack bar). Prefabs default to the electric Rotorflight contract; mention Nitro/OMP only when the user asks.
+**Nitro / OMP variants:** Use Insert → **StacyDash nitro board** (`rf-nitro-pack-tiles` + `rf-nitro-rx-bar`) when the user asks for nitro/OMP. Headspeed still uses `HSpd` (alias `NR`). Gallery prompts for nitro remain available on Generate.
 
 ## Prefab ids (editor Insert → Rotorflight + AI)
 
-| Id                  | Role                                            |
-| ------------------- | ----------------------------------------------- |
-| `rf-topbar-link`    | Header: title, timer, RQLY bars                 |
-| `rf-model-panel`    | Left model / image placeholder + flights footer |
-| `rf-governor-card`  | Governor / FM status                            |
-| `rf-headspeed-hero` | DBLSIZE headspeed + tail                        |
-| `rf-motor-tiles`    | AMPS · CELL · BEC · ESC T                       |
-| `rf-battery-bar`    | Bottom Bat% fuel bar                            |
+| Id                    | Role                                            |
+| --------------------- | ----------------------------------------------- |
+| `rf-topbar-link`      | Header: title, timer, RQLY bars                 |
+| `rf-model-panel`      | Left model / image placeholder + flights footer |
+| `rf-governor-card`    | Governor / FM status                            |
+| `rf-headspeed-hero`   | DBLSIZE headspeed + tail                        |
+| `rf-motor-tiles`      | AMPS · CELL · BEC · ESC T                       |
+| `rf-battery-bar`      | Bottom Bat% fuel bar                            |
+| `rf-nitro-pack-tiles` | Nitro: RX V · CELL · BEC                        |
+| `rf-nitro-rx-bar`     | Nitro: RX pack voltage bar                      |
 
-Canonical TX15 assembly order:
+Canonical TX15 assembly order (electric):
 
 `rf-topbar-link` → `rf-model-panel` → `rf-governor-card` → `rf-headspeed-hero` → `rf-motor-tiles` → `rf-battery-bar`
+
+Nitro order:
+
+`rf-topbar-link` → `rf-model-panel` → `rf-governor-card` → `rf-headspeed-hero` → `rf-nitro-pack-tiles` → `rf-nitro-rx-bar`
 
 ## AI composition rules
 

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   listPrefabCatalog,
   STACYDASH_TX15_LAYOUT_ORDER,
+  STACYDASH_NITRO_LAYOUT_ORDER,
 } from "@widget-gen/editor-core";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
@@ -16,6 +17,8 @@ interface InsertMenuProps {
   onInsertPrefab?: (prefabId: string) => void;
   /** Insert every StacyDash TX15 section in canonical order. */
   onInsertFullStacyDash?: () => void;
+  /** Insert nitro / OMP StacyDash variant. */
+  onInsertNitroStacyDash?: () => void;
 }
 
 export function InsertMenu({
@@ -23,6 +26,7 @@ export function InsertMenu({
   onInsert,
   onInsertPrefab,
   onInsertFullStacyDash,
+  onInsertNitroStacyDash,
 }: InsertMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -140,8 +144,32 @@ export function InsertMenu({
                     Full StacyDash board
                   </span>
                   <span className={styles.insertItemDesc}>
-                    All {STACYDASH_TX15_LAYOUT_ORDER.length} TX15 sections in
-                    order
+                    Electric · all {STACYDASH_TX15_LAYOUT_ORDER.length} TX15
+                    sections
+                  </span>
+                </span>
+              </button>
+            ) : null}
+            {onInsertNitroStacyDash ? (
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.insertItem}
+                title={`Insert ${STACYDASH_NITRO_LAYOUT_ORDER.length} nitro sections`}
+                onClick={() => {
+                  onInsertNitroStacyDash();
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.insertItemIcon} aria-hidden>
+                  N2
+                </span>
+                <span className={styles.insertItemCopy}>
+                  <span className={styles.insertItemLabel}>
+                    StacyDash nitro board
+                  </span>
+                  <span className={styles.insertItemDesc}>
+                    Nitro/OMP · RX pack tiles + voltage bar
                   </span>
                 </span>
               </button>

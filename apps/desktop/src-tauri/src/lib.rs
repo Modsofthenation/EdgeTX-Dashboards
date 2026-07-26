@@ -247,12 +247,69 @@ mod sidecar {
   }
 }
 
+#[derive(serde::Deserialize)]
+struct SdInstallFile {
+  path: String,
+  content: String,
+  #[serde(default)]
+  encoding: Option<String>,
+}
+
+fn decode_sd_content(file: &SdInstallFile) -> Result<Vec<u8>, String> {
+  let enc = file.encoding.as_deref().unwrap_or("utf8");
+  if !enc.eq_ignore_ascii_case("base64") {
+    return Ok(file.content.as_bytes().to_vec());
+  }
+  fn b64_val(c: u8) -> Option<u8> {
+    match c {
+      b'A'..=b'Z' => Some(c - b'A'),
+      b'a'..=b'z' => Some(c - b'a' + 26),
+      b'0'..=b'9' => Some(c - b'0' + 52),
+      b'+' => Some(62),
+      b'/' => Some(63),
+      _ => None,
+    }
+  }
+  let cleaned: Vec<u8> = file
+    .content
+    .bytes()
+    .filter(|b| !b.is_ascii_whitespace())
+    .collect();
+  if cleaned.len() % 4 != 0 {
+    return Err("Invalid base64 length".into());
+  }
+  let mut out = Vec::with_capacity(cleaned.len() * 3 / 4);
+  let mut i = 0;
+  while i < cleaned.len() {
+    let (a, b, c, d) = (
+      cleaned[i],
+      cleaned[i + 1],
+      cleaned[i + 2],
+      cleaned[i + 3],
+    );
+    i += 4;
+    let av = b64_val(a).ok_or_else(|| "Invalid base64".to_string())?;
+    let bv = b64_val(b).ok_or_else(|| "Invalid base64".to_string())?;
+    out.push((av << 2) | (bv >> 4));
+    if c != b'=' {
+      let cv = b64_val(c).ok_or_else(|| "Invalid base64".to_string())?;
+      out.push(((bv & 0x0f) << 4) | (cv >> 2));
+      if d != b'=' {
+        let dv = b64_val(d).ok_or_else(|| "Invalid base64".to_string())?;
+        out.push(((cv & 0x03) << 6) | dv);
+      }
+    }
+  }
+  Ok(out)
+}
+
 #[tauri::command]
 fn install_widget_to_sd(
   sd_root: String,
   widget_name: String,
   lua_source: String,
   install_md: Option<String>,
+  files: Option<Vec<SdInstallFile>>,
 ) -> Result<serde_json::Value, String> {
   let name = widget_name.trim();
   if name.is_empty() || name.len() > 10 || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
@@ -263,15 +320,50 @@ fn install_widget_to_sd(
   if !root.is_dir() {
     return Err(format!("SD root is not a directory: {}", root.display()));
   }
+
+  let mut written: Vec<String> = Vec::new();
+
+  if let Some(extra) = files {
+    if !extra.is_empty() {
+      for file in extra {
+        let rel = file.path.trim().replace('\\', "/");
+        if rel.is_empty()
+          || rel.starts_with('/')
+          || rel.contains("..")
+          || !(rel.starts_with("WIDGETS/")
+            || rel.starts_with("SCRIPTS/TOOLS/")
+            || rel.starts_with("SCRIPTS/TELEMETRY/"))
+        {
+          return Err(format!("Refusing unsafe SD path: {rel}"));
+        }
+        let dest = root.join(&rel);
+        if let Some(parent) = dest.parent() {
+          std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        std::fs::write(&dest, decode_sd_content(&file)?).map_err(|e| e.to_string())?;
+        written.push(rel);
+      }
+      return Ok(serde_json::json!({
+        "dest": root.join("WIDGETS").join(name).display().to_string(),
+        "files": written,
+      }));
+    }
+  }
+
   let dest = root.join("WIDGETS").join(name);
   std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
   std::fs::write(dest.join("main.lua"), lua_source).map_err(|e| e.to_string())?;
+  written.push(format!("WIDGETS/{name}/main.lua"));
   if let Some(md) = install_md {
     if !md.trim().is_empty() {
       let _ = std::fs::write(dest.join("INSTALL.md"), md);
+      written.push(format!("WIDGETS/{name}/INSTALL.md"));
     }
   }
-  Ok(serde_json::json!({ "dest": dest.display().to_string() }))
+  Ok(serde_json::json!({
+    "dest": dest.display().to_string(),
+    "files": written,
+  }))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

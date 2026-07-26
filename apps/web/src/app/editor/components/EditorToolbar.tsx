@@ -21,6 +21,7 @@ interface EditorToolbarProps {
   onAdd: (kind: InsertDrawKind) => void;
   onAddPrefab?: (prefabId: string) => void;
   onAddFullStacyDash?: () => void;
+  onAddNitroStacyDash?: () => void;
   onSave: () => void;
   onSaveNamed?: () => void;
   onOpenRecent?: () => void;
@@ -46,6 +47,7 @@ export function EditorToolbar({
   onAdd,
   onAddPrefab,
   onAddFullStacyDash,
+  onAddNitroStacyDash,
   onSave,
   onSaveNamed,
   onOpenRecent,
@@ -135,6 +137,7 @@ export function EditorToolbar({
           onInsert={onAdd}
           onInsertPrefab={onAddPrefab}
           onInsertFullStacyDash={onAddFullStacyDash}
+          onInsertNitroStacyDash={onAddNitroStacyDash}
         />
 
         <label className={styles.toolbarSelect}>

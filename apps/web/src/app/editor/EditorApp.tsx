@@ -11,6 +11,7 @@ import {
   insertPrefabSection,
   insertPrefabSections,
   STACYDASH_TX15_LAYOUT_ORDER,
+  STACYDASH_NITRO_LAYOUT_ORDER,
   parseDocumentMeta,
   patchRecordArgs,
   patchWidgetName,
@@ -36,8 +37,11 @@ import {
 } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import {
+  DEFAULT_RADIO_ID,
   getSimulateLayoutProfile,
+  isLayoutProfileId,
   resolvePreviewDimensions,
+  type LayoutProfileId,
 } from "@widget-gen/shared";
 import { useRouter } from "next/navigation";
 import { AppChrome } from "~/components/AppChrome";
@@ -54,11 +58,13 @@ import {
 import type { InsertDrawKind } from "./elementMeta";
 import { AppPreferencesButton } from "~/components/AppPreferences";
 import {
+  deleteProject,
   getLastOpenProjectId,
   getProject,
   loadProjectSource,
   markProjectOpened,
   newProjectId,
+  renameProject,
   saveProjectSource,
   upsertProject,
 } from "~/lib/projectLibrary";
@@ -95,6 +101,18 @@ export function EditorApp() {
 
   const [protocol, setProtocol] = useState<TelemetryProtocol>(() =>
     parseProtocol(searchParams.get("protocol")),
+  );
+  const [layoutProfileId, setLayoutProfileId] = useState<LayoutProfileId>(
+    () => {
+      const raw =
+        searchParams.get("layoutProfile") ??
+        searchParams.get("radioId") ??
+        DEFAULT_RADIO_ID;
+      return isLayoutProfileId(raw) ? raw : DEFAULT_RADIO_ID;
+    },
+  );
+  const [radioId, setRadioId] = useState(
+    () => searchParams.get("radioId") ?? layoutProfileId,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -176,7 +194,7 @@ export function EditorApp() {
   const zone = useMemo((): ZoneOffset => {
     const dims = resolvePreviewDimensions(
       source,
-      getSimulateLayoutProfile("tx15"),
+      getSimulateLayoutProfile(layoutProfileId),
     );
     return {
       zoneX: dims.zoneX,
@@ -184,7 +202,7 @@ export function EditorApp() {
       zoneW: dims.zoneW,
       zoneH: dims.zoneH,
     };
-  }, [source]);
+  }, [source, layoutProfileId]);
 
   const markDirty = useCallback(() => {
     setDirty(true);
@@ -442,6 +460,25 @@ export function EditorApp() {
     markDirty();
   }, [setSource, markDirty, source, records]);
 
+  const handleAddNitroStacyDash = useCallback(() => {
+    const busy = source.includes("-- prefab:") || records.length > 2;
+    if (
+      busy &&
+      !window.confirm(
+        "Add StacyDash nitro sections (RX pack tiles + voltage bar)? Existing elements stay.",
+      )
+    ) {
+      return;
+    }
+    setSource((prev) => {
+      const { source: next } = insertPrefabSections(prev, [
+        ...STACYDASH_NITRO_LAYOUT_ORDER,
+      ]);
+      return next;
+    });
+    markDirty();
+  }, [setSource, markDirty, source, records]);
+
   const handleSaveNamed = useCallback(
     (name: string) => {
       const id = projectId ?? newProjectId();
@@ -451,13 +488,23 @@ export function EditorApp() {
         protocol,
         workspaceKey: workspaceKey ?? undefined,
         sessionId: sessionId ?? undefined,
+        radioId,
+        layoutProfileId,
         sourcePreview: source.slice(0, 120),
       });
       saveProjectSource(id, source);
       setProjectId(id);
       setProjectModal(null);
     },
-    [projectId, protocol, workspaceKey, sessionId, source],
+    [
+      projectId,
+      protocol,
+      workspaceKey,
+      sessionId,
+      source,
+      radioId,
+      layoutProfileId,
+    ],
   );
 
   const openProjectById = useCallback(
@@ -475,6 +522,13 @@ export function EditorApp() {
       if (project?.protocol) {
         setProtocol(project.protocol as TelemetryProtocol);
       }
+      if (
+        project?.layoutProfileId &&
+        isLayoutProfileId(project.layoutProfileId)
+      ) {
+        setLayoutProfileId(project.layoutProfileId);
+      }
+      if (project?.radioId) setRadioId(project.radioId);
       markProjectOpened(id);
       setDirty(false);
       setProjectModal(null);
@@ -506,15 +560,18 @@ export function EditorApp() {
       return;
     }
     try {
-      const handle = await openLiveTelemetryPort((values) => {
-        setLiveTelemetryValues(values);
-        const keys = Object.keys(values);
-        setLiveTelemetryNote(
-          keys.length
-            ? `Live radio · ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""} (canvas + sim)`
-            : "Live radio · waiting for CRSF frames",
-        );
-      });
+      const handle = await openLiveTelemetryPort(
+        (values) => {
+          setLiveTelemetryValues(values);
+          const keys = Object.keys(values);
+          setLiveTelemetryNote(
+            keys.length
+              ? `Live radio · ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""} (canvas + sim)`
+              : "Live radio · waiting for CRSF frames",
+          );
+        },
+        { enrichRotorflight: protocol === "rotorflight" },
+      );
       liveHandleRef.current = handle;
       setLiveTelemetryActive(true);
       setLiveTelemetryNote("Live radio · waiting for CRSF frames");
@@ -523,7 +580,12 @@ export function EditorApp() {
         err instanceof Error ? err.message : "Failed to open serial port",
       );
     }
-  }, [liveTelemetryActive]);
+  }, [liveTelemetryActive, protocol]);
+
+  const discoveredSensors = useMemo(() => {
+    if (!liveTelemetryValues) return [] as string[];
+    return Object.keys(liveTelemetryValues).sort();
+  }, [liveTelemetryValues]);
 
   useEffect(() => {
     return () => {
@@ -989,6 +1051,9 @@ export function EditorApp() {
         onAddFullStacyDash={
           protocol === "rotorflight" ? handleAddFullStacyDash : undefined
         }
+        onAddNitroStacyDash={
+          protocol === "rotorflight" ? handleAddNitroStacyDash : undefined
+        }
         onSave={handleSave}
         onSaveNamed={() => setProjectModal("save")}
         onOpenRecent={handleOpenRecent}
@@ -1010,7 +1075,7 @@ export function EditorApp() {
         <div className={styles.protocolCallout} role="status">
           Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
           On), then Telemetry → Discover new for HSpd / EscT / Vbec / Vcel /
-          Gov. Use Insert → Full StacyDash board for the TX15 prefab layout.
+          Gov. Insert → Full StacyDash (electric) or StacyDash nitro board.
         </div>
       ) : null}
       {lastProjectOffer ? (
@@ -1104,6 +1169,7 @@ export function EditorApp() {
               scenarioOverride={
                 liveTelemetryActive ? previewScenario : undefined
               }
+              layoutProfileId={layoutProfileId}
             />
           )}
         </div>
@@ -1117,6 +1183,7 @@ export function EditorApp() {
             selectedRecords={selectedRecords}
             zone={zone}
             protocol={protocol}
+            discoveredSensors={discoveredSensors}
             onPatchName={(name) => {
               setSource((prev) => patchWidgetName(prev, name));
               markDirty();
@@ -1177,6 +1244,7 @@ export function EditorApp() {
         onReload={() => setSimReloadKey((k) => k + 1)}
         scenarioId={previewScenarioId}
         scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
+        layoutProfileId={layoutProfileId}
       />
 
       <ProjectLibraryModal
@@ -1186,6 +1254,14 @@ export function EditorApp() {
         onClose={() => setProjectModal(null)}
         onSave={handleSaveNamed}
         onOpen={openProjectById}
+        onRename={(id, name) => {
+          renameProject(id, name);
+        }}
+        onDelete={(id) => {
+          deleteProject(id);
+          if (projectId === id) setProjectId(null);
+        }}
+        onImported={(id) => openProjectById(id)}
       />
 
       {pasteOpen && (
