@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { listPrefabCatalog } from "@widget-gen/editor-core";
 import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
 import styles from "../editor.module.css";
 
 interface InsertMenuProps {
   onInsert: (kind: InsertDrawKind) => void;
+  onInsertPrefab?: (prefabId: string) => void;
 }
 
-export function InsertMenu({ onInsert }: InsertMenuProps) {
+const ROTORFLIGHT_PREFABS = listPrefabCatalog({ protocol: "rotorflight" });
+
+export function InsertMenu({ onInsert, onInsertPrefab }: InsertMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -70,6 +74,7 @@ export function InsertMenu({ onInsert }: InsertMenuProps) {
         role="menu"
         style={{ top: menuPos.top, left: menuPos.left }}
       >
+        <div className={styles.insertGroupLabel}>Primitives</div>
         {DRAW_KIND_CATALOG.map(({ kind, label, shortLabel, description }) => (
           <button
             key={kind}
@@ -90,6 +95,42 @@ export function InsertMenu({ onInsert }: InsertMenuProps) {
             </span>
           </button>
         ))}
+        {onInsertPrefab && ROTORFLIGHT_PREFABS.length > 0 ? (
+          <>
+            <div className={styles.insertGroupLabel}>
+              Rotorflight sections
+              <span className={styles.insertGroupHint}>
+                Needs rf2bg · Discover new
+              </span>
+            </div>
+            {ROTORFLIGHT_PREFABS.map((prefab) => (
+              <button
+                key={prefab.id}
+                type="button"
+                role="menuitem"
+                className={styles.insertItem}
+                title={prefab.telemetryNotes.join("\n")}
+                onClick={() => {
+                  onInsertPrefab(prefab.id);
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.insertItemIcon} aria-hidden>
+                  {prefab.shortLabel}
+                </span>
+                <span className={styles.insertItemCopy}>
+                  <span className={styles.insertItemLabel}>{prefab.label}</span>
+                  <span className={styles.insertItemDesc}>
+                    {prefab.description}
+                    {prefab.requiredSensors.length > 0
+                      ? ` · ${prefab.requiredSensors.join(", ")}`
+                      : ""}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </>
+        ) : null}
       </div>,
       document.body,
     );

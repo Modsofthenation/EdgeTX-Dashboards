@@ -6,7 +6,7 @@ import type { TelemetryBinding, WidgetOption } from "../types.ts";
 
 const NAME_PATTERN = /local\s+name\s*=\s*"([^"]+)"/;
 const OPTION_ROW = /\{\s*"([^"]+)"\s*,\s*BOOL\s*,\s*([01])\s*\}/g;
-const SRC_ENTRY = /(\w+)\s*=\s*cacheSource\("([^"]+)"\)/g;
+const SRC_ENTRY = /(\w+)\s*=\s*(?:cacheSource|getSourceIndex)\("([^"]+)"\)/g;
 
 export function parseWidgetName(source: string): string {
   const match = source.match(NAME_PATTERN);

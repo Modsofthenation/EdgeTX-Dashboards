@@ -218,6 +218,17 @@ export function readRotorflightStyleGuide(): string {
   );
 }
 
+export function readStacyDashSectionsGuide(): string {
+  return readCachedTextIfExists(
+    join(
+      getRepoRoot(),
+      "knowledge",
+      "design",
+      "stacydash-rotorflight-sections.md",
+    ),
+  );
+}
+
 export function readCompanionScriptsGuide(): string {
   return readCachedTextIfExists(
     join(getRepoRoot(), "knowledge", "design", "companion-scripts.md"),

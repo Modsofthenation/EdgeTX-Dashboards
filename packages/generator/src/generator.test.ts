@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 import { sanitizeWidgetName, getWidgetLuaPath } from "./paths.ts";
 import { validateWidgetLua, extractUsedTelemetrySensors } from "./validate.ts";
 import { renderInstallMd } from "./package.ts";
-import { loadRadioProfile, loadTelemetryCatalog } from "./knowledge.ts";
+import {
+  loadRadioProfile,
+  loadTelemetryCatalog,
+  readStacyDashSectionsGuide,
+} from "./knowledge.ts";
 import { validateGenerateRequest } from "./requestValidate.ts";
 import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.ts";
 import { validateWidgetForRelease } from "./validationPipeline.ts";
@@ -255,6 +259,20 @@ describe("renderInstallMd", () => {
     const md = renderInstallMd("RF2Dash", radio, catalog, ["RPM"]);
     assert.ok(md.includes("RF2Dash"));
     assert.ok(md.includes("rf2bg"));
+    assert.ok(
+      (catalog.setupNotes ?? []).some((n) => /HSpd|Vbec|StacyDash/i.test(n)),
+      "rotorflight catalog should call out StacyDash-style custom CRSF sensors",
+    );
+    assert.ok(
+      md.includes("Vbec") || md.includes("HSpd") || md.includes("rf2bg"),
+    );
+  });
+
+  it("exposes StacyDash sections guide for rotorflight prompts", () => {
+    const guide = readStacyDashSectionsGuide();
+    assert.ok(guide.includes("rf-headspeed-hero"));
+    assert.ok(guide.includes("rf2bg"));
+    assert.ok(guide.includes("Vbec"));
   });
 
   it("includes companion script section when provided", () => {

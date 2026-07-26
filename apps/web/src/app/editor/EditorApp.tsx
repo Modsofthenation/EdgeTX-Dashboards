@@ -8,11 +8,13 @@ import {
   createStarterSource,
   interpretDocument,
   insertDrawLineWithId,
+  insertPrefabSection,
   parseDocumentMeta,
   patchRecordArgs,
   patchWidgetName,
   removeRecordLines,
   remapRecordIdsAfterLineRemoval,
+  remapSrcSensor,
   resizeRecord,
   setRecordColor,
   setRecordText,
@@ -341,6 +343,14 @@ export function EditorApp() {
     [setSource, markDirty, previewScenario],
   );
 
+  const handleRemapSrcSensor = useCallback(
+    (key: string, sensor: string) => {
+      setSource((prev) => remapSrcSensor(prev, key, sensor));
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+
   const handleAdd = useCallback(
     (kind: InsertDrawKind) => {
       let insertedId: string | null = null;
@@ -353,6 +363,17 @@ export function EditorApp() {
       markDirty();
     },
     [setSource, markDirty, previewScenario],
+  );
+
+  const handleAddPrefab = useCallback(
+    (prefabId: string) => {
+      setSource((prev) => {
+        const result = insertPrefabSection(prev, prefabId);
+        return result?.source ?? prev;
+      });
+      markDirty();
+    },
+    [setSource, markDirty],
   );
 
   const handleDeleteIds = useCallback(
@@ -800,6 +821,7 @@ export function EditorApp() {
           markDirty();
         }}
         onAdd={handleAdd}
+        onAddPrefab={handleAddPrefab}
         onSave={handleSave}
         onValidate={handleValidate}
         saving={saving}
@@ -883,6 +905,7 @@ export function EditorApp() {
         >
           <RecordPropertiesPanel
             meta={meta}
+            source={source}
             selectedRecords={selectedRecords}
             zone={zone}
             protocol={protocol}
@@ -899,6 +922,7 @@ export function EditorApp() {
             onSetColor={handleSetColor}
             onSetText={handleSetText}
             onBindTelemetry={handleBindTelemetry}
+            onRemapSrcSensor={handleRemapSrcSensor}
             onPatchSimulate={(layout, zoneIdx) => {
               setSource((prev) =>
                 prev.replace(

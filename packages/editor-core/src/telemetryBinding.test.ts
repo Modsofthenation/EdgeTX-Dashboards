@@ -6,6 +6,8 @@ import {
   interpretDocument,
   createStarterSource,
   insertDrawLine,
+  listSrcBindings,
+  remapSrcSensor,
 } from "./index.ts";
 
 describe("bindTextRecordToSensor", () => {
@@ -64,5 +66,43 @@ describe("bindTextRecordToSensor", () => {
     );
     assert.ok(live);
     assert.equal(live!.kind, "text");
+  });
+});
+
+describe("remapSrcSensor", () => {
+  it("changes catalog sensor while keeping src key stable", () => {
+    const source = `local name = "T"
+local function create(zone, opts)
+  return {
+    src = {
+      hspd = cacheSource("HSpd"),
+      tspd = cacheSource("Tspd"),
+    },
+  }
+end
+local function refresh(widget)
+  local hspd = telem(widget.src.hspd)
+  lcd.drawText(10, 10, tostring(hspd), WHITE)
+end
+return {
+  name = name,
+  create = create,
+  refresh = refresh,
+}
+`;
+    const next = remapSrcSensor(source, "hspd", "RPM");
+    assert.match(next, /hspd\s*=\s*cacheSource\("RPM"\)/);
+    assert.match(next, /tspd\s*=\s*cacheSource\("Tspd"\)/);
+    assert.match(next, /widget\.src\.hspd/);
+    const bindings = listSrcBindings(next);
+    assert.deepEqual(
+      bindings.find((b) => b.key === "hspd"),
+      { key: "hspd", sensor: "RPM" },
+    );
+  });
+
+  it("no-ops when key is missing", () => {
+    const source = `src = { hspd = cacheSource("HSpd") }`;
+    assert.equal(remapSrcSensor(source, "missing", "RPM"), source);
   });
 });

@@ -19,6 +19,7 @@ interface EditorToolbarProps {
   onUndo: () => void;
   onRedo: () => void;
   onAdd: (kind: InsertDrawKind) => void;
+  onAddPrefab?: (prefabId: string) => void;
   onSave: () => void;
   onValidate: () => void;
   saving: boolean;
@@ -36,6 +37,7 @@ export function EditorToolbar({
   onUndo,
   onRedo,
   onAdd,
+  onAddPrefab,
   onSave,
   onValidate,
   saving,
@@ -114,7 +116,7 @@ export function EditorToolbar({
 
         <div className={styles.toolbarDivider} aria-hidden />
 
-        <InsertMenu onInsert={onAdd} />
+        <InsertMenu onInsert={onAdd} onInsertPrefab={onAddPrefab} />
 
         <label className={styles.toolbarSelect}>
           <span className={styles.toolbarSelectLabel}>Protocol</span>
