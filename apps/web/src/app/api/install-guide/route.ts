@@ -14,6 +14,10 @@ export async function GET(request: Request): Promise<Response> {
   const protocol = (searchParams.get("protocol") ??
     "betaflight") as TelemetryProtocol;
   const widgetName = searchParams.get("widget") ?? undefined;
+  const radioName = searchParams.get("radioName") ?? undefined;
+  const lcdWRaw = searchParams.get("lcdW");
+  const lcdHRaw = searchParams.get("lcdH");
+  const touchRaw = searchParams.get("touch");
 
   const valid: TelemetryProtocol[] = [
     "betaflight",
@@ -24,5 +28,13 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid protocol" }, { status: 400 });
   }
 
-  return Response.json(buildInstallGuide(protocol, widgetName ?? undefined));
+  return Response.json(
+    buildInstallGuide(protocol, widgetName ?? undefined, {
+      radioName,
+      lcdW: lcdWRaw ? Number(lcdWRaw) : undefined,
+      lcdH: lcdHRaw ? Number(lcdHRaw) : undefined,
+      touch:
+        touchRaw === null ? undefined : touchRaw === "1" || touchRaw === "true",
+    }),
+  );
 }

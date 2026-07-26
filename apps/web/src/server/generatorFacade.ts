@@ -183,12 +183,17 @@ export function writeWidgetLuaSource(
 }
 
 /**
- * Write companion scripts under generated/<key>/tools|telemetry/.
- * Rel paths must be tools/*.lua or telemetry/*.lua (no traversal).
+ * Write companion scripts / model images under generated/<key>/.
+ * Rel paths must be tools/*.lua, telemetry/*.lua, or images/*.(png|PNG)
+ * (no traversal). Image content may be base64 when encoding is "base64".
  */
 export function writeWidgetCompanionFiles(
   workspaceKey: string,
-  files: { relPath: string; content: string }[],
+  files: {
+    relPath: string;
+    content: string;
+    encoding?: "utf8" | "base64";
+  }[],
 ): string[] {
   const key = normalizeWorkspaceKey(workspaceKey);
   const root = getGeneratedDirForKey(key);
@@ -196,19 +201,26 @@ export function writeWidgetCompanionFiles(
   const written: string[] = [];
   for (const file of files) {
     const rel = file.relPath.replace(/\\/g, "/").replace(/^\/+/, "");
-    if (
-      rel.includes("..") ||
-      !(
-        (rel.startsWith("tools/") || rel.startsWith("telemetry/")) &&
-        rel.endsWith(".lua")
-      )
-    ) {
+    if (rel.includes("..")) {
       throw new Error(`Refusing companion path: ${file.relPath}`);
     }
-    const dest = join(root, rel);
+    const isLua =
+      (rel.startsWith("tools/") || rel.startsWith("telemetry/")) &&
+      rel.endsWith(".lua");
+    const isImage =
+      (rel.startsWith("images/") || rel.startsWith("IMAGES/")) &&
+      /\.png$/i.test(rel);
+    if (!isLua && !isImage) {
+      throw new Error(`Refusing companion path: ${file.relPath}`);
+    }
+    const dest = join(root, rel.replace(/^IMAGES\//, "images/"));
     mkdirSync(dirname(dest), { recursive: true });
-    writeFileSync(dest, file.content, "utf-8");
-    written.push(rel);
+    if (isImage && file.encoding === "base64") {
+      writeFileSync(dest, Buffer.from(file.content, "base64"));
+    } else {
+      writeFileSync(dest, file.content, "utf-8");
+    }
+    written.push(rel.replace(/^IMAGES\//, "images/"));
   }
   return written;
 }

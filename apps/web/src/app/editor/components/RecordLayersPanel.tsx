@@ -11,6 +11,8 @@ interface RecordLayersPanelProps {
   selectedIds: string[];
   onSelect: (id: string, additive: boolean) => void;
   onDelete: (id: string) => void;
+  onMoveUp?: (id: string) => void;
+  onMoveDown?: (id: string) => void;
 }
 
 export function RecordLayersPanel({
@@ -18,6 +20,8 @@ export function RecordLayersPanel({
   selectedIds,
   onSelect,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: RecordLayersPanelProps) {
   const [filter, setFilter] = useState("");
 
@@ -78,6 +82,28 @@ export function RecordLayersPanel({
                   <span className={styles.layerKindTag}>{record.kind}</span>
                 </button>
                 <div className={styles.layerActions}>
+                  {onMoveUp ? (
+                    <button
+                      type="button"
+                      className={styles.layerActionBtn}
+                      title="Bring forward"
+                      aria-label="Bring layer forward"
+                      onClick={() => onMoveUp(record.id)}
+                    >
+                      ↑
+                    </button>
+                  ) : null}
+                  {onMoveDown ? (
+                    <button
+                      type="button"
+                      className={styles.layerActionBtn}
+                      title="Send backward"
+                      aria-label="Send layer backward"
+                      onClick={() => onMoveDown(record.id)}
+                    >
+                      ↓
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className={`${styles.layerActionBtn} ${styles.layerActionDanger}`}

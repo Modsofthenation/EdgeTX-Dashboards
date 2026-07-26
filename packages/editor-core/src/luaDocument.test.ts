@@ -18,6 +18,8 @@ import {
   insertDrawLineWithId,
   createStarterSource,
   setRecordColor,
+  duplicateRecordLine,
+  moveRecordLine,
 } from "./luaDocument.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -157,4 +159,32 @@ test("setRecordColor patches annulus color on 7-arg drawAnnulus", () => {
   const line = colored.split("\n")[record!.sourceLine! - 1]!;
   assert.match(line, /RED/);
   assert.doesNotMatch(line, /CYAN/);
+});
+
+test("duplicateRecordLine copies an anchored draw line into refresh", () => {
+  const source = insertDrawLine(createStarterSource(), "rect");
+  const record = interpretDocument(source).find((r) => r.kind === "rect");
+  assert.ok(record);
+  const duped = duplicateRecordLine(source, record!);
+  const count = duped
+    .split("\n")
+    .filter((l) => l.includes("drawRectangle")).length;
+  assert.equal(count, 2);
+});
+
+test("moveRecordLine reorders within refresh body", () => {
+  let source = insertDrawLine(createStarterSource(), "rect");
+  source = insertDrawLine(source, "circle");
+  const records = interpretDocument(source);
+  const circle = records.find((r) => r.kind === "circle");
+  assert.ok(circle);
+  const moved = moveRecordLine(source, circle!, -1);
+  const lines = moved
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("lcd.draw"));
+  const rectIdx = lines.findIndex((l) => l.includes("drawRectangle"));
+  const circleIdx = lines.findIndex((l) => l.includes("drawCircle"));
+  assert.ok(rectIdx >= 0 && circleIdx >= 0);
+  assert.ok(circleIdx < rectIdx);
 });

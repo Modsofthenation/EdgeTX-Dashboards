@@ -104,6 +104,7 @@ export { assertNodeVersion } from "./nodeVersion.ts";
 export {
   listWidgetPackageEntries,
   detectCompanions,
+  mapWidgetRelPathToZipPath,
   type ZipEntry,
   type CompanionManifest,
 } from "./packageEntries.ts";

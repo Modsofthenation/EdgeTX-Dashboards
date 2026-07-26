@@ -8,18 +8,32 @@ import styles from "./InstallGuidePanel.module.css";
 interface InstallGuidePanelProps {
   protocol: TelemetryProtocol;
   widgetName: string | null;
+  radioName?: string | null;
+  lcdW?: number;
+  lcdH?: number;
+  touch?: boolean;
 }
 
 export function InstallGuidePanel({
   protocol,
   widgetName,
+  radioName,
+  lcdW,
+  lcdH,
+  touch,
 }: InstallGuidePanelProps) {
   const [openSection, setOpenSection] = useState<string>("steps");
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const guide = useMemo(
-    () => buildInstallGuide(protocol, widgetName ?? undefined),
-    [protocol, widgetName],
+    () =>
+      buildInstallGuide(protocol, widgetName ?? undefined, {
+        radioName: radioName ?? undefined,
+        lcdW,
+        lcdH,
+        touch,
+      }),
+    [protocol, widgetName, radioName, lcdW, lcdH, touch],
   );
 
   const toggleCheck = (id: string) => {
@@ -37,7 +51,7 @@ export function InstallGuidePanel({
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Install on TX15</h2>
+        <h2 className={styles.title}>Install on {guide.radioName}</h2>
         {widgetName && (
           <span className={styles.progress}>
             {doneCount}/{allSteps.length} checks
@@ -54,6 +68,11 @@ export function InstallGuidePanel({
         </ul>
         <p className={styles.protocol}>
           Protocol: <strong>{guide.protocolLabel}</strong>
+          {" · "}
+          Display:{" "}
+          <strong>
+            {guide.lcdW}×{guide.lcdH}
+          </strong>
           {widgetName && (
             <>
               {" "}

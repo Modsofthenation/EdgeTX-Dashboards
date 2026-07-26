@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
+import { getSimulateLayoutProfile } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
 import {
   buildInstallGuide,
@@ -25,12 +26,39 @@ import styles from "./ArtifactPanel.module.css";
 import { useChatSession } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
 
+const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
+
+function readEnrichRotorflightPreference(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = localStorage.getItem(LIVE_ENRICH_STORAGE_KEY);
+    if (raw == null) return true;
+    return raw !== "0" && raw !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function writeEnrichRotorflightPreference(enabled: boolean): void {
+  try {
+    localStorage.setItem(LIVE_ENRICH_STORAGE_KEY, enabled ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
 function InstallGuideInline({
   protocol,
   widgetName,
+  radioName,
+  lcdW,
+  lcdH,
 }: {
   protocol: TelemetryProtocol;
   widgetName: string;
+  radioName?: string | null;
+  lcdW?: number;
+  lcdH?: number;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -45,7 +73,13 @@ function InstallGuideInline({
       </button>
       {open ? (
         <div className={styles.installBody}>
-          <InstallGuidePanel protocol={protocol} widgetName={widgetName} />
+          <InstallGuidePanel
+            protocol={protocol}
+            widgetName={widgetName}
+            radioName={radioName}
+            lcdW={lcdW}
+            lcdH={lcdH}
+          />
         </div>
       ) : null}
     </div>
@@ -94,6 +128,9 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   const [liveRadioActive, setLiveRadioActive] = useState(false);
   const [liveSensors, setLiveSensors] = useState<LiveSensorMap | null>(null);
   const [liveNote, setLiveNote] = useState<string | null>(null);
+  const [enrichRotorflight, setEnrichRotorflight] = useState(
+    readEnrichRotorflightPreference,
+  );
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
   const liveSupported =
     typeof window !== "undefined" ? isWebSerialSupported() : false;
@@ -102,10 +139,31 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   const showPreviewLoader = running || artifactLoading;
   const installMd = useMemo(() => {
     if (!artifact?.name) return null;
+    const profile = getSimulateLayoutProfile(layoutProfileId);
     return formatInstallGuideMarkdown(
-      buildInstallGuide(protocol, artifact.name),
+      buildInstallGuide(protocol, artifact.name, {
+        radioName: radioName ?? undefined,
+        lcdW: profile.lcdW,
+        lcdH: profile.lcdH,
+      }),
     );
-  }, [artifact?.name, protocol]);
+  }, [artifact?.name, protocol, radioName, layoutProfileId]);
+
+  const handleEnrichChange = useCallback(
+    (enabled: boolean) => {
+      setEnrichRotorflight(enabled);
+      writeEnrichRotorflightPreference(enabled);
+      liveHandleRef.current?.setEnrichRotorflight(enabled);
+      if (liveRadioActive && protocol === "rotorflight") {
+        setLiveNote(
+          enabled
+            ? "Live · enrich ON — HSpd/Gov/Vbec may be preview-filled"
+            : "Live · enrich OFF — wire CRSF sensors only",
+        );
+      }
+    },
+    [liveRadioActive, protocol],
+  );
 
   const toggleLiveRadio = useCallback(async () => {
     if (liveRadioActive) {
@@ -127,13 +185,15 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               : "Live · waiting for CRSF",
           );
         },
-        { enrichRotorflight: protocol === "rotorflight" },
+        { enrichRotorflight },
       );
       liveHandleRef.current = handle;
       setLiveRadioActive(true);
       setLiveNote(
         protocol === "rotorflight"
-          ? "Live · CRSF on wire; HSpd/Gov/Vbec may be preview-enriched (not true FC sensors until rf2bg)"
+          ? enrichRotorflight
+            ? "Live · CRSF on wire; enrich ON — HSpd/Gov/Vbec may be preview-filled (not true FC sensors until rf2bg)"
+            : "Live · CRSF on wire; enrich OFF — wire sensors only"
           : "Live · waiting for CRSF",
       );
     } catch (err) {
@@ -141,7 +201,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
         err instanceof Error ? err.message : "Failed to open serial port",
       );
     }
-  }, [liveRadioActive, protocol]);
+  }, [liveRadioActive, protocol, enrichRotorflight]);
 
   useEffect(() => {
     return () => {
@@ -274,19 +334,34 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               liveSensors={liveRadioActive ? liveSensors : null}
               variant="compact"
               toolbarExtra={
-                <button
-                  type="button"
-                  className={styles.liveRadioBtn}
-                  disabled={!liveSupported && !liveRadioActive}
-                  title={
-                    liveSupported
-                      ? "Stream CRSF/ELRS into this preview"
-                      : "Web Serial requires Chrome/Edge"
-                  }
-                  onClick={() => void toggleLiveRadio()}
-                >
-                  {liveRadioActive ? "Live: on" : "Live radio"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className={styles.liveRadioBtn}
+                    disabled={!liveSupported && !liveRadioActive}
+                    title={
+                      liveSupported
+                        ? "Stream CRSF/ELRS into this preview"
+                        : "Web Serial requires Chrome/Edge"
+                    }
+                    onClick={() => void toggleLiveRadio()}
+                  >
+                    {liveRadioActive ? "Live: on" : "Live radio"}
+                  </button>
+                  {protocol === "rotorflight" ? (
+                    <label
+                      className={styles.enrichCheck}
+                      title="Fill missing HSpd/Gov/Vbec from CRSF heuristics while live"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={enrichRotorflight}
+                        onChange={(e) => handleEnrichChange(e.target.checked)}
+                      />
+                      Enrich RF
+                    </label>
+                  ) : null}
+                </>
               }
             />
             {liveNote ? (
@@ -296,8 +371,10 @@ export const ArtifactPanel = memo(function ArtifactPanel({
             ) : null}
             {liveRadioActive && protocol === "rotorflight" ? (
               <p className={styles.liveRadioNote} role="note">
-                Preview enrich fills missing HSpd/Gov/Vbec/EscT from CRSF
-                heuristics — enable rf2bg + Discover new for true radio sensors.
+                Enrich {enrichRotorflight ? "ON" : "OFF"} —{" "}
+                {enrichRotorflight
+                  ? "fills missing HSpd/Gov/Vbec/EscT from CRSF heuristics; enable rf2bg + Discover new for true radio sensors."
+                  : "showing sensors present on the wire only."}
               </p>
             ) : null}
             {showPreviewLoader && (
@@ -406,6 +483,9 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               <InstallGuideInline
                 protocol={protocol}
                 widgetName={artifact.name}
+                radioName={radioName}
+                lcdW={getSimulateLayoutProfile(layoutProfileId)?.lcdW}
+                lcdH={getSimulateLayoutProfile(layoutProfileId)?.lcdH}
               />
               <div className={styles.installWrap}>
                 <InstallWizard
@@ -414,6 +494,10 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                   installMd={installMd}
                   workspaceKey={artifact.instanceId ?? null}
                   sessionId={sessionId}
+                  companionLabels={[]}
+                  hasModelImage={/drawBitmap|Bitmap\.open|\/IMAGES\//.test(
+                    artifact.luaSource ?? "",
+                  )}
                 />
               </div>
               {canRefine ? (

@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
   let body: {
     workspaceKey?: string;
     sessionId?: string;
-    files?: { relPath: string; content: string }[];
+    files?: {
+      relPath: string;
+      content: string;
+      encoding?: "utf8" | "base64";
+    }[];
   };
   try {
     body = (await req.json()) as typeof body;

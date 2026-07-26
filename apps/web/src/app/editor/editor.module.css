@@ -920,6 +920,14 @@
   overflow-y: auto;
 }
 
+.installPanel {
+  flex-shrink: 0;
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
 .validationList {
   margin: 0;
   padding: 0;
@@ -1230,6 +1238,33 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+.toolbarCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.toolbarCheck input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.modelPngThumb {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
 }
 
 .toolbarSelectLabel {

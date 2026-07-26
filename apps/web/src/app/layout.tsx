@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, IBM_Plex_Mono } from "next/font/google";
 import { AiSettingsProvider } from "~/components/AiSettingsProvider";
+import { FirstRunWizard } from "~/components/FirstRunWizard";
 import { ThemeProvider } from "~/lib/theme/ThemeProvider";
 import "./globals.css";
 
@@ -20,7 +21,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "EdgeTX Dashboards",
   description:
-    "Generate, preview, and edit EdgeTX Lua dashboards for TX15 — then download a zip for your radio SD card",
+    "Generate, preview, and edit EdgeTX Lua dashboards for TX15, Boxer, MT12, and other color radios — then download a zip for your radio SD card",
 };
 
 export default function RootLayout({
@@ -42,7 +43,10 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>
-          <AiSettingsProvider>{children}</AiSettingsProvider>
+          <AiSettingsProvider>
+            <FirstRunWizard />
+            {children}
+          </AiSettingsProvider>
         </ThemeProvider>
       </body>
     </html>

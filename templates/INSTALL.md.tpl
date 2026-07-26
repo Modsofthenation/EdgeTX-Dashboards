@@ -45,7 +45,7 @@ Rotorflight custom CRSF telemetry requires the `rf2bg` background script:
 ## 4. Full-screen mode (recommended for dashboards)
 
 1. Long-press the widget area.
-2. Select **Full screen** (or double-tap on touch radios like TX15).
+2. Select **Full screen** (or double-tap on touch radios).
 3. To exit full-screen: long-press **RTN/Back**.
 
 ## 5. Verify it works on the radio
@@ -72,7 +72,7 @@ Generated dashboards include EdgeTX Dev Kit annotations for in-editor WASM simul
 
 1. Install **Lua** and **EdgeTX Dev Kit** extensions (see `.vscode/extensions.json`).
 2. Run `npm run sync-stubs` if `stubs/2.11/` is missing.
-3. Open `main.lua` in VS Code and run **EdgeTX: Set Radio Profile** (TX15, EdgeTX 2.11+).
+3. Open `main.lua` in VS Code and run **EdgeTX: Set Radio Profile** (match {{RADIO_NAME}} / {{LCD_W}}×{{LCD_H}} when available).
 4. Run **EdgeTX: Simulate Script** or **Watch Script** for live firmware simulation.
 5. The `---@simulate` line controls which widget zone is used (full-screen: `Layout1x1 zone=0`).
 

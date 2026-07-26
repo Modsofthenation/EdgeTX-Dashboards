@@ -26,4 +26,15 @@ describe("companionSuites", () => {
     assert.equal(state.suites.length, 2);
     assert.equal(state.files.length, 2);
   });
+
+  it("exposes batt-voice and motor-gate suites", () => {
+    assert.ok(getCompanionSuite("batt-voice"));
+    assert.ok(getCompanionSuite("motor-gate"));
+    const sd = companionFilesToSd([
+      ...getCompanionSuite("batt-voice")!.files,
+      ...getCompanionSuite("motor-gate")!.files,
+    ]);
+    assert.ok(sd.some((f) => f.path.includes("batt_voice.lua")));
+    assert.ok(sd.some((f) => f.path.includes("motor_gate.lua")));
+  });
 });

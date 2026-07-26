@@ -10,7 +10,11 @@ export interface ZipEntry {
   zipPath: string;
 }
 
-function mapToZipPath(displayName: string, relPath: string): string {
+/** Map a workspace-relative path under generated/<key>/ to a zip/SD path. */
+export function mapWidgetRelPathToZipPath(
+  displayName: string,
+  relPath: string,
+): string {
   const normalized = relPath.replace(/\\/g, "/");
 
   if (normalized === "main.lua" || normalized === "INSTALL.md") {
@@ -25,6 +29,12 @@ function mapToZipPath(displayName: string, relPath: string): string {
   if (normalized.startsWith("telemetry/") && normalized.endsWith(".lua")) {
     const base = normalized.slice("telemetry/".length);
     return `SCRIPTS/TELEMETRY/${base}`;
+  }
+
+  // Model / asset PNGs for EdgeTX Bitmap.open("/IMAGES/…")
+  if (normalized.startsWith("images/") || normalized.startsWith("IMAGES/")) {
+    const base = normalized.replace(/^images\//i, "");
+    return `IMAGES/${base}`;
   }
 
   // Widget assets (png, etc.)
@@ -54,7 +64,7 @@ export function listWidgetPackageEntries(workspaceKey: string): ZipEntry[] {
       if (rel.startsWith(".")) continue;
       entries.push({
         filePath: full,
-        zipPath: mapToZipPath(safeDisplay, rel),
+        zipPath: mapWidgetRelPathToZipPath(safeDisplay, rel),
       });
     }
   };
@@ -67,16 +77,25 @@ export interface CompanionManifest {
   tools: string[];
   telemetry: string[];
   assets: string[];
+  /** Filenames under zip IMAGES/ (model bitmaps). */
+  images: string[];
 }
 
 export function detectCompanions(workspaceKey: string): CompanionManifest {
-  const manifest: CompanionManifest = { tools: [], telemetry: [], assets: [] };
+  const manifest: CompanionManifest = {
+    tools: [],
+    telemetry: [],
+    assets: [],
+    images: [],
+  };
   const displayName = resolveDisplayName(workspaceKey) ?? workspaceKey;
   for (const entry of listWidgetPackageEntries(workspaceKey)) {
     if (entry.zipPath.startsWith("SCRIPTS/TOOLS/")) {
       manifest.tools.push(entry.zipPath.replace("SCRIPTS/TOOLS/", ""));
     } else if (entry.zipPath.startsWith("SCRIPTS/TELEMETRY/")) {
       manifest.telemetry.push(entry.zipPath.replace("SCRIPTS/TELEMETRY/", ""));
+    } else if (entry.zipPath.startsWith("IMAGES/")) {
+      manifest.images.push(entry.zipPath.replace("IMAGES/", ""));
     } else if (
       entry.zipPath.startsWith(`WIDGETS/${displayName}/`) &&
       !entry.zipPath.endsWith("main.lua") &&

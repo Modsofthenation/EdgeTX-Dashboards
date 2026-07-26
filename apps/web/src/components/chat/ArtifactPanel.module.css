@@ -299,6 +299,24 @@
   cursor: not-allowed;
 }
 
+.enrichCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.enrichCheck input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .liveRadioNote {
   margin: 0.35rem 0 0;
   font-size: 0.72rem;

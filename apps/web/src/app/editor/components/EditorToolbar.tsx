@@ -40,8 +40,13 @@ interface EditorToolbarProps {
   liveTelemetryActive?: boolean;
   onToggleLiveTelemetry?: () => void;
   liveTelemetrySupported?: boolean;
+  enrichRotorflight?: boolean;
+  onEnrichChange?: (enabled: boolean) => void;
   modelPngName?: string | null;
+  modelPngUrl?: string | null;
   onModelPngChange?: (file: File | null) => void;
+  showSnapGuides?: boolean;
+  onSnapGuidesChange?: (show: boolean) => void;
   onAlign?: (mode: string) => void;
   onDistribute?: (mode: string) => void;
   canAlign?: boolean;
@@ -74,8 +79,13 @@ export function EditorToolbar({
   liveTelemetryActive,
   onToggleLiveTelemetry,
   liveTelemetrySupported,
+  enrichRotorflight,
+  onEnrichChange,
   modelPngName,
+  modelPngUrl,
   onModelPngChange,
+  showSnapGuides,
+  onSnapGuidesChange,
   onAlign,
   onDistribute,
   canAlign,
@@ -242,6 +252,14 @@ export function EditorToolbar({
             >
               {modelPngName ? `PNG: ${modelPngName}` : "Model PNG…"}
             </button>
+            {modelPngUrl ? (
+              <img
+                src={modelPngUrl}
+                alt=""
+                className={styles.modelPngThumb}
+                title={modelPngName ?? "Model PNG"}
+              />
+            ) : null}
             <input
               ref={modelFileRef}
               type="file"
@@ -263,6 +281,17 @@ export function EditorToolbar({
               </button>
             ) : null}
           </>
+        ) : null}
+
+        {onSnapGuidesChange ? (
+          <label className={styles.toolbarCheck} title="Show snap guides">
+            <input
+              type="checkbox"
+              checked={Boolean(showSnapGuides)}
+              onChange={(e) => onSnapGuidesChange(e.target.checked)}
+            />
+            <span>Snap guides</span>
+          </label>
         ) : null}
 
         <label className={styles.toolbarSelect}>
@@ -309,6 +338,20 @@ export function EditorToolbar({
           >
             {liveTelemetryActive ? "Live: on" : "Live radio"}
           </button>
+        ) : null}
+
+        {protocol === "rotorflight" && onEnrichChange ? (
+          <label
+            className={styles.toolbarCheck}
+            title="Fill missing HSpd/Gov/Vbec from CRSF heuristics while live"
+          >
+            <input
+              type="checkbox"
+              checked={enrichRotorflight !== false}
+              onChange={(e) => onEnrichChange(e.target.checked)}
+            />
+            <span>Enrich RF</span>
+          </label>
         ) : null}
       </div>
 

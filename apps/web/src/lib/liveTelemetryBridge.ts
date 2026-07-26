@@ -12,12 +12,17 @@ export type LiveSensorMap = Record<string, number | string>;
 
 export interface LiveTelemetryHandle {
   close: () => Promise<void>;
+  /** Update enrich-on-the-fly without reopening the serial port. */
+  setEnrichRotorflight: (enabled: boolean) => void;
+  /** Current enrich setting (synthetic RF fill). */
+  getEnrichRotorflight: () => boolean;
 }
 
 export interface OpenLiveTelemetryOptions {
   /**
    * Fill HSpd/Gov/Vbec/Vcel/Tspd/EscT/Vbat when absent from the CRSF stream.
-   * Default true — needed for Rotorflight / StacyDash boards.
+   * Default true — needed for Rotorflight / StacyDash boards in preview.
+   * Turn off to show only sensors present on the wire (true live CRSF).
    */
   enrichRotorflight?: boolean;
 }
@@ -156,7 +161,7 @@ export async function openLiveTelemetryPort(
     );
   }
 
-  const enrich = options.enrichRotorflight !== false;
+  const enrichFlag = { current: options.enrichRotorflight !== false };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nav = navigator as any;
   const port = await nav.serial.requestPort();
@@ -180,7 +185,7 @@ export async function openLiveTelemetryPort(
         parseFrame(frame, sensors);
       }
       tick += 1;
-      const out = enrich
+      const out = enrichFlag.current
         ? enrichRotorflightLiveSensors(sensors, tick)
         : { ...sensors };
       onValues(out);
@@ -205,5 +210,9 @@ export async function openLiveTelemetryPort(
         /* ignore */
       }
     },
+    setEnrichRotorflight: (enabled: boolean) => {
+      enrichFlag.current = enabled;
+    },
+    getEnrichRotorflight: () => enrichFlag.current,
   };
 }

@@ -70,3 +70,25 @@
   color: var(--success, #1a7f37);
   font-weight: 600;
 }
+
+.companionStatus {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border, #d0d7de);
+}
+
+.companionStatusTitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #57606a);
+}
+
+.companionList {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #57606a);
+  display: grid;
+  gap: 0.2rem;
+}

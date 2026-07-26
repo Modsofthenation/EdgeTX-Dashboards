@@ -2,6 +2,8 @@ import {
   resolvePreviewDimensions,
   extractRefreshBody,
   findRefreshBodyStartLine,
+  TX15_SIMULATE_PROFILE,
+  type SimulateLayoutProfile,
 } from "@widget-gen/shared";
 import {
   BASE_MOCK,
@@ -1459,9 +1461,10 @@ export interface PreviewStaticParse {
 /** Runs once per Lua source change — extracts refresh body and layout metadata. */
 export function parseLuaToDrawCommandsStatic(
   source: string,
+  profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,
 ): PreviewStaticParse | null {
   try {
-    const dims = resolvePreviewDimensions(source);
+    const dims = resolvePreviewDimensions(source, profile);
     const srcMap = buildSrcSensorMap(source);
     const rgbMap = buildRgbColorMap(source);
     const optionIndex = buildOptionIndexMap(source);
@@ -1804,8 +1807,9 @@ export function applyMockToCommands(
 export function parseLuaToDrawCommands(
   source: string,
   mockOrScenario: MockTelemetry | LayoutScenario = BASE_MOCK,
+  profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,
 ): PreviewDrawCommand[] {
-  const staticParse = parseLuaToDrawCommandsStatic(source);
+  const staticParse = parseLuaToDrawCommandsStatic(source, profile);
   if (!staticParse) return [];
   return applyMockToCommands(staticParse, source, mockOrScenario);
 }
@@ -1813,8 +1817,9 @@ export function parseLuaToDrawCommands(
 export function interpretWidgetLayout(
   source: string,
   scenario: LayoutScenario,
+  profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,
 ): InterpretResult {
-  const staticParse = parseLuaToDrawCommandsStatic(source);
+  const staticParse = parseLuaToDrawCommandsStatic(source, profile);
   if (!staticParse) {
     return {
       records: [],
