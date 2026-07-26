@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { getPreviewScenario } from "@widget-gen/layout-verify";
+import {
+  getPreviewScenario,
+  type LayoutScenario,
+} from "@widget-gen/layout-verify";
 import styles from "../editor.module.css";
 
 const RadioSimPreview = dynamic(
@@ -17,6 +20,7 @@ interface SimVerifyModalProps {
   reloadKey?: number;
   onReload?: () => void;
   scenarioId?: string;
+  scenarioOverride?: LayoutScenario;
 }
 
 export function SimVerifyModal({
@@ -26,13 +30,14 @@ export function SimVerifyModal({
   reloadKey = 0,
   onReload,
   scenarioId = "editor-preview",
+  scenarioOverride,
 }: SimVerifyModalProps) {
   const [interactiveControls, setInteractiveControls] = useState<{
     openInteractive: () => void;
   } | null>(null);
 
   if (!open) return null;
-  const scenario = getPreviewScenario(scenarioId);
+  const scenario = scenarioOverride ?? getPreviewScenario(scenarioId);
 
   return (
     <div className={styles.modalBackdrop} role="presentation" onClick={onClose}>

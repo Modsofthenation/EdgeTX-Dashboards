@@ -10,6 +10,7 @@ import type {
   ZoneOffset,
   BoundingBox,
 } from "@widget-gen/editor-core";
+import type { LayoutScenario } from "@widget-gen/layout-verify";
 import { computeCanvasLayout, type CanvasLayout } from "../lib/canvasLayout";
 import { EditorPreviewCanvas } from "./EditorPreviewCanvas";
 import { RecordSelectionOverlay } from "./RecordSelectionOverlay";
@@ -27,6 +28,7 @@ interface EditorCanvasProps {
   onGestureEnd?: () => void;
   showSnapGuides?: boolean;
   scenarioId?: string;
+  scenarioOverride?: LayoutScenario;
 }
 
 export function EditorCanvas({
@@ -41,6 +43,7 @@ export function EditorCanvas({
   onGestureEnd,
   showSnapGuides = false,
   scenarioId = "editor-preview",
+  scenarioOverride,
 }: EditorCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
@@ -83,6 +86,7 @@ export function EditorCanvas({
           zone={zone}
           layout={layout}
           scenarioId={scenarioId}
+          scenarioOverride={scenarioOverride}
         />
         {showSnapGuides && layout ? (
           <div

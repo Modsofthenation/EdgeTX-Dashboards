@@ -1,9 +1,13 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
+import {
+  buildInstallGuide,
+  formatInstallGuideMarkdown,
+} from "~/lib/installGuide";
 import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
 import { InstallWizard } from "../InstallWizard";
@@ -78,6 +82,12 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const showPreviewLoader = running || artifactLoading;
+  const installMd = useMemo(() => {
+    if (!artifact?.name) return null;
+    return formatInstallGuideMarkdown(
+      buildInstallGuide(protocol, artifact.name),
+    );
+  }, [artifact?.name, protocol]);
   const hasPreview = !!artifact?.luaSource;
   const previewKey = `${chatId ?? "new"}-${artifact?.instanceId ?? artifact?.name ?? "empty"}-v${viewingVersion}`;
   const isViewingLatest = viewingVersion === latestVersion;
@@ -311,6 +321,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 <InstallWizard
                   widgetName={artifact.name}
                   luaSource={artifact.luaSource}
+                  installMd={installMd}
                   workspaceKey={artifact.instanceId ?? null}
                   sessionId={sessionId}
                 />

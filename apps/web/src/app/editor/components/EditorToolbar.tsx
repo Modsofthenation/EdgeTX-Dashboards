@@ -198,7 +198,7 @@ export function EditorToolbar({
         {onOpenLast ? (
           <button
             type="button"
-            className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
+            className={styles.secondaryBtn}
             onClick={onOpenLast}
             title="Open last project"
           >
@@ -208,7 +208,7 @@ export function EditorToolbar({
         {onOpenRecent ? (
           <button
             type="button"
-            className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
+            className={styles.secondaryBtn}
             onClick={onOpenRecent}
           >
             Recent
@@ -217,7 +217,7 @@ export function EditorToolbar({
         {onSaveNamed ? (
           <button
             type="button"
-            className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
+            className={styles.secondaryBtn}
             onClick={onSaveNamed}
           >
             Save as…

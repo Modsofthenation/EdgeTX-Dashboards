@@ -29,8 +29,10 @@ import {
   getLastPreviewParseMeta,
   getPreviewScenario,
   isInterpretationReliable,
+  mergeLiveIntoMock,
   parseLuaToDrawCommands,
   type EdgeColor,
+  type LayoutScenario,
 } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import {
@@ -45,12 +47,15 @@ import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
 import { EditorToolbar } from "./components/EditorToolbar";
 import { SimVerifyModal } from "./components/SimVerifyModal";
+import {
+  ProjectLibraryModal,
+  type ProjectLibraryMode,
+} from "./components/ProjectLibraryModal";
 import type { InsertDrawKind } from "./elementMeta";
 import { AppPreferencesButton } from "~/components/AppPreferences";
 import {
   getLastOpenProjectId,
   getProject,
-  listRecentProjects,
   loadProjectSource,
   markProjectOpened,
   newProjectId,
@@ -60,6 +65,7 @@ import {
 import {
   isWebSerialSupported,
   openLiveTelemetryPort,
+  type LiveSensorMap,
   type LiveTelemetryHandle,
 } from "~/lib/liveTelemetryBridge";
 import styles from "./editor.module.css";
@@ -111,9 +117,18 @@ export function EditorApp() {
   const [previewScenarioId, setPreviewScenarioId] = useState("editor-preview");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [liveTelemetryActive, setLiveTelemetryActive] = useState(false);
+  const [liveTelemetryValues, setLiveTelemetryValues] =
+    useState<LiveSensorMap | null>(null);
   const [liveTelemetryNote, setLiveTelemetryNote] = useState<string | null>(
     null,
   );
+  const [projectModal, setProjectModal] = useState<ProjectLibraryMode | null>(
+    null,
+  );
+  const [lastProjectOffer, setLastProjectOffer] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
   const liveTelemetrySupported = useMemo(
     () => (typeof window !== "undefined" ? isWebSerialSupported() : false),
@@ -135,10 +150,14 @@ export function EditorApp() {
   } = useSourceUndoStack(createStarterSource());
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
-  const previewScenario = useMemo(
-    () => getPreviewScenario(previewScenarioId),
-    [previewScenarioId],
-  );
+  const previewScenario: LayoutScenario = useMemo(() => {
+    const base = getPreviewScenario(previewScenarioId);
+    if (!liveTelemetryActive || !liveTelemetryValues) return base;
+    return {
+      ...base,
+      mock: mergeLiveIntoMock(base.mock, liveTelemetryValues),
+    };
+  }, [previewScenarioId, liveTelemetryActive, liveTelemetryValues]);
   const records = useMemo(
     () => interpretDocument(source, previewScenario),
     [source, previewScenario],
@@ -404,6 +423,16 @@ export function EditorApp() {
   );
 
   const handleAddFullStacyDash = useCallback(() => {
+    // Starter has 2 draw records; confirm when the board already has work.
+    const busy = source.includes("-- prefab:") || records.length > 2;
+    if (
+      busy &&
+      !window.confirm(
+        "Add all 6 StacyDash sections to this board? Existing elements stay; prefabs are appended.",
+      )
+    ) {
+      return;
+    }
     setSource((prev) => {
       const { source: next } = insertPrefabSections(prev, [
         ...STACYDASH_TX15_LAYOUT_ORDER,
@@ -411,32 +440,34 @@ export function EditorApp() {
       return next;
     });
     markDirty();
-  }, [setSource, markDirty]);
+  }, [setSource, markDirty, source, records]);
 
-  const handleSaveNamed = useCallback(() => {
-    const name =
-      window.prompt("Project name", meta.name || "Dashboard")?.trim() ||
-      meta.name ||
-      "Dashboard";
-    const id = projectId ?? newProjectId();
-    upsertProject({
-      id,
-      name,
-      protocol,
-      workspaceKey: workspaceKey ?? undefined,
-      sessionId: sessionId ?? undefined,
-      sourcePreview: source.slice(0, 120),
-    });
-    saveProjectSource(id, source);
-    setProjectId(id);
-  }, [meta.name, projectId, protocol, workspaceKey, sessionId, source]);
+  const handleSaveNamed = useCallback(
+    (name: string) => {
+      const id = projectId ?? newProjectId();
+      upsertProject({
+        id,
+        name,
+        protocol,
+        workspaceKey: workspaceKey ?? undefined,
+        sessionId: sessionId ?? undefined,
+        sourcePreview: source.slice(0, 120),
+      });
+      saveProjectSource(id, source);
+      setProjectId(id);
+      setProjectModal(null);
+    },
+    [projectId, protocol, workspaceKey, sessionId, source],
+  );
 
   const openProjectById = useCallback(
     (id: string) => {
       const project = getProject(id);
       const lua = loadProjectSource(id);
       if (!lua) {
-        window.alert("No saved Lua for that project in this browser.");
+        setLiveTelemetryNote(
+          "No saved Lua for that project in this browser — use Save as… after editing.",
+        );
         return;
       }
       setSource(lua);
@@ -446,32 +477,20 @@ export function EditorApp() {
       }
       markProjectOpened(id);
       setDirty(false);
+      setProjectModal(null);
+      setLastProjectOffer(null);
     },
     [setSource],
   );
 
   const handleOpenRecent = useCallback(() => {
-    const recent = listRecentProjects();
-    if (recent.length === 0) {
-      window.alert("No recent projects yet — use Save as… first.");
-      return;
-    }
-    const lines = recent
-      .slice(0, 8)
-      .map((p, i) => `${i + 1}. ${p.name} (${p.protocol})`)
-      .join("\n");
-    const pick = window.prompt(
-      `Open recent project:\n${lines}\n\nEnter number`,
-    );
-    const idx = Number(pick) - 1;
-    if (!Number.isFinite(idx) || idx < 0 || idx >= recent.length) return;
-    openProjectById(recent[idx]!.id);
-  }, [openProjectById]);
+    setProjectModal("recent");
+  }, []);
 
   const handleOpenLast = useCallback(() => {
     const id = getLastOpenProjectId();
     if (!id) {
-      window.alert("No last project — use Save as… first.");
+      setLiveTelemetryNote("No last project — use Save as… first.");
       return;
     }
     openProjectById(id);
@@ -482,21 +501,23 @@ export function EditorApp() {
       await liveHandleRef.current?.close();
       liveHandleRef.current = null;
       setLiveTelemetryActive(false);
+      setLiveTelemetryValues(null);
       setLiveTelemetryNote(null);
       return;
     }
     try {
       const handle = await openLiveTelemetryPort((values) => {
+        setLiveTelemetryValues(values);
         const keys = Object.keys(values);
         setLiveTelemetryNote(
           keys.length
-            ? `Live · ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""}`
-            : "Live · waiting for CRSF frames",
+            ? `Live radio · ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""} (canvas + sim)`
+            : "Live radio · waiting for CRSF frames",
         );
       });
       liveHandleRef.current = handle;
       setLiveTelemetryActive(true);
-      setLiveTelemetryNote("Live · waiting for CRSF frames");
+      setLiveTelemetryNote("Live radio · waiting for CRSF frames");
     } catch (err) {
       setLiveTelemetryNote(
         err instanceof Error ? err.message : "Failed to open serial port",
@@ -511,9 +532,12 @@ export function EditorApp() {
   }, []);
 
   useEffect(() => {
-    const last = getLastOpenProjectId();
-    if (!last || hasRemoteWidget) return;
-    // Soft prompt once per mount via note — user clicks Open last.
+    if (hasRemoteWidget) return;
+    const id = getLastOpenProjectId();
+    if (!id) return;
+    const project = getProject(id);
+    if (!project || !loadProjectSource(id)) return;
+    setLastProjectOffer({ id, name: project.name });
   }, [hasRemoteWidget]);
 
   const handleDeleteIds = useCallback(
@@ -966,7 +990,7 @@ export function EditorApp() {
           protocol === "rotorflight" ? handleAddFullStacyDash : undefined
         }
         onSave={handleSave}
-        onSaveNamed={handleSaveNamed}
+        onSaveNamed={() => setProjectModal("save")}
         onOpenRecent={handleOpenRecent}
         onOpenLast={handleOpenLast}
         onValidate={handleValidate}
@@ -987,6 +1011,25 @@ export function EditorApp() {
           Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
           On), then Telemetry → Discover new for HSpd / EscT / Vbec / Vcel /
           Gov. Use Insert → Full StacyDash board for the TX15 prefab layout.
+        </div>
+      ) : null}
+      {lastProjectOffer ? (
+        <div className={styles.protocolCallout} role="status">
+          Resume <strong>{lastProjectOffer.name}</strong>?{" "}
+          <button
+            type="button"
+            className={styles.calloutLink}
+            onClick={() => openProjectById(lastProjectOffer.id)}
+          >
+            Open last
+          </button>
+          <button
+            type="button"
+            className={styles.calloutLink}
+            onClick={() => setLastProjectOffer(null)}
+          >
+            Dismiss
+          </button>
         </div>
       ) : null}
       {liveTelemetryNote ? (
@@ -1058,6 +1101,9 @@ export function EditorApp() {
               onGestureEnd={handleGestureEnd}
               showSnapGuides
               scenarioId={previewScenarioId}
+              scenarioOverride={
+                liveTelemetryActive ? previewScenario : undefined
+              }
             />
           )}
         </div>
@@ -1130,6 +1176,16 @@ export function EditorApp() {
         reloadKey={simReloadKey}
         onReload={() => setSimReloadKey((k) => k + 1)}
         scenarioId={previewScenarioId}
+        scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
+      />
+
+      <ProjectLibraryModal
+        open={projectModal != null}
+        mode={projectModal ?? "save"}
+        defaultName={meta.name || "Dashboard"}
+        onClose={() => setProjectModal(null)}
+        onSave={handleSaveNamed}
+        onOpen={openProjectById}
       />
 
       {pasteOpen && (

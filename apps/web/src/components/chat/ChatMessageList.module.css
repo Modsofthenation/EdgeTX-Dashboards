@@ -80,6 +80,44 @@
   color: var(--muted);
 }
 
+.galleryFilters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0 auto 0.75rem;
+  max-width: 34rem;
+}
+
+.galleryFilter,
+.galleryFilterActive {
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.galleryFilter:hover:not(:disabled) {
+  border-color: var(--border-strong, var(--border));
+  color: var(--text);
+}
+
+.galleryFilterActive {
+  border-color: var(--accent, #1f6feb);
+  background: color-mix(in srgb, var(--accent, #1f6feb) 14%, transparent);
+  color: var(--text);
+}
+
+.galleryFilter:disabled,
+.galleryFilterActive:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));

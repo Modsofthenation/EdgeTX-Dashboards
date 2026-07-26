@@ -61,8 +61,8 @@ export const SENSOR_CATALOG: Record<string, SensorOption[]> = {
     {
       label: "HSpd",
       formatHint: "raw",
-      aliases: ["Hspd"],
-      hint: "Headspeed — rf2bg Discover new",
+      aliases: ["Hspd", "NR"],
+      hint: "Headspeed (NR on nitro) — rf2bg Discover new",
     },
     {
       label: "Tspd",

@@ -193,3 +193,34 @@ export function buildInstallGuide(
     troubleshooting: TROUBLESHOOTING,
   };
 }
+
+/** Markdown suitable for INSTALL.md when copying to SD via the desktop wizard. */
+export function formatInstallGuideMarkdown(guide: InstallGuide): string {
+  const name = guide.widgetName ?? "Widget";
+  const lines: string[] = [
+    `# Install ${name} on ${guide.radioName}`,
+    "",
+    `Protocol: **${guide.protocolLabel}**`,
+    "",
+    "## Prerequisites",
+    "",
+    ...guide.prerequisites.map((p) => `- ${p}`),
+    "",
+    "## Setup steps",
+    "",
+  ];
+  for (const [i, step] of guide.steps.entries()) {
+    lines.push(`### ${i + 1}. ${step.title}`, "", step.detail, "");
+    if (step.verify) lines.push(`Ensure: ${step.verify}`, "");
+  }
+  lines.push("## Verification", "");
+  for (const step of guide.verification) {
+    lines.push(`- **${step.title}** — ${step.detail}`);
+  }
+  lines.push("", "## Troubleshooting", "");
+  for (const row of guide.troubleshooting) {
+    lines.push(`- **${row.issue}:** ${row.fix}`);
+  }
+  lines.push("");
+  return lines.join("\n");
+}

@@ -78,20 +78,54 @@ function round1(v: number): number {
   return Math.round(v * 10) / 10;
 }
 
+/** Radio / rf2bg Discover names → catalog mock keys. */
 const SENSOR_ALIASES: Record<string, keyof MockTelemetry> = {
   TRSS: "1RSS",
   RSSI: "1RSS",
+  RQly: "RQLY",
+  LQ: "RQLY",
+  TQly: "TQLY",
+  Hspd: "HSpd",
+  /** Nitro rotor RPM often discovered as NR. */
+  NR: "HSpd",
+  Tesc: "EscT",
 };
+
+export function resolveMockSensorKey(name: string): keyof MockTelemetry | null {
+  if (Object.prototype.hasOwnProperty.call(BASE_MOCK, name)) {
+    return name as keyof MockTelemetry;
+  }
+  return SENSOR_ALIASES[name] ?? null;
+}
+
+/**
+ * Overlay live radio / CRSF values onto a scenario mock.
+ * Unknown keys are ignored; aliases (Hspd, Tesc, NR, …) map to catalog names.
+ */
+export function mergeLiveIntoMock(
+  base: MockTelemetry,
+  live: Record<string, number | string>,
+): MockTelemetry {
+  const next: MockTelemetry = { ...base };
+  for (const [name, value] of Object.entries(live)) {
+    const key = resolveMockSensorKey(name);
+    if (!key) continue;
+    const current = next[key];
+    if (typeof current === "number") {
+      const n = typeof value === "number" ? value : Number(value);
+      if (Number.isFinite(n)) next[key] = n as never;
+    } else if (typeof current === "string") {
+      next[key] = String(value) as never;
+    }
+  }
+  return next;
+}
 
 export function getMockForSensor(
   name: string,
   mock: MockTelemetry,
 ): string | number {
-  const alias = SENSOR_ALIASES[name];
-  if (alias) return mock[alias];
-  const key = name as keyof MockTelemetry;
-  if (key in mock) {
-    return mock[key];
-  }
+  const key = resolveMockSensorKey(name);
+  if (key) return mock[key];
   return 0;
 }
