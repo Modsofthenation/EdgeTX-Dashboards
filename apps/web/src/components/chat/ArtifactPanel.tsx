@@ -328,6 +328,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               luaSource={artifact?.luaSource ?? null}
               widgetName={artifact?.name ?? null}
               layoutProfileId={layoutProfileId}
+              radioId={radioId ?? layoutProfileId}
               edgeTxVersion={edgeTxVersion}
               radioName={radioName}
               live={!showPreviewLoader && !liveRadioActive}

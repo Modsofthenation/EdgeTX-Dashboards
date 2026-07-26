@@ -1,7 +1,8 @@
 {
   "defaultVersion": "2.11.0",
+  "defaultRadio": "tx15",
   "source": "https://ypwfws8ckruh03m1.public.blob.vercel-storage.com/wasm",
-  "syncedAt": "2026-07-25T02:11:00.748Z",
+  "syncedAt": "2026-07-26T02:17:20.523Z",
   "versions": {
     "2.11.0": {
       "label": "2.11",
@@ -30,14 +31,75 @@
   "radios": {
     "tx15": {
       "name": "RadioMaster TX15",
+      "flavour": "tx15",
       "wasm": "edgetx-tx15-simulator.wasm",
+      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
+      "size": 5303067,
       "display": {
         "w": 480,
         "h": 320,
         "depth": 16
-      },
-      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
-      "size": 5303067
+      }
+    },
+    "tx16": {
+      "name": "RadioMaster TX16S",
+      "flavour": "tx16s",
+      "wasm": "edgetx-tx16s-simulator.wasm",
+      "sha256": "d3d572d5fbdbbe215d699b39dc95a0ac14c5f910b2356c6088536794f2037f81",
+      "size": 5251641,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "t16": {
+      "name": "Jumper T16",
+      "flavour": "t16",
+      "wasm": "edgetx-t16-simulator.wasm",
+      "sha256": "5688614dd7c8ef084c563bb8b35e8842a6583f16b3cf94eea91222aa19e1be0a",
+      "size": 5250368,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "t18": {
+      "name": "Jumper T18",
+      "flavour": "t18",
+      "wasm": "edgetx-t18-simulator.wasm",
+      "sha256": "3c29e1dadbf6c5019afd339c3423ac19805185fead7b5edb67edf112fba2c2b2",
+      "size": 5251215,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "x10": {
+      "name": "FrSky Horus X10",
+      "flavour": "x10",
+      "wasm": "edgetx-x10-simulator.wasm",
+      "sha256": "936bdab1231d04738866c13077e2194c4bc72e7437ac3d7c9b8b68fe33282504",
+      "size": 5270404,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "x12": {
+      "name": "FrSky Horus X12S",
+      "flavour": "x12s",
+      "wasm": "edgetx-x12s-simulator.wasm",
+      "sha256": "bcae9792c3830e5965897a3d271506cd0d79f9c5cacc79380567bb7f95823e99",
+      "size": 5268978,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
     }
   }
 }

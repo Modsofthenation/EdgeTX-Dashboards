@@ -23,8 +23,10 @@ function wasmFilesFromManifest(manifest) {
       if (entry?.wasm) files.add(entry.wasm);
     }
   }
-  if (manifest.radios?.tx15?.wasm) {
-    files.add(manifest.radios.tx15.wasm);
+  if (manifest.radios) {
+    for (const radio of Object.values(manifest.radios)) {
+      if (radio?.wasm) files.add(radio.wasm);
+    }
   }
   return [...files];
 }

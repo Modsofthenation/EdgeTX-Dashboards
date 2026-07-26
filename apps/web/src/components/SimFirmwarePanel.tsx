@@ -11,12 +11,25 @@ type FirmwareFile = {
   sizeLabel: string;
 };
 
+type FirmwareRadio = {
+  id: string;
+  name: string;
+  flavour: string;
+  wasm: string;
+  display: { w: number; h: number; depth: number };
+  present: boolean;
+  size: number;
+  ok: boolean;
+  sizeLabel: string;
+};
+
 type FirmwareStatus = {
   ready: boolean;
   reason: string;
   defaultVersion: string | null;
   syncedAt: string | null;
   source: string | null;
+  radios?: FirmwareRadio[];
   files: FirmwareFile[];
   error?: string;
   downloaded?: boolean;
@@ -27,6 +40,7 @@ export function SimFirmwarePanel() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRawFiles, setShowRawFiles] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -63,9 +77,15 @@ export function SimFirmwarePanel() {
     }
   }, []);
 
+  const radios = status?.radios ?? [];
+  const readyRadios = radios.filter((r) => r.ok).length;
   const totalBytes =
-    status?.files.reduce((sum, file) => sum + (file.ok ? file.size : 0), 0) ??
-    0;
+    radios.length > 0
+      ? radios.reduce((sum, radio) => sum + (radio.ok ? radio.size : 0), 0)
+      : (status?.files.reduce(
+          (sum, file) => sum + (file.ok ? file.size : 0),
+          0,
+        ) ?? 0);
 
   return (
     <section className={styles.panel}>
@@ -73,9 +93,10 @@ export function SimFirmwarePanel() {
         <div>
           <h3 className={styles.title}>Simulator firmware (WASM)</h3>
           <p className={styles.hint}>
-            EdgeTX TX15 WASM (~5 MB) powers the radio preview and interactive
-            sim. Download once per machine; files land in{" "}
-            <code>public/sim</code>.
+            Color EdgeTX firmwares power the radio preview and interactive sim
+            for TX15, TX16S, T16, T18, X10, and X12S. Download once per machine;
+            files land in <code>public/sim</code>. Other radios stay on the
+            parser canvas until B&W paint lands.
           </p>
         </div>
         <span className={status?.ready ? styles.badgeOk : styles.badgeWarn}>
@@ -95,6 +116,16 @@ export function SimFirmwarePanel() {
           <dd>{status?.defaultVersion ?? "—"}</dd>
         </div>
         <div>
+          <dt>Radios</dt>
+          <dd>
+            {radios.length > 0
+              ? `${readyRadios}/${radios.length}`
+              : status?.ready
+                ? "ok"
+                : "—"}
+          </dd>
+        </div>
+        <div>
           <dt>On disk</dt>
           <dd>
             {totalBytes > 0
@@ -112,22 +143,71 @@ export function SimFirmwarePanel() {
         </div>
       </dl>
 
-      <ul className={styles.fileList}>
-        {(status?.files ?? []).map((file) => (
-          <li
-            key={file.name}
-            className={file.ok ? styles.fileOk : styles.fileMissing}
+      {radios.length > 0 ? (
+        <ul className={styles.fileList} aria-label="WASM radios">
+          {radios.map((radio) => (
+            <li
+              key={radio.id}
+              className={radio.ok ? styles.fileOk : styles.fileMissing}
+            >
+              <span className={styles.radioMain}>
+                <span className={styles.radioName}>{radio.name}</span>
+                <span className={styles.radioMeta}>
+                  {radio.display.w}×{radio.display.h} · {radio.flavour}
+                </span>
+              </span>
+              <span className={styles.fileMeta}>
+                {radio.ok ? radio.sizeLabel : "missing"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className={styles.fileList}>
+          {(status?.files ?? []).map((file) => (
+            <li
+              key={file.name}
+              className={file.ok ? styles.fileOk : styles.fileMissing}
+            >
+              <span className={styles.fileName}>{file.name}</span>
+              <span className={styles.fileMeta}>
+                {file.ok ? file.sizeLabel : "missing"}
+              </span>
+            </li>
+          ))}
+          {!loading && (status?.files.length ?? 0) === 0 ? (
+            <li className={styles.fileMissing}>No firmware files found</li>
+          ) : null}
+        </ul>
+      )}
+
+      {radios.length > 0 ? (
+        <div className={styles.rawToggle}>
+          <button
+            type="button"
+            className={styles.linkBtn}
+            onClick={() => setShowRawFiles((v) => !v)}
+            aria-expanded={showRawFiles}
           >
-            <span className={styles.fileName}>{file.name}</span>
-            <span className={styles.fileMeta}>
-              {file.ok ? file.sizeLabel : "missing"}
-            </span>
-          </li>
-        ))}
-        {!loading && (status?.files.length ?? 0) === 0 ? (
-          <li className={styles.fileMissing}>No firmware files found</li>
-        ) : null}
-      </ul>
+            {showRawFiles ? "Hide raw files" : "Show raw files"}
+          </button>
+          {showRawFiles ? (
+            <ul className={styles.fileList}>
+              {(status?.files ?? []).map((file) => (
+                <li
+                  key={file.name}
+                  className={file.ok ? styles.fileOk : styles.fileMissing}
+                >
+                  <span className={styles.fileName}>{file.name}</span>
+                  <span className={styles.fileMeta}>
+                    {file.ok ? file.sizeLabel : "missing"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className={styles.actions}>
         <button

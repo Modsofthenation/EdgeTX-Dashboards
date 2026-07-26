@@ -13,6 +13,7 @@ import {
 import {
   resolvePreviewDimensions,
   getSimulateLayoutProfile,
+  hasColorWasmSim,
 } from "@widget-gen/shared";
 import { isChatScrolling } from "~/lib/chatScrollPause";
 import { RadioSimPreview } from "~/components/RadioSimPreview";
@@ -23,6 +24,8 @@ interface Preview480x320Props {
   luaSource: string | null;
   widgetName: string | null;
   layoutProfileId?: string;
+  /** knowledge/radios id — enables WASM when a color firmware is mapped. */
+  radioId?: string;
   edgeTxVersion?: string;
   radioName?: string | null;
   live?: boolean;
@@ -107,6 +110,7 @@ export const Preview480x320 = memo(function Preview480x320({
   luaSource,
   widgetName,
   layoutProfileId = "tx15",
+  radioId = "tx15",
   edgeTxVersion = "2.11.0",
   radioName,
   live = true,
@@ -183,7 +187,7 @@ export const Preview480x320 = memo(function Preview480x320({
 
   const simActive = !!luaSource && tab !== "source";
   const firmwareLabel = edgeTxVersion.replace(/\.0$/, "");
-  const isTx15 = layoutProfileId === "tx15";
+  const useWasmSim = hasColorWasmSim(radioId);
 
   const handleCopySource = async () => {
     if (!luaSource) return;
@@ -335,12 +339,13 @@ export const Preview480x320 = memo(function Preview480x320({
                   <span className={styles.placeholderIcon} aria-hidden>
                     ◫
                   </span>
-                  <span>Generate a widget to preview on the TX15 display</span>
+                  <span>Generate a widget to preview on the radio display</span>
                 </div>
-              ) : isTx15 ? (
+              ) : useWasmSim ? (
                 <RadioSimPreview
                   luaSource={luaSource}
                   layoutProfileId={layoutProfileId}
+                  radioId={radioId}
                   edgeTxVersion={edgeTxVersion}
                   mock={mock}
                   live={live}
@@ -368,12 +373,12 @@ export const Preview480x320 = memo(function Preview480x320({
                 {previewDims.layout} · zone {previewDims.zone}
               </span>
             )}
-            {luaSource && isTx15 && (
+            {luaSource && useWasmSim && (
               <span className={styles.liveBadge}>
                 EdgeTX {firmwareLabel} WASM{live ? " · live mock" : ""}
               </span>
             )}
-            {luaSource && !isTx15 && (
+            {luaSource && !useWasmSim && (
               <span className={styles.parserOnlyBadge}>
                 Parser preview only
               </span>
@@ -383,10 +388,10 @@ export const Preview480x320 = memo(function Preview480x320({
             (parseMeta.skippedTextCount > 0 || parseMeta.unreliable) && (
               <p className={styles.parseWarn} role="status">
                 Canvas/parser may skip {parseMeta.skippedTextCount || "some"}{" "}
-                draw(s) — verify on TX15 WASM when possible.
+                draw(s) — verify in WASM sim when available for this radio.
               </p>
             )}
-          {interactiveControls && isTx15 && (
+          {interactiveControls && useWasmSim && (
             <div className={styles.simActionsRow}>
               <button
                 type="button"
@@ -399,9 +404,9 @@ export const Preview480x320 = memo(function Preview480x320({
           )}
           {luaSource && (
             <p className={styles.hintMuted}>
-              {isTx15
+              {useWasmSim
                 ? `EdgeTX ${firmwareLabel} WASM preview — same output as on the radio. First load may take several seconds. Use interactive sim for touch, keys, and sticks (Esc to close).`
-                : `${radioName ?? "This radio"} uses a dimension-correct parser canvas (${displayW}×${displayH}). Full WASM radio sim is TX15-only today.`}
+                : `${radioName ?? "This radio"} uses a dimension-correct parser canvas (${displayW}×${displayH}). Color WASM sim is available for TX15, TX16S, T16, T18, X10, and X12S.`}
             </p>
           )}
         </div>

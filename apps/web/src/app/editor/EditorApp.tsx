@@ -1569,6 +1569,7 @@ export function EditorApp() {
         scenarioId={previewScenarioId}
         scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
         layoutProfileId={layoutProfileId}
+        radioId={radioId}
         modelPng={modelPngBytes}
       />
 

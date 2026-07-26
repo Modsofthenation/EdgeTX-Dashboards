@@ -17,12 +17,24 @@ export type SimFirmwareFileStatus = {
   ok: boolean;
 };
 
+export type SimFirmwareRadioStatus = {
+  id: string;
+  name: string;
+  flavour: string;
+  wasm: string;
+  display: { w: number; h: number; depth: number };
+  present: boolean;
+  size: number;
+  ok: boolean;
+};
+
 export type SimFirmwareStatus = {
   ready: boolean;
   reason: string;
   outDir: string;
   manifest: Record<string, unknown> | null;
   files: SimFirmwareFileStatus[];
+  radios: SimFirmwareRadioStatus[];
   source?: string;
   defaultVersion?: string | null;
   syncedAt?: string | null;
@@ -37,11 +49,54 @@ const FIRMWARE_VERSIONS = [
   { id: "2.11.0", label: "2.11" },
   { id: "2.12.0", label: "2.12" },
 ] as const;
-const DISPLAY = { w: 480, h: 320, depth: 16 };
 
-function versionedWasmName(id: string): string {
+/** Keep in sync with packages/shared/src/wasmFirmware.ts / sync-edgetx-wasm-core.mjs */
+const COLOR_WASM_RADIOS = [
+  {
+    id: "tx15",
+    flavour: "tx15",
+    name: "RadioMaster TX15",
+    display: { w: 480, h: 320, depth: 16 },
+  },
+  {
+    id: "tx16",
+    flavour: "tx16s",
+    name: "RadioMaster TX16S",
+    display: { w: 480, h: 272, depth: 16 },
+  },
+  {
+    id: "t16",
+    flavour: "t16",
+    name: "Jumper T16",
+    display: { w: 480, h: 272, depth: 16 },
+  },
+  {
+    id: "t18",
+    flavour: "t18",
+    name: "Jumper T18",
+    display: { w: 480, h: 272, depth: 16 },
+  },
+  {
+    id: "x10",
+    flavour: "x10",
+    name: "FrSky Horus X10",
+    display: { w: 480, h: 272, depth: 16 },
+  },
+  {
+    id: "x12",
+    flavour: "x12s",
+    name: "FrSky Horus X12S",
+    display: { w: 480, h: 272, depth: 16 },
+  },
+] as const;
+
+function wasmFileForFlavour(flavour: string): string {
+  return `edgetx-${flavour}-simulator.wasm`;
+}
+
+function versionedWasmName(flavour: string, id: string): string {
   const short = id.replace(/\.0$/, "").replace(/\./g, "-");
-  return `edgetx-tx15-${short}-simulator.wasm`;
+  return `edgetx-${flavour}-${short}-simulator.wasm`;
 }
 
 function looksLikeSimDir(dir: string): boolean {
@@ -141,6 +196,18 @@ export function findRepoRoot(): string | null {
 }
 
 function statusFromDir(outDir: string): SimFirmwareStatus {
+  const emptyRadios = (): SimFirmwareRadioStatus[] =>
+    COLOR_WASM_RADIOS.map((radio) => ({
+      id: radio.id,
+      name: radio.name,
+      flavour: radio.flavour,
+      wasm: wasmFileForFlavour(radio.flavour),
+      display: radio.display,
+      present: false,
+      size: 0,
+      ok: false,
+    }));
+
   const manifestPath = join(outDir, "manifest.json");
   if (!existsSync(manifestPath)) {
     return {
@@ -149,6 +216,7 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
       outDir,
       manifest: null,
       files: [],
+      radios: emptyRadios(),
     };
   }
 
@@ -165,6 +233,7 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
       outDir,
       manifest: null,
       files: [],
+      radios: emptyRadios(),
     };
   }
 
@@ -176,8 +245,23 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
       if (entry?.wasm) names.add(entry.wasm);
     }
   }
-  const radios = manifest.radios as { tx15?: { wasm?: string } } | undefined;
-  if (radios?.tx15?.wasm) names.add(radios.tx15.wasm);
+  const radiosMap = manifest.radios as
+    | Record<
+        string,
+        {
+          name?: string;
+          flavour?: string;
+          wasm?: string;
+          size?: number;
+          display?: { w: number; h: number; depth: number };
+        }
+      >
+    | undefined;
+  if (radiosMap) {
+    for (const radio of Object.values(radiosMap)) {
+      if (radio?.wasm) names.add(radio.wasm);
+    }
+  }
 
   const files: SimFirmwareFileStatus[] = [];
   let ready = true;
@@ -190,12 +274,37 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
     files.push({ name, present, size, ok });
   }
 
+  const radios: SimFirmwareRadioStatus[] = COLOR_WASM_RADIOS.map((radio) => {
+    const entry = radiosMap?.[radio.id];
+    const wasm = entry?.wasm ?? wasmFileForFlavour(radio.flavour);
+    const path = join(outDir, wasm);
+    const present = existsSync(path);
+    const size = present
+      ? statSync(path).size
+      : typeof entry?.size === "number"
+        ? entry.size
+        : 0;
+    const ok = present && size >= 1024;
+    if (!ok) ready = false;
+    return {
+      id: radio.id,
+      name: entry?.name ?? radio.name,
+      flavour: entry?.flavour ?? radio.flavour,
+      wasm,
+      display: entry?.display ?? radio.display,
+      present,
+      size,
+      ok,
+    };
+  });
+
   return {
     ready,
     reason: ready ? "ok" : "incomplete",
     outDir,
     manifest,
     files,
+    radios,
     source: typeof manifest.source === "string" ? manifest.source : undefined,
     defaultVersion:
       typeof manifest.defaultVersion === "string"
@@ -227,19 +336,27 @@ export async function downloadSimFirmware(): Promise<SimFirmwareStatus> {
   const outDir = resolveSimDir();
   mkdirSync(outDir, { recursive: true });
 
-  const manifest: Record<string, unknown> = {
-    defaultVersion: "2.11.0",
-    source: WASM_BASE,
-    syncedAt: new Date().toISOString(),
-    versions: {} as Record<string, unknown>,
-    radios: {
-      tx15: {
-        name: "RadioMaster TX15",
-        wasm: LEGACY_WASM,
-        display: DISPLAY,
-      },
-    },
-  };
+  const radiosOut: Record<string, unknown> = {};
+  for (const radio of COLOR_WASM_RADIOS) {
+    const wasmFile = wasmFileForFlavour(radio.flavour);
+    const url = `${WASM_BASE}/${wasmFile}`;
+    const outPath = join(outDir, wasmFile);
+    const bytes = await fetchBytes(url);
+    const hash = sha256Hex(bytes);
+    const existing = existsSync(outPath) ? readFileSync(outPath) : null;
+    if (!(existing && sha256Hex(existing) === hash)) {
+      writeFileSync(outPath, bytes);
+    }
+    const { size } = statSync(outPath);
+    radiosOut[radio.id] = {
+      name: radio.name,
+      flavour: radio.flavour,
+      wasm: wasmFile,
+      sha256: hash,
+      size,
+      display: radio.display,
+    };
+  }
 
   const downloaded = new Map<
     string,
@@ -247,7 +364,7 @@ export async function downloadSimFirmware(): Promise<SimFirmwareStatus> {
   >();
 
   for (const version of FIRMWARE_VERSIONS) {
-    const wasmFile = versionedWasmName(version.id);
+    const wasmFile = versionedWasmName("tx15", version.id);
     const url = `${WASM_BASE}/${LEGACY_WASM}`;
     const outPath = join(outDir, wasmFile);
     const bytes = await fetchBytes(url);
@@ -271,6 +388,7 @@ export async function downloadSimFirmware(): Promise<SimFirmwareStatus> {
   }
 
   const versionsOut: Record<string, unknown> = {};
+  const tx15Display = COLOR_WASM_RADIOS[0]!.display;
   for (const [id, meta] of downloaded) {
     const aliasOf =
       hashToId.get(meta.hash) !== id ? hashToId.get(meta.hash) : undefined;
@@ -279,21 +397,29 @@ export async function downloadSimFirmware(): Promise<SimFirmwareStatus> {
       wasm: meta.wasmFile,
       sha256: meta.hash,
       size: meta.size,
-      display: DISPLAY,
+      display: tx15Display,
       ...(aliasOf ? { aliasOf } : {}),
     };
   }
-  manifest.versions = versionsOut;
 
   const defaultMeta = downloaded.get("2.11.0");
   if (defaultMeta) {
     copyFileSync(join(outDir, defaultMeta.wasmFile), join(outDir, LEGACY_WASM));
-    const radios = manifest.radios as {
-      tx15: Record<string, unknown>;
-    };
-    radios.tx15.sha256 = defaultMeta.hash;
-    radios.tx15.size = defaultMeta.size;
+    const tx15 = radiosOut.tx15 as Record<string, unknown> | undefined;
+    if (tx15) {
+      tx15.sha256 = defaultMeta.hash;
+      tx15.size = defaultMeta.size;
+    }
   }
+
+  const manifest: Record<string, unknown> = {
+    defaultVersion: "2.11.0",
+    defaultRadio: "tx15",
+    source: WASM_BASE,
+    syncedAt: new Date().toISOString(),
+    versions: versionsOut,
+    radios: radiosOut,
+  };
 
   writeFileSync(
     join(outDir, "manifest.json"),

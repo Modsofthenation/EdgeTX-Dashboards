@@ -35,6 +35,8 @@ export type RadioSimInitOptions = {
   zone?: WidgetSimulateZone;
   mock?: MockTelemetryValues;
   edgeTxVersion?: string;
+  /** knowledge/radios id — selects color WASM flavour when available. */
+  radioId?: string;
   /** Optional model PNG written to /IMAGES/simmodel.png on the virtual SD. */
   modelPng?: Uint8Array;
 };
@@ -133,7 +135,8 @@ export function useRadioSim() {
 
       try {
         const manifest = await fetchSimManifest();
-        const resolved = resolveSimFirmware(manifest, edgeTxVersion);
+        const radioId = widget?.radioId ?? "tx15";
+        const resolved = resolveSimFirmware(manifest, edgeTxVersion, radioId);
         const wasmUrl = await resolveReachableWasmUrl(resolved, manifest);
         setFirmware(resolved);
         setState({
@@ -153,7 +156,7 @@ export function useRadioSim() {
         const req: SimWorkerRequest = {
           type: "init",
           wasmUrl,
-          radioKey: "tx15",
+          radioKey: resolved.radioKey,
           edgeTxVersion: resolved.effectiveVersion,
           source: widget?.source,
           zone: widget?.zone,

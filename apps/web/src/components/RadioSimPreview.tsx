@@ -15,6 +15,7 @@ import type {
 } from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
 import { useRadioSim } from "~/lib/radioSim/useRadioSim";
+import { getColorWasmRadio, wasmFileForFlavour } from "@widget-gen/shared";
 import { SimFrameCanvas } from "~/components/SimFrameCanvas";
 import styles from "./Preview480x320.module.css";
 
@@ -31,6 +32,8 @@ const Simulator = dynamic(
 interface RadioSimPreviewProps {
   luaSource: string;
   layoutProfileId?: string;
+  /** knowledge/radios id for WASM flavour selection. */
+  radioId?: string;
   edgeTxVersion?: string;
   mock: MockTelemetryValues;
   live?: boolean;
@@ -163,6 +166,7 @@ function SimInteractiveOverlay({
 export function RadioSimPreview({
   luaSource,
   layoutProfileId = "tx15",
+  radioId = "tx15",
   edgeTxVersion = "2.11.0",
   mock,
   live = true,
@@ -193,6 +197,7 @@ export function RadioSimPreview({
   const appliedSourceRef = useRef<string | null>(null);
   const appliedModelPngRef = useRef<Uint8Array | null | undefined>(undefined);
   const loadedFirmwareRef = useRef<string | null>(null);
+  const loadedRadioRef = useRef<string | null>(null);
   const sendInputRef = useRef(sendInput);
   const [frame, setFrame] = useState<SimFrameData | null>(null);
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -205,16 +210,18 @@ export function RadioSimPreview({
   }, []);
 
   useEffect(() => {
+    const target = getColorWasmRadio(radioId);
+    const wasmName = target
+      ? wasmFileForFlavour(target.flavour)
+      : "edgetx-tx15-simulator.wasm";
     import("@edgetx/simulator-ui")
       .then((m) => {
         const radios = m.radios as RadioProfile[];
-        const tx15 = radios.find(
-          (r) => r.wasm === "edgetx-tx15-simulator.wasm",
-        );
-        if (tx15) setRadioProfile(tx15);
+        const profile = radios.find((r) => r.wasm === wasmName);
+        if (profile) setRadioProfile(profile);
       })
       .catch(() => {});
-  }, []);
+  }, [radioId]);
 
   useEffect(() => {
     subscribeFrames((next) => setFrame(next));
@@ -309,15 +316,17 @@ export function RadioSimPreview({
     resume();
 
     const firmwareChanged = loadedFirmwareRef.current !== edgeTxVersion;
-    if (startedRef.current && !firmwareChanged) return;
+    const radioChanged = loadedRadioRef.current !== radioId;
+    if (startedRef.current && !firmwareChanged && !radioChanged) return;
 
-    if (startedRef.current && firmwareChanged) {
+    if (startedRef.current && (firmwareChanged || radioChanged)) {
       dispose();
       appliedSourceRef.current = null;
     }
 
     startedRef.current = true;
     loadedFirmwareRef.current = edgeTxVersion;
+    loadedRadioRef.current = radioId;
     desiredSourceRef.current = desiredSourceRef.current || luaSource;
     // Reconcile once after running; don't trust init source application as final.
     appliedSourceRef.current = null;
@@ -327,9 +336,10 @@ export function RadioSimPreview({
       zone: simZone,
       mock: mockRef.current,
       edgeTxVersion,
+      radioId,
       modelPng: modelPngRef.current ?? undefined,
     });
-  }, [active, edgeTxVersion, simZone, init, pause, resume, dispose]);
+  }, [active, edgeTxVersion, radioId, simZone, init, pause, resume, dispose]);
 
   useEffect(() => {
     return () => {
@@ -339,6 +349,7 @@ export function RadioSimPreview({
       appliedSourceRef.current = null;
       appliedModelPngRef.current = undefined;
       loadedFirmwareRef.current = null;
+      loadedRadioRef.current = null;
     };
   }, [dispose]);
 
