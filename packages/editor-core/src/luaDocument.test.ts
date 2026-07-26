@@ -165,15 +165,27 @@ test("duplicateRecordLine copies an anchored draw line into refresh", () => {
   const source = insertDrawLine(createStarterSource(), "rect");
   const record = interpretDocument(source).find((r) => r.kind === "rect");
   assert.ok(record);
-  const duped = duplicateRecordLine(source, record!);
-  const count = duped
+  const before = source
     .split("\n")
     .filter((l) => l.includes("drawRectangle")).length;
-  assert.equal(count, 2);
+  const duped = duplicateRecordLine(source, record!);
+  const after = duped
+    .split("\n")
+    .filter((l) => l.includes("drawRectangle")).length;
+  assert.equal(after, before + 1);
 });
 
 test("moveRecordLine reorders within refresh body", () => {
-  let source = insertDrawLine(createStarterSource(), "rect");
+  const minimal = `---@type WidgetScript
+---@simulate Layout1x1 zone=0
+local name = "T"
+local function create(zone, opts) return { zone = zone, options = opts } end
+local function refresh(widget, event, touchState)
+  lcd.clear(BLACK)
+end
+return { name = name, create = create, refresh = refresh }
+`;
+  let source = insertDrawLine(minimal, "rect");
   source = insertDrawLine(source, "circle");
   const records = interpretDocument(source);
   const circle = records.find((r) => r.kind === "circle");

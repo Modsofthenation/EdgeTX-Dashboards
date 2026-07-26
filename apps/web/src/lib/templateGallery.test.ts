@@ -27,4 +27,20 @@ describe("TEMPLATE_GALLERY", () => {
     assert.equal(freestyle?.protocol, "betaflight");
     assert.equal(whoop?.protocol, "betaflight");
   });
+
+  it("gives every template a distinct complete layout prefab", () => {
+    const prefabs = TEMPLATE_GALLERY.map((item) => {
+      assert.ok(item.layoutPrefab, `${item.id} missing layoutPrefab`);
+      return item.layoutPrefab!;
+    });
+    assert.equal(new Set(prefabs).size, prefabs.length);
+    for (const item of TEMPLATE_GALLERY) {
+      if (item.id === "heli-electric" || item.id === "heli-nitro") continue;
+      assert.notEqual(
+        item.layoutPrefab,
+        "starter",
+        `${item.id} should not use header-only starter`,
+      );
+    }
+  });
 });

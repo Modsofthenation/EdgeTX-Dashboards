@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   bindTextRecordToSensorDetailed,
   createStarterSource,
+  getLayoutTemplateBoardSource,
   interpretDocument,
   insertDrawLineWithId,
   insertPrefabSection,
@@ -350,7 +351,7 @@ export function EditorApp() {
     return () => controller.abort();
   }, [instanceId, widgetName, sid, loadFromSource]);
 
-  /** Template → Layout: apply prefab board once when opening without a workspace. */
+  /** Template → Layout: apply complete board / prefab once when opening without a workspace. */
   useEffect(() => {
     if (hasRemoteWidget || !templateId) return;
     if (templateAppliedRef.current === templateId) return;
@@ -370,8 +371,14 @@ export function EditorApp() {
         ...ROTORFLIGHT_NITRO_LAYOUT_ORDER,
       ]);
       loadFromSource(next, true);
+    } else if (prefab === "battery-tool") {
+      loadFromSource(getLayoutTemplateBoardSource("battery-tool"), true);
+      setCompanions((prev) => addCompanionSuite(prev, "batt-select"));
+    } else if (prefab === "flight-logger") {
+      loadFromSource(getLayoutTemplateBoardSource("flight-logger"), true);
+      setCompanions((prev) => addCompanionSuite(prev, "flight-logger"));
     } else {
-      loadFromSource(createStarterSource(), true);
+      loadFromSource(getLayoutTemplateBoardSource(prefab), true);
     }
   }, [templateId, hasRemoteWidget, loadFromSource]);
 
