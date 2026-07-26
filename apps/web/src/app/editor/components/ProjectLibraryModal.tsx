@@ -152,8 +152,9 @@ export function ProjectLibraryModal({
         {mode === "save" ? (
           <>
             <p className={styles.modalHint}>
-              Named boards are stored in this browser (and desktop app). On
-              desktop, also save to a folder or app data for a durable copy.
+              Named boards store Lua, companion suites, model PNG, and a named
+              version snapshot in this browser. Export a pack JSON to share
+              across machines (desktop can also save to disk / app data).
             </p>
             <label className={styles.projectField}>
               <span className={styles.projectFieldLabel}>Name</span>

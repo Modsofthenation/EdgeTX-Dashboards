@@ -1,6 +1,10 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
-import { rgb565ToImageData } from "@widget-gen/sim-preview";
+import {
+  LCD_BACKLIGHT_RGB,
+  mono1ToImageData,
+  rgb565ToImageData,
+} from "@widget-gen/sim-preview";
 import { paintSimFrame } from "./radioSim/paintSimFrame.ts";
 
 before(() => {
@@ -70,6 +74,41 @@ describe("paintSimFrame", () => {
     assert.equal(ok, true);
   });
 
+  it("paints 1-bit mono frames", () => {
+    const lcdW = 8;
+    const lcdH = 8;
+    const full = new Uint8Array(lcdW);
+    full[0] = 0xff;
+
+    let painted: Uint8ClampedArray | null = null;
+    const { ctx: targetCtx } = createMockCanvas(lcdW, lcdH);
+    const scratch = {
+      width: 0,
+      height: 0,
+      getContext: () => ({
+        putImageData: (data: ImageData) => {
+          painted = data.data;
+        },
+      }),
+    } as unknown as HTMLCanvasElement;
+
+    const ok = paintSimFrame({
+      frame: { buffer: full.buffer, width: lcdW, height: lcdH, depth: 1 },
+      zone: { zoneX: 0, zoneY: 0, zoneW: lcdW, zoneH: lcdH },
+      targetCtx: targetCtx as unknown as CanvasRenderingContext2D,
+      targetWidth: lcdW,
+      targetHeight: lcdH,
+      scratchCanvas: scratch,
+    });
+
+    assert.equal(ok, true);
+    assert.ok(painted);
+    assert.equal(painted[0], 0);
+    assert.equal(painted[1], 0);
+    assert.equal(painted[2], 0);
+    assert.equal(painted[4], LCD_BACKLIGHT_RGB.r);
+  });
+
   it("returns false for unsupported bit depth", () => {
     const { ctx: targetCtx } = createMockCanvas(1, 1);
     const scratch = {
@@ -98,5 +137,14 @@ describe("rgb565ToImageData", () => {
     assert.equal(image.data[0], 255);
     assert.equal(image.data[1], 0);
     assert.equal(image.data[2], 0);
+  });
+});
+
+describe("mono1ToImageData", () => {
+  it("maps lit bit to black and unlit to backlight", () => {
+    const data = new Uint8Array([0x01]);
+    const image = mono1ToImageData(data, 1, 8);
+    assert.equal(image.data[0], 0);
+    assert.equal(image.data[4], LCD_BACKLIGHT_RGB.r);
   });
 });

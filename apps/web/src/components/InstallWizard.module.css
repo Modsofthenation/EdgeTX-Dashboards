@@ -30,6 +30,12 @@
   align-items: flex-start;
 }
 
+.verifyTitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

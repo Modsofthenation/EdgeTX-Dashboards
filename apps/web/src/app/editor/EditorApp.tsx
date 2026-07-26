@@ -63,10 +63,15 @@ import {
   deleteProject,
   getLastOpenProjectId,
   getProject,
+  loadProjectCompanions,
+  loadProjectModelImage,
   loadProjectSource,
   markProjectOpened,
   newProjectId,
   renameProject,
+  saveNamedVersion,
+  saveProjectCompanions,
+  saveProjectModelImage,
   saveProjectSource,
   upsertProject,
 } from "~/lib/projectLibrary";
@@ -86,6 +91,11 @@ import {
   type CompanionSuiteId,
   type EditorCompanionState,
 } from "~/lib/companionSuites";
+import {
+  getTemplateById,
+  type TemplateLayoutPrefab,
+} from "~/lib/templateGallery";
+import { fetchRadioCatalog } from "~/lib/radioCatalog";
 import {
   buildInstallGuide,
   formatInstallGuideMarkdown,
@@ -141,6 +151,7 @@ export function EditorApp() {
   const widgetName = searchParams.get("name");
   const sid = searchParams.get("sessionId");
   const chatId = searchParams.get("chatId");
+  const templateId = searchParams.get("template");
   const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
 
   const [protocol, setProtocol] = useState<TelemetryProtocol>(() =>
@@ -201,7 +212,10 @@ export function EditorApp() {
     suites: [],
     files: [],
   });
+  const [radioTouch, setRadioTouch] = useState(true);
+  const [radioDisplayName, setRadioDisplayName] = useState<string | null>(null);
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
+  const templateAppliedRef = useRef<string | null>(null);
   const liveTelemetrySupported = useMemo(
     () => (typeof window !== "undefined" ? isWebSerialSupported() : false),
     [],
@@ -280,6 +294,18 @@ export function EditorApp() {
   );
 
   useEffect(() => {
+    void fetchRadioCatalog().then((catalog) => {
+      const entry =
+        catalog.radios.find((r) => r.id === radioId) ??
+        catalog.radios.find((r) => r.layoutProfile === layoutProfileId);
+      if (entry) {
+        setRadioTouch(entry.touch);
+        setRadioDisplayName(entry.name);
+      }
+    });
+  }, [radioId, layoutProfileId]);
+
+  useEffect(() => {
     setSessionId(sid);
     if (!instanceId && !widgetName && !sid) {
       setRemoteLoadPending(false);
@@ -317,11 +343,37 @@ export function EditorApp() {
         setLoadError(err.message);
       })
       .finally(() => {
-        if (requestId === loadRequestIdRef.current) setRemoteLoadPending(false);
+        if (requestId !== loadRequestIdRef.current) return;
+        setRemoteLoadPending(false);
       });
 
     return () => controller.abort();
   }, [instanceId, widgetName, sid, loadFromSource]);
+
+  /** Template → Layout: apply prefab board once when opening without a workspace. */
+  useEffect(() => {
+    if (hasRemoteWidget || !templateId) return;
+    if (templateAppliedRef.current === templateId) return;
+    const template = getTemplateById(templateId);
+    if (!template) return;
+    templateAppliedRef.current = templateId;
+    const prefab: TemplateLayoutPrefab = template.layoutPrefab ?? "starter";
+    setProtocol(template.protocol);
+    if (prefab === "stacy-electric") {
+      const { source: next } = insertPrefabSections(createStarterSource(), [
+        ...STACYDASH_TX15_LAYOUT_ORDER,
+      ]);
+      loadFromSource(next, true);
+      setCompanions((prev) => addCompanionSuite(prev, "stacy-electric"));
+    } else if (prefab === "stacy-nitro") {
+      const { source: next } = insertPrefabSections(createStarterSource(), [
+        ...STACYDASH_NITRO_LAYOUT_ORDER,
+      ]);
+      loadFromSource(next, true);
+    } else {
+      loadFromSource(createStarterSource(), true);
+    }
+  }, [templateId, hasRemoteWidget, loadFromSource]);
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -649,13 +701,21 @@ export function EditorApp() {
     const profile = getSimulateLayoutProfile(layoutProfileId);
     return formatInstallGuideMarkdown(
       buildInstallGuide(protocol, meta.name, {
-        radioName: searchParams.get("radioName") ?? undefined,
+        radioName:
+          radioDisplayName ?? searchParams.get("radioName") ?? undefined,
         lcdW: profile.lcdW,
         lcdH: profile.lcdH,
-        touch: layoutProfileId === "tx15" || layoutProfileId === "color272",
+        touch: radioTouch,
       }),
     );
-  }, [protocol, meta.name, layoutProfileId, searchParams]);
+  }, [
+    protocol,
+    meta.name,
+    layoutProfileId,
+    searchParams,
+    radioTouch,
+    radioDisplayName,
+  ]);
 
   const handleEnrichChange = useCallback(
     (enabled: boolean) => {
@@ -723,6 +783,14 @@ export function EditorApp() {
         sourcePreview: source.slice(0, 120),
       });
       saveProjectSource(id, source);
+      saveProjectCompanions(id, companions);
+      if (modelPngBytes) {
+        saveProjectModelImage(
+          id,
+          modelPngToSdFile(modelPngBytes, modelPngName ?? "simmodel.png"),
+        );
+      }
+      saveNamedVersion(id, name, source);
       setProjectId(id);
       setProjectModal(null);
     },
@@ -734,6 +802,9 @@ export function EditorApp() {
       source,
       radioId,
       layoutProfileId,
+      companions,
+      modelPngBytes,
+      modelPngName,
     ],
   );
 
@@ -759,6 +830,21 @@ export function EditorApp() {
         setLayoutProfileId(project.layoutProfileId);
       }
       if (project?.radioId) setRadioId(project.radioId);
+      if (project?.workspaceKey) setWorkspaceKey(project.workspaceKey);
+      const companionsPack = loadProjectCompanions(id);
+      if (companionsPack) setCompanions(companionsPack);
+      const model = loadProjectModelImage(id);
+      if (model?.encoding === "base64" && model.content) {
+        try {
+          const bin = atob(model.content);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          setModelPngBytes(bytes);
+          setModelPngName(model.path.split("/").pop() ?? "simmodel.png");
+        } catch {
+          /* ignore */
+        }
+      }
       markProjectOpened(id);
       setDirty(false);
       setProjectModal(null);
@@ -913,16 +999,11 @@ export function EditorApp() {
     setValidationIssues(body.issues ?? []);
   }, [source, protocol]);
 
-  const handleSave = useCallback(async () => {
-    if (!workspaceKey && !sessionId) {
-      setLoadError(
-        "No workspace to save to — load a widget via URL or paste Lua first",
-      );
-      return;
-    }
+  const handleSave = useCallback(async (): Promise<string | null> => {
     setSaving(true);
     setLoadError(null);
     try {
+      const allocate = !workspaceKey && !sessionId;
       const res = await fetch("/api/widget-source", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -931,48 +1012,58 @@ export function EditorApp() {
           instanceId: workspaceKey,
           sessionId,
           protocol,
+          radioId,
+          allocate,
         }),
       });
       const body = (await res.json()) as {
         valid: boolean;
         issues?: ValidationIssue[];
         error?: string;
+        workspaceKey?: string;
       };
       if (!res.ok) {
         setLoadError(body.error ?? `Save failed (${res.status})`);
         setValid(body.valid ?? false);
         setValidationIssues(body.issues ?? []);
-        return;
+        return null;
+      }
+      const nextKey = body.workspaceKey ?? workspaceKey;
+      if (nextKey && nextKey !== workspaceKey) {
+        setWorkspaceKey(nextKey);
       }
       setValid(body.valid);
       setValidationIssues(body.issues ?? []);
       savedSourceRef.current = source;
       setDirty(false);
+      return nextKey ?? null;
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Save failed");
+      return null;
     } finally {
       setSaving(false);
     }
-  }, [workspaceKey, sessionId, source, protocol]);
+  }, [workspaceKey, sessionId, source, protocol, radioId]);
 
   const handleDownload = useCallback(async () => {
     if (valid === false) {
       setLoadError("Fix validation errors before downloading");
       return;
     }
-    if (!workspaceKey && !sessionId && !meta.name) {
-      setLoadError("Save the widget before downloading");
-      return;
-    }
     setDownloading(true);
     setLoadError(null);
     try {
-      if (dirty && (workspaceKey || sessionId)) {
-        await handleSave();
+      let key = workspaceKey;
+      if (dirty || (!key && !sessionId)) {
+        key = (await handleSave()) ?? key;
+      }
+      if (!key && !sessionId && !meta.name) {
+        setLoadError("Save the widget before downloading");
+        return;
       }
       const params = new URLSearchParams({ protocol });
       if (sessionId) params.set("sessionId", sessionId);
-      else if (workspaceKey) params.set("instanceId", workspaceKey);
+      else if (key) params.set("instanceId", key);
       else params.set("name", meta.name);
       const res = await fetch(`/api/download?${params}`);
       if (!res.ok) {
@@ -992,7 +1083,7 @@ export function EditorApp() {
     } finally {
       setDownloading(false);
     }
-  }, [workspaceKey, sessionId, meta.name, protocol, dirty, handleSave, valid]);
+  }, [valid, dirty, workspaceKey, sessionId, handleSave, protocol, meta.name]);
 
   const handleCopyLua = useCallback(async () => {
     try {
@@ -1555,6 +1646,10 @@ export function EditorApp() {
               hasModelImage={
                 Boolean(modelPngBytes) || /drawBitmap|Bitmap\.open/.test(source)
               }
+              radioName={radioDisplayName ?? undefined}
+              lcdW={getSimulateLayoutProfile(layoutProfileId).lcdW}
+              lcdH={getSimulateLayoutProfile(layoutProfileId).lcdH}
+              touch={radioTouch}
             />
           </div>
         </div>

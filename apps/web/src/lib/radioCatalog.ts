@@ -54,6 +54,7 @@ export const LAYOUT_GROUP_LABELS: Record<string, string> = {
   color272: "480×272 · Color Horus class",
   taranis212: "212×64 · Taranis",
   compact128: "128×64 · Compact",
+  nv14: "320×480 · NV14 portrait",
 };
 
 export function groupRadiosByLayout(

@@ -9,6 +9,7 @@ import type {
   DocumentRecord,
   ZoneOffset,
   BoundingBox,
+  SnapGuide,
 } from "@widget-gen/editor-core";
 import type { LayoutScenario } from "@widget-gen/layout-verify";
 import { computeCanvasLayout, type CanvasLayout } from "../lib/canvasLayout";
@@ -49,6 +50,7 @@ export function EditorCanvas({
 }: EditorCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
+  const [activeGuides, setActiveGuides] = useState<SnapGuide[]>([]);
 
   const previewDims = useMemo(() => {
     try {
@@ -78,12 +80,12 @@ export function EditorCanvas({
   }, [previewDims.zoneH, previewDims.zoneW]);
 
   useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const observer = new ResizeObserver(updateLayout);
-    observer.observe(frame);
     updateLayout();
-    return () => observer.disconnect();
+    const frame = frameRef.current;
+    if (!frame || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => updateLayout());
+    ro.observe(frame);
+    return () => ro.disconnect();
   }, [updateLayout]);
 
   return (
@@ -109,6 +111,32 @@ export function EditorCanvas({
             aria-hidden
           />
         ) : null}
+        {showSnapGuides && layout
+          ? activeGuides.map((guide) => (
+              <div
+                key={`${guide.orientation}-${guide.pos}`}
+                className={
+                  guide.orientation === "v"
+                    ? styles.snapGuideV
+                    : styles.snapGuideH
+                }
+                style={
+                  guide.orientation === "v"
+                    ? {
+                        left: layout.offsetX + guide.pos * layout.scale,
+                        top: layout.offsetY,
+                        height: layout.drawH,
+                      }
+                    : {
+                        top: layout.offsetY + guide.pos * layout.scale,
+                        left: layout.offsetX,
+                        width: layout.drawW,
+                      }
+                }
+                aria-hidden
+              />
+            ))
+          : null}
         <RecordSelectionOverlay
           records={records}
           selectedIds={selectedIds}
@@ -120,6 +148,8 @@ export function EditorCanvas({
           onResize={onResize}
           onGestureStart={onGestureStart}
           onGestureEnd={onGestureEnd}
+          snapEnabled={showSnapGuides}
+          onSnapGuidesChange={setActiveGuides}
         />
       </div>
       <div className={styles.canvasMeta}>

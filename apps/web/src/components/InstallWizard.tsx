@@ -17,6 +17,10 @@ interface InstallWizardProps {
   companionLabels?: string[];
   /** True when a model PNG / bitmap is part of the package. */
   hasModelImage?: boolean;
+  radioName?: string;
+  lcdW?: number;
+  lcdH?: number;
+  touch?: boolean;
 }
 
 type WizardStep = "checklist" | "copy" | "done";
@@ -41,6 +45,10 @@ export function InstallWizard({
   extraFiles,
   companionLabels = EMPTY_COMPANION_LABELS,
   hasModelImage = false,
+  radioName = "your radio",
+  lcdW = 480,
+  lcdH = 320,
+  touch = true,
 }: InstallWizardProps) {
   const [step, setStep] = useState<WizardStep>("checklist");
   const [desktop, setDesktop] = useState(false);
@@ -54,6 +62,9 @@ export function InstallWizard({
     modelBitmap: false,
     model: false,
     rf2bg: false,
+    verifyTele: false,
+    verifyFullscreen: false,
+    verifySensors: false,
   });
 
   useEffect(() => {
@@ -247,6 +258,54 @@ export function InstallWizard({
               }
             />
             Rotorflight: Special Function → rf2bg (Repeat On), then Discover new
+          </label>
+        </li>
+      </ol>
+
+      <h3 className={styles.verifyTitle}>Verify on radio ({radioName})</h3>
+      <ol className={styles.checklist}>
+        <li>
+          <label>
+            <input
+              type="checkbox"
+              checked={checks.verifyTele}
+              onChange={(e) =>
+                setChecks((c) => ({ ...c, verifyTele: e.target.checked }))
+              }
+            />
+            {touch
+              ? `Press TELE (or tap Telemetry) → confirm sensors populate on ${radioName}`
+              : `Press TELE → scroll Telemetry page → confirm sensors populate on ${radioName}`}
+          </label>
+        </li>
+        <li>
+          <label>
+            <input
+              type="checkbox"
+              checked={checks.verifyFullscreen}
+              onChange={(e) =>
+                setChecks((c) => ({
+                  ...c,
+                  verifyFullscreen: e.target.checked,
+                }))
+              }
+            />
+            {touch
+              ? `Long-press widget zone → Full screen (or double-tap). Dashboard fills ${lcdW}×${lcdH}`
+              : `Long-press widget zone → Full screen. Dashboard fills ${lcdW}×${lcdH} (no touch)`}
+          </label>
+        </li>
+        <li>
+          <label>
+            <input
+              type="checkbox"
+              checked={checks.verifySensors}
+              onChange={(e) =>
+                setChecks((c) => ({ ...c, verifySensors: e.target.checked }))
+              }
+            />
+            Values update live (battery/link; RF: run sensor_dump tool if using
+            HSpd/Gov/Vbec)
           </label>
         </li>
       </ol>

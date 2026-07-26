@@ -162,6 +162,41 @@
   background: var(--surface);
   color: var(--text);
   text-align: left;
+  width: 100%;
+}
+
+.galleryCardWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.galleryCardAction {
+  margin-top: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--accent, #5ec4ff);
+}
+
+.galleryCardAi {
+  align-self: stretch;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+
+.galleryCardAi:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.galleryCardAi:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .galleryCard:hover:not(:disabled) {

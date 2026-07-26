@@ -1,0 +1,26 @@
+{
+  "radioId": "nv14",
+  "lcdW": 320,
+  "lcdH": 480,
+  "defaultSimulate": {
+    "layout": "Layout1x1",
+    "zone": 0
+  },
+  "layouts": {
+    "Layout1x1": {
+      "zones": [{ "x": 0, "y": 0, "w": 320, "h": 480 }]
+    },
+    "Layout1x2": {
+      "zones": [
+        { "x": 0, "y": 0, "w": 320, "h": 238 },
+        { "x": 0, "y": 242, "w": 320, "h": 238 }
+      ]
+    },
+    "Layout2x1": {
+      "zones": [
+        { "x": 0, "y": 0, "w": 158, "h": 480 },
+        { "x": 162, "y": 0, "w": 158, "h": 480 }
+      ]
+    }
+  }
+}

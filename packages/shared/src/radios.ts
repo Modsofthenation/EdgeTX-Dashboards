@@ -7,6 +7,7 @@ export const LAYOUT_PROFILE_IDS = [
   "color272",
   "taranis212",
   "compact128",
+  "nv14",
 ] as const;
 export type LayoutProfileId = (typeof LAYOUT_PROFILE_IDS)[number];
 

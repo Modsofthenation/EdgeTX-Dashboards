@@ -15,7 +15,9 @@ export type CompanionSuiteId =
   | "batt-select"
   | "flights-count"
   | "batt-voice"
-  | "motor-gate";
+  | "motor-gate"
+  | "sensor-dump"
+  | "stacy-electric";
 
 export interface CompanionSuite {
   id: CompanionSuiteId;
@@ -204,6 +206,63 @@ end
 return { run = run }
 `;
 
+const SENSOR_DUMP = `--- EdgeTX tool: dump discovered telemetry sensors (true RF table on radio)
+-- Run from SYS → Tools. Shows getValue names EdgeTX discovered (HSpd/Gov/Vbec…).
+-- Copy names into Layout “Seen on live radio” / bind tiles. Not a USB bridge.
+local offset = 0
+local names = {}
+local loaded = false
+
+-- Common Rotorflight + CRSF keys to probe; EdgeTX returns nil for missing.
+local CANDIDATES = {
+  "RxBt", "Curr", "Capa", "RSSI", "RQly", "RQLY", "RFMD", "TPWR", "TRSS",
+  "GPS", "GSpd", "GAlt", "Sats", "Hdg", "Alt", "VSpd", "Ptch", "Roll", "Yaw",
+  "FM", "HSpd", "Hspd", "Gov", "Vbec", "Vcel", "Tspd", "EscT", "Vbat",
+  "RPM", "Thr", "1RSS", "2RSS", "RxBt+", "A1", "A2"
+}
+
+local function loadNames()
+  names = {}
+  for i = 1, #CANDIDATES do
+    local n = CANDIDATES[i]
+    local v = getValue(n)
+    if v ~= nil then
+      names[#names + 1] = string.format("%s=%.2f", n, type(v) == "number" and v or 0)
+    end
+  end
+  if #names == 0 then
+    names[1] = "(none — Discover new / rf2bg)"
+  end
+  loaded = true
+  offset = 0
+end
+
+local function run(event)
+  if not loaded then loadNames() end
+  lcd.clear()
+  lcd.drawText(2, 2, "Sensor dump", MIDSIZE)
+  local start = math.max(1, offset + 1)
+  local y = 22
+  for i = start, math.min(#names, start + 8) do
+    lcd.drawText(2, y, string.sub(names[i] or "", 1, 40), SMLSIZE)
+    y = y + 12
+  end
+  lcd.drawText(2, LCD_H - 14, "ROTARY · ENTER refresh · EXIT", SMLSIZE)
+  if event == EVT_ROT_LEFT then
+    offset = math.min(offset + 1, math.max(0, #names - 1))
+  elseif event == EVT_ROT_RIGHT then
+    offset = math.max(0, offset - 1)
+  elseif event == EVT_ENTER_BREAK then
+    loaded = false
+  elseif event == EVT_EXIT_BREAK then
+    return 2
+  end
+  return 0
+end
+
+return { run = run }
+`;
+
 export const COMPANION_SUITES: CompanionSuite[] = [
   {
     id: "flight-logger",
@@ -246,6 +305,29 @@ export const COMPANION_SUITES: CompanionSuite[] = [
     description:
       "tools/motor_gate.lua — GV2 on/off for motor-tile gating in the dashboard",
     files: [{ relPath: "tools/motor_gate.lua", content: MOTOR_GATE }],
+  },
+  {
+    id: "sensor-dump",
+    label: "RF sensor dump (on radio)",
+    shortLabel: "SD",
+    description:
+      "tools/sensor_dump.lua — list EdgeTX discovered sensors (HSpd/Gov/Vbec)",
+    files: [{ relPath: "tools/sensor_dump.lua", content: SENSOR_DUMP }],
+  },
+  {
+    id: "stacy-electric",
+    label: "StacyDash electric pack",
+    shortLabel: "SE",
+    description:
+      "One-click: flights + batt-voice + motor-gate + logger (+ sensor dump)",
+    files: [
+      { relPath: "telemetry/flight_log.lua", content: FLIGHT_LOG },
+      { relPath: "tools/log_view.lua", content: LOG_VIEW },
+      { relPath: "tools/flt_count.lua", content: FLT_COUNT },
+      { relPath: "telemetry/batt_voice.lua", content: BATT_VOICE },
+      { relPath: "tools/motor_gate.lua", content: MOTOR_GATE },
+      { relPath: "tools/sensor_dump.lua", content: SENSOR_DUMP },
+    ],
   },
 ];
 

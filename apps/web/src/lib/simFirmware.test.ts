@@ -68,11 +68,11 @@ describe("resolveSimFirmware", () => {
 });
 
 describe("hasColorWasmSim", () => {
-  it("includes TX15 and TX16S, excludes Boxer/MT12", () => {
+  it("includes color and B&W WASM radios", () => {
     assert.equal(hasColorWasmSim("tx15"), true);
     assert.equal(hasColorWasmSim("tx16"), true);
     assert.equal(hasColorWasmSim("t16"), true);
-    assert.equal(hasColorWasmSim("boxer"), false);
-    assert.equal(hasColorWasmSim("mt12"), false);
+    assert.equal(hasColorWasmSim("boxer"), true);
+    assert.equal(hasColorWasmSim("mt12"), true);
   });
 });
