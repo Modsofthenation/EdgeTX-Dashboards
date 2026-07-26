@@ -49,7 +49,7 @@
 }
 
 .visualLabel {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted, #6e7781);
   text-transform: uppercase;

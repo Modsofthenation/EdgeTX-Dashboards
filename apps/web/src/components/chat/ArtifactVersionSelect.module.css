@@ -5,7 +5,7 @@
 
 .label {
   display: block;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -41,23 +41,23 @@
   padding: 0.4rem 0.65rem;
   border-radius: 8px;
   border: 1px solid rgba(96, 165, 250, 0.35);
-  background: rgba(59, 130, 246, 0.12);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: #93c5fd;
   cursor: pointer;
 }
 
 .latestBtn:hover:not(:disabled) {
-  background: rgba(59, 130, 246, 0.2);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .latestBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
 .hint {
   margin: 0.35rem 0 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
   line-height: 1.35;
 }

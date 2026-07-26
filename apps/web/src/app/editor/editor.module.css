@@ -39,7 +39,7 @@
   font-size: 0.5625rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: white;
+  color: var(--on-accent);
   text-decoration: none;
   background: var(--accent);
   box-shadow: var(--shadow-sm);
@@ -69,7 +69,7 @@
 }
 
 .dot {
-  opacity: 0.5;
+  opacity: 0.72;
 }
 
 .headerActions {
@@ -112,7 +112,7 @@
 .primaryBtn {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
   font-weight: 600;
   box-shadow: var(--shadow-sm);
 }
@@ -123,7 +123,7 @@
 
 .primaryBtn:disabled,
 .iconBtn:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -214,7 +214,7 @@
 }
 
 .statusPill {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -265,7 +265,7 @@
   height: 1.125rem;
   border-radius: 4px;
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
@@ -319,7 +319,7 @@
 }
 
 .editorMenuItem:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -361,7 +361,7 @@
   flex-direction: column;
   gap: 0.15rem;
   padding: 0.55rem 0.6rem 0.25rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -369,7 +369,7 @@
 }
 
 .insertGroupHint {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -453,7 +453,7 @@
 }
 
 .insertItemDesc {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   line-height: 1.3;
 }
@@ -520,7 +520,7 @@
 
 .panelTitle {
   margin: 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -528,7 +528,7 @@
 }
 
 .panelBadge {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 0.1rem 0.45rem;
   border-radius: var(--radius-sm);
@@ -597,12 +597,12 @@
 }
 
 .layerItemSelected {
-  background: color-mix(in srgb, var(--accent) 10%, white);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .layerItemHidden {
-  opacity: 0.5;
+  opacity: 0.72;
 }
 
 .layerSelect {
@@ -641,7 +641,7 @@
 }
 
 .layerKindTag {
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -701,7 +701,7 @@
 }
 
 .fieldLabel {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
   text-transform: uppercase;
@@ -750,14 +750,14 @@
   width: 2rem;
   height: 2rem;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--accent) 12%, white);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   border: 1px solid var(--border);
   font-size: 0.9rem;
 }
 
 .elementSub {
   margin: 0.1rem 0 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -798,7 +798,7 @@
   color: var(--text);
   border-radius: var(--radius-sm);
   padding: 0.25rem 0.5rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   cursor: pointer;
 }
 
@@ -969,7 +969,7 @@
   gap: 0.5rem;
   padding: 0.3rem 0.7rem;
   border-radius: var(--radius-sm);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-secondary);
   background: var(--bg-elevated);
@@ -1001,16 +1001,16 @@
 }
 
 .errorBanner {
-  background: color-mix(in srgb, var(--error) 10%, white);
-  color: #991b1b;
-  border-bottom: 1px solid color-mix(in srgb, var(--error) 22%, transparent);
+  background: color-mix(in srgb, var(--error) 14%, var(--surface));
+  color: var(--error);
+  border-bottom: 1px solid color-mix(in srgb, var(--error) 28%, transparent);
 }
 
 .warnBanner {
   flex-direction: column;
-  background: color-mix(in srgb, var(--warning) 12%, white);
-  color: #92400e;
-  border-bottom: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  color: var(--warning);
+  border-bottom: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
 }
 
 .warnBanner ul {
@@ -1362,7 +1362,7 @@
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  opacity: 0.55;
+  opacity: 0.72;
 }
 
 .snapGuideV,
@@ -1415,7 +1415,7 @@
 }
 
 .toolbarSelectLabel {
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1585,6 +1585,6 @@
   }
 
   .statusPill {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
   }
 }

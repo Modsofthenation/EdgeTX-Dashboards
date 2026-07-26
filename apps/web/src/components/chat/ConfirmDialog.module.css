@@ -62,7 +62,7 @@
 .confirmBtn {
   border: 1px solid transparent;
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .confirmBtnDestructive {

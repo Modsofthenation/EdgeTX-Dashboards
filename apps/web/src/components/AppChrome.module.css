@@ -25,7 +25,7 @@
   place-items: center;
   font-size: 0.5625rem;
   font-weight: 800;
-  color: white;
+  color: var(--on-accent);
   text-decoration: none;
   background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
   box-shadow: 0 0 20px var(--accent-glow);
@@ -103,7 +103,7 @@
 
 .navItemDisabled {
   color: var(--muted);
-  opacity: 0.55;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 

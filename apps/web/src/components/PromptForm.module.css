@@ -42,8 +42,8 @@
 .input:focus,
 .select:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .textarea {
@@ -83,7 +83,7 @@
 
 .primary {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 
@@ -94,7 +94,7 @@
 
 .primary:disabled,
 .secondary:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
   box-shadow: none;
 }

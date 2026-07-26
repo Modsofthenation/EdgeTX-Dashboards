@@ -56,7 +56,7 @@
 .primary {
   background: var(--accent, #1f6feb);
   border-color: transparent;
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .secondary {

@@ -28,7 +28,7 @@
 
 .title {
   margin: 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -52,7 +52,7 @@
 }
 
 .newBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -78,7 +78,7 @@
 }
 
 .itemActive {
-  background: rgba(59, 130, 246, 0.12);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .itemBtn {
@@ -115,7 +115,7 @@
   align-items: center;
   gap: 0.25rem;
   margin-top: 0.2rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -126,7 +126,7 @@
 .protocolBadge {
   flex-shrink: 0;
   font-weight: 600;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   padding: 0.1rem 0.35rem;
@@ -136,8 +136,8 @@
 
 .protocolBetaflight {
   color: #93c5fd;
-  background: rgba(59, 130, 246, 0.14);
-  border-color: rgba(59, 130, 246, 0.28);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .protocolRotorflight {

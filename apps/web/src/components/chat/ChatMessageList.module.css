@@ -89,19 +89,19 @@
   width: 1.35rem;
   height: 1.35rem;
   border-radius: 999px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: white;
+  color: var(--on-accent);
   background: var(--accent);
 }
 
 .galleryTitle {
   margin: 0 0 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
 }
 
 .galleryFilters {
@@ -192,9 +192,9 @@
 
 .galleryCardAction {
   margin-top: 0.35rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--accent, #5ec4ff);
+  color: var(--accent);
 }
 
 .galleryCardAi {
@@ -204,7 +204,7 @@
   border: 1px dashed var(--border);
   background: transparent;
   color: var(--muted);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   cursor: pointer;
 }
 
@@ -234,8 +234,8 @@
 }
 
 .galleryCardArchetype {
-  font-size: 0.625rem;
-  color: var(--muted);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

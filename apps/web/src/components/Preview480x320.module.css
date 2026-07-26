@@ -61,7 +61,7 @@
 }
 
 .copyBtn:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 
@@ -246,7 +246,7 @@
 
 .deviceLabel {
   text-align: center;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -352,8 +352,8 @@
 .region {
   position: absolute;
   border: 1px dashed var(--accent-bright);
-  background: rgba(59, 130, 246, 0.12);
-  font-size: 0.625rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent-bright);
   display: flex;
@@ -375,7 +375,7 @@
   max-height: 200px;
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1.45;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -630,17 +630,17 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.65rem;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.04em;
-  color: white;
+  color: var(--on-accent);
   background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
   box-shadow: 0 0 20px var(--accent-glow);
   margin-bottom: 0.35rem;
 }
 
 .parserOnlyBadge {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--warning);
   padding: 0.2rem 0.55rem;
