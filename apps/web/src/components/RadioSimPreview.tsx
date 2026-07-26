@@ -38,6 +38,8 @@ interface RadioSimPreviewProps {
   active: boolean;
   /** Scale the LCD frame up to fill the host (sim modal). */
   fillHost?: boolean;
+  /** Optional model PNG for virtual SD `/IMAGES/simmodel.png` (drawBitmap). */
+  modelPng?: Uint8Array | null;
   /** Called when interactive sim can be opened (running) or unavailable. */
   onInteractiveControls?: (
     controls: { openInteractive: () => void } | null,
@@ -166,6 +168,7 @@ export function RadioSimPreview({
   live = true,
   active,
   fillHost = false,
+  modelPng = null,
   onInteractiveControls,
 }: RadioSimPreviewProps) {
   const {
@@ -186,7 +189,9 @@ export function RadioSimPreview({
   const startedRef = useRef(false);
   const desiredSourceRef = useRef(luaSource);
   const mockRef = useRef(mock);
+  const modelPngRef = useRef(modelPng);
   const appliedSourceRef = useRef<string | null>(null);
+  const appliedModelPngRef = useRef<Uint8Array | null | undefined>(undefined);
   const loadedFirmwareRef = useRef<string | null>(null);
   const sendInputRef = useRef(sendInput);
   const [frame, setFrame] = useState<SimFrameData | null>(null);
@@ -258,6 +263,7 @@ export function RadioSimPreview({
     [previewDims],
   );
   mockRef.current = mock;
+  modelPngRef.current = modelPng;
 
   const openInteractive = useCallback(() => setOverlayOpen(true), []);
 
@@ -315,11 +321,13 @@ export function RadioSimPreview({
     desiredSourceRef.current = desiredSourceRef.current || luaSource;
     // Reconcile once after running; don't trust init source application as final.
     appliedSourceRef.current = null;
+    appliedModelPngRef.current = undefined;
     void init({
       source: desiredSourceRef.current,
       zone: simZone,
       mock: mockRef.current,
       edgeTxVersion,
+      modelPng: modelPngRef.current ?? undefined,
     });
   }, [active, edgeTxVersion, simZone, init, pause, resume, dispose]);
 
@@ -329,6 +337,7 @@ export function RadioSimPreview({
       startedRef.current = false;
       desiredSourceRef.current = "";
       appliedSourceRef.current = null;
+      appliedModelPngRef.current = undefined;
       loadedFirmwareRef.current = null;
     };
   }, [dispose]);
@@ -341,15 +350,18 @@ export function RadioSimPreview({
   useEffect(() => {
     if (!active || state.phase !== "running") return;
     desiredSourceRef.current = luaSource;
-    if (appliedSourceRef.current === desiredSourceRef.current) return;
-    void loadWidget(desiredSourceRef.current, simZone)
+    const sourceSame = appliedSourceRef.current === desiredSourceRef.current;
+    const pngSame = appliedModelPngRef.current === modelPng;
+    if (sourceSame && pngSame) return;
+    void loadWidget(desiredSourceRef.current, simZone, modelPng ?? undefined)
       .then(() => {
         appliedSourceRef.current = desiredSourceRef.current;
+        appliedModelPngRef.current = modelPng;
       })
       .catch(() => {
         // keep desired source; next running/source transition retries.
       });
-  }, [active, state.phase, luaSource, loadWidget, simZone]);
+  }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);
 
   if (state.phase === "error") {
     return (

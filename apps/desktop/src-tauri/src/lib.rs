@@ -336,7 +336,8 @@ fn install_widget_to_sd(
           || rel.contains("..")
           || !(rel.starts_with("WIDGETS/")
             || rel.starts_with("SCRIPTS/TOOLS/")
-            || rel.starts_with("SCRIPTS/TELEMETRY/"))
+            || rel.starts_with("SCRIPTS/TELEMETRY/")
+            || rel.starts_with("IMAGES/"))
         {
           return Err(format!("Refusing unsafe SD path: {rel}"));
         }
@@ -370,13 +371,73 @@ fn install_widget_to_sd(
   }))
 }
 
+fn assert_safe_user_path(path: &str) -> Result<std::path::PathBuf, String> {
+  let trimmed = path.trim();
+  if trimmed.is_empty() {
+    return Err("Path is empty".into());
+  }
+  if trimmed.contains('\0') {
+    return Err("Invalid path".into());
+  }
+  Ok(std::path::PathBuf::from(trimmed))
+}
+
+#[tauri::command]
+fn write_text_file(path: String, contents: String) -> Result<(), String> {
+  let dest = assert_safe_user_path(&path)?;
+  if let Some(parent) = dest.parent() {
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+  }
+  std::fs::write(&dest, contents).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+  let src = assert_safe_user_path(&path)?;
+  std::fs::read_to_string(&src).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn write_app_data_project(
+  app: tauri::AppHandle,
+  file_name: String,
+  contents: String,
+) -> Result<String, String> {
+  let trimmed = file_name.trim().replace('\\', "/");
+  let safe = trimmed
+    .rsplit('/')
+    .next()
+    .unwrap_or("")
+    .to_string();
+  if safe.is_empty()
+    || safe.contains("..")
+    || !(safe.ends_with(".json") || safe.ends_with(".edgetx-project.json"))
+  {
+    return Err("fileName must be a *.json / *.edgetx-project.json basename".into());
+  }
+  let dir = app
+    .path()
+    .app_data_dir()
+    .map_err(|e| e.to_string())?
+    .join("projects");
+  std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+  let dest = dir.join(&safe);
+  std::fs::write(&dest, contents).map_err(|e| e.to_string())?;
+  Ok(dest.display().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .manage(SidecarState(Mutex::new(None)))
-    .invoke_handler(tauri::generate_handler![install_widget_to_sd])
+    .invoke_handler(tauri::generate_handler![
+      install_widget_to_sd,
+      write_text_file,
+      read_text_file,
+      write_app_data_project
+    ])
     .setup(|app| {
       #[cfg(not(dev))]
       {

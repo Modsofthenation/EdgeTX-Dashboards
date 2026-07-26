@@ -3,17 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "./InstallWizard.module.css";
 
+type SdFile = { path: string; content: string; encoding?: string };
+
 interface InstallWizardProps {
   widgetName?: string;
   luaSource?: string | null;
   installMd?: string | null;
   workspaceKey?: string | null;
   sessionId?: string | null;
+  /** Extra SD files (companions / IMAGES) merged when package API is empty. */
+  extraFiles?: SdFile[];
 }
 
 type WizardStep = "checklist" | "copy" | "done";
-
-type SdFile = { path: string; content: string; encoding?: string };
 
 async function isTauri(): Promise<boolean> {
   try {
@@ -30,6 +32,7 @@ export function InstallWizard({
   installMd,
   workspaceKey,
   sessionId,
+  extraFiles,
 }: InstallWizardProps) {
   const [step, setStep] = useState<WizardStep>("checklist");
   const [desktop, setDesktop] = useState(false);
@@ -109,6 +112,14 @@ export function InstallWizard({
             encoding: "utf8",
           });
         }
+        if (extraFiles?.length) {
+          files = [...files, ...extraFiles];
+        }
+      } else if (extraFiles?.length) {
+        const existing = new Set(files.map((f) => f.path));
+        for (const extra of extraFiles) {
+          if (!existing.has(extra.path)) files.push(extra);
+        }
       }
       const result = await invoke<{ dest: string; files?: string[] }>(
         "install_widget_to_sd",
@@ -132,7 +143,7 @@ export function InstallWizard({
     } finally {
       setBusy(false);
     }
-  }, [sdPath, luaSource, widgetName, installMd, fetchPackageFiles]);
+  }, [sdPath, luaSource, widgetName, installMd, fetchPackageFiles, extraFiles]);
 
   const downloadZip = useCallback(() => {
     const params = new URLSearchParams();

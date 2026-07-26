@@ -50,17 +50,19 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         if (msg.mock) {
           currentMock = msg.mock;
         }
+        const initModelPng = msg.modelPng
+          ? new Uint8Array(msg.modelPng)
+          : undefined;
         await runtime.init(
-          msg.source || msg.mock
+          msg.source || msg.mock || initModelPng || msg.edgeTxVersion
             ? {
                 source: msg.source,
                 zone: msg.zone,
                 mock: msg.mock ?? currentMock ?? undefined,
                 edgeTxVersion: msg.edgeTxVersion,
+                modelPng: initModelPng,
               }
-            : msg.edgeTxVersion
-              ? { edgeTxVersion: msg.edgeTxVersion }
-              : undefined,
+            : undefined,
         );
         if (currentMock) {
           runtime.setMockTelemetry(currentMock);
@@ -70,7 +72,11 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
       case "loadWidget": {
         if (!runtime) throw new Error("Simulator not initialized");
         try {
-          await runtime.loadWidget(msg.source, msg.zone);
+          await runtime.loadWidget(
+            msg.source,
+            msg.zone,
+            msg.modelPng ? new Uint8Array(msg.modelPng) : undefined,
+          );
           if (currentMock) runtime.setMockTelemetry(currentMock);
           post({
             type: "loadWidgetResult",

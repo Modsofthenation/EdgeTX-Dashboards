@@ -22,6 +22,7 @@ interface SimVerifyModalProps {
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
   layoutProfileId?: string;
+  modelPng?: Uint8Array | null;
 }
 
 export function SimVerifyModal({
@@ -33,6 +34,7 @@ export function SimVerifyModal({
   scenarioId = "editor-preview",
   scenarioOverride,
   layoutProfileId = "tx15",
+  modelPng = null,
 }: SimVerifyModalProps) {
   const [interactiveControls, setInteractiveControls] = useState<{
     openInteractive: () => void;
@@ -67,13 +69,17 @@ export function SimVerifyModal({
           EdgeTX WASM preview using the same mock telemetry as the canvas.
           Reload after edits to refresh the sim. Use interactive sim for touch,
           keys, and sticks (Esc to close).
+          {modelPng
+            ? " Custom model PNG is mounted at /IMAGES/simmodel.png."
+            : " Upload a model PNG from the toolbar to preview drawBitmap."}
         </p>
         <div className={styles.simModalBody}>
           <RadioSimPreview
-            key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}`}
+            key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}-${modelPng ? modelPng.byteLength : 0}`}
             luaSource={source}
             mock={scenario.mock}
             layoutProfileId={layoutProfileId}
+            modelPng={modelPng}
             active={open}
             live
             fillHost

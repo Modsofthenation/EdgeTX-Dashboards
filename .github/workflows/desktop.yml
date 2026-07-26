@@ -1,12 +1,14 @@
 # Build native desktop packages (Windows / Linux / macOS) via Tauri.
-# Runs on every push to main (including merges) and on demand.
+# Runs on every push to main (including merges), on desktop-v* tags, and on demand.
 # Green runs upload downloadable installers as Actions artifacts.
+# Tag pushes also publish a non-prerelease GitHub Release (stable pilots build).
 
 name: Desktop packages
 
 on:
   push:
     branches: [main]
+    tags: ["desktop-v*"]
   workflow_dispatch:
 
 concurrency:
@@ -186,7 +188,50 @@ jobs:
             Installers include the Tauri shell, a Next.js standalone sidecar, and a portable Node binary.
             Override the embedded Node with **EDGETX_NODE_PATH** if needed.
 
+            For a stable pilot build, use a tagged `desktop-v*` release instead of this nightly.
+
             Commit: ${{ github.sha }}
+          files: release-assets/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Versioned stable release when a desktop-v* tag is pushed.
+  publish-release:
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: edgetx-dashboards-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: List release assets
+        run: ls -lah release-assets
+
+      - name: Publish versioned desktop release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Desktop ${{ github.ref_name }}
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            Stable desktop build for pilots (`${{ github.ref_name }}`).
+
+            Platforms: Windows (NSIS/MSI), macOS (DMG arm64 + x64), Linux (deb).
+
+            Installers include the Tauri shell, a Next.js standalone sidecar, and a portable Node binary.
+            Override the embedded Node with **EDGETX_NODE_PATH** if needed.
+
+            Commit: ${{ github.sha }}
+
+            To cut a release: `git tag desktop-vX.Y.Z && git push origin desktop-vX.Y.Z`
           files: release-assets/*
           fail_on_unmatched_files: true
         env:

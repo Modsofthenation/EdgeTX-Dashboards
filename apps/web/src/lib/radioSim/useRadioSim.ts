@@ -35,6 +35,8 @@ export type RadioSimInitOptions = {
   zone?: WidgetSimulateZone;
   mock?: MockTelemetryValues;
   edgeTxVersion?: string;
+  /** Optional model PNG written to /IMAGES/simmodel.png on the virtual SD. */
+  modelPng?: Uint8Array;
 };
 
 let manifestPromise: Promise<SimManifest> | null = null;
@@ -142,6 +144,12 @@ export function useRadioSim() {
           keyboardMode: "none",
         });
 
+        const modelPng = widget?.modelPng
+          ? (widget.modelPng.buffer.slice(
+              widget.modelPng.byteOffset,
+              widget.modelPng.byteOffset + widget.modelPng.byteLength,
+            ) as ArrayBuffer)
+          : undefined;
         const req: SimWorkerRequest = {
           type: "init",
           wasmUrl,
@@ -150,8 +158,12 @@ export function useRadioSim() {
           source: widget?.source,
           zone: widget?.zone,
           mock: widget?.mock,
+          modelPng,
         };
-        worker.postMessage(req);
+        worker.postMessage(
+          req,
+          modelPng ? { transfer: [modelPng] } : undefined,
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         setState({
@@ -167,18 +179,28 @@ export function useRadioSim() {
   );
 
   const loadWidget = useCallback(
-    (source: string, zone?: WidgetSimulateZone) => {
+    (source: string, zone?: WidgetSimulateZone, modelPng?: Uint8Array) => {
       const worker = ensureWorker();
       const requestId = nextLoadRequestIdRef.current++;
+      const transferPng = modelPng
+        ? (modelPng.buffer.slice(
+            modelPng.byteOffset,
+            modelPng.byteOffset + modelPng.byteLength,
+          ) as ArrayBuffer)
+        : undefined;
       const req: SimWorkerRequest = {
         type: "loadWidget",
         source,
         zone,
         requestId,
+        modelPng: transferPng,
       };
       return new Promise<void>((resolve, reject) => {
         pendingLoadRef.current.set(requestId, { resolve, reject });
-        worker.postMessage(req);
+        worker.postMessage(
+          req,
+          transferPng ? { transfer: [transferPng] } : undefined,
+        );
       });
     },
     [ensureWorker],

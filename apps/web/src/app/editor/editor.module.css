@@ -183,6 +183,11 @@
   color: var(--text);
 }
 
+.calloutMuted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .toolbarLeft,
 .toolbarRight {
   display: flex;

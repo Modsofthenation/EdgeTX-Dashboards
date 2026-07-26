@@ -8,8 +8,11 @@ import {
   STACYDASH_NITRO_LAYOUT_ORDER,
 } from "@widget-gen/editor-core";
 import type { TelemetryProtocol } from "@widget-gen/shared";
+import { COMPANION_SUITES } from "~/lib/companionSuites";
 import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
 import styles from "../editor.module.css";
+
+const EMPTY_SUITE_IDS: string[] = [];
 
 interface InsertMenuProps {
   protocol: TelemetryProtocol;
@@ -19,6 +22,9 @@ interface InsertMenuProps {
   onInsertFullStacyDash?: () => void;
   /** Insert nitro / OMP StacyDash variant. */
   onInsertNitroStacyDash?: () => void;
+  /** Add companion suite stubs for SD install (tools/telemetry). */
+  onInsertCompanionSuite?: (suiteId: string) => void;
+  companionSuiteIds?: string[];
 }
 
 export function InsertMenu({
@@ -27,6 +33,8 @@ export function InsertMenu({
   onInsertPrefab,
   onInsertFullStacyDash,
   onInsertNitroStacyDash,
+  onInsertCompanionSuite,
+  companionSuiteIds = EMPTY_SUITE_IDS,
 }: InsertMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -200,6 +208,45 @@ export function InsertMenu({
                 </span>
               </button>
             ))}
+          </>
+        ) : null}
+        {onInsertCompanionSuite ? (
+          <>
+            <div className={styles.insertGroupLabel}>
+              Companion suites
+              <span className={styles.insertGroupHint}>
+                SCRIPTS/TOOLS · TELEMETRY
+              </span>
+            </div>
+            {COMPANION_SUITES.map((suite) => {
+              const added = companionSuiteIds.includes(suite.id);
+              return (
+                <button
+                  key={suite.id}
+                  type="button"
+                  role="menuitem"
+                  className={styles.insertItem}
+                  title={suite.description}
+                  onClick={() => {
+                    onInsertCompanionSuite(suite.id);
+                    setOpen(false);
+                  }}
+                >
+                  <span className={styles.insertItemIcon} aria-hidden>
+                    {suite.shortLabel}
+                  </span>
+                  <span className={styles.insertItemCopy}>
+                    <span className={styles.insertItemLabel}>
+                      {suite.label}
+                      {added ? " · added" : ""}
+                    </span>
+                    <span className={styles.insertItemDesc}>
+                      {suite.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </>
         ) : null}
       </div>,

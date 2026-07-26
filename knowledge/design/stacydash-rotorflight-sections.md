@@ -63,3 +63,15 @@ Nitro order:
 Layout → Insert → **Rotorflight sections** inserts the same blocks the generator knows about.
 
 Select any draw inside a prefab to edit that block’s **Prefab sensors** in Properties (defaults = hardcoded catalog names). Changing a sensor remaps `cacheSource("…")` for that src key only — refresh locals keep using `widget.src.<key>`. Expand **All telemetry sources** to edit every cached sensor on the widget.
+
+### Model PNG in Layout / sim
+
+Toolbar **Model PNG…** drops a user PNG onto the simulator virtual SD at `/IMAGES/simmodel.png` (same path the WASM model bitmap uses). Prefer this when previewing `rf-model-panel` / `lcd.drawBitmap` before copying a real image to the radio SD `IMAGES/` folder.
+
+### Live radio enrich vs true RF sensors
+
+**Live radio** (Web Serial CRSF) streams standard CRSF frames (RxBt, Curr, RQLY, FM, …). Rotorflight custom keys (`HSpd`, `Gov`, `Vbec`, `Vcel`, `EscT`, …) are published on the radio by **rf2bg**, not as CRSF frame types on the USB serial wire.
+
+When Live is on for Rotorflight, the app may **preview-enrich** missing HSpd/Gov/Vbec/… so StacyDash boards stay readable. That fill is **synthetic for the preview** — not true FC sensor values. For real numbers: Special Function → rf2bg (Repeat On) → Telemetry → Discover new, then bind those catalog names in the widget.
+
+See `apps/web/src/lib/liveTelemetryBridge.ts` (`enrichRotorflightLiveSensors`).

@@ -74,6 +74,19 @@ import {
   type LiveSensorMap,
   type LiveTelemetryHandle,
 } from "~/lib/liveTelemetryBridge";
+import {
+  addCompanionSuite,
+  loadEditorCompanions,
+  saveEditorCompanions,
+  type CompanionSuiteId,
+  type EditorCompanionState,
+} from "~/lib/companionSuites";
+import {
+  alignSelectedRecords,
+  distributeSelectedRecords,
+  type AlignMode,
+  type DistributeMode,
+} from "./alignSelection";
 import styles from "./editor.module.css";
 
 type MobileTab = "layers" | "canvas" | "properties";
@@ -147,6 +160,12 @@ export function EditorApp() {
     id: string;
     name: string;
   } | null>(null);
+  const [modelPngBytes, setModelPngBytes] = useState<Uint8Array | null>(null);
+  const [modelPngName, setModelPngName] = useState<string | null>(null);
+  const [companions, setCompanions] = useState<EditorCompanionState>({
+    suites: [],
+    files: [],
+  });
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
   const liveTelemetrySupported = useMemo(
     () => (typeof window !== "undefined" ? isWebSerialSupported() : false),
@@ -479,6 +498,89 @@ export function EditorApp() {
     markDirty();
   }, [setSource, markDirty, source, records]);
 
+  const companionStorageKey = workspaceKey ?? projectId ?? "local-editor";
+
+  useEffect(() => {
+    setCompanions(loadEditorCompanions(companionStorageKey));
+  }, [companionStorageKey]);
+
+  const handleAddCompanionSuite = useCallback(
+    (suiteId: string) => {
+      const next = addCompanionSuite(companions, suiteId as CompanionSuiteId);
+      setCompanions(next);
+      saveEditorCompanions(companionStorageKey, next);
+      setLiveTelemetryNote(
+        `Companion suite added — download/install will include ${next.files.length} script(s).`,
+      );
+      const key = workspaceKey ?? sessionId;
+      if (key) {
+        void fetch("/api/widget-companions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workspaceKey: workspaceKey ?? undefined,
+            sessionId: sessionId ?? undefined,
+            files: next.files,
+          }),
+        }).catch(() => {
+          /* localStorage still holds the suite for desktop extraFiles */
+        });
+      }
+    },
+    [companions, companionStorageKey, workspaceKey, sessionId],
+  );
+
+  const handleModelPngChange = useCallback(async (file: File | null) => {
+    if (!file) {
+      setModelPngBytes(null);
+      setModelPngName(null);
+      return;
+    }
+    if (file.type !== "image/png") {
+      window.alert("Model image must be a PNG.");
+      return;
+    }
+    const buf = new Uint8Array(await file.arrayBuffer());
+    setModelPngBytes(buf);
+    setModelPngName(file.name);
+  }, []);
+
+  const handleAlign = useCallback(
+    (mode: string) => {
+      if (selectedIds.length < 2) return;
+      const next = alignSelectedRecords(
+        source,
+        records,
+        selectedIds,
+        zone,
+        mode as AlignMode,
+      );
+      if (next !== source) {
+        setSource(next);
+        markDirty();
+      }
+    },
+    [selectedIds, source, records, zone, setSource, markDirty],
+  );
+
+  const handleDistribute = useCallback(
+    (mode: string) => {
+      if (selectedIds.length < 3) return;
+      const next = distributeSelectedRecords(
+        source,
+        records,
+        selectedIds,
+        zone,
+        mode as DistributeMode,
+      );
+      if (next !== source) {
+        setSource(next);
+        markDirty();
+      }
+    },
+    [selectedIds, source, records, zone, setSource, markDirty],
+  );
+
   const handleSaveNamed = useCallback(
     (name: string) => {
       const id = projectId ?? newProjectId();
@@ -574,7 +676,11 @@ export function EditorApp() {
       );
       liveHandleRef.current = handle;
       setLiveTelemetryActive(true);
-      setLiveTelemetryNote("Live radio · waiting for CRSF frames");
+      setLiveTelemetryNote(
+        protocol === "rotorflight"
+          ? "Live radio · CRSF on wire; HSpd/Gov/Vbec filled by preview enrich until rf2bg sensors appear"
+          : "Live radio · waiting for CRSF frames",
+      );
     } catch (err) {
       setLiveTelemetryNote(
         err instanceof Error ? err.message : "Failed to open serial port",
@@ -801,6 +907,11 @@ export function EditorApp() {
       endTransient();
     };
     const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (!saving && valid !== false) void handleSave();
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -883,6 +994,9 @@ export function EditorApp() {
     zone,
     beginTransient,
     endTransient,
+    handleSave,
+    saving,
+    valid,
   ]);
 
   const openSim = useCallback(() => {
@@ -1054,6 +1168,8 @@ export function EditorApp() {
         onAddNitroStacyDash={
           protocol === "rotorflight" ? handleAddNitroStacyDash : undefined
         }
+        onAddCompanionSuite={handleAddCompanionSuite}
+        companionSuiteIds={companions.suites}
         onSave={handleSave}
         onSaveNamed={() => setProjectModal("save")}
         onOpenRecent={handleOpenRecent}
@@ -1069,6 +1185,12 @@ export function EditorApp() {
         liveTelemetryActive={liveTelemetryActive}
         onToggleLiveTelemetry={handleToggleLiveTelemetry}
         liveTelemetrySupported={liveTelemetrySupported}
+        modelPngName={modelPngName}
+        onModelPngChange={(file) => void handleModelPngChange(file)}
+        onAlign={handleAlign}
+        onDistribute={handleDistribute}
+        canAlign={selectedIds.length >= 2}
+        canDistribute={selectedIds.length >= 3}
       />
 
       {protocol === "rotorflight" ? (
@@ -1100,6 +1222,15 @@ export function EditorApp() {
       {liveTelemetryNote ? (
         <div className={styles.protocolCallout} role="status">
           {liveTelemetryNote}
+          {liveTelemetryActive && protocol === "rotorflight" ? (
+            <>
+              {" "}
+              <span className={styles.calloutMuted}>
+                Enrich fills missing HSpd/Gov/Vbec — not true FC sensors until
+                rf2bg + Discover new.
+              </span>
+            </>
+          ) : null}
         </div>
       ) : null}
 
@@ -1245,12 +1376,14 @@ export function EditorApp() {
         scenarioId={previewScenarioId}
         scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
         layoutProfileId={layoutProfileId}
+        modelPng={modelPngBytes}
       />
 
       <ProjectLibraryModal
         open={projectModal != null}
         mode={projectModal ?? "save"}
         defaultName={meta.name || "Dashboard"}
+        projectId={projectId}
         onClose={() => setProjectModal(null)}
         onSave={handleSaveNamed}
         onOpen={openProjectById}

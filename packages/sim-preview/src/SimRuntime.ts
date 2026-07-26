@@ -73,7 +73,9 @@ export class SimRuntime {
   private loadWidgetPending: {
     source: string;
     zone?: WidgetSimulateZone;
+    modelPng?: Uint8Array;
   } | null = null;
+  private customModelPng: Uint8Array | null = null;
 
   private wasmUrl: string;
   private radioKey: string;
@@ -133,9 +135,13 @@ export class SimRuntime {
     zone?: WidgetSimulateZone;
     mock?: MockTelemetryValues;
     edgeTxVersion?: string;
+    modelPng?: Uint8Array;
   }): Promise<void> {
     if (options?.edgeTxVersion) {
       this.edgeTxVersion = options.edgeTxVersion;
+    }
+    if (options?.modelPng) {
+      this.customModelPng = options.modelPng;
     }
     this.setState({
       phase: "loading-wasm",
@@ -199,8 +205,12 @@ export class SimRuntime {
     }
   }
 
-  async loadWidget(source: string, zone?: WidgetSimulateZone): Promise<void> {
-    this.loadWidgetPending = { source, zone };
+  async loadWidget(
+    source: string,
+    zone?: WidgetSimulateZone,
+    modelPng?: Uint8Array,
+  ): Promise<void> {
+    this.loadWidgetPending = { source, zone, modelPng };
     // Recover the queue after failures so one rejected reload never bricks future updates.
     this.loadWidgetChain = this.loadWidgetChain
       .catch(() => undefined)
@@ -212,15 +222,23 @@ export class SimRuntime {
     while (this.loadWidgetPending) {
       const pending = this.loadWidgetPending;
       this.loadWidgetPending = null;
-      await this.applyLoadWidget(pending.source, pending.zone);
+      await this.applyLoadWidget(
+        pending.source,
+        pending.zone,
+        pending.modelPng,
+      );
     }
   }
 
   private async applyLoadWidget(
     source: string,
     zone?: WidgetSimulateZone,
+    modelPng?: Uint8Array,
   ): Promise<void> {
     this.fullscreenTap = null;
+    if (modelPng) {
+      this.customModelPng = modelPng;
+    }
     const runner = this.runner;
     // Runtime not ready yet: store desired widget and let init/loop pick it up.
     if (!runner) {
@@ -320,11 +338,12 @@ export class SimRuntime {
         plan.luaBytes.byteOffset + plan.luaBytes.byteLength,
       ) as ArrayBuffer,
     );
+    const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
     await runner.fsWriteFile(
       plan.paths.modelPngPath,
-      PLACEHOLDER_MODEL_PNG.buffer.slice(
-        PLACEHOLDER_MODEL_PNG.byteOffset,
-        PLACEHOLDER_MODEL_PNG.byteOffset + PLACEHOLDER_MODEL_PNG.byteLength,
+      png.buffer.slice(
+        png.byteOffset,
+        png.byteOffset + png.byteLength,
       ) as ArrayBuffer,
     );
   }
