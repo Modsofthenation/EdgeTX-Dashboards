@@ -35,6 +35,17 @@ type FirmwareStatus = {
   downloaded?: boolean;
 };
 
+function formatSyncedAt(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function SimFirmwarePanel() {
   const [status, setStatus] = useState<FirmwareStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,20 +100,18 @@ export function SimFirmwarePanel() {
 
   return (
     <section className={styles.panel}>
-      <div className={styles.head}>
-        <div>
+      <header className={styles.head}>
+        <div className={styles.titleRow}>
           <h3 className={styles.title}>Simulator firmware (WASM)</h3>
-          <p className={styles.hint}>
-            Color EdgeTX firmwares power the radio preview and interactive sim
-            for TX15, TX16S, T16, T18, X10, and X12S. Download once per machine;
-            files land in <code>public/sim</code>. Other radios stay on the
-            parser canvas until B&W paint lands.
-          </p>
+          <span className={status?.ready ? styles.badgeOk : styles.badgeWarn}>
+            {loading ? "Checking…" : status?.ready ? "Ready" : "Not installed"}
+          </span>
         </div>
-        <span className={status?.ready ? styles.badgeOk : styles.badgeWarn}>
-          {loading ? "Checking…" : status?.ready ? "Ready" : "Not installed"}
-        </span>
-      </div>
+        <p className={styles.hint}>
+          Color and B&W EdgeTX firmwares power radio preview and the interactive
+          sim. Download once per machine; files land in <code>public/sim</code>.
+        </p>
+      </header>
 
       {error ? (
         <p className={styles.error} role="alert">
@@ -135,10 +144,14 @@ export function SimFirmwarePanel() {
         </div>
         <div>
           <dt>Synced</dt>
-          <dd>
-            {status?.syncedAt
-              ? new Date(status.syncedAt).toLocaleString()
-              : "—"}
+          <dd
+            title={
+              status?.syncedAt
+                ? new Date(status.syncedAt).toLocaleString()
+                : undefined
+            }
+          >
+            {status?.syncedAt ? formatSyncedAt(status.syncedAt) : "—"}
           </dd>
         </div>
       </dl>
