@@ -21,6 +21,7 @@
     "postinstall": "node scripts/patch-simulator-ui.mjs && node scripts/ensure-edgetx-wasm.mjs",
     "reset-chats": "node scripts/reset-chats.mjs",
     "render:template-thumbs": "node --experimental-strip-types scripts/render-template-thumbs.ts",
+    "render:prefab-thumbs": "node --experimental-strip-types scripts/render-prefab-thumbs.ts",
     "test": "npm run test --workspaces --if-present",
     "test:wasm": "npm run test:wasm --workspace=@widget-gen/sim-preview",
     "typecheck": "npm run typecheck --workspaces --if-present",

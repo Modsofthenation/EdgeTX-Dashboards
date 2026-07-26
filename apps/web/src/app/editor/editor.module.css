@@ -346,8 +346,8 @@
   composes: appScrollbar from global;
   position: fixed;
   z-index: 2000;
-  min-width: min(300px, calc(100vw - 2rem));
-  max-height: min(420px, calc(100vh - 5rem));
+  min-width: min(360px, calc(100vw - 2rem));
+  max-height: min(480px, calc(100vh - 5rem));
   overflow-y: auto;
   padding: 0.35rem;
   border-radius: var(--radius-md);
@@ -403,6 +403,41 @@
   border: 1px solid var(--border);
   font-size: 0.8rem;
   flex-shrink: 0;
+}
+
+.insertItemThumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.75rem;
+  height: 3.15rem;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--border);
+}
+
+.insertItemThumb img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+}
+
+.insertItemThumbFallback {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
 }
 
 .insertItemCopy {
