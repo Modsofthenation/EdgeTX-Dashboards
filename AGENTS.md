@@ -10,6 +10,7 @@ Telemetry protocols: `betaflight`, `rotorflight`, `generic-crsf` (sensor catalog
   - One file: `node --experimental-strip-types --test packages/generator/src/validate.test.ts`. Web tests need the `~/*` alias, so run them with `tsx`: `cd apps/web && npx tsx --test src/lib/luaPreviewEngine.test.ts`.
   - One package: `npm run test -w @widget-gen/generator`.
   - Run `npm run lint` and `npm run typecheck -w <workspace>` for the affected scope.
+- **Before every commit/push:** run `npm run fmt:changed`, then confirm `npm run fmt:check` passes. CI fails on Prettier drift (`**/*.{ts,tsx,mjs,json,md,css}`), including markdown tables in READMEs.
 - Do not run repo-wide `npm test` or `npm run build` locally unless the user asks. CI owns full verification.
 - After a user-visible web change, verify the affected flow in the browser against `npm run dev`, then stop the dev server.
 - Do not commit unless the user asks.

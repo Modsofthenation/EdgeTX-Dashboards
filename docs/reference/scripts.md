@@ -15,6 +15,8 @@ Requires Node **22.13+**. Generation requires `CURSOR_API_KEY`.
 | `npm run typecheck`                                  | `tsc --noEmit` in every workspace                                                 |
 | `npm run lint`                                       | oxlint over the repo                                                              |
 | `npm run lint:fix`                                   | oxlint with autofixes applied                                                     |
+| `npm run fmt` / `fmt:check`                          | Prettier write / CI check for `**/*.{ts,tsx,mjs,json,md,css}`                     |
+| `npm run fmt:changed`                                | Prettier only git-changed files — run before commit/push                          |
 | `npm run generate -- --protocol betaflight "prompt"` | CLI generation                                                                    |
 | `npm run sync-stubs`                                 | Re-fetch `stubs/2.11/`                                                            |
 | `npm run sync-wasm`                                  | Force re-download the TX15 WASM firmware                                          |
