@@ -1,35 +1,6 @@
-/** Mock telemetry shape shared with apps/web mockTelemetry.ts */
-export interface MockTelemetryValues {
-  RQLY: number;
-  TQLY: number;
-  "1RSS": number;
-  "2RSS": number;
-  RxBt: number;
-  Curr: number;
-  Capa: number;
-  "Bat%": number;
-  Alt: number;
-  GSpd: number;
-  Hdg: number;
-  Sats: number;
-  FM: string;
-  RFMD: string;
-  TPWR: number;
-  RPM: number;
-  HSpd: number;
-  EscT: number;
-  MotT: number;
-  AdjF: string;
-  AdjV: number;
-  Ptch: number;
-  Roll: number;
-  Yaw: number;
-  Vbat?: number;
-  Vcel?: number;
-  Vbec?: number;
-  Tspd?: number;
-  Gov?: number;
-}
+/** Mock telemetry shape — alias of layout-verify BASE_MOCK type. */
+import type { MockTelemetry } from "@widget-gen/layout-verify";
+export type MockTelemetryValues = MockTelemetry;
 
 export interface SimFrameData {
   buffer: ArrayBuffer;

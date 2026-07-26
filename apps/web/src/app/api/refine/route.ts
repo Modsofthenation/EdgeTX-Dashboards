@@ -8,7 +8,7 @@ import {
 import type { RefineHistoryInput } from "@widget-gen/generator";
 import type { AiProviderId } from "@widget-gen/shared";
 import { parseAiProviderId, providerMeta } from "@widget-gen/shared";
-import { checkApiAuth } from "~/lib/apiSecurity";
+import { checkApiAuth, checkRateLimit } from "~/lib/apiSecurity";
 import { resolveProviderApiKey } from "~/server/aiProviderKey";
 import { getChat } from "~/lib/db/chatStore";
 import { buildRefineHistoryInput } from "~/lib/refineChatContext";
@@ -62,6 +62,9 @@ function resolveRefineSession(
 export async function POST(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
+
+  const rateErr = checkRateLimit(request);
+  if (rateErr) return rateErr;
 
   const provider = parseAiProviderId(request.headers.get("x-ai-provider"));
   const apiKey = resolveProviderApiKey(request, provider);

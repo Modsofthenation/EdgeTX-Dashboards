@@ -43,6 +43,7 @@ import type { RefineHistoryInput } from "./refineHistory.ts";
 import { buildRefineHistorySections } from "./refineHistory.ts";
 import { runProviderToolLoop } from "./providers/toolLoopAgent.ts";
 import { defaultModelForProvider } from "./providers/providerModels.ts";
+import { isCursorSandboxEnabled } from "./cursorSandbox.ts";
 
 export type { RunCallbacks };
 
@@ -101,9 +102,7 @@ export class WidgetGenerator {
     }
 
     const store = resolveLocalAgentStore(this.repoRoot);
-    const sandboxEnabled =
-      process.env.CURSOR_SANDBOX_ENABLED !== "0" &&
-      process.env.CURSOR_SANDBOX_ENABLED !== "false";
+    const sandboxEnabled = isCursorSandboxEnabled();
 
     this.agent = await Agent.create({
       apiKey: this.apiKey,
