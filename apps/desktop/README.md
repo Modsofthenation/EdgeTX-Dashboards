@@ -4,11 +4,10 @@ EdgeTX Dashboards can run as a native desktop window on Linux, Windows, and macO
 
 ## Modes
 
-| Command                   | Behavior                                                                                     |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| `npm run desktop:dev`     | Next.js + Tauri webview on `http://localhost:3000`                                           |
-| `npm run desktop:prepare` | Build Next `standalone`, stage WASM + static assets into `apps/desktop/resources/standalone` |
-| `npm run desktop:build`   | Runs prepare, then packs a native installer that starts a local Next sidecar                 |
+- **`npm run desktop:dev`** — Next.js + Tauri webview on `http://localhost:3000`
+- **`npm run desktop:prepare`** — Build Next `standalone`, stage WASM + static assets into `apps/desktop/resources/standalone`
+- **`npm run desktop:build`** — Runs prepare, then packs a native installer with `$RESOURCE/standalone/` sidecar resources
+- **`npm run verify:standalone -w @widget-gen/desktop`** — After a build, assert `standalone/apps/web/server.js` is bundled (not `_up_/`)
 
 Release builds spawn `node apps/web/server.js` from bundled resources, wait for `/api/health`, then navigate the webview to `http://127.0.0.1:<port>/`. Chat SQLite data goes under the OS app-data dir (`WIDGET_GEN_DATA_DIR`).
 

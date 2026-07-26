@@ -36,7 +36,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["../resources/standalone"],
+    "resources": {
+      "../resources/standalone/": "standalone/"
+    },
     "category": "DeveloperTool",
     "shortDescription": "Generate and edit EdgeTX Lua dashboards",
     "longDescription": "Desktop shell for EdgeTX Dashboards — Tauri 2 window plus a local Next.js standalone sidecar."

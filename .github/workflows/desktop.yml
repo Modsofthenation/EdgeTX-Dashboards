@@ -96,6 +96,10 @@ jobs:
           echo "Running: npm run tauri -- ${args[*]}"
           npm run tauri -- "${args[@]}"
 
+      - name: Verify bundled standalone resource layout
+        working-directory: apps/desktop
+        run: node ./scripts/verify-bundled-standalone.mjs
+
       - name: Stage installers for upload
         shell: bash
         run: |

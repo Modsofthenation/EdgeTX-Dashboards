@@ -60,16 +60,54 @@ mod sidecar {
     PathBuf::from("node")
   }
 
-  fn resource_standalone_dir(app: &tauri::AppHandle) -> PathBuf {
+  fn resource_standalone_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let resource_dir = app
       .path()
       .resource_dir()
-      .expect("resource dir")
-      .join("standalone");
-    if resource_dir.exists() {
-      return resource_dir;
+      .map_err(|e| format!("resource dir unavailable: {e}"))?;
+
+    // Preferred layout (tauri.conf.json maps ../resources/standalone/ → standalone/).
+    // Also accept the legacy array-form path where `../` becomes `_up_/`.
+    let candidates = [
+      resource_dir.join("standalone"),
+      resource_dir
+        .join("_up_")
+        .join("resources")
+        .join("standalone"),
+    ];
+
+    for candidate in &candidates {
+      if candidate.join("apps").join("web").join("server.js").is_file() {
+        return Ok(candidate.clone());
+      }
     }
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/standalone")
+
+    // Local `tauri build` / unpackaged debug only — never ship CI absolute paths
+    // into release error messages via CARGO_MANIFEST_DIR alone.
+    #[cfg(debug_assertions)]
+    {
+      let dev_fallback =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/standalone");
+      if dev_fallback
+        .join("apps")
+        .join("web")
+        .join("server.js")
+        .is_file()
+      {
+        return Ok(dev_fallback);
+      }
+    }
+
+    let tried = candidates
+      .iter()
+      .map(|p| p.display().to_string())
+      .collect::<Vec<_>>()
+      .join(", ");
+    Err(format!(
+      "Standalone server (apps/web/server.js) not found under the app resources at {}. Tried: {}. Rebuild the desktop package so the Next.js sidecar is embedded.",
+      resource_dir.display(),
+      tried
+    ))
   }
 
   fn wait_for_health(port: u16, timeout: Duration) -> Result<(), String> {
@@ -89,11 +127,11 @@ mod sidecar {
   }
 
   fn spawn_sidecar(app: &tauri::AppHandle, port: u16) -> Result<Child, String> {
-    let standalone = resource_standalone_dir(app);
+    let standalone = resource_standalone_dir(app)?;
     let server_js = standalone.join("apps/web/server.js");
-    if !server_js.exists() {
+    if !server_js.is_file() {
       return Err(format!(
-        "Standalone server missing at {}. Run `npm run desktop:prepare` first.",
+        "Standalone server missing at {}.",
         server_js.display()
       ));
     }
@@ -112,7 +150,11 @@ mod sidecar {
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())
       .spawn()
-      .map_err(|e| format!("Failed to spawn node ({node:?}): {e}"))?;
+      .map_err(|e| {
+        format!(
+          "Failed to spawn Node ({node:?}): {e}. Install Node.js 22+ on PATH, or set EDGETX_NODE_PATH."
+        )
+      })?;
 
     if let Some(stderr) = child.stderr.take() {
       thread::spawn(move || {
@@ -158,7 +200,7 @@ mod sidecar {
         "<!doctype html><html><body style='font-family:system-ui;padding:2rem;background:#eef1f4;color:#0f172a'>\
          <h1>Could not start EdgeTX Dashboards</h1>\
          <p>{}</p>\
-         <p>Install Node.js 22+ on PATH, or set <code>EDGETX_NODE_PATH</code>, then rebuild with <code>npm run desktop:prepare</code>.</p>\
+         <p>Release builds need the embedded Next.js sidecar plus <strong>Node.js 22+</strong> on PATH (or <code>EDGETX_NODE_PATH</code>).</p>\
          </body></html>",
         html_escape(err)
       );
