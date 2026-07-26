@@ -163,7 +163,7 @@ function mapRecordToElement(
         r: record.r ?? 0,
         startAngle: record.startAngle ?? 0,
         endAngle: record.endAngle ?? 360,
-        color: hexToEdgeColor(record.color, "CYAN"),
+        color: hexToEdgeColor(record.color, "BRIGHTGREEN"),
         label: "Arc",
       };
     case "annulus":
@@ -176,7 +176,7 @@ function mapRecordToElement(
         rOut: record.rOut ?? 0,
         startAngle: record.startAngle ?? 270,
         endAngle: record.endAngle ?? 360,
-        color: hexToEdgeColor(record.color, "CYAN"),
+        color: hexToEdgeColor(record.color, "BRIGHTGREEN"),
         importConfidence,
         label: "Annulus",
       };

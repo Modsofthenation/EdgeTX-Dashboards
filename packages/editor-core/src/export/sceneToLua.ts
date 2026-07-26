@@ -382,7 +382,7 @@ export function createDefaultElement(
         x: cx,
         y: cy,
         r: 40,
-        color: "CYAN",
+        color: "BRIGHTGREEN",
       };
     case "arc":
       return {
@@ -394,7 +394,7 @@ export function createDefaultElement(
         r: 50,
         startAngle: 270,
         endAngle: 360,
-        color: "CYAN",
+        color: "BRIGHTGREEN",
       };
     case "annulus":
       return {
@@ -407,7 +407,7 @@ export function createDefaultElement(
         rOut: 50,
         startAngle: 270,
         endAngle: 360,
-        color: "CYAN",
+        color: "BRIGHTGREEN",
       };
     case "bitmap":
       return {

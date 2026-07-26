@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { saveBlobToDisk } from "~/lib/desktopDownload";
+import {
+  parseDownloadValidationFailure,
+  ValidationFailureDialog,
+  type DownloadValidationFailure,
+} from "~/components/ValidationFailureDialog";
 import styles from "./InstallWizard.module.css";
 
 type SdFile = { path: string; content: string; encoding?: string };
@@ -14,6 +19,8 @@ interface InstallWizardProps {
   sessionId?: string | null;
   /** Telemetry protocol required by /api/download when no sessionId. */
   protocol?: string;
+  /** Radio profile used for release validation (defaults to tx15). */
+  radioId?: string | null;
   /** Extra SD files (companions / IMAGES) merged when package API is empty. */
   extraFiles?: SdFile[];
   /** Companion suite labels included in the package (shown in checklist). */
@@ -24,6 +31,10 @@ interface InstallWizardProps {
   lcdW?: number;
   lcdH?: number;
   touch?: boolean;
+  /** Persist dirty Layout edits before packaging (returns workspace key). */
+  onBeforeDownload?: () => Promise<string | null | undefined>;
+  /** Jump to editor validation / first issue when download is blocked. */
+  onReviewValidation?: () => void;
 }
 
 type WizardStep = "checklist" | "copy" | "done";
@@ -46,6 +57,7 @@ export function InstallWizard({
   workspaceKey,
   sessionId,
   protocol = "betaflight",
+  radioId = null,
   extraFiles,
   companionLabels = EMPTY_COMPANION_LABELS,
   hasModelImage = false,
@@ -53,12 +65,16 @@ export function InstallWizard({
   lcdW = 480,
   lcdH = 320,
   touch = true,
+  onBeforeDownload,
+  onReviewValidation,
 }: InstallWizardProps) {
   const [step, setStep] = useState<WizardStep>("checklist");
   const [desktop, setDesktop] = useState(false);
   const [sdPath, setSdPath] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [validationFailure, setValidationFailure] =
+    useState<DownloadValidationFailure | null>(null);
   const [checks, setChecks] = useState({
     unzip: false,
     widgets: false,
@@ -175,10 +191,19 @@ export function InstallWizard({
   const downloadZip = useCallback(async () => {
     setBusy(true);
     setStatus(null);
+    setValidationFailure(null);
     try {
+      let key = workspaceKey;
+      if (onBeforeDownload) {
+        const savedKey = await onBeforeDownload();
+        if (savedKey) key = savedKey;
+      }
+
       const params = new URLSearchParams({ protocol });
-      if (sessionId) params.set("sessionId", sessionId);
-      else if (workspaceKey) params.set("instanceId", workspaceKey);
+      if (radioId) params.set("radioId", radioId);
+      // Prefer the live workspace over a possibly stale chat session flag.
+      if (key) params.set("instanceId", key);
+      else if (sessionId) params.set("sessionId", sessionId);
       else if (widgetName) params.set("name", widgetName);
       else {
         setStatus("Save the widget before downloading");
@@ -187,8 +212,16 @@ export function InstallWizard({
 
       const res = await fetch(`/api/download?${params}`);
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setStatus(body.error ?? `Download failed (${res.status})`);
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 422) {
+          setValidationFailure(parseDownloadValidationFailure(body, res.status));
+          setStatus("Download blocked — see validation details");
+          return;
+        }
+        const errBody = body as { error?: string; message?: string };
+        setStatus(
+          errBody.message ?? errBody.error ?? `Download failed (${res.status})`,
+        );
         return;
       }
 
@@ -211,7 +244,14 @@ export function InstallWizard({
     } finally {
       setBusy(false);
     }
-  }, [protocol, sessionId, workspaceKey, widgetName]);
+  }, [
+    protocol,
+    radioId,
+    sessionId,
+    workspaceKey,
+    widgetName,
+    onBeforeDownload,
+  ]);
 
   return (
     <section className={styles.root} aria-label="Install to SD card">
@@ -445,6 +485,13 @@ export function InstallWizard({
           Installed. Eject the SD card safely, then add the widget on the radio.
         </p>
       ) : null}
+
+      <ValidationFailureDialog
+        open={validationFailure != null}
+        failure={validationFailure}
+        onClose={() => setValidationFailure(null)}
+        onReview={onReviewValidation}
+      />
     </section>
   );
 }

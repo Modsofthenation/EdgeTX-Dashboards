@@ -104,7 +104,7 @@ local function refresh(widget, event, touchState)
   lcd.clear(bg)
   lcd.drawFilledRectangle(0, 0, w, 40, GREY)
   lcd.drawText(pad, 12, "BATTERY", MIDSIZE + fg)
-  lcd.drawText(w - pad - 40, 14, cellsStr, MIDSIZE + CYAN)
+  lcd.drawText(w - pad - 40, 14, cellsStr, MIDSIZE + BRIGHTGREEN)
 
   lcd.drawText(pad, 56, "PACK", SMLSIZE + GREY)
   lcd.drawText(pad, 76, vStr, DBLSIZE + YELLOW)
@@ -124,7 +124,7 @@ local function refresh(widget, event, touchState)
   lcd.drawFilledRectangle(pad, cardY, colW, 64, DARKGREY)
   lcd.drawRectangle(pad, cardY, colW, 64, GREY)
   lcd.drawText(pad + 8, cardY + 8, "CURRENT", SMLSIZE + GREY)
-  lcd.drawText(pad + 8, cardY + 28, aStr, MIDSIZE + CYAN)
+  lcd.drawText(pad + 8, cardY + 28, aStr, MIDSIZE + BRIGHTGREEN)
 
   local rx = pad * 2 + colW
   lcd.drawFilledRectangle(rx, cardY, colW, 64, DARKGREY)
@@ -215,7 +215,7 @@ local function refresh(widget, event, touchState)
   lcd.clear(bg)
   lcd.drawFilledRectangle(0, 0, w, 40, GREY)
   lcd.drawText(pad, 12, "FLIGHT LOG", MIDSIZE + fg)
-  lcd.drawText(w - pad - 100, 14, flightStr, SMLSIZE + CYAN)
+  lcd.drawText(w - pad - 100, 14, flightStr, SMLSIZE + BRIGHTGREEN)
 
   local colW = math.floor((w - pad * 3) / 2)
   local cardY = 52
@@ -249,7 +249,7 @@ local function refresh(widget, event, touchState)
     lcd.drawText(pad + 140, gy, "SPD", SMLSIZE + GREY)
     lcd.drawText(pad + 180, gy - 2, spdStr, MIDSIZE + WHITE)
     lcd.drawText(pad + 320, gy, "SAT", SMLSIZE + GREY)
-    lcd.drawText(pad + 352, gy - 2, satsStr, MIDSIZE + CYAN)
+    lcd.drawText(pad + 352, gy - 2, satsStr, MIDSIZE + BRIGHTGREEN)
   end
 
   lcd.drawFilledRectangle(0, h - 28, w, 28, DARKGREY)

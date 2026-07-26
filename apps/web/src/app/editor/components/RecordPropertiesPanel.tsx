@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EDGE_COLOR_NAMES, hexToEdgeColor } from "@widget-gen/editor-core";
+import {
+  RADIO_SAFE_COLOR_NAMES,
+  hexToEdgeColor,
+  toRadioSafeColor,
+} from "@widget-gen/editor-core";
 import type {
   DocumentRecord,
   TextFormat,
@@ -712,12 +716,12 @@ export function RecordPropertiesPanel({
               <FieldLabel>Color</FieldLabel>
               <select
                 className={styles.fieldInput}
-                value={hexToEdgeColor(record.color)}
+                value={toRadioSafeColor(hexToEdgeColor(record.color))}
                 onChange={(e) =>
                   onSetColor(record, e.target.value as EdgeColor)
                 }
               >
-                {EDGE_COLOR_NAMES.map((c) => (
+                {RADIO_SAFE_COLOR_NAMES.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>

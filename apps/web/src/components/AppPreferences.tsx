@@ -25,7 +25,11 @@ export function openAppPreferences(tab: PreferencesTab = "appearance"): void {
   );
 }
 
-export function AppPreferencesButton({ className }: { className?: string }) {
+/**
+ * Listens for `openAppPreferences()` and mounts the modal.
+ * Mount once per page (Generate chrome button includes this; Layout must too).
+ */
+export function AppPreferencesHost() {
   const [open, setOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<PreferencesTab>("appearance");
 
@@ -39,25 +43,27 @@ export function AppPreferencesButton({ className }: { className?: string }) {
     return () => window.removeEventListener(OPEN_PREFERENCES_EVENT, onOpen);
   }, []);
 
+  if (!open) return null;
+  return (
+    <AppPreferencesModal
+      initialTab={initialTab}
+      onClose={() => setOpen(false)}
+    />
+  );
+}
+
+export function AppPreferencesButton({ className }: { className?: string }) {
   return (
     <>
       <button
         type="button"
         className={className}
-        onClick={() => {
-          setInitialTab("appearance");
-          setOpen(true);
-        }}
+        onClick={() => openAppPreferences("appearance")}
         aria-haspopup="dialog"
       >
         Preferences
       </button>
-      {open ? (
-        <AppPreferencesModal
-          initialTab={initialTab}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
+      <AppPreferencesHost />
     </>
   );
 }

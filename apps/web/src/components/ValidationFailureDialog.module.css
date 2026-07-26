@@ -1,0 +1,128 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.dialog {
+  width: min(100%, 28rem);
+  max-height: min(85vh, 36rem);
+  overflow: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+  padding: 1.25rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.message {
+  margin: 0 0 0.65rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.meta {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.issueList {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.65rem;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  display: grid;
+  gap: 0.45rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.issueList li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.issueList li[data-severity="error"] {
+  color: var(--error);
+}
+
+.issueList li[data-severity="warning"] {
+  color: var(--warning);
+}
+
+.line {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 2.25rem;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.secondary,
+.primary {
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.secondary:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.primary {
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.primary:hover {
+  filter: brightness(1.05);
+}
