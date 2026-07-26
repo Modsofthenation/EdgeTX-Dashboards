@@ -19,13 +19,46 @@ function readString(value: unknown): string | undefined {
 
 function shortPath(path: string): string {
   const normalized = path.replace(/\\/g, "/");
+  const generatedIdx = normalized.lastIndexOf("/generated/");
+  if (generatedIdx >= 0) {
+    return normalized.slice(generatedIdx + 1);
+  }
+  if (normalized.startsWith("generated/")) {
+    return normalized;
+  }
   const parts = normalized.split("/").filter(Boolean);
-  if (parts.length <= 2) return normalized;
-  return `.../${parts.slice(-2).join("/")}`;
+  if (parts.length === 0) return "…";
+  // Absolute paths: never echo directory structure (only leaf names).
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return parts.length === 1
+      ? parts[0]!
+      : `…/${parts.slice(-2).join("/")}`;
+  }
+  if (parts.length <= 2) return parts.join("/");
+  return `…/${parts.slice(-2).join("/")}`;
+}
+
+function scrubAbsolutePaths(text: string): string {
+  return text
+    .replace(/(^|[\s"'=])(\/(?:[^/\s"']+\/)+[^/\s"']+)/g, (_m, prefix: string, path: string) => {
+      const leaf = path.split("/").filter(Boolean).pop() ?? "…";
+      return `${prefix}…/${leaf}`;
+    })
+    .replace(
+      /(^|[\s"'=])([A-Za-z]:\\(?:[^\\/\s"']+\\)+[^\\/\s"']+)/g,
+      (_m, prefix: string, path: string) => {
+        const leaf = path.split(/[/\\]/).filter(Boolean).pop() ?? "…";
+        return `${prefix}…/${leaf}`;
+      },
+    );
+}
+
+function sanitizeDetail(text: string): string {
+  return scrubAbsolutePaths(text);
 }
 
 function truncate(text: string, max = 72): string {
-  const oneLine = text.replace(/\s+/g, " ").trim();
+  const oneLine = sanitizeDetail(text).replace(/\s+/g, " ").trim();
   if (oneLine.length <= max) return oneLine;
   return `${oneLine.slice(0, max - 1)}…`;
 }
@@ -174,9 +207,11 @@ export function describeToolUse(name: string, input: unknown): ToolDisplayInfo {
 
   const fallbackDetail =
     readString(args.description) ??
-    readString(args.path) ??
+    (readString(args.path) ? shortPath(readString(args.path)!) : undefined) ??
     readString(args.query) ??
-    readString(args.command);
+    (readString(args.command)
+      ? truncate(readString(args.command)!)
+      : undefined);
 
   return {
     label: formatToolLabel(name),

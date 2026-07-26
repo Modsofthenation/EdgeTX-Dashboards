@@ -9,7 +9,31 @@ describe("describeToolUse", () => {
       path: "packages/generator/src/agent.ts",
     });
     assert.equal(info.label, "Read");
-    assert.equal(info.detail, ".../src/agent.ts");
+    assert.equal(info.detail, "…/src/agent.ts");
+  });
+
+  it("never leaks absolute home paths", () => {
+    const info = describeToolUse("Read", {
+      path: "/home/ubuntu/.ssh/id_rsa",
+    });
+    assert.equal(info.label, "Read");
+    assert.equal(info.detail, "…/.ssh/id_rsa");
+    assert.doesNotMatch(info.detail ?? "", /^\/home/);
+  });
+
+  it("prefers generated/ relative segments", () => {
+    const info = describeToolUse("Write", {
+      path: "/workspace/generated/MyDash/main.lua",
+    });
+    assert.equal(info.detail, "generated/MyDash/main.lua");
+  });
+
+  it("sanitizes absolute paths in Shell commands", () => {
+    const info = describeToolUse("Shell", {
+      command: "cat /tmp/secret.txt",
+    });
+    assert.match(info.detail ?? "", /secret\.txt/);
+    assert.doesNotMatch(info.detail ?? "", /\/tmp\//);
   });
 
   it("formats MCP with server and tool name", () => {

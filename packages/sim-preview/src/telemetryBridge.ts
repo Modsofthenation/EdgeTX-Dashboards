@@ -1,4 +1,7 @@
-import type { MockTelemetryValues } from "./types.ts";
+import type { MockTelemetry } from "@widget-gen/layout-verify";
+import { BASE_MOCK } from "@widget-gen/layout-verify";
+
+export type MockTelemetryValues = MockTelemetry;
 
 // CRSF frame builders — ported from EdgeTX Dev Kit ExtensionTelemetry.tsx
 
@@ -167,29 +170,5 @@ export function injectTelemetryFrames(
   }
 }
 
-export const BASE_MOCK_TELEMETRY: MockTelemetryValues = {
-  RQLY: 92,
-  TQLY: 88,
-  "1RSS": -67,
-  "2RSS": -70,
-  RxBt: 16.2,
-  Curr: 12.4,
-  Capa: 850,
-  "Bat%": 78,
-  Alt: 125,
-  GSpd: 45,
-  Hdg: 182,
-  Sats: 14,
-  FM: "Stab",
-  RFMD: "250Hz",
-  TPWR: 250,
-  RPM: 3200,
-  HSpd: 1850,
-  EscT: 42,
-  MotT: 58,
-  AdjF: "Pitch",
-  AdjV: 12,
-  Ptch: 0.05,
-  Roll: -0.02,
-  Yaw: 1.2,
-};
+/** Shared with layout-verify — single mock telemetry source of truth. */
+export const BASE_MOCK_TELEMETRY: MockTelemetryValues = { ...BASE_MOCK };

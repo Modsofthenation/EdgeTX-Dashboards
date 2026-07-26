@@ -50,23 +50,17 @@ export async function saveBlobToDisk(
   }
 
   try {
-    const { save } = await import("@tauri-apps/plugin-dialog");
     const { invoke } = await import("@tauri-apps/api/core");
-    const path = await save({
-      defaultPath: safeName,
-      filters: options?.filters ?? [
-        { name: "Zip archive", extensions: ["zip"] },
-      ],
-      title: options?.title ?? "Save download",
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const path = await invoke<string | null>("save_bytes_with_dialog", {
+      contentsBase64: bytesToBase64(bytes),
+      defaultName: safeName,
+      filterName: options?.filters?.[0]?.name ?? "Zip archive",
+      extensions: options?.filters?.[0]?.extensions ?? ["zip"],
     });
     if (typeof path !== "string" || !path) {
       return { ok: false, cancelled: true };
     }
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    await invoke("write_bytes_file", {
-      path,
-      contentsBase64: bytesToBase64(bytes),
-    });
     return { ok: true, path };
   } catch (err) {
     return {

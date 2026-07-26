@@ -72,8 +72,13 @@ function readRaw(): ProjectLibraryState {
   }
 }
 
-function writeProjects(projects: ProjectSummary[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
+function writeProjects(projects: ProjectSummary[]): { ok: true } | { ok: false; quota: true } {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
+    return { ok: true };
+  } catch {
+    return { ok: false, quota: true };
+  }
 }
 
 export function listRecentProjects(): ProjectSummary[] {
@@ -100,8 +105,24 @@ export function upsertProject(
   const state = readRaw();
   const without = state.projects.filter((p) => p.id !== next.id);
   const projects = [next, ...without].slice(0, MAX_RECENT);
-  writeProjects(projects);
-  localStorage.setItem(LAST_OPEN_KEY, next.id);
+  const wrote = writeProjects(projects);
+  try {
+    localStorage.setItem(LAST_OPEN_KEY, next.id);
+  } catch {
+    /* quota — metadata may still be usable from memory this session */
+  }
+  if (!wrote.ok) {
+    // Surface via custom event so UI can offer desktop app-data fallback.
+    try {
+      window.dispatchEvent(
+        new CustomEvent("edgetx:project-library-quota", {
+          detail: { projectId: next.id },
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
   return next;
 }
 
@@ -140,12 +161,25 @@ export function clearLastOpenProject() {
   localStorage.removeItem(LAST_OPEN_KEY);
 }
 
-export function saveProjectSource(id: string, source: string) {
+export function saveProjectSource(
+  id: string,
+  source: string,
+): { ok: true } | { ok: false; quota: true } {
   try {
     sessionStorage.setItem(`${SOURCE_PREFIX}${id}`, source);
     localStorage.setItem(`${SOURCE_PREFIX}${id}`, source);
+    return { ok: true };
   } catch {
-    // quota — keep metadata only
+    try {
+      window.dispatchEvent(
+        new CustomEvent("edgetx:project-library-quota", {
+          detail: { projectId: id },
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+    return { ok: false, quota: true };
   }
 }
 
@@ -221,7 +255,19 @@ export function listProjectVersions(id: string): ProjectNamedVersion[] {
 }
 
 function writeProjectVersions(id: string, versions: ProjectNamedVersion[]) {
-  localStorage.setItem(`${VERSIONS_PREFIX}${id}`, JSON.stringify(versions));
+  try {
+    localStorage.setItem(`${VERSIONS_PREFIX}${id}`, JSON.stringify(versions));
+  } catch {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("edgetx:project-library-quota", {
+          detail: { projectId: id },
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export function saveNamedVersion(

@@ -312,6 +312,13 @@ export function EditorApp() {
     [source, previewScenario],
   );
 
+  /** Prefer memoized records when the undo stack tip still matches `source`. */
+  const recordsFor = useCallback(
+    (prev: string) =>
+      prev === source ? records : interpretDocument(prev, previewScenario),
+    [source, records, previewScenario],
+  );
+
   const previewMeta = useMemo(() => {
     // interpretDocument already ran parseLuaToDrawCommands; reuse its meta.
     const parseMeta = getLastPreviewParseMeta();
@@ -530,10 +537,7 @@ export function EditorApp() {
       opts?: { history?: boolean },
     ) => {
       setSource((prev) => {
-        const snapshot =
-          prev === source
-            ? records
-            : interpretDocument(prev, previewScenario);
+        const snapshot = recordsFor(prev);
         const byId = new Map(snapshot.map((r) => [r.id, r]));
         let next = prev;
         for (const id of ids) {
@@ -545,7 +549,7 @@ export function EditorApp() {
       }, opts);
       markDirty();
     },
-    [setSource, markDirty, previewScenario, source, records],
+    [setSource, markDirty, recordsFor],
   );
 
   const handleTranslate = useCallback(
@@ -564,9 +568,7 @@ export function EditorApp() {
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
       setSource(
         (prev) => {
-          const record = interpretDocument(prev, previewScenario).find(
-            (r) => r.id === id,
-          );
+          const record = recordsFor(prev).find((r) => r.id === id);
           if (!record) return prev;
           return resizeRecord(prev, record, box, zone);
         },
@@ -574,7 +576,7 @@ export function EditorApp() {
       );
       markDirty();
     },
-    [setSource, zone, markDirty, previewScenario],
+    [setSource, zone, markDirty, recordsFor],
   );
 
   const handleGestureStart = useCallback(() => {
@@ -588,43 +590,37 @@ export function EditorApp() {
   const handlePatchRecord = useCallback(
     (record: DocumentRecord, patch: Record<string, string | number>) => {
       setSource((prev) => {
-        const live = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === record.id,
-        );
+        const live = recordsFor(prev).find((r) => r.id === record.id);
         if (!live) return prev;
         return patchRecordArgs(prev, live, patch, zone);
       });
       markDirty();
     },
-    [setSource, zone, markDirty, previewScenario],
+    [setSource, zone, markDirty, recordsFor],
   );
 
   const handleSetColor = useCallback(
     (record: DocumentRecord, color: EdgeColor) => {
       setSource((prev) => {
-        const live = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === record.id,
-        );
+        const live = recordsFor(prev).find((r) => r.id === record.id);
         if (!live) return prev;
         return setRecordColor(prev, live, color, zone);
       });
       markDirty();
     },
-    [setSource, zone, markDirty, previewScenario],
+    [setSource, zone, markDirty, recordsFor],
   );
 
   const handleSetText = useCallback(
     (record: DocumentRecord, text: string) => {
       setSource((prev) => {
-        const live = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === record.id,
-        );
+        const live = recordsFor(prev).find((r) => r.id === record.id);
         if (!live) return prev;
         return setRecordText(prev, live, text, zone);
       });
       markDirty();
     },
-    [setSource, zone, markDirty, previewScenario],
+    [setSource, zone, markDirty, recordsFor],
   );
 
   const handleSetTextFlags = useCallback(
@@ -633,24 +629,20 @@ export function EditorApp() {
       flags: { size?: TextSizeFlag; align?: TextAlignFlag | null },
     ) => {
       setSource((prev) => {
-        const live = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === record.id,
-        );
+        const live = recordsFor(prev).find((r) => r.id === record.id);
         if (!live) return prev;
         return setRecordTextFlags(prev, live, flags, zone);
       });
       markDirty();
     },
-    [setSource, zone, markDirty, previewScenario],
+    [setSource, zone, markDirty, recordsFor],
   );
 
   const handleBindTelemetry = useCallback(
     (record: DocumentRecord, sensor: string, format: TextFormat) => {
       let nextSelectedId: string | null = null;
       setSource((prev) => {
-        const live = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === record.id,
-        );
+        const live = recordsFor(prev).find((r) => r.id === record.id);
         if (!live) return prev;
         const result = bindTextRecordToSensorDetailed(
           prev,
@@ -664,7 +656,7 @@ export function EditorApp() {
       if (nextSelectedId) setSelectedIds([nextSelectedId]);
       markDirty();
     },
-    [setSource, markDirty, previewScenario],
+    [setSource, markDirty, recordsFor],
   );
 
   const handleRemapSrcSensor = useCallback(
@@ -1128,10 +1120,21 @@ export function EditorApp() {
     setLastProjectOffer({ id, name: project.name });
   }, [hasRemoteWidget]);
 
+  useEffect(() => {
+    const onQuota = () => {
+      setLiveTelemetryNote(
+        "Browser storage is full — project metadata may be incomplete. On desktop, use Save as… or Sync to app data.",
+      );
+    };
+    window.addEventListener("edgetx:project-library-quota", onQuota);
+    return () =>
+      window.removeEventListener("edgetx:project-library-quota", onQuota);
+  }, []);
+
   const handleDeleteIds = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
-      const current = interpretDocument(source, previewScenario);
+      const current = records;
       const targets = ids
         .map((id) => current.find((r) => r.id === id))
         .filter((r): r is DocumentRecord => r != null);
@@ -1145,7 +1148,7 @@ export function EditorApp() {
       );
       markDirty();
     },
-    [setSource, markDirty, previewScenario, source],
+    [setSource, markDirty, records],
   );
 
   const handleDelete = useCallback(
@@ -1302,15 +1305,13 @@ export function EditorApp() {
   const handleMoveLayer = useCallback(
     (id: string, dir: -1 | 1) => {
       setSource((prev) => {
-        const record = interpretDocument(prev, previewScenario).find(
-          (r) => r.id === id,
-        );
+        const record = recordsFor(prev).find((r) => r.id === id);
         if (!record) return prev;
         return moveRecordLine(prev, record, dir);
       });
       markDirty();
     },
-    [setSource, previewScenario, markDirty],
+    [setSource, recordsFor, markDirty],
   );
 
   const handleReorderLayer = useCallback(
@@ -1318,7 +1319,7 @@ export function EditorApp() {
       // Panel is front→back (reversed source). Visual "before" (above) =
       // later in source / in front of target.
       const sourcePlace = place === "before" ? "after" : "before";
-      const live = interpretDocument(source, previewScenario);
+      const live = records;
       const moving = live.find((r) => r.id === draggedId);
       const target = live.find((r) => r.id === targetId);
       if (!moving || !target) return;
@@ -1336,7 +1337,7 @@ export function EditorApp() {
       });
       setSelectedIds(match ? [match.id] : []);
     },
-    [source, previewScenario, setSource, markDirty],
+    [source, previewScenario, setSource, markDirty, records],
   );
 
   const lineTextsForIds = useCallback(

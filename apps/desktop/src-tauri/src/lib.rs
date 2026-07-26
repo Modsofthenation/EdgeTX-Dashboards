@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 
 use tauri::{Manager, RunEvent};
+use tauri_plugin_dialog::DialogExt;
 
 struct SidecarState(Mutex<Option<std::process::Child>>);
 
@@ -443,19 +444,147 @@ fn assert_safe_user_path(path: &str) -> Result<std::path::PathBuf, String> {
   Ok(std::path::PathBuf::from(trimmed))
 }
 
+fn file_path_to_pathbuf(
+  file_path: tauri_plugin_dialog::FilePath,
+) -> Result<std::path::PathBuf, String> {
+  file_path
+    .into_path()
+    .map_err(|e| format!("Invalid dialog path: {e}"))
+}
+
+/// Save text via a native save dialog — JS never supplies a free filesystem path.
 #[tauri::command]
-fn write_text_file(path: String, contents: String) -> Result<(), String> {
-  let dest = assert_safe_user_path(&path)?;
+async fn save_text_with_dialog(
+  app: tauri::AppHandle,
+  contents: String,
+  default_name: String,
+  filter_name: String,
+  extensions: Vec<String>,
+) -> Result<Option<String>, String> {
+  let safe_name = default_name
+    .trim()
+    .replace(['/', '\\'], "_")
+    .chars()
+    .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+    .collect::<String>();
+  let name = if safe_name.is_empty() {
+    "download.txt".to_string()
+  } else {
+    safe_name
+  };
+  let exts: Vec<&str> = extensions.iter().map(|s| s.as_str()).collect();
+  let mut builder = app.dialog().file().set_file_name(&name);
+  if !exts.is_empty() {
+    let label = if filter_name.trim().is_empty() {
+      "File"
+    } else {
+      filter_name.trim()
+    };
+    builder = builder.add_filter(label, &exts);
+  }
+  let Some(picked) = builder.blocking_save_file() else {
+    return Ok(None);
+  };
+  let dest = file_path_to_pathbuf(picked)?;
+  if let Some(parent) = dest.parent() {
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+  }
+  std::fs::write(&dest, contents).map_err(|e| e.to_string())?;
+  Ok(Some(dest.display().to_string()))
+}
+
+/// Save binary (base64) via a native save dialog — no free path from JS.
+#[tauri::command]
+async fn save_bytes_with_dialog(
+  app: tauri::AppHandle,
+  contents_base64: String,
+  default_name: String,
+  filter_name: String,
+  extensions: Vec<String>,
+) -> Result<Option<String>, String> {
+  let bytes = decode_base64(&contents_base64)?;
+  let safe_name = default_name
+    .trim()
+    .replace(['/', '\\'], "_")
+    .chars()
+    .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+    .collect::<String>();
+  let name = if safe_name.is_empty() {
+    "download.bin".to_string()
+  } else {
+    safe_name
+  };
+  let exts: Vec<&str> = extensions.iter().map(|s| s.as_str()).collect();
+  let mut builder = app.dialog().file().set_file_name(&name);
+  if !exts.is_empty() {
+    let label = if filter_name.trim().is_empty() {
+      "File"
+    } else {
+      filter_name.trim()
+    };
+    builder = builder.add_filter(label, &exts);
+  }
+  let Some(picked) = builder.blocking_save_file() else {
+    return Ok(None);
+  };
+  let dest = file_path_to_pathbuf(picked)?;
+  if let Some(parent) = dest.parent() {
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+  }
+  std::fs::write(&dest, bytes).map_err(|e| e.to_string())?;
+  Ok(Some(dest.display().to_string()))
+}
+
+/// Open a text file via a native open dialog — no free path from JS.
+#[tauri::command]
+async fn open_text_with_dialog(
+  app: tauri::AppHandle,
+  filter_name: String,
+  extensions: Vec<String>,
+) -> Result<Option<serde_json::Value>, String> {
+  let exts: Vec<&str> = extensions.iter().map(|s| s.as_str()).collect();
+  let mut builder = app.dialog().file();
+  if !exts.is_empty() {
+    let label = if filter_name.trim().is_empty() {
+      "File"
+    } else {
+      filter_name.trim()
+    };
+    builder = builder.add_filter(label, &exts);
+  }
+  let Some(picked) = builder.blocking_pick_file() else {
+    return Ok(None);
+  };
+  let src = file_path_to_pathbuf(picked)?;
+  let contents = std::fs::read_to_string(&src).map_err(|e| e.to_string())?;
+  Ok(Some(serde_json::json!({
+    "path": src.display().to_string(),
+    "contents": contents,
+  })))
+}
+
+/// Legacy path-based writes — restricted to the app data directory only.
+#[tauri::command]
+fn write_text_file(
+  app: tauri::AppHandle,
+  path: String,
+  contents: String,
+) -> Result<(), String> {
+  let dest = assert_path_under_app_data(&app, &path)?;
   if let Some(parent) = dest.parent() {
     std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
   }
   std::fs::write(&dest, contents).map_err(|e| e.to_string())
 }
 
-/// Write binary contents (e.g. widget zip) from base64 via the native save dialog.
+/// Legacy path-based binary writes — restricted to the app data directory only.
 #[tauri::command]
-fn write_bytes_file(path: String, contents_base64: String) -> Result<(), String> {
-  let dest = assert_safe_user_path(&path)?;
+fn write_bytes_file(
+  app: tauri::AppHandle,
+  path: String,
+  contents_base64: String,
+) -> Result<(), String> {
+  let dest = assert_path_under_app_data(&app, &path)?;
   let bytes = decode_base64(&contents_base64)?;
   if let Some(parent) = dest.parent() {
     std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -463,10 +592,46 @@ fn write_bytes_file(path: String, contents_base64: String) -> Result<(), String>
   std::fs::write(&dest, bytes).map_err(|e| e.to_string())
 }
 
+/// Legacy path-based reads — restricted to the app data directory only.
 #[tauri::command]
-fn read_text_file(path: String) -> Result<String, String> {
-  let src = assert_safe_user_path(&path)?;
+fn read_text_file(app: tauri::AppHandle, path: String) -> Result<String, String> {
+  let src = assert_path_under_app_data(&app, &path)?;
   std::fs::read_to_string(&src).map_err(|e| e.to_string())
+}
+
+fn assert_path_under_app_data(
+  app: &tauri::AppHandle,
+  path: &str,
+) -> Result<std::path::PathBuf, String> {
+  let dest = assert_safe_user_path(path)?;
+  let app_data = app
+    .path()
+    .app_data_dir()
+    .map_err(|e| e.to_string())?;
+  let canonical_base = app_data
+    .canonicalize()
+    .unwrap_or(app_data.clone());
+  let candidate = if dest.is_absolute() {
+    dest
+  } else {
+    canonical_base.join(dest)
+  };
+  let canonical = candidate.canonicalize().or_else(|_| {
+    // File may not exist yet (writes) — canonicalize parent + join name.
+    let parent = candidate
+      .parent()
+      .ok_or_else(|| "Invalid path".to_string())?;
+    let name = candidate
+      .file_name()
+      .ok_or_else(|| "Invalid path".to_string())?;
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    let parent_canon = parent.canonicalize().map_err(|e| e.to_string())?;
+    Ok::<_, String>(parent_canon.join(name))
+  })?;
+  if !canonical.starts_with(&canonical_base) {
+    return Err("Path is outside the app data directory".into());
+  }
+  Ok(canonical)
 }
 
 #[tauri::command]
@@ -506,6 +671,9 @@ pub fn run() {
     .manage(SidecarState(Mutex::new(None)))
     .invoke_handler(tauri::generate_handler![
       install_widget_to_sd,
+      save_text_with_dialog,
+      save_bytes_with_dialog,
+      open_text_with_dialog,
       write_text_file,
       write_bytes_file,
       read_text_file,
