@@ -89,6 +89,7 @@
 }
 
 .body {
+  composes: appScrollbar from global;
   padding: 1rem 1.15rem 1.25rem;
   overflow: auto;
 }
