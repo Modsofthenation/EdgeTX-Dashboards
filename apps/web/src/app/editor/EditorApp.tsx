@@ -27,6 +27,7 @@ import {
   resizeRecord,
   setRecordColor,
   setRecordText,
+  setRecordTextFlags,
   translateRecord,
   duplicateRecordLine,
   moveRecordLine,
@@ -34,7 +35,9 @@ import {
   getSourceLine,
   remapPreviewOnlyColorLiterals,
   type DocumentRecord,
+  type TextAlignFlag,
   type TextFormat,
+  type TextSizeFlag,
   type ZoneOffset,
 } from "@widget-gen/editor-core";
 import {
@@ -593,6 +596,23 @@ export function EditorApp() {
         );
         if (!live) return prev;
         return setRecordText(prev, live, text, zone);
+      });
+      markDirty();
+    },
+    [setSource, zone, markDirty, previewScenario],
+  );
+
+  const handleSetTextFlags = useCallback(
+    (
+      record: DocumentRecord,
+      flags: { size?: TextSizeFlag; align?: TextAlignFlag | null },
+    ) => {
+      setSource((prev) => {
+        const live = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === record.id,
+        );
+        if (!live) return prev;
+        return setRecordTextFlags(prev, live, flags, zone);
       });
       markDirty();
     },
@@ -1989,7 +2009,18 @@ export function EditorApp() {
               );
             }}
             onSetColor={handleSetColor}
+            onSetColorSelected={(color) => {
+              applyToRecords(selectedIds, (current, record) =>
+                setRecordColor(current, record, color, zone),
+              );
+            }}
+            onPatchSelectedRecords={(patch) => {
+              applyToRecords(selectedIds, (current, record) =>
+                patchRecordArgs(current, record, patch, zone),
+              );
+            }}
             onSetText={handleSetText}
+            onSetTextFlags={handleSetTextFlags}
             onBindTelemetry={handleBindTelemetry}
             onRemapSrcSensor={handleRemapSrcSensor}
             onPatchSimulate={(layout, zoneIdx) => {

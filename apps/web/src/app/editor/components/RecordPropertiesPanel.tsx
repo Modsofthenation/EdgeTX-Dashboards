@@ -6,13 +6,16 @@ import {
   RADIO_SAFE_COLOR_NAMES,
   applyDashboardBackground,
   detectDashboardBackground,
+  detectTextBinding,
   hexToEdgeColor,
   toRadioSafeColor,
 } from "@widget-gen/editor-core";
 import type {
   DashboardBgMode,
   DocumentRecord,
+  TextAlignFlag,
   TextFormat,
+  TextSizeFlag,
   ZoneOffset,
 } from "@widget-gen/editor-core";
 import {
@@ -53,7 +56,13 @@ interface RecordPropertiesPanelProps {
   ) => void;
   onTranslateSelected?: (dx: number, dy: number) => void;
   onSetColor: (record: DocumentRecord, color: EdgeColor) => void;
+  onSetColorSelected?: (color: EdgeColor) => void;
+  onPatchSelectedRecords?: (patch: Record<string, string | number>) => void;
   onSetText: (record: DocumentRecord, text: string) => void;
+  onSetTextFlags?: (
+    record: DocumentRecord,
+    flags: { size?: TextSizeFlag; align?: TextAlignFlag | null },
+  ) => void;
   onBindTelemetry?: (
     record: DocumentRecord,
     sensor: string,
@@ -165,7 +174,10 @@ export function RecordPropertiesPanel({
   onPatchRecord,
   onTranslateSelected,
   onSetColor,
+  onSetColorSelected,
+  onPatchSelectedRecords,
   onSetText,
+  onSetTextFlags,
   onBindTelemetry,
   onRemapSrcSensor,
   onPatchSimulate,
@@ -206,6 +218,7 @@ export function RecordPropertiesPanel({
     return uniqueExtras.length ? [...base, ...uniqueExtras] : base;
   }, [protocol, discoveredSensors, enrichOnlySensors]);
   const [bindFormat, setBindFormat] = useState<TextFormat>("raw");
+  const [bindSensor, setBindSensor] = useState("");
   const [nameDraft, setNameDraft] = useState(meta.name);
 
   useEffect(() => {
@@ -230,6 +243,40 @@ export function RecordPropertiesPanel({
 
   const zoneX = record?.x != null ? record.x - zone.zoneX : 0;
   const zoneY = record?.y != null ? record.y - zone.zoneY : 0;
+  const selectedColor = useMemo(() => {
+    if (selectedRecords.length <= 1) return "";
+    const colors = selectedRecords.map((r) =>
+      toRadioSafeColor(hexToEdgeColor(r.color)),
+    );
+    return colors.every((color) => color === colors[0]) ? colors[0] : "";
+  }, [selectedRecords]);
+  const selectedZoneX = useMemo(() => {
+    if (selectedRecords.length <= 1) return null;
+    const first = selectedRecords[0]?.x;
+    if (first == null || !selectedRecords.every((r) => r.x === first)) {
+      return null;
+    }
+    return first - zone.zoneX;
+  }, [selectedRecords, zone.zoneX]);
+  const selectedZoneY = useMemo(() => {
+    if (selectedRecords.length <= 1) return null;
+    const first = selectedRecords[0]?.y;
+    if (first == null || !selectedRecords.every((r) => r.y === first)) {
+      return null;
+    }
+    return first - zone.zoneY;
+  }, [selectedRecords, zone.zoneY]);
+  const textSize =
+    record?.fontSize && record.fontSize >= 20
+      ? "DBLSIZE"
+      : record?.fontSize && record.fontSize >= 14
+        ? "MIDSIZE"
+        : "SMLSIZE";
+  const textAlign = record?.textAlign ?? "left";
+  const detectedBinding = useMemo(
+    () => (record ? detectTextBinding(source, record) : null),
+    [source, record],
+  );
   const maxZone =
     meta.layout === "Layout2x2"
       ? 3
@@ -243,6 +290,15 @@ export function RecordPropertiesPanel({
 
   const toLcdX = (x: number) => x + zone.zoneX;
   const toLcdY = (y: number) => y + zone.zoneY;
+
+  useEffect(() => {
+    if (!detectedBinding) {
+      setBindSensor("");
+      return;
+    }
+    setBindFormat(detectedBinding.format);
+    setBindSensor(detectedBinding.sensor);
+  }, [detectedBinding]);
 
   const sensorOptions = (current: string) => {
     const labels = new Set(sensors.map((s) => s.label));
@@ -552,11 +608,48 @@ export function RecordPropertiesPanel({
         </section>
       )}
 
-      {sharedXY && !record && (
+      {selectedRecords.length > 1 && (
         <section className={styles.propSection}>
           <h3 className={styles.sectionTitle}>
             Multi-select ({selectedRecords.length})
           </h3>
+          <label className={styles.propField}>
+            <FieldLabel>Color</FieldLabel>
+            <select
+              className={styles.fieldInput}
+              value={selectedColor}
+              onChange={(e) => {
+                const color = e.target.value as EdgeColor;
+                if (!color) return;
+                onSetColorSelected?.(color);
+              }}
+            >
+              {selectedColor ? null : <option value="">Mixed</option>}
+              {RADIO_SAFE_COLOR_NAMES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          {sharedXY && (selectedZoneX != null || selectedZoneY != null) && (
+            <div className={styles.fieldRow}>
+              {selectedZoneX != null && (
+                <NumField
+                  label="X"
+                  value={selectedZoneX}
+                  onChange={(x) => onPatchSelectedRecords?.({ x: toLcdX(x) })}
+                />
+              )}
+              {selectedZoneY != null && (
+                <NumField
+                  label="Y"
+                  value={selectedZoneY}
+                  onChange={(y) => onPatchSelectedRecords?.({ y: toLcdY(y) })}
+                />
+              )}
+            </div>
+          )}
           <p className={styles.propEmptyHint}>Nudge all selected elements:</p>
           <div className={styles.fieldRow}>
             <button
@@ -593,7 +686,7 @@ export function RecordPropertiesPanel({
         </section>
       )}
 
-      {!record && selectedRecords.length <= 1 && (
+      {!record && selectedRecords.length === 0 && (
         <div className={styles.propEmpty}>
           <p className={styles.propEmptyTitle}>Nothing selected</p>
           <p className={styles.propEmptyHint}>
@@ -763,9 +856,52 @@ export function RecordPropertiesPanel({
                 value={record.text ?? ""}
                 onChange={(text) => onSetText(record, text)}
               />
+              <div className={styles.fieldRow}>
+                <label className={styles.propField}>
+                  <FieldLabel>Size</FieldLabel>
+                  <select
+                    className={styles.fieldInput}
+                    value={textSize}
+                    onChange={(e) =>
+                      onSetTextFlags?.(record, {
+                        size: e.target.value as TextSizeFlag,
+                      })
+                    }
+                  >
+                    <option value="SMLSIZE">SMLSIZE</option>
+                    <option value="MIDSIZE">MIDSIZE</option>
+                    <option value="DBLSIZE">DBLSIZE</option>
+                  </select>
+                </label>
+                <label className={styles.propField}>
+                  <FieldLabel>Align</FieldLabel>
+                  <select
+                    className={styles.fieldInput}
+                    value={textAlign}
+                    onChange={(e) => {
+                      const align = e.target.value;
+                      onSetTextFlags?.(record, {
+                        align:
+                          align === "left"
+                            ? null
+                            : (align.toUpperCase() as TextAlignFlag),
+                      });
+                    }}
+                  >
+                    <option value="left">left</option>
+                    <option value="center">center</option>
+                    <option value="right">right</option>
+                  </select>
+                </label>
+              </div>
               {onBindTelemetry && (
                 <div className={styles.propSection}>
                   <h3 className={styles.sectionTitle}>Telemetry binding</h3>
+                  <p className={styles.propEmptyHint}>
+                    {detectedBinding
+                      ? `Bound: ${detectedBinding.sensor} · ${detectedBinding.format}`
+                      : "Static text (not bound)"}
+                  </p>
                   <label className={styles.propField}>
                     <FieldLabel>Format</FieldLabel>
                     <select
@@ -786,33 +922,35 @@ export function RecordPropertiesPanel({
                     <FieldLabel>Sensor</FieldLabel>
                     <select
                       className={styles.fieldInput}
-                      defaultValue=""
+                      value={detectedBinding?.sensor ?? bindSensor}
                       onChange={(e) => {
                         const sensor = e.target.value;
+                        setBindSensor(sensor);
                         if (!sensor) return;
                         onBindTelemetry(record, sensor, bindFormat);
-                        e.target.value = "";
                       }}
                     >
                       <option value="">Bind sensor…</option>
-                      {sensors.map((s) => (
-                        <option
-                          key={s.label}
-                          value={s.label}
-                          title={s.hint ?? undefined}
-                        >
-                          {formatSensorOptionLabel(s)}
-                          {s.formatHint !== bindFormat
-                            ? ` (${s.formatHint})`
-                            : ""}
-                        </option>
-                      ))}
+                      {sensorOptions(detectedBinding?.sensor ?? bindSensor).map(
+                        (s) => (
+                          <option
+                            key={s.label}
+                            value={s.label}
+                            title={s.hint ?? undefined}
+                          >
+                            {formatSensorOptionLabel(s)}
+                            {s.formatHint !== bindFormat
+                              ? ` (${s.formatHint})`
+                              : ""}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </label>
                   <p className={styles.propEmptyHint}>
-                    Binds with the Format above. Caches the sensor in create()
-                    and rewrites this drawText. Sensor menu resets after bind —
-                    check Static text / canvas for the live value.
+                    Binds with the selected Format, caches the sensor in
+                    create(), and rewrites this drawText. The current binding
+                    stays selected after bind.
                   </p>
                   {discoveredSensors.length > 0 ? (
                     <div className={styles.liveSeenRow}>
@@ -823,9 +961,10 @@ export function RecordPropertiesPanel({
                             key={sensor}
                             type="button"
                             className={styles.liveSeenChip}
-                            onClick={() =>
-                              onBindTelemetry(record, sensor, bindFormat)
-                            }
+                            onClick={() => {
+                              setBindSensor(sensor);
+                              onBindTelemetry(record, sensor, bindFormat);
+                            }}
                           >
                             Bind {sensor}
                           </button>
@@ -845,9 +984,10 @@ export function RecordPropertiesPanel({
                             type="button"
                             className={styles.liveSeenChip}
                             title="Synthesized for Rotorflight preview — enable rf2bg + Discover new for true FC sensors"
-                            onClick={() =>
-                              onBindTelemetry(record, sensor, bindFormat)
-                            }
+                            onClick={() => {
+                              setBindSensor(sensor);
+                              onBindTelemetry(record, sensor, bindFormat);
+                            }}
                           >
                             Bind {sensor}
                           </button>
