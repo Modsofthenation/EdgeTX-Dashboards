@@ -9,7 +9,14 @@
  *     apps/web/public/...  (includes sim WASM)
  *     node_modules/...
  */
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,4 +87,32 @@ writeFileSync(
   ) + "\n",
 );
 
+const stagedServer = join(OUT_ROOT, "apps", "web", "server.js");
+if (!existsSync(stagedServer)) {
+  console.error(`Staging failed — missing ${stagedServer}`);
+  process.exit(1);
+}
+
+// Guard against the old array-form resource path that lands under
+// $RESOURCE/_up_/resources/standalone (breaks release lookups).
+const tauriConfPath = join(DESKTOP_ROOT, "src-tauri", "tauri.conf.json");
+const tauriConf = JSON.parse(readFileSync(tauriConfPath, "utf8"));
+const resources = tauriConf?.bundle?.resources;
+const mappedOk =
+  resources &&
+  !Array.isArray(resources) &&
+  typeof resources === "object" &&
+  Object.entries(resources).some(
+    ([from, to]) =>
+      String(from).replace(/\\/g, "/").includes("resources/standalone") &&
+      String(to).replace(/\\/g, "/").replace(/\/+$/, "") === "standalone",
+  );
+if (!mappedOk) {
+  console.error(
+    "tauri.conf.json bundle.resources must map ../resources/standalone/ → standalone/ so the installer embeds $RESOURCE/standalone/apps/web/server.js",
+  );
+  process.exit(1);
+}
+
 console.log(`Standalone staged at ${OUT_ROOT}`);
+console.log("Tauri resource map OK → $RESOURCE/standalone/");
