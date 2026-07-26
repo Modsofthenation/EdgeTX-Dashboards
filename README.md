@@ -7,11 +7,11 @@ Generate validated EdgeTX Lua dashboards for color LCD radios from a plain-langu
 **Optional extras:** companion Tool / Telemetry scripts (battery selector, flight logger, and more).
 
 <p align="center">
-  <img src="docs/screenshots/readme-generate-dark.png" alt="Generate page in Dark theme with chats, templates, and preview panel" width="920" />
+  <img src="docs/screenshots/readme-generate-dark.png" alt="Generate page in Dark theme with chats, template gallery thumbnails, and preview panel" width="920" />
 </p>
 
 <p align="center">
-  <sub>Generate · Dark theme</sub>
+  <sub>Generate · Dark theme · template gallery with live board thumbs</sub>
 </p>
 
 ## Highlights
@@ -19,18 +19,26 @@ Generate validated EdgeTX Lua dashboards for color LCD radios from a plain-langu
 - **Describe → Preview → Layout → Download** in one product shell
 - Cursor agent writes `main.lua` (and optional companion scripts) against real EdgeTX rules
 - In-browser **EdgeTX TX15 WASM** preview with mock CRSF telemetry
-- Visual **Layout** editor: layers, properties, multi-select, telemetry bind, sim verify
-- **Seven UI themes** (LCD canvas stays dark in every theme)
+- Visual **Layout** editor: layers, properties, multi-select, telemetry bind, Insert prefabs with preview thumbs, sim verify
+- **Thirteen UI themes** (LCD canvas stays dark in every theme)
 - **Preferences → AI** for a browser Cursor API key or server `CURSOR_API_KEY`
-- Desktop installers for **Windows / macOS / Linux** built on every green `main` run
+- Desktop installers for **Windows / macOS / Linux** (manual Actions workflow)
 
 ## Tour
 
 ### Generate
 
-Chat to describe layout, sensors, and style. Start from a template or type freely. The agent validates Lua before packaging, then streams a live preview in the right panel.
+Chat to describe layout, sensors, and style. Start from a template (each card shows a TX15 preview PNG) or type freely. The agent validates Lua before packaging, then streams a live preview in the right panel.
 
 Attach reference screenshots to prompts (PNG, JPEG, WebP, GIF; up to 4 images, 4 MB each).
+
+<p align="center">
+  <img src="docs/screenshots/readme-generate-gallery.png" alt="Generate template gallery with PNG board thumbnails" width="900" />
+</p>
+
+<p align="center">
+  <sub>Template gallery · PNG board thumbs</sub>
+</p>
 
 <p align="center">
   <img src="docs/screenshots/readme-generate-ocean.png" alt="Generate page in Ocean theme" width="720" />
@@ -44,22 +52,24 @@ Attach reference screenshots to prompts (PNG, JPEG, WebP, GIF; up to 4 images, 4
 
 <p align="center">
   <img src="docs/screenshots/readme-generate-light.png" alt="Generate page in Light theme" width="720" />
+  &nbsp;
+  <img src="docs/screenshots/readme-generate-ember.png" alt="Generate page in Ember theme" width="720" />
 </p>
 
 <p align="center">
-  <sub>Light</sub>
+  <sub>Light · Ember</sub>
 </p>
 
 ### Layout editor
 
-Open **Layout** (or `/editor`) to nudge, resize, bind telemetry, insert draw objects, and verify on the dark LCD canvas.
+Open **Layout** (or `/editor`) to nudge, resize, bind telemetry, insert draw objects / prefab sections, and verify on the dark LCD canvas. Gallery templates open complete boards (whoop, freestyle, RF heli, and more).
 
 <p align="center">
-  <img src="docs/screenshots/readme-editor-dark.png" alt="Layout editor in Dark theme with layers, canvas, and properties" width="900" />
+  <img src="docs/screenshots/readme-editor-dark.png" alt="Layout editor in Dark theme with whoop board, layers, and properties" width="900" />
 </p>
 
 <p align="center">
-  <sub>Layout · Dark</sub>
+  <sub>Layout · Dark · whoop board</sub>
 </p>
 
 <p align="center">
@@ -74,18 +84,40 @@ Open **Layout** (or `/editor`) to nudge, resize, bind telemetry, insert draw obj
 
 <p align="center">
   <img src="docs/screenshots/readme-editor-light.png" alt="Layout editor in Light theme" width="720" />
+  &nbsp;
+  <img src="docs/screenshots/readme-editor-slate.png" alt="Layout editor in Slate theme" width="720" />
 </p>
 
 <p align="center">
-  <sub>Light</sub>
+  <sub>Light · Slate</sub>
+</p>
+
+### Insert prefabs
+
+**Insert** lists modular Rotorflight and Betaflight / CRSF sections with cropped PNG previews, plus full-board actions (whoop, freestyle, dense CRSF, RF heli electric/nitro).
+
+<p align="center">
+  <img src="docs/screenshots/readme-insert-prefabs.png" alt="Layout Insert menu showing Quad section prefabs with PNG thumbs" width="900" />
+</p>
+
+<p align="center">
+  <sub>Insert · Quad sections</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-editor-insert-rf.png" alt="Layout Insert menu showing Rotorflight heli prefabs with PNG thumbs" width="900" />
+</p>
+
+<p align="center">
+  <sub>Insert · Rotorflight sections</sub>
 </p>
 
 ### Themes
 
-**Preferences → Appearance** ships seven themes: Light, Dark, Midnight, Slate, Forest, Ocean, and High contrast. Themes apply across Generate and Layout. The radio LCD canvas stays dark everywhere.
+**Preferences → Appearance** ships thirteen themes: Light, Dark, Midnight, Slate, Forest, Ocean, High contrast, Graphite, Meadow, Fog, Ember, Volt, and Copper. Themes apply across Generate and Layout. The radio LCD canvas stays dark everywhere.
 
 <p align="center">
-  <img src="docs/screenshots/readme-preferences-themes.png" alt="Preferences Appearance tab with seven theme cards" width="760" />
+  <img src="docs/screenshots/readme-preferences-themes.png" alt="Preferences Appearance tab with theme cards" width="760" />
 </p>
 
 ### AI settings
@@ -112,7 +144,7 @@ You can still set `CURSOR_API_KEY` on the server. A browser key overrides it per
 
 ### Run in simulator
 
-From Layout, **Run in simulator** boots the WASM preview with the same mock telemetry as the canvas. Use **Open interactive sim** for touch, keys, and sticks (Esc to close).
+From Layout, **Simulator** boots the WASM preview with the same mock telemetry as the canvas. Use **Open interactive sim** for touch, keys, and sticks (Esc to close).
 
 <p align="center">
   <img src="docs/screenshots/readme-sim.png" alt="Run in simulator modal with WASM preview stage" width="760" />
