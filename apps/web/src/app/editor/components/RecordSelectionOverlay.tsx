@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   bboxForRecordInZone,
   hitTestRecords,
@@ -20,6 +20,7 @@ import { measurePreviewText } from "~/lib/luaPreviewEngine";
 import { TransformHandles } from "./TransformHandles";
 import type { CanvasLayout } from "../lib/canvasLayout";
 import styles from "../editor.module.css";
+import { selectionBoxWithLiveDrag } from "../lib/selectionLiveDrag";
 
 interface RecordSelectionOverlayProps {
   records: DocumentRecord[];
@@ -100,6 +101,14 @@ export function RecordSelectionOverlay({
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const rafRef = useRef<number | null>(null);
   const pendingLiveRef = useRef<LiveDragState | null>(null);
+
+  // Mirror EditorCanvas: drop keep-alive live transform once records reflect
+  // the committed Lua edit. Leaving it on double-applies move deltas to the
+  // teal selection box (preview clears; overlay used to keep the stale offset).
+  // useLayoutEffect: clear before paint so we never flash a double-offset box.
+  useLayoutEffect(() => {
+    setLiveDrag(null);
+  }, [records]);
 
   const measureText = useCallback((text: string, fontSize: number) => {
     if (!measureCtxRef.current) {
@@ -441,20 +450,9 @@ export function RecordSelectionOverlay({
       .map((id) => {
         const record = records.find((r) => r.id === id);
         if (!record) return null;
-        let box = bboxForRecordInZone(record, zone, measureText);
-        if (!box) return null;
-        if (liveDrag?.mode === "move" && liveDrag.ids.includes(id)) {
-          box = {
-            ...box,
-            x: box.x + liveDrag.dx,
-            y: box.y + liveDrag.dy,
-          };
-        } else if (
-          liveDrag?.mode === "resize" &&
-          liveDrag.ids[0] === id
-        ) {
-          box = liveDrag.box;
-        }
+        const base = bboxForRecordInZone(record, zone, measureText);
+        if (!base) return null;
+        const box = selectionBoxWithLiveDrag(id, base, liveDrag);
         return { record, box };
       })
       .filter(

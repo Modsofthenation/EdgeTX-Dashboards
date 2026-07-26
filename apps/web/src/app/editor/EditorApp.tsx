@@ -62,6 +62,7 @@ import {
 import dynamic from "next/dynamic";
 import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
+import { useResizableEditorPanels } from "./hooks/useResizableEditorPanels";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
@@ -287,6 +288,13 @@ export function EditorApp() {
     canUndo,
     canRedo,
   } = useSourceUndoStack(createStarterSource());
+
+  const {
+    gridTemplateColumns,
+    activeSide,
+    onHandlePointerDown,
+    resetWidths,
+  } = useResizableEditorPanels();
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
   const previewScenario: LayoutScenario = useMemo(() => {
@@ -2121,7 +2129,11 @@ export function EditorApp() {
         ))}
       </div>
 
-      <div className={styles.editorBody} data-mobile-tab={mobileTab}>
+      <div
+        className={`${styles.editorBody} ${styles.editorBodyResizable}`}
+        data-mobile-tab={mobileTab}
+        style={{ gridTemplateColumns }}
+      >
         <div className={`${styles.mobilePane} ${styles.mobilePaneLayers}`}>
           <RecordLayersPanel
             records={records}
@@ -2138,9 +2150,7 @@ export function EditorApp() {
             }
             onSelectMany={(ids, additive) =>
               setSelectedIds((prev) =>
-                additive
-                  ? [...new Set([...prev, ...ids])]
-                  : ids,
+                additive ? [...new Set([...prev, ...ids])] : ids,
               )
             }
             onDelete={handleDelete}
@@ -2150,6 +2160,16 @@ export function EditorApp() {
             onClearAll={handleClearAllLayers}
           />
         </div>
+
+        <button
+          type="button"
+          className={styles.panelResizeHandle}
+          aria-label="Resize layers panel"
+          title="Drag to resize layers · double-click to reset"
+          data-active={activeSide === "left" ? "true" : undefined}
+          onPointerDown={(e) => onHandlePointerDown("left", e)}
+          onDoubleClick={resetWidths}
+        />
 
         <div className={`${styles.mobilePane} ${styles.mobilePaneCanvas}`}>
           {remoteLoadPending ? (
@@ -2191,6 +2211,16 @@ export function EditorApp() {
             />
           )}
         </div>
+
+        <button
+          type="button"
+          className={styles.panelResizeHandle}
+          aria-label="Resize properties panel"
+          title="Drag to resize properties · double-click to reset"
+          data-active={activeSide === "right" ? "true" : undefined}
+          onPointerDown={(e) => onHandlePointerDown("right", e)}
+          onDoubleClick={resetWidths}
+        />
 
         <div
           className={`${styles.rightColumn} ${styles.mobilePane} ${styles.mobilePaneProperties}`}
