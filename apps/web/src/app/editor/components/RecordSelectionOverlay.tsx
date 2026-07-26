@@ -32,6 +32,11 @@ interface RecordSelectionOverlayProps {
   /** When true (default), snap to element/LCD edges then grid. */
   snapEnabled?: boolean;
   onSnapGuidesChange?: (guides: SnapGuide[]) => void;
+  onContextMenu?: (info: {
+    clientX: number;
+    clientY: number;
+    hitId: string | null;
+  }) => void;
 }
 
 function screenToZone(
@@ -61,6 +66,7 @@ export function RecordSelectionOverlay({
   onGestureEnd,
   snapEnabled = true,
   onSnapGuidesChange,
+  onContextMenu,
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<{
     mode: "move" | "resize";
@@ -221,6 +227,29 @@ export function RecordSelectionOverlay({
     finishGesture();
   }, [finishGesture]);
 
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      if (!onContextMenu || !layout || !frameRef.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = frameRef.current.getBoundingClientRect();
+      const pointer = screenToZone(event.clientX, event.clientY, rect, layout);
+      const hit = hitTestRecords(
+        records,
+        pointer.x,
+        pointer.y,
+        zone,
+        measureText,
+      );
+      onContextMenu({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        hitId: hit?.id ?? null,
+      });
+    },
+    [onContextMenu, layout, frameRef, records, zone, measureText],
+  );
+
   const onResizeStart = useCallback(
     (
       handle: ResizeHandle,
@@ -278,6 +307,7 @@ export function RecordSelectionOverlay({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onContextMenu={handleContextMenu}
     >
       {selectedBoxes.map(({ record, box }) => {
         const left = offsetX + box.x * scale;

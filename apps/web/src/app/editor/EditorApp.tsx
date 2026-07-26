@@ -109,6 +109,8 @@ import {
   formatInstallGuideMarkdown,
 } from "~/lib/installGuide";
 import { ExportInstallModal } from "./components/ExportInstallModal";
+import { CanvasContextMenu } from "./components/CanvasContextMenu";
+import type { CanvasContextMenuItem } from "./components/CanvasContextMenu";
 import {
   alignSelectedRecords,
   distributeSelectedRecords,
@@ -118,6 +120,25 @@ import {
 import styles from "./editor.module.css";
 
 type MobileTab = "layers" | "canvas" | "properties";
+
+const IS_MAC =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent);
+
+function modShortcut(key: string): string {
+  return IS_MAC ? `⌘${key}` : `Ctrl+${key}`;
+}
+
+function findRecordByLineText(
+  source: string,
+  lineText: string,
+  scenario: LayoutScenario | undefined,
+): DocumentRecord | undefined {
+  return interpretDocument(source, scenario).find((r) => {
+    const line = r.sourceRef?.sourceLine ?? r.sourceLine;
+    return line != null && getSourceLine(source, line) === lineText;
+  });
+}
 
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
 
@@ -189,6 +210,10 @@ export function EditorApp() {
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
+  const [canvasMenu, setCanvasMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [simOpen, setSimOpen] = useState(false);
   const [simReloadKey, setSimReloadKey] = useState(0);
   const [remoteLoadPending, setRemoteLoadPending] = useState(hasRemoteWidget);
@@ -1133,6 +1158,229 @@ export function EditorApp() {
     [source, previewScenario, setSource, markDirty],
   );
 
+  const lineTextsForIds = useCallback(
+    (ids: string[], fromSource: string) => {
+      const live = interpretDocument(fromSource, previewScenario);
+      return ids
+        .map((id) => {
+          const r = live.find((row) => row.id === id);
+          const line = r?.sourceRef?.sourceLine ?? r?.sourceLine;
+          if (line == null) return null;
+          return getSourceLine(fromSource, line);
+        })
+        .filter((t): t is string => t != null);
+    },
+    [previewScenario],
+  );
+
+  const handleNudgeLayerOrder = useCallback(
+    (ids: string[], dir: -1 | 1) => {
+      if (ids.length === 0) return;
+      setSource((prev) => {
+        let next = prev;
+        const texts = lineTextsForIds(ids, next);
+        const ordered =
+          dir === 1
+            ? texts.toReversed() // front-first when bringing forward
+            : texts;
+        for (const text of ordered) {
+          const current = findRecordByLineText(next, text, previewScenario);
+          if (!current) continue;
+          next = moveRecordLine(next, current, dir);
+        }
+        return next;
+      });
+      markDirty();
+    },
+    [lineTextsForIds, previewScenario, setSource, markDirty],
+  );
+
+  const handleBringToFront = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      setSource((prev) => {
+        let next = prev;
+        // Back→front so relative order among the selection is preserved.
+        for (const text of lineTextsForIds(ids, next)) {
+          const live = interpretDocument(next, previewScenario);
+          const current = findRecordByLineText(next, text, previewScenario);
+          const last = live[live.length - 1];
+          if (!current || !last || current.id === last.id) continue;
+          next = reorderRecordLine(next, current, last, "after");
+        }
+        return next;
+      });
+      markDirty();
+    },
+    [lineTextsForIds, previewScenario, setSource, markDirty],
+  );
+
+  const handleSendToBack = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      setSource((prev) => {
+        let next = prev;
+        // Front→back so relative order among the selection is preserved.
+        for (const text of lineTextsForIds(ids, next).toReversed()) {
+          const live = interpretDocument(next, previewScenario);
+          const current = findRecordByLineText(next, text, previewScenario);
+          const first = live[0];
+          if (!current || !first || current.id === first.id) continue;
+          next = reorderRecordLine(next, current, first, "before");
+        }
+        return next;
+      });
+      markDirty();
+    },
+    [lineTextsForIds, previewScenario, setSource, markDirty],
+  );
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds(records.map((r) => r.id));
+  }, [records]);
+
+  const openCanvasContextMenu = useCallback(
+    (info: { clientX: number; clientY: number; hitId: string | null }) => {
+      if (info.hitId) {
+        setSelectedIds((prev) =>
+          prev.includes(info.hitId!) ? prev : [info.hitId!],
+        );
+      } else {
+        setSelectedIds([]);
+      }
+      setCanvasMenu({ x: info.clientX, y: info.clientY });
+    },
+    [],
+  );
+
+  const canvasContextItems = useMemo((): CanvasContextMenuItem[] => {
+    const hasSelection = selectedIds.length > 0;
+    const canAlign = selectedIds.length >= 1;
+    const canDistribute = selectedIds.length >= 3;
+    const items: CanvasContextMenuItem[] = [];
+
+    if (hasSelection) {
+      items.push(
+        {
+          id: "duplicate",
+          label: "Duplicate",
+          shortcut: modShortcut("D"),
+          onClick: () => handleDuplicateSelected(),
+        },
+        {
+          id: "delete",
+          label: "Delete",
+          shortcut: "Del",
+          onClick: () => handleDeleteIds(selectedIds),
+        },
+        {
+          id: "bring-forward",
+          label: "Bring forward",
+          separatorBefore: true,
+          onClick: () => handleNudgeLayerOrder(selectedIds, 1),
+        },
+        {
+          id: "send-backward",
+          label: "Send backward",
+          onClick: () => handleNudgeLayerOrder(selectedIds, -1),
+        },
+        {
+          id: "bring-front",
+          label: "Bring to front",
+          onClick: () => handleBringToFront(selectedIds),
+        },
+        {
+          id: "send-back",
+          label: "Send to back",
+          onClick: () => handleSendToBack(selectedIds),
+        },
+        {
+          id: "align-left",
+          label: "Align left",
+          separatorBefore: true,
+          disabled: !canAlign,
+          onClick: () => handleAlign("left"),
+        },
+        {
+          id: "align-center",
+          label: "Align center",
+          disabled: !canAlign,
+          onClick: () => handleAlign("center-x"),
+        },
+        {
+          id: "align-right",
+          label: "Align right",
+          disabled: !canAlign,
+          onClick: () => handleAlign("right"),
+        },
+        {
+          id: "align-top",
+          label: "Align top",
+          disabled: !canAlign,
+          onClick: () => handleAlign("top"),
+        },
+        {
+          id: "align-middle",
+          label: "Align middle",
+          disabled: !canAlign,
+          onClick: () => handleAlign("center-y"),
+        },
+        {
+          id: "align-bottom",
+          label: "Align bottom",
+          disabled: !canAlign,
+          onClick: () => handleAlign("bottom"),
+        },
+      );
+      if (canDistribute) {
+        items.push(
+          {
+            id: "dist-h",
+            label: "Distribute horizontally",
+            separatorBefore: true,
+            onClick: () => handleDistribute("horizontal"),
+          },
+          {
+            id: "dist-v",
+            label: "Distribute vertically",
+            onClick: () => handleDistribute("vertical"),
+          },
+        );
+      }
+    }
+
+    items.push({
+      id: "select-all",
+      label: "Select all",
+      shortcut: modShortcut("A"),
+      separatorBefore: items.length > 0,
+      disabled: records.length === 0,
+      onClick: () => handleSelectAll(),
+    });
+
+    if (hasSelection) {
+      items.push({
+        id: "deselect",
+        label: "Deselect",
+        shortcut: "Esc",
+        onClick: () => setSelectedIds([]),
+      });
+    }
+
+    return items;
+  }, [
+    selectedIds,
+    records.length,
+    handleDuplicateSelected,
+    handleDeleteIds,
+    handleNudgeLayerOrder,
+    handleBringToFront,
+    handleSendToBack,
+    handleAlign,
+    handleDistribute,
+    handleSelectAll,
+  ]);
+
   const handleValidate = useCallback(async () => {
     const res = await fetch("/api/validate", {
       method: "POST",
@@ -1279,6 +1527,7 @@ export function EditorApp() {
       if (e.key === "Escape") {
         setPasteOpen(false);
         setExportOpen(false);
+        setCanvasMenu(null);
         setSimOpen(false);
         setSelectedIds([]);
       }
@@ -1297,6 +1546,13 @@ export function EditorApp() {
         if (selectedIds.length === 0) return;
         e.preventDefault();
         handleDuplicateSelected();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        e.preventDefault();
+        handleSelectAll();
         return;
       }
       if (
@@ -1350,6 +1606,7 @@ export function EditorApp() {
     selectedIds,
     handleDeleteIds,
     handleDuplicateSelected,
+    handleSelectAll,
     markDirty,
     applyToRecords,
     zone,
@@ -1669,6 +1926,7 @@ export function EditorApp() {
                 liveTelemetryActive ? previewScenario : undefined
               }
               layoutProfileId={layoutProfileId}
+              onContextMenu={openCanvasContextMenu}
             />
           )}
         </div>
@@ -1771,6 +2029,14 @@ export function EditorApp() {
           );
           if (first) selectIssue(first);
         }}
+      />
+
+      <CanvasContextMenu
+        open={canvasMenu != null}
+        x={canvasMenu?.x ?? 0}
+        y={canvasMenu?.y ?? 0}
+        items={canvasContextItems}
+        onClose={() => setCanvasMenu(null)}
       />
 
       <SimVerifyModal

@@ -302,7 +302,10 @@
 }
 
 .editorMenuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   width: 100%;
   text-align: left;
   padding: 0.5rem 0.65rem;
@@ -321,6 +324,24 @@
 .editorMenuItem:disabled {
   opacity: 0.72;
   cursor: not-allowed;
+}
+
+.contextMenuLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.contextMenuShortcut {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.canvasContextMenu {
+  min-width: 220px;
+  z-index: 2200;
 }
 
 .toolbarToggleOn {
