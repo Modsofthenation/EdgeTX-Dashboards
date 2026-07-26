@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  DEFAULT_BG_IMAGE_PATH,
   RADIO_SAFE_COLOR_NAMES,
+  applyDashboardBackground,
+  detectDashboardBackground,
   hexToEdgeColor,
   toRadioSafeColor,
 } from "@widget-gen/editor-core";
 import type {
+  DashboardBgMode,
   DocumentRecord,
   TextFormat,
   ZoneOffset,
@@ -58,6 +62,12 @@ interface RecordPropertiesPanelProps {
   /** Remap a create() src key to a different catalog sensor (prefab-safe). */
   onRemapSrcSensor?: (key: string, sensor: string) => void;
   onPatchSimulate?: (layout: string, zone: number) => void;
+  /** Rewrite dashboard background mode (color / model / custom image). */
+  onApplyBackground?: (nextSource: string) => void;
+  /** Upload a PNG for custom background (and sim preview). */
+  onBackgroundImageChange?: (file: File | null) => void;
+  backgroundImageName?: string | null;
+  backgroundImageUrl?: string | null;
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -159,8 +169,17 @@ export function RecordPropertiesPanel({
   onBindTelemetry,
   onRemapSrcSensor,
   onPatchSimulate,
+  onApplyBackground,
+  onBackgroundImageChange,
+  backgroundImageName = null,
+  backgroundImageUrl = null,
 }: RecordPropertiesPanelProps) {
+  const bgFileRef = useRef<HTMLInputElement>(null);
   const record = selectedRecords.length === 1 ? selectedRecords[0] : null;
+  const background = useMemo(
+    () => detectDashboardBackground(source),
+    [source],
+  );
   const kindMeta = record ? catalogForDrawKind(record.kind) : null;
   const sensors = useMemo(() => {
     const base = SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight;
@@ -310,6 +329,136 @@ export function RecordPropertiesPanel({
           </label>
         </div>
       </section>
+
+      {onApplyBackground && (
+        <section className={styles.propSection}>
+          <h3 className={styles.sectionTitle}>Background</h3>
+          <p className={styles.propEmptyHint}>
+            Full-dashboard fill behind cards. Color uses{" "}
+            <code>lcd.clear</code>; model uses the EdgeTX model bitmap; custom
+            loads a PNG from the SD card.
+          </p>
+          <label className={styles.propField}>
+            <FieldLabel>Fill</FieldLabel>
+            <select
+              className={styles.fieldInput}
+              value={background.mode}
+              onChange={(e) => {
+                const mode = e.target.value as DashboardBgMode;
+                onApplyBackground(
+                  applyDashboardBackground(source, {
+                    mode,
+                    color: background.color,
+                    imagePath:
+                      background.imagePath ?? DEFAULT_BG_IMAGE_PATH,
+                  }),
+                );
+              }}
+            >
+              <option value="color">Solid color</option>
+              <option value="model">Model image</option>
+              <option value="image">Custom image</option>
+            </select>
+          </label>
+          {background.mode === "color" && (
+            <label className={styles.propField}>
+              <FieldLabel>Color</FieldLabel>
+              <select
+                className={styles.fieldInput}
+                value={toRadioSafeColor(background.color as EdgeColor)}
+                onChange={(e) => {
+                  onApplyBackground(
+                    applyDashboardBackground(source, {
+                      mode: "color",
+                      color: e.target.value,
+                    }),
+                  );
+                }}
+              >
+                {RADIO_SAFE_COLOR_NAMES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {background.mode === "model" && (
+            <p className={styles.propEmptyHint}>
+              Draws <code>model.getInfo().bitmap</code> fullscreen. Upload a
+              model PNG from the toolbar to preview it in the sim.
+            </p>
+          )}
+          {background.mode === "image" && (
+            <>
+              <TextField
+                label="SD path"
+                value={background.imagePath ?? DEFAULT_BG_IMAGE_PATH}
+                onChange={(path) => {
+                  const trimmed = path.trim() || DEFAULT_BG_IMAGE_PATH;
+                  onApplyBackground(
+                    applyDashboardBackground(source, {
+                      mode: "image",
+                      imagePath: trimmed.startsWith("/")
+                        ? trimmed
+                        : `/IMAGES/${trimmed}`,
+                    }),
+                  );
+                }}
+              />
+              {onBackgroundImageChange && (
+                <div className={styles.fieldRow}>
+                  <button
+                    type="button"
+                    className={styles.fieldInput}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => bgFileRef.current?.click()}
+                  >
+                    {backgroundImageName
+                      ? `Replace PNG…`
+                      : "Upload PNG…"}
+                  </button>
+                  {backgroundImageName && (
+                    <button
+                      type="button"
+                      className={styles.fieldInput}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => onBackgroundImageChange(null)}
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <input
+                    ref={bgFileRef}
+                    type="file"
+                    accept="image/png"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      e.target.value = "";
+                      onBackgroundImageChange(file);
+                    }}
+                  />
+                </div>
+              )}
+              {backgroundImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={backgroundImageUrl}
+                  alt={backgroundImageName ?? "Background"}
+                  className={styles.modelPngThumb}
+                  style={{ width: 64, height: 40, marginTop: 6 }}
+                />
+              ) : (
+                <p className={styles.propEmptyHint}>
+                  Upload a PNG to preview and include{" "}
+                  <code>IMAGES/dashbg.png</code> in the export zip.
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       {onRemapSrcSensor && liveBindings.length > 0 && (
         <section className={styles.propSection}>

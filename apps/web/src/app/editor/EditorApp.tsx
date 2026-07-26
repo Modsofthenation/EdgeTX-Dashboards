@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  applyDashboardBackground,
   bindTextRecordToSensorDetailed,
   createStarterSource,
+  DEFAULT_BG_IMAGE_PATH,
   getLayoutTemplateBoardSource,
   interpretDocument,
   insertDrawLineWithId,
@@ -1993,6 +1995,34 @@ export function EditorApp() {
               );
               markDirty();
             }}
+            onApplyBackground={(nextSource) => {
+              setSource(nextSource);
+              markDirty();
+            }}
+            onBackgroundImageChange={async (file) => {
+              if (!file) {
+                setModelPngBytes(null);
+                setModelPngName(null);
+                return;
+              }
+              if (file.type !== "image/png") {
+                window.alert("Background image must be a PNG.");
+                return;
+              }
+              const buf = new Uint8Array(await file.arrayBuffer());
+              setModelPngBytes(buf);
+              setModelPngName("dashbg.png");
+              void persistModelPngToWorkspace(buf, "dashbg.png");
+              setSource((prev) =>
+                applyDashboardBackground(prev, {
+                  mode: "image",
+                  imagePath: DEFAULT_BG_IMAGE_PATH,
+                }),
+              );
+              markDirty();
+            }}
+            backgroundImageName={modelPngName}
+            backgroundImageUrl={modelPngUrl}
           />
           {validationIssues.length > 0 && (
             <div className={styles.validationPanel}>
