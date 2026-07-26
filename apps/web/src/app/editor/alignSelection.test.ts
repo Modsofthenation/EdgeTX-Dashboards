@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  createStarterSource,
+  interpretDocument,
+  type ZoneOffset,
+} from "@widget-gen/editor-core";
+import {
   alignSelectedRecords,
   distributeSelectedRecords,
 } from "./alignSelection.ts";
-import type { DocumentRecord, ZoneOffset } from "@widget-gen/editor-core";
 
 const zone: ZoneOffset = {
   zoneX: 0,
@@ -13,39 +17,53 @@ const zone: ZoneOffset = {
   zoneH: 320,
 };
 
-function rect(
-  id: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): DocumentRecord {
-  return {
-    id,
-    kind: "filledRect",
-    sourceLine: 0,
-    x,
-    y,
-    w,
-    h,
-  } as DocumentRecord;
-}
+const TWO_RECTS = `---@type WidgetScript
+---@simulate Layout1x1 zone=0
+local function create(zone, options)
+  return {}
+end
+local function refresh(widget)
+  lcd.drawFilledRectangle(40, 20, 30, 20, DARKGREY)
+  lcd.drawFilledRectangle(200, 80, 30, 20, GREY)
+end
+return { name = "AlignT", options = {}, create = create, refresh = refresh, update = function(w,o) return w end, background = function(w) end }
+`;
 
 describe("alignSelection", () => {
-  it("is a no-op with fewer than 2 ids", () => {
-    const source = "-- empty";
-    const records = [rect("a", 10, 10, 20, 20), rect("b", 40, 10, 20, 20)];
-    const next = alignSelectedRecords(source, records, ["a"], zone, "left");
+  it("is a no-op with no ids", () => {
+    const source = createStarterSource();
+    const records = interpretDocument(source);
+    const next = alignSelectedRecords(source, records, [], zone, "left");
     assert.equal(next, source);
   });
 
+  it("aligns a single rect to the left edge of the zone", () => {
+    const source = TWO_RECTS;
+    const records = interpretDocument(source);
+    const id = records.find((r) => r.kind === "filledRect" && r.x === 40)!.id;
+    const next = alignSelectedRecords(source, records, [id], zone, "left");
+    assert.match(next, /drawFilledRectangle\(0, 20, 30, 20/);
+    assert.match(next, /drawFilledRectangle\(200, 80, 30, 20/);
+  });
+
+  it("aligns two rects to the leftmost x", () => {
+    const source = TWO_RECTS;
+    const records = interpretDocument(source);
+    const ids = records.filter((r) => r.kind === "filledRect").map((r) => r.id);
+    assert.equal(ids.length, 2);
+    const next = alignSelectedRecords(source, records, ids, zone, "left");
+    assert.match(next, /drawFilledRectangle\(40, 20, 30, 20/);
+    assert.match(next, /drawFilledRectangle\(40, 80, 30, 20/);
+  });
+
   it("requires 3 ids to distribute", () => {
-    const source = "-- empty";
-    const records = [rect("a", 0, 0, 10, 10), rect("b", 20, 0, 10, 10)];
+    const source = TWO_RECTS;
+    const records = interpretDocument(source);
+    const ids = records.filter((r) => r.kind === "filledRect").map((r) => r.id);
     const next = distributeSelectedRecords(
       source,
       records,
-      ["a", "b"],
+      ids,
       zone,
       "horizontal",
     );

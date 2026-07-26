@@ -103,7 +103,7 @@ export function RecordSelectionOverlay({
       );
 
       if (hit) {
-        const additive = event.shiftKey;
+        const additive = event.shiftKey || event.metaKey || event.ctrlKey;
         const nextIds = additive
           ? selectedIds.includes(hit.id!)
             ? selectedIds.filter((id) => id !== hit.id)
@@ -119,7 +119,7 @@ export function RecordSelectionOverlay({
           startX: pointer.x,
           startY: pointer.y,
           recordIds: nextIds,
-          shiftKey: event.shiftKey,
+          shiftKey: event.shiftKey || event.metaKey || event.ctrlKey,
           moved: false,
         };
         (event.target as HTMLElement).setPointerCapture?.(event.pointerId);

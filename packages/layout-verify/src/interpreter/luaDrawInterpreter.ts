@@ -1299,13 +1299,13 @@ function attachSource(
 }
 
 function indentOffsetForLine(
-  rawBody: string,
-  bodyStartLine: number,
+  source: string,
   sourceLine: number | undefined,
 ): number {
   if (sourceLine === undefined) return 0;
-  const line =
-    rawBody.split("\n")[sourceLine - bodyStartLine]?.replace(/\r$/, "") ?? "";
+  // Spans are computed on trimmed draw lines; shift them by the indent on the
+  // real source line (extractRefreshBody may strip leading spaces inconsistently).
+  const line = source.split("\n")[sourceLine - 1]?.replace(/\r$/, "") ?? "";
   return line.length - line.trimStart().length;
 }
 
@@ -1541,7 +1541,7 @@ export function applyMockToCommands(
 
   for (const line of lines) {
     const sourceLine = sourceLookup.take(line);
-    const indent = indentOffsetForLine(rawBody, bodyStartLine, sourceLine);
+    const indent = indentOffsetForLine(source, sourceLine);
     const attach = (record: DrawRecord, parsed: ParsedLcdCall) =>
       attachSource(record, parsed, sourceLine, indent);
 

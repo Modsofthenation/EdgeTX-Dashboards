@@ -71,7 +71,9 @@ export function RecordLayersPanel({
                 <button
                   type="button"
                   className={styles.layerSelect}
-                  onClick={(e) => onSelect(record.id, e.shiftKey)}
+                  onClick={(e) =>
+                    onSelect(record.id, e.shiftKey || e.metaKey || e.ctrlKey)
+                  }
                 >
                   <span className={styles.layerKindIcon} aria-hidden>
                     {meta?.shortLabel ?? "?"}

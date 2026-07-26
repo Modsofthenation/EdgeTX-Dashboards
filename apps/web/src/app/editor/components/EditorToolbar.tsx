@@ -99,31 +99,47 @@ export function EditorToolbar({
     const items: EditorMenuItem[] = [
       {
         id: "left",
-        label: "Align left",
+        label: canAlign
+          ? "Align left"
+          : "Align left (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("left"),
       },
       {
         id: "center-x",
-        label: "Align center",
+        label: canAlign
+          ? "Align center"
+          : "Align center (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("center-x"),
       },
       {
         id: "right",
-        label: "Align right",
+        label: canAlign
+          ? "Align right"
+          : "Align right (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("right"),
       },
       {
         id: "top",
-        label: "Align top",
+        label: canAlign ? "Align top" : "Align top (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("top"),
       },
       {
+        id: "center-y",
+        label: canAlign
+          ? "Align middle"
+          : "Align middle (select a layer first)",
+        disabled: !canAlign,
+        onClick: () => onAlign("center-y"),
+      },
+      {
         id: "bottom",
-        label: "Align bottom",
+        label: canAlign
+          ? "Align bottom"
+          : "Align bottom (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("bottom"),
       },
@@ -132,14 +148,18 @@ export function EditorToolbar({
       items.push(
         {
           id: "dist-h",
-          label: "Distribute horizontally",
+          label: canDistribute
+            ? "Distribute horizontally"
+            : "Distribute horizontally (select 3+ layers)",
           disabled: !canDistribute,
           separatorBefore: true,
           onClick: () => onDistribute("horizontal"),
         },
         {
           id: "dist-v",
-          label: "Distribute vertically",
+          label: canDistribute
+            ? "Distribute vertically"
+            : "Distribute vertically (select 3+ layers)",
           disabled: !canDistribute,
           onClick: () => onDistribute("vertical"),
         },
@@ -285,8 +305,11 @@ export function EditorToolbar({
           <EditorMenu
             label="Align"
             items={alignItems}
-            disabled={!canAlign && !canDistribute}
-            title="Align or distribute selected layers"
+            title={
+              canAlign
+                ? "Align selection (1 → canvas, 2+ → each other) or distribute (3+)"
+                : "Select a layer, then Align to pin it to the canvas edges"
+            }
           />
         ) : null}
 

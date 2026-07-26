@@ -179,13 +179,15 @@ export function translateRecord(
   dy: number,
   zone: ZoneOffset,
 ): string {
+  if (dx === 0 && dy === 0) return source;
   const patch: ArgPatch = {};
-  if (record.x != null) patch.x = record.x + dx;
-  if (record.y != null) patch.y = record.y + dy;
+  if (record.x != null && dx !== 0) patch.x = record.x + dx;
+  if (record.y != null && dy !== 0) patch.y = record.y + dy;
   if (record.kind === "line") {
-    if (record.x2 != null) patch.x2 = record.x2 + dx;
-    if (record.y2 != null) patch.y2 = record.y2 + dy;
+    if (record.x2 != null && dx !== 0) patch.x2 = record.x2 + dx;
+    if (record.y2 != null && dy !== 0) patch.y2 = record.y2 + dy;
   }
+  if (Object.keys(patch).length === 0) return source;
   return patchRecordArgs(source, record, patch, zone);
 }
 

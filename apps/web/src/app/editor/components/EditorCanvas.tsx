@@ -162,7 +162,7 @@ export function EditorCanvas({
         </span>
         <span className={styles.canvasHint}>·</span>
         <span className={styles.canvasHint}>
-          Canvas preview · Shift+click multi-select
+          Canvas preview · Shift/Ctrl+click multi-select
         </span>
       </div>
     </div>

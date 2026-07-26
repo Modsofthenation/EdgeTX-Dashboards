@@ -848,7 +848,7 @@ export function EditorApp() {
 
   const handleAlign = useCallback(
     (mode: string) => {
-      if (selectedIds.length < 2) return;
+      if (selectedIds.length < 1) return;
       const next = alignSelectedRecords(
         source,
         records,
@@ -1559,7 +1559,7 @@ export function EditorApp() {
         onSnapGuidesChange={setShowSnapGuides}
         onAlign={handleAlign}
         onDistribute={handleDistribute}
-        canAlign={selectedIds.length >= 2}
+        canAlign={selectedIds.length >= 1}
         canDistribute={selectedIds.length >= 3}
       />
 

@@ -30,7 +30,12 @@ export function extractRefreshBody(source: string): string {
 
   const bodyStart = sig.index + sig.length;
   const bodyEnd = findBalancedFunctionEnd(source, bodyStart);
-  return source.slice(bodyStart, bodyEnd).trim();
+  let body = source.slice(bodyStart, bodyEnd);
+  // Keep per-line indentation (needed for sourceRef arg spans). Only strip the
+  // newline immediately after `refresh(...)` and trailing whitespace.
+  if (body.startsWith("\r\n")) body = body.slice(2);
+  else if (body.startsWith("\n")) body = body.slice(1);
+  return body.replace(/\s+$/, "");
 }
 
 /** Character index of the matching `end` that closes refresh() (start of `end`). */
