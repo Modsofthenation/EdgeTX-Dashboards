@@ -6,6 +6,7 @@ import type { ChatMessage } from "~/lib/chatTypes";
 import { markChatScrolling } from "~/lib/chatScrollPause";
 import {
   TEMPLATE_GALLERY,
+  templatePreviewSrc,
   type TemplateGalleryItem,
 } from "~/lib/templateGallery";
 import { ChatMessageBubble } from "./ChatMessage";
@@ -159,6 +160,16 @@ export function ChatMessageList({
                   disabled={running}
                   onClick={() => onSuggestion(item)}
                 >
+                  <span className={styles.galleryCardThumb}>
+                    <img
+                      src={templatePreviewSrc(item.id)}
+                      alt=""
+                      width={480}
+                      height={320}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </span>
                   <span className={styles.galleryCardTitle}>{item.title}</span>
                   <span className={styles.galleryCardArchetype}>
                     {item.variant

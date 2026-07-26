@@ -30,6 +30,11 @@ export interface TemplateGalleryItem {
   layoutPrefab?: TemplateLayoutPrefab;
 }
 
+/** Public PNG path for a gallery template (TX15 preview bake). */
+export function templatePreviewSrc(templateId: string): string {
+  return `/templates/${templateId}.png`;
+}
+
 export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
   {
     id: "minimal-quad",

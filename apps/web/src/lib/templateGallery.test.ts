@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
-import { TEMPLATE_GALLERY } from "./templateGallery.ts";
+import { fileURLToPath } from "node:url";
+import {
+  TEMPLATE_GALLERY,
+  templatePreviewSrc,
+} from "./templateGallery.ts";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const publicTemplates = join(__dirname, "..", "..", "public", "templates");
 
 describe("TEMPLATE_GALLERY", () => {
   it("assigns a protocol to every template", () => {
@@ -41,6 +50,14 @@ describe("TEMPLATE_GALLERY", () => {
         "starter",
         `${item.id} should not use header-only starter`,
       );
+    }
+  });
+
+  it("ships a PNG preview for every gallery template", () => {
+    for (const item of TEMPLATE_GALLERY) {
+      assert.equal(templatePreviewSrc(item.id), `/templates/${item.id}.png`);
+      const file = join(publicTemplates, `${item.id}.png`);
+      assert.ok(existsSync(file), `missing preview PNG: ${file}`);
     }
   });
 });
