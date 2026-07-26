@@ -276,6 +276,72 @@
   color: var(--muted);
 }
 
+.editorMenuRoot {
+  position: relative;
+  display: inline-flex;
+}
+
+.editorMenu {
+  position: fixed;
+  z-index: 2000;
+  min-width: 200px;
+  max-width: min(280px, calc(100vw - 1rem));
+  max-height: min(360px, calc(100vh - 5rem));
+  overflow-y: auto;
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+}
+
+.editorMenuSep {
+  height: 1px;
+  margin: 0.35rem 0.4rem;
+  background: var(--border);
+}
+
+.editorMenuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.editorMenuItem:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.editorMenuItem:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.toolbarToggleOn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border));
+  background: var(--success-glow);
+  color: var(--success);
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbarToggleOn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
 .insertDropdown {
   composes: appScrollbar from global;
   position: fixed;

@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { InsertDrawKind } from "../elementMeta";
+import { EditorMenu, type EditorMenuItem } from "./EditorMenu";
 import { InsertMenu } from "./InsertMenu";
 import styles from "../editor.module.css";
 
@@ -34,7 +35,6 @@ interface EditorToolbarProps {
   valid: boolean | null;
   protocol: TelemetryProtocol;
   onProtocolChange: (protocol: TelemetryProtocol) => void;
-  onVerifySim: () => void;
   previewScenarioId: string;
   onPreviewScenarioChange: (id: string) => void;
   liveTelemetryActive?: boolean;
@@ -73,7 +73,6 @@ export function EditorToolbar({
   valid,
   protocol,
   onProtocolChange,
-  onVerifySim,
   previewScenarioId,
   onPreviewScenarioChange,
   liveTelemetryActive,
@@ -92,6 +91,115 @@ export function EditorToolbar({
   canDistribute,
 }: EditorToolbarProps) {
   const modelFileRef = useRef<HTMLInputElement>(null);
+
+  const alignItems = useMemo((): EditorMenuItem[] => {
+    if (!onAlign) return [];
+    const items: EditorMenuItem[] = [
+      {
+        id: "left",
+        label: "Align left",
+        disabled: !canAlign,
+        onClick: () => onAlign("left"),
+      },
+      {
+        id: "center-x",
+        label: "Align center",
+        disabled: !canAlign,
+        onClick: () => onAlign("center-x"),
+      },
+      {
+        id: "right",
+        label: "Align right",
+        disabled: !canAlign,
+        onClick: () => onAlign("right"),
+      },
+      {
+        id: "top",
+        label: "Align top",
+        disabled: !canAlign,
+        onClick: () => onAlign("top"),
+      },
+      {
+        id: "bottom",
+        label: "Align bottom",
+        disabled: !canAlign,
+        onClick: () => onAlign("bottom"),
+      },
+    ];
+    if (onDistribute) {
+      items.push(
+        {
+          id: "dist-h",
+          label: "Distribute horizontally",
+          disabled: !canDistribute,
+          separatorBefore: true,
+          onClick: () => onDistribute("horizontal"),
+        },
+        {
+          id: "dist-v",
+          label: "Distribute vertically",
+          disabled: !canDistribute,
+          onClick: () => onDistribute("vertical"),
+        },
+      );
+    }
+    return items;
+  }, [onAlign, onDistribute, canAlign, canDistribute]);
+
+  const projectItems = useMemo((): EditorMenuItem[] => {
+    const items: EditorMenuItem[] = [];
+    if (onOpenLast) {
+      items.push({
+        id: "open-last",
+        label: "Open last project",
+        onClick: onOpenLast,
+      });
+    }
+    if (onOpenRecent) {
+      items.push({
+        id: "recent",
+        label: "Recent projects…",
+        onClick: onOpenRecent,
+      });
+    }
+    if (onSaveNamed) {
+      items.push({
+        id: "save-as",
+        label: "Save as…",
+        separatorBefore: items.length > 0,
+        onClick: onSaveNamed,
+      });
+    }
+    return items;
+  }, [onOpenLast, onOpenRecent, onSaveNamed]);
+
+  const viewItems = useMemo((): EditorMenuItem[] => {
+    const items: EditorMenuItem[] = [];
+    if (onSnapGuidesChange) {
+      items.push({
+        id: "snap",
+        label: showSnapGuides ? "Hide snap guides" : "Show snap guides",
+        onClick: () => onSnapGuidesChange(!showSnapGuides),
+      });
+    }
+    if (onModelPngChange) {
+      items.push({
+        id: "png",
+        label: modelPngName ? `Replace model PNG…` : "Upload model PNG…",
+        separatorBefore: items.length > 0,
+        onClick: () => modelFileRef.current?.click(),
+      });
+      if (modelPngName) {
+        items.push({
+          id: "png-clear",
+          label: `Clear PNG (${modelPngName})`,
+          onClick: () => onModelPngChange(null),
+        });
+      }
+    }
+    return items;
+  }, [onSnapGuidesChange, showSnapGuides, onModelPngChange, modelPngName]);
+
   return (
     <div className={styles.toolbar}>
       <div className={styles.toolbarLeft}>
@@ -170,129 +278,48 @@ export function EditorToolbar({
           companionSuiteIds={companionSuiteIds}
         />
 
-        {onAlign ? (
-          <div className={styles.toolCluster} role="group" aria-label="Align">
-            <button
-              type="button"
-              className={styles.iconBtn}
-              disabled={!canAlign}
-              title="Align left"
-              onClick={() => onAlign("left")}
-            >
-              ⟸
-            </button>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              disabled={!canAlign}
-              title="Align center X"
-              onClick={() => onAlign("center-x")}
-            >
-              ↔
-            </button>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              disabled={!canAlign}
-              title="Align right"
-              onClick={() => onAlign("right")}
-            >
-              ⟹
-            </button>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              disabled={!canAlign}
-              title="Align top"
-              onClick={() => onAlign("top")}
-            >
-              ⟰
-            </button>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              disabled={!canAlign}
-              title="Align bottom"
-              onClick={() => onAlign("bottom")}
-            >
-              ⟱
-            </button>
-            {onDistribute ? (
-              <>
-                <button
-                  type="button"
-                  className={styles.iconBtn}
-                  disabled={!canDistribute}
-                  title="Distribute horizontally"
-                  onClick={() => onDistribute("horizontal")}
-                >
-                  ⇔
-                </button>
-                <button
-                  type="button"
-                  className={styles.iconBtn}
-                  disabled={!canDistribute}
-                  title="Distribute vertically"
-                  onClick={() => onDistribute("vertical")}
-                >
-                  ⇕
-                </button>
-              </>
-            ) : null}
-          </div>
+        {alignItems.length > 0 ? (
+          <EditorMenu
+            label="Align"
+            items={alignItems}
+            disabled={!canAlign && !canDistribute}
+            title="Align or distribute selected layers"
+          />
+        ) : null}
+
+        {viewItems.length > 0 ? (
+          <EditorMenu
+            label="View"
+            shortLabel="View"
+            items={viewItems}
+            title="Canvas aids and model image"
+          />
+        ) : null}
+
+        {modelPngUrl ? (
+          <img
+            src={modelPngUrl}
+            alt=""
+            className={styles.modelPngThumb}
+            title={modelPngName ?? "Model PNG"}
+          />
         ) : null}
 
         {onModelPngChange ? (
-          <>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              title="PNG for sim SD /IMAGES/simmodel.png (drawBitmap)"
-              onClick={() => modelFileRef.current?.click()}
-            >
-              {modelPngName ? `PNG: ${modelPngName}` : "Model PNG…"}
-            </button>
-            {modelPngUrl ? (
-              <img
-                src={modelPngUrl}
-                alt=""
-                className={styles.modelPngThumb}
-                title={modelPngName ?? "Model PNG"}
-              />
-            ) : null}
-            <input
-              ref={modelFileRef}
-              type="file"
-              accept="image/png"
-              hidden
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null;
-                e.target.value = "";
-                onModelPngChange(file);
-              }}
-            />
-            {modelPngName ? (
-              <button
-                type="button"
-                className={styles.ghostBtn}
-                onClick={() => onModelPngChange(null)}
-              >
-                Clear PNG
-              </button>
-            ) : null}
-          </>
+          <input
+            ref={modelFileRef}
+            type="file"
+            accept="image/png"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              e.target.value = "";
+              onModelPngChange(file);
+            }}
+          />
         ) : null}
 
-        {onSnapGuidesChange ? (
-          <label className={styles.toolbarCheck} title="Show snap guides">
-            <input
-              type="checkbox"
-              checked={Boolean(showSnapGuides)}
-              onChange={(e) => onSnapGuidesChange(e.target.checked)}
-            />
-            <span>Snap guides</span>
-          </label>
-        ) : null}
+        <div className={styles.toolbarDivider} aria-hidden />
 
         <label className={styles.toolbarSelect}>
           <span className={styles.toolbarSelectLabel}>Protocol</span>
@@ -327,7 +354,9 @@ export function EditorToolbar({
         {onToggleLiveTelemetry ? (
           <button
             type="button"
-            className={styles.secondaryBtn}
+            className={
+              liveTelemetryActive ? styles.toolbarToggleOn : styles.secondaryBtn
+            }
             onClick={onToggleLiveTelemetry}
             disabled={!liveTelemetrySupported && !liveTelemetryActive}
             title={
@@ -336,7 +365,7 @@ export function EditorToolbar({
                 : "Web Serial requires Chrome/Edge on desktop"
             }
           >
-            {liveTelemetryActive ? "Live: on" : "Live radio"}
+            {liveTelemetryActive ? "Live on" : "Live"}
           </button>
         ) : null}
 
@@ -366,42 +395,15 @@ export function EditorToolbar({
             Invalid
           </span>
         )}
-        {onOpenLast ? (
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={onOpenLast}
-            title="Open last project"
-          >
-            Open last
-          </button>
+        {projectItems.length > 0 ? (
+          <EditorMenu
+            label="Project"
+            shortLabel="Proj"
+            items={projectItems}
+            align="right"
+            title="Open or rename projects"
+          />
         ) : null}
-        {onOpenRecent ? (
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={onOpenRecent}
-          >
-            Recent
-          </button>
-        ) : null}
-        {onSaveNamed ? (
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={onSaveNamed}
-          >
-            Save as…
-          </button>
-        ) : null}
-        <button
-          type="button"
-          className={styles.secondaryBtn}
-          onClick={onVerifySim}
-        >
-          <span className={styles.actionLabelFull}>Verify in sim</span>
-          <span className={styles.actionLabelShort}>Sim</span>
-        </button>
         <button
           type="button"
           className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
