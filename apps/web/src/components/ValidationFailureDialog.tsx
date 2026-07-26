@@ -77,9 +77,9 @@ export function ValidationFailureDialog({
 
         {shown.length > 0 ? (
           <ul className={styles.issueList}>
-            {shown.slice(0, 12).map((issue, i) => (
+            {shown.slice(0, 12).map((issue) => (
               <li
-                key={`${issue.message}-${issue.line ?? "x"}-${i}`}
+                key={`${issue.severity}:${issue.line ?? "x"}:${issue.message}`}
                 data-severity={issue.severity}
               >
                 {issue.line != null ? (
