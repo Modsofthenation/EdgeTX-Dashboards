@@ -364,14 +364,26 @@ export function RadioSimPreview({
     const sourceSame = appliedSourceRef.current === desiredSourceRef.current;
     const pngSame = appliedModelPngRef.current === modelPng;
     if (sourceSame && pngSame) return;
-    void loadWidget(desiredSourceRef.current, simZone, modelPng ?? undefined)
-      .then(() => {
-        appliedSourceRef.current = desiredSourceRef.current;
-        appliedModelPngRef.current = modelPng;
-      })
-      .catch(() => {
-        // keep desired source; next running/source transition retries.
-      });
+
+    const timer = window.setTimeout(() => {
+      const nextSource = desiredSourceRef.current;
+      if (
+        appliedSourceRef.current === nextSource &&
+        appliedModelPngRef.current === modelPng
+      ) {
+        return;
+      }
+      void loadWidget(nextSource, simZone, modelPng ?? undefined)
+        .then(() => {
+          appliedSourceRef.current = nextSource;
+          appliedModelPngRef.current = modelPng;
+        })
+        .catch(() => {
+          // keep desired source; next running/source transition retries.
+        });
+    }, 220);
+
+    return () => window.clearTimeout(timer);
   }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);
 
   if (state.phase === "error") {

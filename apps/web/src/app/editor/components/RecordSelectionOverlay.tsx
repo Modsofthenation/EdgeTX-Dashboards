@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   bboxForRecordInZone,
   hitTestRecords,
@@ -35,8 +35,10 @@ interface RecordSelectionOverlayProps {
   onResize: (id: string, box: BoundingBox) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
-  /** Live geometry for preview paint — no Lua rewrite until commit. */
-  onLiveDragChange?: (live: LiveDragState | null) => void;
+  /** Controlled live geometry from EditorCanvas (single owner). */
+  liveDrag: LiveDragState | null;
+  /** Publish live geometry for preview paint — no Lua rewrite until commit. */
+  onLiveDragChange: (live: LiveDragState | null) => void;
   /** When true (default), snap to element/LCD edges then grid. */
   snapEnabled?: boolean;
   onSnapGuidesChange?: (guides: SnapGuide[]) => void;
@@ -90,25 +92,17 @@ export function RecordSelectionOverlay({
   onResize,
   onGestureStart,
   onGestureEnd,
+  liveDrag,
   onLiveDragChange,
   snapEnabled = true,
   onSnapGuidesChange,
   onContextMenu,
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<DragSession | null>(null);
-  const [liveDrag, setLiveDrag] = useState<LiveDragState | null>(null);
   const [marquee, setMarquee] = useState<BoundingBox | null>(null);
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const rafRef = useRef<number | null>(null);
   const pendingLiveRef = useRef<LiveDragState | null>(null);
-
-  // Mirror EditorCanvas: drop keep-alive live transform once records reflect
-  // the committed Lua edit. Leaving it on double-applies move deltas to the
-  // teal selection box (preview clears; overlay used to keep the stale offset).
-  // useLayoutEffect: clear before paint so we never flash a double-offset box.
-  useLayoutEffect(() => {
-    setLiveDrag(null);
-  }, [records]);
 
   const measureText = useCallback((text: string, fontSize: number) => {
     if (!measureCtxRef.current) {
@@ -124,9 +118,7 @@ export function RecordSelectionOverlay({
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
-        const live = pendingLiveRef.current;
-        setLiveDrag(live);
-        onLiveDragChange?.(live);
+        onLiveDragChange(pendingLiveRef.current);
       });
     },
     [onLiveDragChange],
@@ -171,14 +163,8 @@ export function RecordSelectionOverlay({
 
     if (drag?.moved) {
       if (drag.mode === "move" && (drag.dx !== 0 || drag.dy !== 0)) {
-        // Keep final live transform painted until source re-interprets.
-        setLiveDrag({
-          mode: "move",
-          ids: drag.recordIds,
-          dx: drag.dx,
-          dy: drag.dy,
-        });
-        onLiveDragChange?.({
+        // Keep final live transform painted until parent clears on records update.
+        onLiveDragChange({
           mode: "move",
           ids: drag.recordIds,
           dx: drag.dx,
@@ -191,12 +177,7 @@ export function RecordSelectionOverlay({
         drag.liveBox &&
         drag.recordIds.length === 1
       ) {
-        setLiveDrag({
-          mode: "resize",
-          ids: drag.recordIds,
-          box: drag.liveBox,
-        });
-        onLiveDragChange?.({
+        onLiveDragChange({
           mode: "resize",
           ids: drag.recordIds,
           box: drag.liveBox,
@@ -207,8 +188,7 @@ export function RecordSelectionOverlay({
     }
 
     if (!committed) {
-      setLiveDrag(null);
-      onLiveDragChange?.(null);
+      onLiveDragChange(null);
     }
 
     onGestureEnd?.();

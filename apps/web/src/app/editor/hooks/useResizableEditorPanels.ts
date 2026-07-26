@@ -11,12 +11,58 @@ const RIGHT_MIN = 180;
 const RIGHT_MAX = 480;
 /** Visual + grid column width for each resize gutter. */
 const HANDLE = 12;
+/** Minimum middle (canvas) column so the preview is not crushed. */
+export const CANVAS_MIN = 280;
 
 type PanelWidths = { left: number; right: number };
 type DragSide = "left" | "right";
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
+}
+
+/** Clamp panel widths so the canvas column stays ≥ CANVAS_MIN when bodyWidth is known. */
+export function clampPanelWidths(
+  widths: PanelWidths,
+  bodyWidth: number | null,
+): PanelWidths {
+  let left = clamp(widths.left, LEFT_MIN, LEFT_MAX);
+  let right = clamp(widths.right, RIGHT_MIN, RIGHT_MAX);
+  if (bodyWidth == null || bodyWidth <= 0) {
+    return { left, right };
+  }
+  const fixed = 2 * HANDLE;
+  const maxPanels = Math.max(0, bodyWidth - fixed - CANVAS_MIN);
+  if (left + right <= maxPanels) {
+    return { left, right };
+  }
+  // Prefer shrinking the larger panel first, then the other, without
+  // going below panel mins when possible.
+  let overflow = left + right - maxPanels;
+  const shrinkLeft = Math.min(overflow, Math.max(0, left - LEFT_MIN));
+  left -= shrinkLeft;
+  overflow -= shrinkLeft;
+  if (overflow > 0) {
+    const shrinkRight = Math.min(overflow, Math.max(0, right - RIGHT_MIN));
+    right -= shrinkRight;
+    overflow -= shrinkRight;
+  }
+  // If still over (narrow viewport), allow canvas underfloor only after mins.
+  if (overflow > 0 && left + right > maxPanels) {
+    // Nothing else to give without breaking panel mins.
+  }
+  return { left, right };
+}
+
+function maxForSide(
+  side: DragSide,
+  other: number,
+  bodyWidth: number | null,
+): number {
+  const panelMax = side === "left" ? LEFT_MAX : RIGHT_MAX;
+  if (bodyWidth == null || bodyWidth <= 0) return panelMax;
+  const maxAllowed = bodyWidth - other - 2 * HANDLE - CANVAS_MIN;
+  return Math.max(side === "left" ? LEFT_MIN : RIGHT_MIN, Math.min(panelMax, maxAllowed));
 }
 
 function readStored(): PanelWidths {
@@ -47,16 +93,18 @@ function writeStored(widths: PanelWidths): void {
 /**
  * Desktop editor body columns: left | handle | canvas | handle | right.
  * Widths persist across sessions; mobile layout ignores these.
- * Canvas column is `minmax(0, 1fr)` so it shrinks/grows with the leftover space.
+ * Canvas column is `minmax(CANVAS_MIN, 1fr)` and panels clamp so leftover ≥ CANVAS_MIN.
  */
-export function useResizableEditorPanels() {
-  // Start with defaults so SSR / first paint match; hydrate from storage after mount.
+export function useResizableEditorPanels(
+  bodyRef?: React.RefObject<HTMLElement | null>,
+) {
   const [widths, setWidths] = useState<PanelWidths>({
     left: LEFT_DEFAULT,
     right: RIGHT_DEFAULT,
   });
   const [hydrated, setHydrated] = useState(false);
   const [activeSide, setActiveSide] = useState<DragSide | null>(null);
+  const [bodyWidth, setBodyWidth] = useState<number | null>(null);
   const dragRef = useRef<{
     side: DragSide;
     startX: number;
@@ -64,12 +112,36 @@ export function useResizableEditorPanels() {
   } | null>(null);
   const widthsRef = useRef(widths);
   widthsRef.current = widths;
+  const bodyWidthRef = useRef(bodyWidth);
+  bodyWidthRef.current = bodyWidth;
   const detachRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setWidths(readStored());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    const el = bodyRef?.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (typeof w === "number" && w > 0) {
+        setBodyWidth(w);
+      }
+    });
+    ro.observe(el);
+    setBodyWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, [bodyRef]);
+
+  useEffect(() => {
+    if (!hydrated || bodyWidth == null) return;
+    setWidths((w) => {
+      const next = clampPanelWidths(w, bodyWidth);
+      return next.left === w.left && next.right === w.right ? w : next;
+    });
+  }, [bodyWidth, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -89,7 +161,6 @@ export function useResizableEditorPanels() {
       event.preventDefault();
       event.stopPropagation();
 
-      // Tear down any prior drag listeners before starting a new one.
       detachRef.current?.();
 
       const current = widthsRef.current;
@@ -106,12 +177,24 @@ export function useResizableEditorPanels() {
         const drag = dragRef.current;
         if (!drag) return;
         const dx = moveEvent.clientX - drag.startX;
+        const bw = bodyWidthRef.current;
+        const other =
+          drag.side === "left"
+            ? widthsRef.current.right
+            : widthsRef.current.left;
         if (drag.side === "left") {
-          const next = clamp(drag.origin + dx, LEFT_MIN, LEFT_MAX);
+          const next = clamp(
+            drag.origin + dx,
+            LEFT_MIN,
+            maxForSide("left", other, bw),
+          );
           setWidths((w) => (w.left === next ? w : { ...w, left: next }));
         } else {
-          // Dragging the right handle: moving left shrinks the right panel.
-          const next = clamp(drag.origin - dx, RIGHT_MIN, RIGHT_MAX);
+          const next = clamp(
+            drag.origin - dx,
+            RIGHT_MIN,
+            maxForSide("right", other, bw),
+          );
           setWidths((w) => (w.right === next ? w : { ...w, right: next }));
         }
       };
@@ -139,16 +222,20 @@ export function useResizableEditorPanels() {
   );
 
   const resetWidths = useCallback(() => {
-    setWidths({ left: LEFT_DEFAULT, right: RIGHT_DEFAULT });
+    setWidths(clampPanelWidths(
+      { left: LEFT_DEFAULT, right: RIGHT_DEFAULT },
+      bodyWidthRef.current,
+    ));
   }, []);
 
-  const gridTemplateColumns = `${widths.left}px ${HANDLE}px minmax(0, 1fr) ${HANDLE}px ${widths.right}px`;
+  const gridTemplateColumns = `${widths.left}px ${HANDLE}px minmax(${CANVAS_MIN}px, 1fr) ${HANDLE}px ${widths.right}px`;
 
   return {
     widths,
     activeSide,
     gridTemplateColumns,
     handleWidth: HANDLE,
+    canvasMin: CANVAS_MIN,
     onHandlePointerDown,
     resetWidths,
   };

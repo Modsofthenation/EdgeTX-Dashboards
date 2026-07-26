@@ -51,7 +51,13 @@ function mapRecordToElement(
   importConfidence: "high" | "low",
 ): EditorElement | null {
   const id = newElementId();
-  const base = { id, visible: true, optionGate, importConfidence };
+  const base = {
+    id,
+    visible: true,
+    optionGate,
+    importConfidence,
+    sourceLine: record.sourceLine,
+  };
 
   switch (record.kind) {
     case "clear":
