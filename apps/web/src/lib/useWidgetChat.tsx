@@ -67,6 +67,7 @@ export function useWidgetChatState() {
   const aiSettings = useOptionalAiSettings();
   const apiKey = aiSettings?.apiKey ?? "";
   const preferredModelId = aiSettings?.preferredModelId ?? "";
+  const aiProvider = aiSettings?.provider ?? "cursor";
   const authHeaders = aiSettings?.authHeaders;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -119,7 +120,7 @@ export function useWidgetChatState() {
   useEffect(() => {
     let cancelled = false;
     setModelsLoading(true);
-    void fetchModelCatalog({ apiKey, force: true })
+    void fetchModelCatalog({ apiKey, provider: aiProvider, force: true })
       .then((catalog) => {
         if (cancelled) return;
         setModels(catalog.models);
@@ -142,7 +143,7 @@ export function useWidgetChatState() {
     return () => {
       cancelled = true;
     };
-  }, [apiKey, preferredModelId]);
+  }, [apiKey, aiProvider, preferredModelId]);
 
   const selectedRadio = useMemo(
     () => findRadio({ defaultId: DEFAULT_RADIO_ID, radios }, radioId),
@@ -528,6 +529,7 @@ export function useWidgetChatState() {
             protocol: proto,
             edgeTxVersion: edgeTx,
             modelId: model,
+            provider: aiProvider,
             ...(apiImages ? { images: apiImages } : {}),
           };
 
@@ -738,6 +740,7 @@ export function useWidgetChatState() {
       commitSnapshot,
       setArtifactVersionsTracked,
       authHeaders,
+      aiProvider,
     ],
   );
 

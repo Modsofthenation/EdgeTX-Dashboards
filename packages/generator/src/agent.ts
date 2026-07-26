@@ -1,11 +1,13 @@
 import { Agent, CursorAgentError, type SDKAgent } from "@cursor/sdk";
 import { randomUUID } from "node:crypto";
 import type {
+  AiProviderId,
   GenerateRequest,
   GenerateSession,
   TelemetryProtocol,
   ValidationIssue,
 } from "@widget-gen/shared";
+import { parseAiProviderId } from "@widget-gen/shared";
 import {
   buildGenerationPrompt,
   buildRefinePrompt,
@@ -39,34 +41,69 @@ import {
 import type { ToolSessionDefaults } from "./agentTools.ts";
 import type { RefineHistoryInput } from "./refineHistory.ts";
 import { buildRefineHistorySections } from "./refineHistory.ts";
+import { runProviderToolLoop } from "./providers/toolLoopAgent.ts";
+import { defaultModelForProvider } from "./providers/providerModels.ts";
 
 export type { RunCallbacks };
 
 export class WidgetGenerator {
   private agent: SDKAgent | null = null;
+  private httpAgentId: string | null = null;
+  private httpModelId: string | null = null;
   private readonly repoRoot: string;
   private readonly apiKey: string;
+  private readonly provider: AiProviderId;
   private readonly toolDefaults: ToolSessionDefaults;
   private lastKnownWorkspace?: string;
 
-  constructor(apiKey?: string, toolDefaults?: ToolSessionDefaults) {
+  constructor(
+    apiKey?: string,
+    toolDefaults?: ToolSessionDefaults,
+    provider: AiProviderId = "cursor",
+  ) {
     this.repoRoot = getRepoRoot();
-    this.apiKey = apiKey ?? process.env.CURSOR_API_KEY ?? "";
+    this.provider = parseAiProviderId(provider);
+    this.apiKey =
+      apiKey ??
+      (this.provider === "anthropic"
+        ? process.env.ANTHROPIC_API_KEY
+        : this.provider === "openai"
+          ? process.env.OPENAI_API_KEY
+          : process.env.CURSOR_API_KEY) ??
+      "";
     this.toolDefaults = toolDefaults ?? {};
     if (!this.apiKey) {
-      throw new Error("CURSOR_API_KEY is required");
+      const env =
+        this.provider === "anthropic"
+          ? "ANTHROPIC_API_KEY"
+          : this.provider === "openai"
+            ? "OPENAI_API_KEY"
+            : "CURSOR_API_KEY";
+      throw new Error(`${env} is required for provider "${this.provider}"`);
     }
   }
 
   get agentId(): string | undefined {
-    return this.agent?.agentId;
+    return this.agent?.agentId ?? this.httpAgentId ?? undefined;
   }
 
-  async createAgent(modelId = "composer-2.5"): Promise<string> {
+  get aiProvider(): AiProviderId {
+    return this.provider;
+  }
+
+  async createAgent(
+    modelId = defaultModelForProvider(this.provider),
+  ): Promise<string> {
+    if (this.provider !== "cursor") {
+      this.httpModelId = modelId;
+      this.httpAgentId = `${this.provider}-agent`;
+      return this.httpAgentId;
+    }
+
     const store = resolveLocalAgentStore(this.repoRoot);
     const sandboxEnabled =
-      process.env.CURSOR_SANDBOX_ENABLED === "1" ||
-      process.env.CURSOR_SANDBOX_ENABLED === "true";
+      process.env.CURSOR_SANDBOX_ENABLED !== "0" &&
+      process.env.CURSOR_SANDBOX_ENABLED !== "false";
 
     this.agent = await Agent.create({
       apiKey: this.apiKey,
@@ -93,7 +130,13 @@ export class WidgetGenerator {
     }
   }
 
-  private async ensureAgent(): Promise<SDKAgent> {
+  private async ensureAgent(): Promise<SDKAgent | null> {
+    if (this.provider !== "cursor") {
+      if (!this.httpModelId) {
+        await this.createAgent();
+      }
+      return null;
+    }
     if (!this.agent) {
       await this.createAgent();
     }
@@ -243,7 +286,7 @@ export class WidgetGenerator {
     callbacks?.onEvent?.({
       type: "status",
       content: `Starting generation (${assignedWidgetName} v${widgetVersion})...`,
-      agentId: agent.agentId,
+      agentId: this.agentId,
     });
     callbacks?.onWidgetWorkspace?.({
       instanceId: widgetInstanceId,
@@ -251,17 +294,54 @@ export class WidgetGenerator {
       version: widgetVersion,
     });
 
-    const run = await agent.send(buildSdkUserMessage(prompt, request.images));
-    callbacks?.onEvent?.({
-      type: "status",
-      content: `Run started: ${run.id}`,
-      runId: run.id,
-      agentId: agent.agentId,
-    });
+    let streamed: {
+      runId: string;
+      status: string;
+      result?: string;
+    };
 
-    const streamed = await streamAgentRun(run, agent.agentId, callbacks, () =>
-      this.resolveWidgetWorkspaceKey(widgetInstanceId),
-    );
+    if (this.provider !== "cursor") {
+      const loop = await runProviderToolLoop({
+        provider: this.provider,
+        apiKey: this.apiKey,
+        modelId: this.httpModelId ?? defaultModelForProvider(this.provider),
+        userText: prompt,
+        images: request.images,
+        toolDefaults: this.toolDefaults,
+        callbacks,
+      });
+      this.httpAgentId = loop.agentId;
+      streamed = {
+        runId: loop.runId,
+        status: loop.status,
+        result: loop.result,
+      };
+      if (loop.status === "error" && loop.error) {
+        callbacks?.onEvent?.({
+          type: "error",
+          content: loop.error,
+          runId: loop.runId,
+          agentId: loop.agentId,
+        });
+      }
+    } else {
+      const cursorAgent = agent!;
+      const run = await cursorAgent.send(
+        buildSdkUserMessage(prompt, request.images),
+      );
+      callbacks?.onEvent?.({
+        type: "status",
+        content: `Run started: ${run.id}`,
+        runId: run.id,
+        agentId: cursorAgent.agentId,
+      });
+      streamed = await streamAgentRun(
+        run,
+        cursorAgent.agentId,
+        callbacks,
+        () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+      );
+    }
 
     const runFinished = streamed.status === "finished";
     let validated = false;
@@ -287,7 +367,7 @@ export class WidgetGenerator {
 
     return {
       runId: streamed.runId,
-      agentId: agent.agentId,
+      agentId: this.agentId ?? "",
       status: streamed.status,
       success,
       result: streamed.result,
@@ -415,11 +495,49 @@ export class WidgetGenerator {
       });
     }
 
-    const run = await agent.send(buildSdkUserMessage(refinePrompt, images));
+    let streamed: {
+      runId: string;
+      status: string;
+      result?: string;
+      widgetName?: string;
+    };
 
-    const streamed = await streamAgentRun(run, agent.agentId, callbacks, () =>
-      this.resolveWidgetWorkspaceKey(widgetInstanceId),
-    );
+    if (this.provider !== "cursor") {
+      const loop = await runProviderToolLoop({
+        provider: this.provider,
+        apiKey: this.apiKey,
+        modelId: this.httpModelId ?? defaultModelForProvider(this.provider),
+        userText: refinePrompt,
+        images,
+        toolDefaults: this.toolDefaults,
+        callbacks,
+      });
+      this.httpAgentId = loop.agentId;
+      streamed = {
+        runId: loop.runId,
+        status: loop.status,
+        result: loop.result,
+      };
+      if (loop.status === "error" && loop.error) {
+        callbacks?.onEvent?.({
+          type: "error",
+          content: loop.error,
+          runId: loop.runId,
+          agentId: loop.agentId,
+        });
+      }
+    } else {
+      const cursorAgent = agent!;
+      const run = await cursorAgent.send(
+        buildSdkUserMessage(refinePrompt, images),
+      );
+      streamed = await streamAgentRun(
+        run,
+        cursorAgent.agentId,
+        callbacks,
+        () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+      );
+    }
 
     const runFinished = streamed.status === "finished";
     let validated = false;

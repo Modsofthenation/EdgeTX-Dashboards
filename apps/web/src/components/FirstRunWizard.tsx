@@ -52,13 +52,15 @@ export function FirstRunWizard() {
           Set up AI generation
         </h2>
         <p className={styles.lead}>
-          Add a Cursor API key to generate Lua from chat, or skip AI and build
-          visually in Layout (Insert / prefabs). You can also set{" "}
-          <code>CURSOR_API_KEY</code> on the server for shared installs.
+          Add an AI API key (Cursor, Anthropic, or OpenAI) to generate Lua from
+          chat, or skip AI and build visually in Layout (Insert / prefabs). You
+          can also set <code>CURSOR_API_KEY</code>,{" "}
+          <code>ANTHROPIC_API_KEY</code>, or <code>OPENAI_API_KEY</code> on the
+          server for shared installs.
         </p>
         <ol className={styles.steps}>
           <li>Open Preferences → AI (optional for generate)</li>
-          <li>Paste your Cursor API key and Save — or open Layout instead</li>
+          <li>Choose a provider, paste your API key, and Save — or open Layout</li>
           <li>Describe a dashboard, or place elements by hand</li>
         </ol>
         <div className={styles.actions}>

@@ -6,8 +6,10 @@ import {
   readWidgetLuaSource,
 } from "~/server/generatorFacade";
 import type { RefineHistoryInput } from "@widget-gen/generator";
+import type { AiProviderId } from "@widget-gen/shared";
+import { parseAiProviderId, providerMeta } from "@widget-gen/shared";
 import { checkApiAuth } from "~/lib/apiSecurity";
-import { resolveCursorApiKey } from "~/server/cursorApiKey";
+import { resolveProviderApiKey } from "~/server/aiProviderKey";
 import { getChat } from "~/lib/db/chatStore";
 import { buildRefineHistoryInput } from "~/lib/refineChatContext";
 import { createSseResponse, createSseStream } from "~/lib/sse";
@@ -18,8 +20,9 @@ export const dynamic = "force-dynamic";
 
 function resolveRefineSession(
   sessionId: string,
-  chatId?: string,
-  apiKey?: string,
+  chatId: string | undefined,
+  apiKey: string | undefined,
+  provider: AiProviderId,
 ) {
   const store = getSessionStore();
   let effectiveSessionId = sessionId;
@@ -41,6 +44,7 @@ function resolveRefineSession(
         radioId: chat.radioId,
         protocol: chat.protocol,
         modelId: chat.modelId,
+        provider,
         widgetName: chat.widgetName ?? chat.artifact?.name ?? undefined,
         widgetInstanceId:
           chat.widgetInstanceId ?? chat.artifact?.instanceId ?? undefined,
@@ -59,12 +63,13 @@ export async function POST(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 
-  const apiKey = resolveCursorApiKey(request);
+  const provider = parseAiProviderId(request.headers.get("x-ai-provider"));
+  const apiKey = resolveProviderApiKey(request, provider);
   if (!apiKey) {
+    const meta = providerMeta(provider);
     return Response.json(
       {
-        error:
-          "No Cursor API key configured. Add one in Preferences → AI, or set CURSOR_API_KEY on the server.",
+        error: `No ${meta.label} API key configured. Add one in Preferences → AI, or set ${meta.envVar} on the server.`,
       },
       { status: 503 },
     );
@@ -119,6 +124,7 @@ export async function POST(request: Request): Promise<Response> {
       data.sessionId,
       data.chatId?.trim(),
       apiKey,
+      provider,
     );
     store = resolved.store;
     stored = resolved.stored;

@@ -25,6 +25,7 @@ import {
   isTelemetryProtocol,
   isWidgetInstanceId,
   listAvailableModels,
+  listModelsForProvider,
   listRadioProfiles,
   MAX_ACTIVE_SESSIONS,
   ensureWidgetInstanceDir,
@@ -42,6 +43,7 @@ import {
   listWidgetPackageEntries,
   autoFixLua,
 } from "@widget-gen/generator";
+import type { AiProviderId } from "@widget-gen/shared";
 
 export {
   CursorAgentError,
@@ -69,26 +71,33 @@ export function getDistOutputDirectory(): string {
   return join(getRepoRoot(), "dist-output");
 }
 
-export async function listModelCatalog(apiKey?: string) {
-  const key = apiKey ?? process.env.CURSOR_API_KEY;
-  if (!key) {
+export async function listModelCatalog(
+  apiKey?: string,
+  provider: AiProviderId = "cursor",
+) {
+  if (provider === "cursor") {
+    const key = apiKey ?? process.env.CURSOR_API_KEY;
+    if (!key) {
+      return {
+        defaultId: DEFAULT_MODEL_ID,
+        models: FALLBACK_MODELS,
+        source: "fallback" as const,
+      };
+    }
+
+    const models = await listAvailableModels(apiKey);
+    const usingFallback =
+      models.length === FALLBACK_MODELS.length &&
+      models.every((model, index) => model.id === FALLBACK_MODELS[index]?.id);
+
     return {
-      defaultId: DEFAULT_MODEL_ID,
-      models: FALLBACK_MODELS,
-      source: "fallback" as const,
+      defaultId: getDefaultModelId(models),
+      models,
+      source: usingFallback ? ("fallback" as const) : ("api" as const),
     };
   }
 
-  const models = await listAvailableModels(apiKey);
-  const usingFallback =
-    models.length === FALLBACK_MODELS.length &&
-    models.every((model, index) => model.id === FALLBACK_MODELS[index]?.id);
-
-  return {
-    defaultId: getDefaultModelId(models),
-    models,
-    source: usingFallback ? ("fallback" as const) : ("api" as const),
-  };
+  return listModelsForProvider(provider, apiKey);
 }
 
 export function listRadioCatalog() {
