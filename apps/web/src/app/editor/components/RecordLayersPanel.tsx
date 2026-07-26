@@ -59,7 +59,7 @@ export function RecordLayersPanel({
           </p>
         </div>
       ) : (
-        <ul className={`${styles.layerList} appScrollbar`}>
+        <ul className={styles.layerList}>
           {filtered.map((record) => {
             const selected = selectedIds.includes(record.id);
             const meta = catalogForDrawKind(record.kind);
