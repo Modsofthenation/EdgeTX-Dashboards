@@ -322,6 +322,10 @@ fn decode_sd_content(file: &SdInstallFile) -> Result<Vec<u8>, String> {
   if !enc.eq_ignore_ascii_case("base64") {
     return Ok(file.content.as_bytes().to_vec());
   }
+  decode_base64(&file.content)
+}
+
+fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
   fn b64_val(c: u8) -> Option<u8> {
     match c {
       b'A'..=b'Z' => Some(c - b'A'),
@@ -332,8 +336,7 @@ fn decode_sd_content(file: &SdInstallFile) -> Result<Vec<u8>, String> {
       _ => None,
     }
   }
-  let cleaned: Vec<u8> = file
-    .content
+  let cleaned: Vec<u8> = input
     .bytes()
     .filter(|b| !b.is_ascii_whitespace())
     .collect();
@@ -449,6 +452,17 @@ fn write_text_file(path: String, contents: String) -> Result<(), String> {
   std::fs::write(&dest, contents).map_err(|e| e.to_string())
 }
 
+/// Write binary contents (e.g. widget zip) from base64 via the native save dialog.
+#[tauri::command]
+fn write_bytes_file(path: String, contents_base64: String) -> Result<(), String> {
+  let dest = assert_safe_user_path(&path)?;
+  let bytes = decode_base64(&contents_base64)?;
+  if let Some(parent) = dest.parent() {
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+  }
+  std::fs::write(&dest, bytes).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn read_text_file(path: String) -> Result<String, String> {
   let src = assert_safe_user_path(&path)?;
@@ -493,6 +507,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       install_widget_to_sd,
       write_text_file,
+      write_bytes_file,
       read_text_file,
       write_app_data_project
     ])

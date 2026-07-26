@@ -26,6 +26,7 @@ import styles from "./ArtifactPanel.module.css";
 import { useChatSession } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
 import { buildBlankEditorHref } from "~/lib/editorHref";
+import { saveBlobToDisk } from "~/lib/desktopDownload";
 
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
 
@@ -237,12 +238,14 @@ export const ArtifactPanel = memo(function ArtifactPanel({
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${artifact.name}${isViewingLatest ? "" : `-v${viewingVersion}`}.zip`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      const fileName = `${artifact.name}${isViewingLatest ? "" : `-v${viewingVersion}`}.zip`;
+      const saved = await saveBlobToDisk(blob, fileName, {
+        title: "Save widget zip",
+        filters: [{ name: "Zip archive", extensions: ["zip"] }],
+      });
+      if (!saved.ok && "error" in saved) {
+        setDownloadError(saved.error);
+      }
     } catch (err) {
       setDownloadError(err instanceof Error ? err.message : "Download failed");
     } finally {
@@ -507,6 +510,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                   installMd={installMd}
                   workspaceKey={artifact.instanceId ?? null}
                   sessionId={sessionId}
+                  protocol={protocol}
                   companionLabels={[]}
                   hasModelImage={/drawBitmap|Bitmap\.open|\/IMAGES\//.test(
                     artifact.luaSource ?? "",
