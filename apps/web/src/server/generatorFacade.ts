@@ -2,7 +2,14 @@
  * Narrow server seam for web API routes → @widget-gen/generator.
  * Import generator symbols here only — not from individual route files.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import {
   CursorAgentError,
@@ -174,6 +181,94 @@ export function readWidgetLuaSource(
   };
 }
 
+export type WidgetCompanionFileKind = "tool" | "telemetry" | "image";
+
+export interface WidgetCompanionFile {
+  relPath: string;
+  content: string;
+  encoding: "utf8" | "base64";
+  kind: WidgetCompanionFileKind;
+}
+
+function zipBaseNameForKey(key: string): string {
+  return isWidgetInstanceId(key) ? key : sanitizeWidgetName(key);
+}
+
+/** Delete cached zip(s) so the next download rebuilds from disk workspace. */
+export function invalidateWidgetZip(workspaceKey: string): void {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  const zipBaseName = zipBaseNameForKey(key);
+  const distDir = getDistOutputDirectory();
+  const baseZip = join(distDir, `${zipBaseName}.zip`);
+  if (existsSync(baseZip)) {
+    try {
+      unlinkSync(baseZip);
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!existsSync(distDir)) return;
+  for (const name of readdirSync(distDir)) {
+    if (name.startsWith(`${zipBaseName}-v`) && name.endsWith(".zip")) {
+      try {
+        unlinkSync(join(distDir, name));
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
+/**
+ * List companion scripts / model images under generated/<key>/.
+ * Scans tools/, telemetry/, and images/.
+ */
+export function listWidgetCompanionFiles(
+  workspaceKey: string,
+): WidgetCompanionFile[] {
+  const key = normalizeWorkspaceKey(workspaceKey);
+  const root = getGeneratedDirForKey(key);
+  if (!existsSync(root)) return [];
+
+  const out: WidgetCompanionFile[] = [];
+
+  const scanDir = (
+    dirName: string,
+    kind: WidgetCompanionFileKind,
+    match: (name: string) => boolean,
+    asBase64: boolean,
+  ) => {
+    const dir = join(root, dirName);
+    if (!existsSync(dir)) return;
+    for (const name of readdirSync(dir)) {
+      if (!match(name)) continue;
+      const abs = join(dir, name);
+      const relPath = `${dirName}/${name}`;
+      if (asBase64) {
+        out.push({
+          relPath,
+          content: readFileSync(abs).toString("base64"),
+          encoding: "base64",
+          kind,
+        });
+      } else {
+        out.push({
+          relPath,
+          content: readFileSync(abs, "utf-8"),
+          encoding: "utf8",
+          kind,
+        });
+      }
+    }
+  };
+
+  scanDir("tools", "tool", (n) => n.endsWith(".lua"), false);
+  scanDir("telemetry", "telemetry", (n) => n.endsWith(".lua"), false);
+  scanDir("images", "image", (n) => /\.png$/i.test(n), true);
+
+  return out;
+}
+
 /** Write chat snapshot back to generated/ before refine (each chat has its own UUID workspace). */
 export function writeWidgetLuaSource(
   workspaceKey: string,
@@ -182,6 +277,7 @@ export function writeWidgetLuaSource(
   const key = normalizeWorkspaceKey(workspaceKey);
   mkdirSync(getGeneratedDirForKey(key), { recursive: true });
   writeFileSync(getWidgetLuaPathForKey(key), source, "utf-8");
+  invalidateWidgetZip(key);
 }
 
 /**
@@ -224,6 +320,7 @@ export function writeWidgetCompanionFiles(
     }
     written.push(rel.replace(/^IMAGES\//, "images/"));
   }
+  invalidateWidgetZip(key);
   return written;
 }
 
@@ -234,14 +331,14 @@ export async function readOrBuildWidgetZip(
   version?: number,
 ): Promise<{ buffer: Buffer; downloadName: string } | null> {
   const key = normalizeWorkspaceKey(workspaceKey);
-  const zipBaseName = isWidgetInstanceId(key) ? key : sanitizeWidgetName(key);
+  const zipBaseName = zipBaseNameForKey(key);
   const distZip =
     version !== undefined
       ? join(getDistOutputDirectory(), `${zipBaseName}-v${version}.zip`)
       : join(getDistOutputDirectory(), `${zipBaseName}.zip`);
-  if (!existsSync(distZip)) {
-    await packageWidget(key, protocol, { radioId, version });
-  }
+  // Always rebuild — Layout/Generate companions and Lua must not reuse a stale zip.
+  invalidateWidgetZip(key);
+  await packageWidget(key, protocol, { radioId, version });
   if (!existsSync(distZip)) return null;
 
   const displayName =

@@ -26,6 +26,8 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   scrollRevision: number;
   running: boolean;
+  /** Active radio layout profile — picks TX15 vs color272 gallery thumbs. */
+  layoutProfileId?: string | null;
   /** Primary: open template prefab in Layout (no AI). */
   onSuggestion: (item: TemplateGalleryItem) => void;
   /** Secondary: send template prompt to the agent. */
@@ -40,6 +42,7 @@ export function ChatMessageList({
   messages,
   scrollRevision,
   running,
+  layoutProfileId = null,
   onSuggestion,
   onGenerateSuggestion,
   dashboardReadyCue = false,
@@ -162,10 +165,10 @@ export function ChatMessageList({
                 >
                   <span className={styles.galleryCardThumb}>
                     <img
-                      src={templatePreviewSrc(item.id)}
+                      src={templatePreviewSrc(item.id, layoutProfileId)}
                       alt=""
                       width={480}
-                      height={320}
+                      height={layoutProfileId === "color272" ? 272 : 320}
                       loading="lazy"
                       decoding="async"
                     />

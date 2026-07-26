@@ -298,6 +298,7 @@ const BOARD_IDS: Record<LayoutTemplateBoardId, true> = {
 /** Resolve Lua source for a non-RF gallery layout prefab. */
 export function getLayoutTemplateBoardSource(
   boardId: string | null | undefined,
+  options?: { lcdW?: number; lcdH?: number },
 ): string {
   if (!boardId || boardId === "starter") return createStarterSource();
   const id = boardId as LayoutTemplateBoardId;
@@ -314,6 +315,7 @@ export function getLayoutTemplateBoardSource(
     const { source } = insertPrefabSections(
       createPrefabShellSource(shellName),
       [...order],
+      options,
     );
     return source;
   }

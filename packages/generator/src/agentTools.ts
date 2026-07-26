@@ -1,5 +1,11 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import type { SDKCustomTool } from "@cursor/sdk";
+import {
+  createPrefabShellSource,
+  insertPrefabSections,
+  listPrefabCatalog,
+} from "@widget-gen/editor-core";
 import type { TelemetryCategory, TelemetryProtocol } from "@widget-gen/shared";
 import { loadTelemetryCatalog, loadRadioProfile } from "./knowledge.ts";
 import { validateWidgetForRelease } from "./validationPipeline.ts";
@@ -205,6 +211,146 @@ export function createCustomTools(
             category: s.category,
           })),
         });
+      },
+    },
+
+    listPrefabSections: {
+      description:
+        "List modular dashboard prefab section ids (RF heli / Betaflight-CRSF quad) for composeWidgetFromPrefabs. Prefer the catalog already inlined in the prompt.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          protocol: {
+            type: "string",
+            enum: ["betaflight", "rotorflight", "generic-crsf"],
+          },
+        },
+        required: [],
+      },
+      execute(args) {
+        const protocol = resolveToolProtocol(args, defaults);
+        return JSON.stringify({
+          protocol,
+          sections: listPrefabCatalog({ protocol }),
+        });
+      },
+    },
+
+    composeWidgetFromPrefabs: {
+      description:
+        "Assemble main.lua from prefab section ids (same blocks as Layout Insert). Prefer canonical board recipes from the prompt. Writes generated/<widgetInstanceId>/main.lua with -- prefab:<id> markers.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          ...workspaceKeyProp,
+          prefabIds: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Ordered prefab section ids (e.g. whoop or RF electric board recipe)",
+          },
+          displayName: {
+            type: "string",
+            description: "EdgeTX widget display name (≤10 chars)",
+          },
+          replace: {
+            type: "boolean",
+            description:
+              "When true (default), rebuild from an empty shell. When false, append into existing main.lua.",
+          },
+          lcdW: {
+            type: "number",
+            description: "Target LCD width (default from radio profile)",
+          },
+          lcdH: {
+            type: "number",
+            description: "Target LCD height (default from radio profile)",
+          },
+        },
+        required: ["widgetInstanceId", "prefabIds"],
+      },
+      execute(args) {
+        try {
+          const workspaceKey = resolveWorkspaceKey(args, defaults);
+          if (
+            defaults?.widgetInstanceId &&
+            workspaceKey !== sanitizeWidgetInstanceId(defaults.widgetInstanceId)
+          ) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Wrong workspace id "${workspaceKey}". Use the assigned id "${defaults.widgetInstanceId}" for this session.`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          const prefabIds = Array.isArray(args.prefabIds)
+            ? args.prefabIds.map(String)
+            : [];
+          if (prefabIds.length === 0) {
+            return {
+              content: [
+                { type: "text", text: "prefabIds must be a non-empty array" },
+              ],
+              isError: true,
+            };
+          }
+          const radioId = String(defaults?.radioId ?? args.radioId ?? "tx15");
+          const radio = loadRadioProfile(radioId);
+          const lcdW =
+            typeof args.lcdW === "number" ? args.lcdW : (radio.lcdW ?? 480);
+          const lcdH =
+            typeof args.lcdH === "number" ? args.lcdH : (radio.lcdH ?? 320);
+          const displayName = sanitizeWidgetName(
+            String(
+              args.displayName ??
+                defaults?.widgetName ??
+                resolveDisplayName(workspaceKey) ??
+                "Dash",
+            ).slice(0, 10),
+          );
+          const path = getWidgetLuaPathForKey(workspaceKey);
+          const replace = args.replace !== false;
+          let base =
+            !replace && existsSync(path)
+              ? readFileSync(path, "utf-8")
+              : createPrefabShellSource(displayName);
+          if (replace || !existsSync(path)) {
+            base = createPrefabShellSource(displayName);
+          }
+          const { source, inserted } = insertPrefabSections(base, prefabIds, {
+            lcdW,
+            lcdH,
+          });
+          if (inserted.length === 0) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `No known prefab ids in: ${prefabIds.join(", ")}`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          mkdirSync(dirname(path), { recursive: true });
+          writeFileSync(path, source, "utf-8");
+          return JSON.stringify({
+            success: true,
+            widgetInstanceId: workspaceKey,
+            displayName,
+            inserted,
+            skipped: prefabIds.filter((id) => !inserted.includes(id)),
+            lcdW,
+            lcdH,
+            path: `generated/${workspaceKey}/main.lua`,
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return { content: [{ type: "text", text: msg }], isError: true };
+        }
       },
     },
 

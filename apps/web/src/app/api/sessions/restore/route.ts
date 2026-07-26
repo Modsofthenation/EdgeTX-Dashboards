@@ -1,5 +1,6 @@
 import {
   getSessionStore,
+  readWidgetLuaSource,
   writeWidgetLuaSource,
 } from "~/server/generatorFacade";
 import { checkApiAuth } from "~/lib/apiSecurity";
@@ -43,7 +44,8 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  if (chat.artifact?.luaSource) {
+  // Do not clobber Layout edits — only seed disk when the workspace Lua is missing.
+  if (chat.artifact?.luaSource && !readWidgetLuaSource(workspaceKey)) {
     writeWidgetLuaSource(workspaceKey, chat.artifact.luaSource);
   }
 

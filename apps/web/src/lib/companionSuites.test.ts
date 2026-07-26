@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   companionFilesToSd,
+  companionStateFromDiskFiles,
   getCompanionSuite,
   addCompanionSuite,
 } from "./companionSuites.ts";
@@ -36,5 +37,20 @@ describe("companionSuites", () => {
     ]);
     assert.ok(sd.some((f) => f.path.includes("batt_voice.lua")));
     assert.ok(sd.some((f) => f.path.includes("motor_gate.lua")));
+  });
+
+  it("hydrates suite ids from disk companion files", () => {
+    const suite = getCompanionSuite("batt-select")!;
+    const state = companionStateFromDiskFiles([
+      ...suite.files.map((f) => ({ ...f, kind: "tool" })),
+      {
+        relPath: "images/heli.png",
+        content: "abc",
+        kind: "image",
+      },
+    ]);
+    assert.deepEqual(state.suites, ["batt-select"]);
+    assert.equal(state.files.length, 1);
+    assert.equal(state.files[0]?.relPath, "tools/batt_select.lua");
   });
 });

@@ -56,6 +56,14 @@ git push origin desktop-v1.2.0
 
 That triggers the same matrix build as a manual run, then the `publish-release` job attaches installers to a normal (non-prerelease) GitHub Release named after the tag. Prefer these tagged builds when giving pilots a durable installer; use a manual run (or `desktop-nightly`) for occasional smoke builds.
 
+## On the radio tonight
+
+1. Open the **desktop app**.
+2. **Generate** a board in chat (or open an existing chat), then switch to **Layout** to tweak.
+3. Open the **Install wizard** → checklist (Rotorflight: enable **rf2bg** + Discover new).
+4. **Pick SD** card folder → **Copy to SD card**.
+5. Eject the SD safely, insert into the radio, add the widget full-screen.
+
 ## Platforms
 
 Install [platform prerequisites](https://v2.tauri.app/start/prerequisites/), then:

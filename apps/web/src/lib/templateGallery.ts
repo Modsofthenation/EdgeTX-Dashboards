@@ -30,8 +30,17 @@ export interface TemplateGalleryItem {
   layoutPrefab?: TemplateLayoutPrefab;
 }
 
-/** Public PNG path for a gallery template (TX15 preview bake). */
-export function templatePreviewSrc(templateId: string): string {
+/**
+ * Public PNG path for a gallery template.
+ * TX15 (480×320) is the default; color272 radios use `-color272` thumbs when present.
+ */
+export function templatePreviewSrc(
+  templateId: string,
+  layoutProfileId?: string | null,
+): string {
+  if (layoutProfileId === "color272") {
+    return `/templates/${templateId}-color272.png`;
+  }
   return `/templates/${templateId}.png`;
 }
 
@@ -49,7 +58,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     id: "heli-electric",
     title: "RF heli (electric)",
     prompt:
-      "RF heli-style Rotorflight TX15 electric board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
+      "RF heli-style Rotorflight electric board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
     archetype: "heli-rotorflight",
     protocol: "rotorflight",
     variant: "electric",
@@ -59,7 +68,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     id: "heli-nitro",
     title: "RF heli (nitro)",
     prompt:
-      "Rotorflight nitro heli TX15 dashboard: top bar with RQLY, model panel, governor, headspeed hero (NR/HSpd), RX pack voltage bar instead of AMPS/ESC tiles, call out rf2bg and nitro sensor contract.",
+      "Rotorflight nitro heli dashboard: top bar with RQLY, model panel, governor, headspeed hero (NR/HSpd), RX pack voltage bar instead of AMPS/ESC tiles, call out rf2bg and nitro sensor contract.",
     archetype: "heli-rotorflight",
     protocol: "rotorflight",
     variant: "nitro",

@@ -1,6 +1,16 @@
 import { findRefreshBodyEndIndex } from "@widget-gen/shared";
-import { getPrefabSection } from "./registry.ts";
+import {
+  getPrefabSection,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
+} from "./registry.ts";
+import { scalePrefabSection } from "./scalePrefab.ts";
 import type { PrefabSection } from "./types.ts";
+
+export {
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
+};
 
 const CACHE_SOURCE_HELPER = `local function cacheSource(sensorName)
   local idx = getSourceIndex(sensorName)
@@ -178,13 +188,25 @@ export interface InsertPrefabResult {
   insertedDrawCount: number;
 }
 
+export interface PrefabInsertOptions {
+  /** Target LCD width (defaults to TX15 480). */
+  lcdW?: number;
+  /** Target LCD height (defaults to TX15 320; use 272 for color272). */
+  lcdH?: number;
+}
+
 /** Insert a prefab section into widget Lua (helpers + src cache + refresh body). */
 export function insertPrefabSection(
   source: string,
   prefabId: string,
+  options?: PrefabInsertOptions,
 ): InsertPrefabResult | null {
-  const prefab = getPrefabSection(prefabId);
-  if (!prefab) return null;
+  const raw = getPrefabSection(prefabId);
+  if (!raw) return null;
+  const prefab =
+    options?.lcdW != null && options?.lcdH != null
+      ? scalePrefabSection(raw, options.lcdW, options.lcdH)
+      : raw;
 
   let next = ensureHelpers(source);
   next = ensureSrcBindings(next, prefab.createSrcBindings);
@@ -207,11 +229,12 @@ export function insertPrefabSection(
 export function insertPrefabSections(
   source: string,
   prefabIds: string[],
+  options?: PrefabInsertOptions,
 ): { source: string; inserted: string[] } {
   let next = source;
   const inserted: string[] = [];
   for (const id of prefabIds) {
-    const result = insertPrefabSection(next, id);
+    const result = insertPrefabSection(next, id, options);
     if (!result) continue;
     next = result.source;
     inserted.push(id);
@@ -264,23 +287,3 @@ return {
 }
 `;
 }
-
-/** Canonical RF heli TX15 layout order (electric). */
-export const ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER = [
-  "rf-topbar-link",
-  "rf-model-panel",
-  "rf-governor-card",
-  "rf-headspeed-hero",
-  "rf-motor-tiles",
-  "rf-battery-bar",
-] as const;
-
-/** Nitro / OMP RF heli TX15 order — pack tiles + RX voltage bar. */
-export const ROTORFLIGHT_NITRO_LAYOUT_ORDER = [
-  "rf-topbar-link",
-  "rf-model-panel",
-  "rf-governor-card",
-  "rf-headspeed-hero",
-  "rf-nitro-pack-tiles",
-  "rf-nitro-rx-bar",
-] as const;

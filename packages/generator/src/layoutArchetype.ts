@@ -50,7 +50,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     summary:
       "Battery + link bars on top, flight timer center, GPS/alt/speed row, armed indicator.",
     layoutNotes:
-      "Prefer Betaflight/CRSF TX15 prefab sections (`quad-armed-banner`, `quad-topbar`, `quad-link-batt-bars`, `quad-voltage-hero`, `quad-timer-hero`, `quad-power-strip`, `quad-attitude-card`, `quad-gps-row`, `quad-mode-footer`) for whoop/freestyle boards. Emphasize timer, battery bar, and RSSI/link. Use ORANGE for armed state. Keep draw calls as direct lcd.* in refresh().",
+      "Prefab-first: call composeWidgetFromPrefabs with WHOOP (`quad-armed-banner` → `quad-link-batt-bars` → `quad-voltage-hero` → `quad-attitude-card` → `quad-capacity-chip` → `quad-mode-footer`) or FREESTYLE (`quad-topbar` → `quad-timer-hero` → `quad-power-strip` → `quad-gps-row` → `quad-mode-footer`) or MINIMAL board recipes. Emphasize timer, battery bar, and RSSI/link. Keep `-- prefab:<id>` markers.",
   },
   "heli-rotorflight": {
     id: "heli-rotorflight",
@@ -58,7 +58,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     summary:
       "Heli-specific: link blocks, battery, headspeed hero, motor temps, current/power footer.",
     layoutNotes:
-      "Prefer Rotorflight heli TX15 prefab sections (`rf-topbar-link`, `rf-model-panel`, `rf-governor-card`, `rf-headspeed-hero`, `rf-motor-tiles`, `rf-battery-bar`) when the user wants a heli board. Otherwise follow rotorflight DBK idioms (RQLY blocks, HSpd hero, Cur/Pwr footer) and vary layout per creative brief. Call out rf2bg + Discover new for HSpd/EscT/Vbec/Vcel/Gov.",
+      "Prefab-first: composeWidgetFromPrefabs with RF electric (`rf-topbar-link` → `rf-model-panel` → `rf-governor-card` → `rf-headspeed-hero` → `rf-motor-tiles` → `rf-battery-bar`) or RF nitro (swap motor tiles/battery for `rf-nitro-pack-tiles` + `rf-nitro-rx-bar`). Call out rf2bg + Discover new for HSpd/EscT/Vbec/Vcel/Gov. Keep `-- prefab:<id>` markers.",
   },
   "telemetry-dense": {
     id: "telemetry-dense",
@@ -66,7 +66,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     summary:
       "Six to eight small readouts in a 2×3 or 3×3 grid for power users.",
     layoutNotes:
-      "Prefer `quad-topbar` + `quad-metric-grid` + `quad-attitude-band` + `quad-mode-footer` for dense CRSF boards. Small cells (no oversized heroes). Each cell: label + value only.",
+      "Prefab-first: composeWidgetFromPrefabs with DENSE CRSF order (`quad-topbar` → `quad-metric-grid` → `quad-attitude-band` → `quad-mode-footer`). Small cells (no oversized heroes). Keep `-- prefab:<id>` markers.",
   },
   "flight-logger-suite": {
     id: "flight-logger-suite",

@@ -9,6 +9,8 @@ interface AppChromeProps {
   surface: AppSurface;
   /** Optional subtitle under the product name (model · radio, widget meta, etc.) */
   subtitle?: React.ReactNode;
+  /** Generate surface link (logo + Generate nav). Defaults to `/`. */
+  generateHref?: string;
   /** Whether Layout nav should be enabled / highlighted as available */
   layoutHref?: string | null;
   layoutDisabledReason?: string;
@@ -23,6 +25,7 @@ interface AppChromeProps {
 export function AppChrome({
   surface,
   subtitle,
+  generateHref = "/",
   layoutHref,
   layoutDisabledReason,
   actions,
@@ -37,7 +40,7 @@ export function AppChrome({
       <header className={styles.chrome}>
         <div className={styles.brandBlock}>
           <Link
-            href="/"
+            href={generateHref}
             className={styles.logo}
             aria-label="EdgeTX Dashboard Generator home"
           >
@@ -53,7 +56,7 @@ export function AppChrome({
 
         <nav className={styles.nav} aria-label="Primary">
           <Link
-            href="/"
+            href={generateHref}
             className={generateActive ? styles.navItemActive : styles.navItem}
             aria-current={generateActive ? "page" : undefined}
           >

@@ -23,6 +23,26 @@ permissions:
   contents: read
 
 jobs:
+  # Cheap prepare+smoke before the native matrix (catches standalone staging bugs early).
+  smoke:
+    runs-on: ubuntu-latest
+    name: desktop-smoke
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Prepare standalone + smoke
+        run: |
+          npm run desktop:prepare
+          npm run desktop:smoke
+
   build:
     strategy:
       fail-fast: false
@@ -50,7 +70,7 @@ jobs:
     name: ${{ matrix.os_name }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -63,7 +83,7 @@ jobs:
             patchelf \
             xdg-utils
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -149,7 +169,7 @@ jobs:
           test -n "$(ls -A desktop-artifacts)"
 
       - name: Upload platform installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: edgetx-dashboards-${{ matrix.os_name }}
           path: desktop-artifacts/
@@ -168,7 +188,7 @@ jobs:
       contents: write
     steps:
       - name: Download all platform artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: edgetx-dashboards-*
           path: release-assets
@@ -178,7 +198,7 @@ jobs:
         run: ls -lah release-assets
 
       - name: Publish desktop-nightly release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: desktop-nightly
           name: Desktop nightly
@@ -211,7 +231,7 @@ jobs:
       contents: write
     steps:
       - name: Download all platform artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: edgetx-dashboards-*
           path: release-assets
@@ -221,7 +241,7 @@ jobs:
         run: ls -lah release-assets
 
       - name: Publish versioned desktop release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: Desktop ${{ github.ref_name }}

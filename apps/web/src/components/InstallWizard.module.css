@@ -98,3 +98,10 @@
   display: grid;
   gap: 0.2rem;
 }
+
+.rfNote {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #57606a);
+  line-height: 1.4;
+}

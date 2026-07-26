@@ -809,7 +809,35 @@ export function useWidgetChatState() {
         sessionIdRef.current = activeSessionId;
       }
 
-      // Each chat keeps its own Lua snapshot — never load from shared generated/ when a snapshot exists.
+      // Disk is source of truth for Layout edits — prefer workspace Lua over SQLite snapshot.
+      const instanceIdForDisk =
+        widgetInstanceIdRef.current ?? chat.widgetInstanceId ?? chat.artifact?.instanceId;
+      if (instanceIdForDisk) {
+        const disk = await fetchWidgetSource(null, {
+          instanceId: instanceIdForDisk,
+        });
+        if (loadGen !== chatLoadGenRef.current) return;
+        if (disk?.source) {
+          const snapshot = {
+            name: disk.name || chat.artifact?.name || chat.widgetName || "",
+            instanceId: disk.instanceId ?? instanceIdForDisk,
+            version: disk.version || chat.artifact?.version || chat.widgetVersion || 0,
+            luaSource: disk.source,
+            validated: chat.artifact?.validated ?? false,
+            validationIssues: chat.artifact?.validationIssues ?? [],
+          };
+          setArtifactTracked(snapshot);
+          const latest =
+            chat.artifactVersions.at(-1)?.version ??
+            snapshot.version ??
+            0;
+          setViewingVersion(latest);
+          viewingVersionRef.current = latest;
+          setArtifactLoading(false);
+          return;
+        }
+      }
+
       if (chat.artifact?.luaSource) {
         setArtifactTracked(chat.artifact);
         const latest =

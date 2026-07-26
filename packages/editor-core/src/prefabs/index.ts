@@ -18,19 +18,25 @@ export {
   listBetaflightQuadPrefabIds,
 } from "./betaflightQuadSections.ts";
 export {
+  formatPrefabBoardRecipesForPrompt,
   formatPrefabCatalogForPrompt,
   getPrefabSection,
   listPrefabCatalog,
   listPrefabSections,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
 } from "./registry.ts";
 export {
   createPrefabShellSource,
   insertPrefabSection,
   insertPrefabSections,
-  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
-  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
   type InsertPrefabResult,
+  type PrefabInsertOptions,
 } from "./insertPrefab.ts";
+export {
+  scaleLcdCoordsInLine,
+  scalePrefabSection,
+} from "./scalePrefab.ts";
 export {
   getPrefabSensorSlotsForId,
   listPrefabSpans,

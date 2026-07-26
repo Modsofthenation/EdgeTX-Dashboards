@@ -408,6 +408,35 @@ export function addCompanionSuite(
   return { suites, files: [...byPath.values()] };
 }
 
+/**
+ * Hydrate editor companion state from disk workspace files
+ * (tools/ + telemetry/ only — images are handled separately).
+ */
+export function companionStateFromDiskFiles(
+  files: { relPath: string; content: string; kind?: string }[],
+): EditorCompanionState {
+  const luaFiles = files
+    .filter((f) => {
+      const rel = f.relPath.replace(/\\/g, "/");
+      return (
+        (rel.startsWith("tools/") || rel.startsWith("telemetry/")) &&
+        rel.endsWith(".lua")
+      );
+    })
+    .map((f) => ({
+      relPath: f.relPath.replace(/\\/g, "/"),
+      content: f.content,
+    }));
+  const present = new Set(luaFiles.map((f) => f.relPath));
+  const suites: CompanionSuiteId[] = [];
+  for (const suite of COMPANION_SUITES) {
+    if (suite.files.every((f) => present.has(f.relPath))) {
+      suites.push(suite.id);
+    }
+  }
+  return { suites, files: luaFiles };
+}
+
 /** Build an IMAGES/ SD entry from uploaded PNG bytes (base64). */
 export function modelPngToSdFile(
   bytes: Uint8Array,

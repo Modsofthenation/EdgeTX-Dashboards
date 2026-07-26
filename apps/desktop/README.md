@@ -37,4 +37,11 @@ Trigger builds from **Actions → Desktop packages → Run workflow** (not on ev
 
 Artifacts upload to the workflow run. Push a `desktop-v*` tag for a stable GitHub Release.
 
+## On the radio tonight
+
+1. Open the desktop app → **Generate** / **Layout** your board.
+2. Open **Install wizard** → complete the checklist (Rotorflight needs **rf2bg** + Discover new).
+3. **Pick SD** → **Copy to SD card**.
+4. Eject the SD safely, then add the widget on the radio.
+
 See [docs/reference/desktop-tauri.md](../../docs/reference/desktop-tauri.md).

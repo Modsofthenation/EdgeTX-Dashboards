@@ -4,6 +4,7 @@ import type {
   TelemetryProtocol,
 } from "@widget-gen/shared";
 
+import { formatPrefabCatalogForPrompt } from "@widget-gen/editor-core";
 import {
   readRules,
   readTemplate,
@@ -168,6 +169,13 @@ export function buildGenerationPrompt(
     catalog.protocol === "betaflight" || catalog.protocol === "generic-crsf"
       ? readBetaflightQuadSectionsGuide()
       : "";
+  const prefabCatalog = formatPrefabCatalogForPrompt(catalog.protocol);
+  const prefabFirstArchetypes = new Set([
+    "quad-overview",
+    "heli-rotorflight",
+    "telemetry-dense",
+  ]);
+  const usePrefabFirst = prefabFirstArchetypes.has(archetype.id);
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt)
     ? readModelImageGuide()
@@ -254,7 +262,7 @@ ${brief.markdown}
 
 ${visualStyle.promptNotes ? `\n${visualStyle.promptNotes}\n` : ""}
 
-**Variety rule:** Do NOT default to the same two-column grey card grid unless the user explicitly asked for it or the archetype is \`card-grid\`. Different prompts and run seeds must produce visibly different layouts and color treatments.
+**Variety rule:** Do NOT default to the same two-column grey card grid unless the user explicitly asked for it or the archetype is \`card-grid\`. Vary palette, labels, and which canonical board recipe you pick — for prefab-first archetypes (\`quad-overview\`, \`heli-rotorflight\`, \`telemetry-dense\`) do **not** invent new geometry; compose from prefabs.
 
 ## Target radio
 
@@ -274,9 +282,23 @@ ${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API on
 
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling — layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 
-${rfHeliGuide ? `\n## Rotorflight heli prefab sections (TX15 — prefer these modular blocks)\n${rfHeliGuide}` : ""}
+${rfHeliGuide ? `\n## Rotorflight heli prefab sections (prefer these modular blocks)\n${rfHeliGuide}` : ""}
 
-${bfQuadGuide ? `\n## Betaflight / CRSF quad prefab sections (TX15 — prefer these modular blocks)\n${bfQuadGuide}` : ""}
+${bfQuadGuide ? `\n## Betaflight / CRSF quad prefab sections (prefer these modular blocks)\n${bfQuadGuide}` : ""}
+
+${prefabCatalog ? `\n## Live prefab catalog + board recipes (authoritative — same as Layout Insert)\n\n${prefabCatalog}\n` : ""}
+
+${
+  usePrefabFirst
+    ? `\n## Prefab-first (mandatory for archetype \`${archetype.id}\`)
+
+1. Call \`composeWidgetFromPrefabs\` with a canonical board recipe from the catalog above (match whoop / freestyle / minimal / dense / RF electric / RF nitro to the user request).
+2. Pass lcdW=${radio.lcdW} lcdH=${radio.lcdH} so geometry matches **${radio.name}**.
+3. Only then tweak labels/palette/optional companion scripts — do not freehand a new card grid.
+4. Keep \`-- prefab:<id>\` markers intact.
+`
+    : ""
+}
 
 ## Companion scripts (when user asks for tools, loggers, selectors)
 
@@ -322,7 +344,11 @@ ${ctx?.assignedWidgetName ? `1. Use display name \`${ctx.assignedWidgetName}\` a
    ---@simulate Layout1x1 zone=0
    \`\`\`
 
-5. Build UI for archetype **${archetype.id}** per the creative brief:
+5. ${
+    usePrefabFirst
+      ? `**Prefab-first:** call \`composeWidgetFromPrefabs\` with widgetInstanceId "${widgetFolder}", a canonical \`prefabIds\` board recipe, displayName, lcdW=${radio.lcdW}, lcdH=${radio.lcdH}. Then only minor label/palette edits in main.lua.`
+      : `Build UI for archetype **${archetype.id}** per the creative brief (compose from prefabs when a board recipe fits).`
+  }
 
    - Cache ALL display strings as locals before drawText
    - Put all \`lcd.drawText\`, \`lcd.drawFilledRectangle\`, and \`lcd.drawRectangle\` calls **directly in refresh()** (web preview parses these)
@@ -334,7 +360,7 @@ ${ctx?.assignedWidgetName ? `1. Use display name \`${ctx.assignedWidgetName}\` a
 
 7. Call validateWidget with widgetInstanceId "${widgetFolder}", protocol "${catalog.protocol}", radioId "${radio.id}", and layoutArchetype "${archetype.id}". Fix ALL errors and **archetype-relevant** visual-design warnings until valid: true. Do **not** call writeInstallGuide or packageWidget — the server packages after validation.
 
-8. Summarize in markdown: chosen archetype, creative brief choices, layout sections, sensors used, companion scripts (if any), and brief SD-card install steps (WIDGETS/<name>/).`;
+8. Summarize in markdown: chosen archetype, prefab ids / board recipe (if used), creative brief choices, sensors used, companion scripts (if any), and brief SD-card install steps (WIDGETS/<name>/).`;
 }
 
 export function buildRefinePrompt(
@@ -435,8 +461,9 @@ ${themePalettesGuide ? `\n## EdgeTX theme palettes and gauges\n${themePalettesGu
 ${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API only)\n${roundedCornersGuide}` : ""}
 
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
-${rfHeliGuide ? `\n## Rotorflight heli prefab sections (TX15)\n${rfHeliGuide}` : ""}
-${bfQuadGuide ? `\n## Betaflight / CRSF quad prefab sections (TX15)\n${bfQuadGuide}` : ""}
+${rfHeliGuide ? `\n## Rotorflight heli prefab sections\n${rfHeliGuide}` : ""}
+${bfQuadGuide ? `\n## Betaflight / CRSF quad prefab sections\n${bfQuadGuide}` : ""}
+${formatPrefabCatalogForPrompt(resolvedProtocol) ? `\n## Live prefab catalog + board recipes\n\n${formatPrefabCatalogForPrompt(resolvedProtocol)}\n` : ""}
 
 ## Companion scripts
 

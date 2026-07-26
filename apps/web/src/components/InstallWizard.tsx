@@ -71,6 +71,8 @@ export function InstallWizard({
     verifySensors: false,
   });
 
+  const isRotorflight = protocol === "rotorflight";
+
   useEffect(() => {
     void isTauri().then(setDesktop);
   }, []);
@@ -286,18 +288,21 @@ export function InstallWizard({
             On the radio: Model setup → Widgets → add the dashboard full-screen
           </label>
         </li>
-        <li>
-          <label>
-            <input
-              type="checkbox"
-              checked={checks.rf2bg}
-              onChange={(e) =>
-                setChecks((c) => ({ ...c, rf2bg: e.target.checked }))
-              }
-            />
-            Rotorflight: Special Function → rf2bg (Repeat On), then Discover new
-          </label>
-        </li>
+        {isRotorflight ? (
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                checked={checks.rf2bg}
+                onChange={(e) =>
+                  setChecks((c) => ({ ...c, rf2bg: e.target.checked }))
+                }
+              />
+              Rotorflight: Special Function → rf2bg (Repeat On), then Discover
+              new
+            </label>
+          </li>
+        ) : null}
       </ol>
 
       <h3 className={styles.verifyTitle}>Verify on radio ({radioName})</h3>
@@ -342,8 +347,9 @@ export function InstallWizard({
                 setChecks((c) => ({ ...c, verifySensors: e.target.checked }))
               }
             />
-            Values update live (battery/link; RF: run sensor_dump tool if using
-            HSpd/Gov/Vbec)
+            {isRotorflight
+              ? "Values update live (battery/link; run sensor_dump tool after Discover new if using HSpd/Gov/Vbec)"
+              : "Values update live (battery/link/attitude)"}
           </label>
         </li>
       </ol>
@@ -359,39 +365,73 @@ export function InstallWizard({
         </div>
       ) : null}
 
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.secondary}
-          disabled={busy}
-          onClick={() => void downloadZip()}
-        >
-          {busy ? "Downloading…" : "Download zip"}
-        </button>
-        {desktop ? (
-          <button
-            type="button"
-            className={styles.primary}
-            disabled={busy}
-            onClick={() => void pickSd()}
-          >
-            {sdPath ? "Change SD folder…" : "Pick SD card folder…"}
-          </button>
-        ) : (
-          <p className={styles.hint}>
-            SD folder copy is available in the desktop app.
+      {isRotorflight ? (
+        <div className={styles.companionStatus}>
+          <p className={styles.companionStatusTitle}>Rotorflight companions</p>
+          <p className={styles.rfNote}>
+            Include the <strong>sensor_dump</strong> tool companion, enable
+            rf2bg (Repeat On), then Discover new — HSpd/Gov/Vbec are not
+            standard CRSF wire sensors.
           </p>
+        </div>
+      ) : null}
+
+      <div className={styles.actions}>
+        {desktop ? (
+          <>
+            {!sdPath ? (
+              <button
+                type="button"
+                className={styles.primary}
+                disabled={busy}
+                onClick={() => void pickSd()}
+              >
+                Pick SD card folder…
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.primary}
+                disabled={busy || !luaSource || step === "done"}
+                onClick={() => void copyToSd()}
+              >
+                {busy ? "Copying…" : "Copy to SD card"}
+              </button>
+            )}
+            {sdPath && step !== "done" ? (
+              <button
+                type="button"
+                className={styles.secondary}
+                disabled={busy}
+                onClick={() => void pickSd()}
+              >
+                Change SD folder…
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={styles.secondary}
+              disabled={busy}
+              onClick={() => void downloadZip()}
+            >
+              {busy ? "Downloading…" : "Download zip"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={styles.primary}
+              disabled={busy}
+              onClick={() => void downloadZip()}
+            >
+              {busy ? "Downloading…" : "Download zip"}
+            </button>
+            <p className={styles.hint}>
+              SD folder copy is available in the desktop app.
+            </p>
+          </>
         )}
-        {desktop && sdPath && step !== "done" ? (
-          <button
-            type="button"
-            className={styles.primary}
-            disabled={busy || !luaSource}
-            onClick={() => void copyToSd()}
-          >
-            Copy package to SD
-          </button>
-        ) : null}
       </div>
 
       {sdPath ? (
