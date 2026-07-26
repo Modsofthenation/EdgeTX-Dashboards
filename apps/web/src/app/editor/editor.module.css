@@ -1151,6 +1151,32 @@
   color: var(--muted);
 }
 
+.projectToolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.projectListRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.projectRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding-left: 0.15rem;
+}
+
+.projectRenameRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
 /* ── Loading ── */
 
 .loadingState {

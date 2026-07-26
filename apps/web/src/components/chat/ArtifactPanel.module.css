@@ -281,6 +281,30 @@
   border-color: var(--border-strong);
 }
 
+.liveRadioBtn {
+  margin-left: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.liveRadioBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.liveRadioNote {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 .downloadBtn {
   width: 100%;
   border: none;

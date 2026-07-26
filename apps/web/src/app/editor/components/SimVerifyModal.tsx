@@ -21,6 +21,7 @@ interface SimVerifyModalProps {
   onReload?: () => void;
   scenarioId?: string;
   scenarioOverride?: LayoutScenario;
+  layoutProfileId?: string;
 }
 
 export function SimVerifyModal({
@@ -31,6 +32,7 @@ export function SimVerifyModal({
   onReload,
   scenarioId = "editor-preview",
   scenarioOverride,
+  layoutProfileId = "tx15",
 }: SimVerifyModalProps) {
   const [interactiveControls, setInteractiveControls] = useState<{
     openInteractive: () => void;
@@ -68,9 +70,10 @@ export function SimVerifyModal({
         </p>
         <div className={styles.simModalBody}>
           <RadioSimPreview
-            key={`sim-${reloadKey}-${scenarioId}`}
+            key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}`}
             luaSource={source}
             mock={scenario.mock}
+            layoutProfileId={layoutProfileId}
             active={open}
             live
             fillHost

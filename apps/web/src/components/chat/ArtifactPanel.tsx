@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
@@ -8,6 +8,12 @@ import {
   buildInstallGuide,
   formatInstallGuideMarkdown,
 } from "~/lib/installGuide";
+import {
+  isWebSerialSupported,
+  openLiveTelemetryPort,
+  type LiveSensorMap,
+  type LiveTelemetryHandle,
+} from "~/lib/liveTelemetryBridge";
 import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
 import { InstallWizard } from "../InstallWizard";
@@ -55,6 +61,7 @@ interface ArtifactPanelProps {
   running: boolean;
   artifactLoading?: boolean;
   layoutProfileId?: string;
+  radioId?: string;
   radioName?: string | null;
   edgeTxVersion?: string;
   panelCollapsed?: boolean;
@@ -73,6 +80,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
   running,
   artifactLoading = false,
   layoutProfileId = "tx15",
+  radioId,
   radioName,
   edgeTxVersion = "2.11.0",
   panelCollapsed = false,
@@ -80,6 +88,12 @@ export const ArtifactPanel = memo(function ArtifactPanel({
 }: ArtifactPanelProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [liveRadioActive, setLiveRadioActive] = useState(false);
+  const [liveSensors, setLiveSensors] = useState<LiveSensorMap | null>(null);
+  const [liveNote, setLiveNote] = useState<string | null>(null);
+  const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
+  const liveSupported =
+    typeof window !== "undefined" ? isWebSerialSupported() : false;
 
   const showPreviewLoader = running || artifactLoading;
   const installMd = useMemo(() => {
@@ -88,6 +102,44 @@ export const ArtifactPanel = memo(function ArtifactPanel({
       buildInstallGuide(protocol, artifact.name),
     );
   }, [artifact?.name, protocol]);
+
+  const toggleLiveRadio = useCallback(async () => {
+    if (liveRadioActive) {
+      await liveHandleRef.current?.close();
+      liveHandleRef.current = null;
+      setLiveRadioActive(false);
+      setLiveSensors(null);
+      setLiveNote(null);
+      return;
+    }
+    try {
+      const handle = await openLiveTelemetryPort(
+        (values) => {
+          setLiveSensors(values);
+          const keys = Object.keys(values);
+          setLiveNote(
+            keys.length
+              ? `Live · ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? "…" : ""}`
+              : "Live · waiting for CRSF",
+          );
+        },
+        { enrichRotorflight: protocol === "rotorflight" },
+      );
+      liveHandleRef.current = handle;
+      setLiveRadioActive(true);
+      setLiveNote("Live · waiting for CRSF");
+    } catch (err) {
+      setLiveNote(
+        err instanceof Error ? err.message : "Failed to open serial port",
+      );
+    }
+  }, [liveRadioActive, protocol]);
+
+  useEffect(() => {
+    return () => {
+      void liveHandleRef.current?.close();
+    };
+  }, []);
   const hasPreview = !!artifact?.luaSource;
   const previewKey = `${chatId ?? "new"}-${artifact?.instanceId ?? artifact?.name ?? "empty"}-v${viewingVersion}`;
   const isViewingLatest = viewingVersion === latestVersion;
@@ -183,6 +235,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
             currentLua={currentLua}
             previousLabel={`v${previous.version}`}
             currentLabel={`v${viewingVersion}`}
+            layoutProfileId={layoutProfileId}
           />
         );
       })()}
@@ -209,9 +262,30 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               layoutProfileId={layoutProfileId}
               edgeTxVersion={edgeTxVersion}
               radioName={radioName}
-              live={!showPreviewLoader}
+              live={!showPreviewLoader && !liveRadioActive}
+              liveSensors={liveRadioActive ? liveSensors : null}
               variant="compact"
+              toolbarExtra={
+                <button
+                  type="button"
+                  className={styles.liveRadioBtn}
+                  disabled={!liveSupported && !liveRadioActive}
+                  title={
+                    liveSupported
+                      ? "Stream CRSF/ELRS into this preview"
+                      : "Web Serial requires Chrome/Edge"
+                  }
+                  onClick={() => void toggleLiveRadio()}
+                >
+                  {liveRadioActive ? "Live: on" : "Live radio"}
+                </button>
+              }
             />
+            {liveNote ? (
+              <p className={styles.liveRadioNote} role="status">
+                {liveNote}
+              </p>
+            ) : null}
             {showPreviewLoader && (
               <div
                 className={styles.previewOverlay}
@@ -283,6 +357,8 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                       ? { instanceId: artifact.instanceId }
                       : { name: artifact.name }),
                     protocol,
+                    layoutProfile: layoutProfileId,
+                    ...(radioId ? { radioId } : { radioId: layoutProfileId }),
                   }).toString()}`}
                   className={styles.editLayoutBtn}
                 >

@@ -19,6 +19,7 @@ export {
   insertPrefabSection,
   insertPrefabSections,
   STACYDASH_TX15_LAYOUT_ORDER,
+  STACYDASH_NITRO_LAYOUT_ORDER,
   type InsertPrefabResult,
 } from "./insertPrefab.ts";
 export {

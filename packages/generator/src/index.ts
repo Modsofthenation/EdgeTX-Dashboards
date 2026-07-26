@@ -101,3 +101,9 @@ export {
 } from "./widgetNaming.ts";
 export { WIDGET_NAME_PATTERN } from "./paths.ts";
 export { assertNodeVersion } from "./nodeVersion.ts";
+export {
+  listWidgetPackageEntries,
+  detectCompanions,
+  type ZipEntry,
+  type CompanionManifest,
+} from "./packageEntries.ts";

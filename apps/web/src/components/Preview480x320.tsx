@@ -5,8 +5,10 @@ import {
   EDITOR_PREVIEW_SCENARIO,
   getLastPreviewParseMeta,
   isInterpretationReliable,
+  mergeLiveIntoMock,
   parseLuaToDrawCommands,
   tickMock,
+  type MockTelemetry,
 } from "@widget-gen/layout-verify";
 import {
   resolvePreviewDimensions,
@@ -25,6 +27,10 @@ interface Preview480x320Props {
   radioName?: string | null;
   live?: boolean;
   variant?: "default" | "compact";
+  /** Live radio sensor map merged into the preview mock. */
+  liveSensors?: Record<string, number | string> | null;
+  /** Extra toolbar actions (e.g. Live radio toggle). */
+  toolbarExtra?: React.ReactNode;
 }
 
 function ParserPreviewCanvas({
@@ -105,6 +111,8 @@ export const Preview480x320 = memo(function Preview480x320({
   radioName,
   live = true,
   variant = "default",
+  liveSensors = null,
+  toolbarExtra,
 }: Preview480x320Props) {
   const [tab, setTab] = useState<"preview" | "source">("preview");
   const [tick, setTick] = useState(0);
@@ -114,10 +122,11 @@ export const Preview480x320 = memo(function Preview480x320({
   } | null>(null);
 
   const baseMock = EDITOR_PREVIEW_SCENARIO.mock;
-  const mock = useMemo(
-    () => (live ? tickMock(baseMock, tick) : baseMock),
-    [live, tick, baseMock],
-  );
+  const mock: MockTelemetry = useMemo(() => {
+    const ticking = live && !liveSensors ? tickMock(baseMock, tick) : baseMock;
+    if (!liveSensors) return ticking;
+    return mergeLiveIntoMock(ticking, liveSensors);
+  }, [live, tick, baseMock, liveSensors]);
 
   const layoutProfile = useMemo(() => {
     try {
@@ -264,6 +273,7 @@ export const Preview480x320 = memo(function Preview480x320({
               </button>
             </div>
             {copyButton}
+            {toolbarExtra}
           </div>
         </div>
       )}
@@ -289,6 +299,7 @@ export const Preview480x320 = memo(function Preview480x320({
             </button>
           </div>
           {copyButton}
+          {toolbarExtra}
         </div>
       )}
 

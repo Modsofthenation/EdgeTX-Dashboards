@@ -116,6 +116,61 @@ function insertRefreshLines(source: string, lines: string[]): string {
   );
 }
 
+function ensureModelBitmapLoad(source: string): string {
+  if (/function\s+loadModelBitmap\s*\(/.test(source)) return source;
+  if (/modelBmp\s*=/.test(source)) return source;
+
+  const helper = `local function loadModelBitmap()
+  local info = model.getInfo()
+  local name = info and info.bitmap or ""
+  if name == nil or name == "" then
+    return nil, 0, 0
+  end
+  local bmp = Bitmap.open("/IMAGES/" .. name)
+  if bmp == nil then
+    return nil, 0, 0
+  end
+  local w, h = Bitmap.getSize(bmp)
+  return bmp, w, h
+end
+`;
+
+  let next = source;
+  const telemFn = next.match(/local\s+function\s+telem[\s\S]*?\nend\n/);
+  if (telemFn && telemFn.index !== undefined) {
+    const at = telemFn.index + telemFn[0].length;
+    next = next.slice(0, at) + "\n" + helper + next.slice(at);
+  } else {
+    next = helper + next;
+  }
+
+  const createFn = next.match(/local\s+function\s+create\s*\([^)]*\)\s*\n/);
+  if (createFn && createFn.index !== undefined) {
+    const bodyStart = createFn.index + createFn[0].length;
+    if (!/loadModelBitmap\(\)/.test(next.slice(bodyStart, bodyStart + 400))) {
+      next =
+        next.slice(0, bodyStart) +
+        "  local modelBmp, bmpW, bmpH = loadModelBitmap()\n" +
+        next.slice(bodyStart);
+    }
+  }
+
+  const createReturn = next.match(
+    /local\s+function\s+create\s*\([^)]*\)[\s\S]*?\breturn\s*\{/,
+  );
+  if (createReturn && createReturn.index !== undefined) {
+    const insertAt = createReturn.index + createReturn[0].length;
+    if (!/modelBmp\s*=/.test(next.slice(insertAt, insertAt + 200))) {
+      next =
+        next.slice(0, insertAt) +
+        "\n    modelBmp = modelBmp,\n    bmpW = bmpW,\n    bmpH = bmpH," +
+        next.slice(insertAt);
+    }
+  }
+
+  return next;
+}
+
 export interface InsertPrefabResult {
   source: string;
   prefab: PrefabSection;
@@ -133,6 +188,9 @@ export function insertPrefabSection(
 
   let next = ensureHelpers(source);
   next = ensureSrcBindings(next, prefab.createSrcBindings);
+  if (prefab.refreshLines.some((l) => /drawBitmap/.test(l))) {
+    next = ensureModelBitmapLoad(next);
+  }
   next = insertRefreshLines(next, [
     `-- prefab:${prefab.id}`,
     ...prefab.refreshLines,
@@ -161,7 +219,7 @@ export function insertPrefabSections(
   return { source: next, inserted };
 }
 
-/** Canonical StacyDash TX15 layout order. */
+/** Canonical StacyDash TX15 layout order (electric). */
 export const STACYDASH_TX15_LAYOUT_ORDER = [
   "rf-topbar-link",
   "rf-model-panel",
@@ -169,4 +227,14 @@ export const STACYDASH_TX15_LAYOUT_ORDER = [
   "rf-headspeed-hero",
   "rf-motor-tiles",
   "rf-battery-bar",
+] as const;
+
+/** Nitro / OMP StacyDash TX15 order — pack tiles + RX voltage bar. */
+export const STACYDASH_NITRO_LAYOUT_ORDER = [
+  "rf-topbar-link",
+  "rf-model-panel",
+  "rf-governor-card",
+  "rf-headspeed-hero",
+  "rf-nitro-pack-tiles",
+  "rf-nitro-rx-bar",
 ] as const;

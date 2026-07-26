@@ -8,15 +8,31 @@ export interface ProjectSummary {
   workspaceKey?: string;
   sessionId?: string;
   sourcePreview?: string;
+  radioId?: string;
+  layoutProfileId?: string;
 }
 
 const STORAGE_KEY = "edgetx.projectLibrary.v1";
 const LAST_OPEN_KEY = "edgetx.projectLibrary.lastOpen";
 const MAX_RECENT = 12;
+const SOURCE_PREFIX = "edgetx.projectSource.";
+export const PROJECT_PACK_FORMAT = "edgetx-dashboard-project";
+export const PROJECT_PACK_VERSION = 1;
 
 export interface ProjectLibraryState {
   projects: ProjectSummary[];
   lastOpenId: string | null;
+}
+
+export interface ProjectPack {
+  format: typeof PROJECT_PACK_FORMAT;
+  version: typeof PROJECT_PACK_VERSION;
+  exportedAt: string;
+  project: Omit<ProjectSummary, "updatedAt" | "sourcePreview"> & {
+    updatedAt?: string;
+    sourcePreview?: string;
+  };
+  source: string;
 }
 
 function readRaw(): ProjectLibraryState {
@@ -70,6 +86,28 @@ export function upsertProject(
   return next;
 }
 
+export function renameProject(id: string, name: string): ProjectSummary | null {
+  const existing = getProject(id);
+  if (!existing) return null;
+  const trimmed = name.trim();
+  if (!trimmed) return existing;
+  return upsertProject({ ...existing, name: trimmed });
+}
+
+export function deleteProject(id: string): void {
+  const state = readRaw();
+  writeProjects(state.projects.filter((p) => p.id !== id));
+  if (state.lastOpenId === id) {
+    localStorage.removeItem(LAST_OPEN_KEY);
+  }
+  try {
+    sessionStorage.removeItem(`${SOURCE_PREFIX}${id}`);
+    localStorage.removeItem(`${SOURCE_PREFIX}${id}`);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function markProjectOpened(id: string) {
   const existing = getProject(id);
   if (!existing) return;
@@ -79,9 +117,6 @@ export function markProjectOpened(id: string) {
 export function clearLastOpenProject() {
   localStorage.removeItem(LAST_OPEN_KEY);
 }
-
-/** Full board payload for named save (source kept separately in sessionStorage). */
-const SOURCE_PREFIX = "edgetx.projectSource.";
 
 export function saveProjectSource(id: string, source: string) {
   try {
@@ -108,4 +143,72 @@ export function newProjectId(): string {
     return crypto.randomUUID();
   }
   return `proj-${Date.now()}`;
+}
+
+export function exportProjectPack(id: string): ProjectPack | null {
+  const project = getProject(id);
+  const source = loadProjectSource(id);
+  if (!project || !source) return null;
+  return {
+    format: PROJECT_PACK_FORMAT,
+    version: PROJECT_PACK_VERSION,
+    exportedAt: new Date().toISOString(),
+    project: {
+      id: project.id,
+      name: project.name,
+      protocol: project.protocol,
+      workspaceKey: project.workspaceKey,
+      sessionId: project.sessionId,
+      radioId: project.radioId,
+      layoutProfileId: project.layoutProfileId,
+    },
+    source,
+  };
+}
+
+export function importProjectPack(
+  raw: unknown,
+): { project: ProjectSummary; source: string } | { error: string } {
+  if (!raw || typeof raw !== "object") {
+    return { error: "Invalid project pack" };
+  }
+  const pack = raw as Partial<ProjectPack>;
+  if (pack.format !== PROJECT_PACK_FORMAT) {
+    return { error: "Unrecognized project pack format" };
+  }
+  if (!pack.source || typeof pack.source !== "string") {
+    return { error: "Project pack missing Lua source" };
+  }
+  const meta = pack.project;
+  if (!meta?.name || !meta.protocol) {
+    return { error: "Project pack missing name/protocol" };
+  }
+  const id = newProjectId();
+  const project = upsertProject({
+    id,
+    name: meta.name,
+    protocol: meta.protocol,
+    workspaceKey: meta.workspaceKey,
+    sessionId: meta.sessionId,
+    radioId: meta.radioId,
+    layoutProfileId: meta.layoutProfileId,
+    sourcePreview: pack.source.slice(0, 120),
+  });
+  saveProjectSource(id, pack.source);
+  return { project, source: pack.source };
+}
+
+export function downloadProjectPack(id: string): boolean {
+  const pack = exportProjectPack(id);
+  if (!pack) return false;
+  const blob = new Blob([JSON.stringify(pack, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${pack.project.name.replace(/[^\w.-]+/g, "_") || "dashboard"}.edgetx-project.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  return true;
 }

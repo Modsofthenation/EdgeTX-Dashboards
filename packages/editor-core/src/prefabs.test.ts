@@ -49,11 +49,15 @@ return {
 `;
 
 describe("StacyDash Rotorflight prefabs", () => {
-  it("registers six TX15 sections", () => {
-    assert.equal(STACYDASH_ROTORFLIGHT_PREFABS.length, 6);
+  it("registers electric + nitro TX15 sections", () => {
+    assert.equal(STACYDASH_ROTORFLIGHT_PREFABS.length, 8);
     assert.deepEqual(
       listPrefabSections({ protocol: "rotorflight" }).map((p) => p.id),
-      [...STACYDASH_TX15_LAYOUT_ORDER],
+      [
+        ...STACYDASH_TX15_LAYOUT_ORDER,
+        "rf-nitro-pack-tiles",
+        "rf-nitro-rx-bar",
+      ],
     );
     assert.deepEqual(
       listPrefabSections({ protocol: "betaflight" }),

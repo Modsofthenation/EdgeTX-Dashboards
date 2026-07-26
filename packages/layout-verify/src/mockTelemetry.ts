@@ -23,6 +23,16 @@ export interface MockTelemetry {
   Ptch: number;
   Roll: number;
   Yaw: number;
+  /** Rotorflight pack voltage (rf2bg). */
+  Vbat: number;
+  /** Per-cell voltage (rf2bg). */
+  Vcel: number;
+  /** BEC voltage (rf2bg). */
+  Vbec: number;
+  /** Tail RPM (rf2bg). */
+  Tspd: number;
+  /** Governor enum / status (rf2bg). */
+  Gov: number;
 }
 
 export const BASE_MOCK: MockTelemetry = {
@@ -50,6 +60,11 @@ export const BASE_MOCK: MockTelemetry = {
   Ptch: 0.05,
   Roll: -0.02,
   Yaw: 1.2,
+  Vbat: 22.4,
+  Vcel: 3.73,
+  Vbec: 8.3,
+  Tspd: 410,
+  Gov: 3,
 };
 
 /** Slightly vary mock values each tick for a live feel. */
@@ -67,6 +82,11 @@ export function tickMock(base: MockTelemetry, tick: number): MockTelemetry {
     Sats: base.Sats,
     RPM: Math.round(base.RPM + wave * 80),
     HSpd: Math.round(base.HSpd + wave * 40),
+    Vbat: round1(base.Vbat + wave * 0.04),
+    Vcel: round2(base.Vcel + wave * 0.01),
+    Vbec: round1(base.Vbec + wave * 0.02),
+    Tspd: Math.round(base.Tspd + wave * 8),
+    EscT: Math.round(clamp(base.EscT + wave * 1.5, 20, 95)),
   };
 }
 
@@ -76,6 +96,10 @@ function clamp(v: number, min: number, max: number): number {
 
 function round1(v: number): number {
   return Math.round(v * 10) / 10;
+}
+
+function round2(v: number): number {
+  return Math.round(v * 100) / 100;
 }
 
 /** Radio / rf2bg Discover names → catalog mock keys. */

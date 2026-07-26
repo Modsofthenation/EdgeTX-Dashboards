@@ -32,6 +32,8 @@ interface RecordPropertiesPanelProps {
   selectedRecords: DocumentRecord[];
   zone: ZoneOffset;
   protocol?: TelemetryProtocol;
+  /** Sensors seen on the live radio Web Serial stream. */
+  discoveredSensors?: string[];
   onPatchName: (name: string) => void;
   onPatchRecord: (
     record: DocumentRecord,
@@ -139,6 +141,7 @@ export function RecordPropertiesPanel({
   selectedRecords,
   zone,
   protocol = "betaflight",
+  discoveredSensors = [],
   onPatchName,
   onPatchRecord,
   onTranslateSelected,
@@ -150,10 +153,18 @@ export function RecordPropertiesPanel({
 }: RecordPropertiesPanelProps) {
   const record = selectedRecords.length === 1 ? selectedRecords[0] : null;
   const kindMeta = record ? catalogForDrawKind(record.kind) : null;
-  const sensors = useMemo(
-    () => SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight,
-    [protocol],
-  );
+  const sensors = useMemo(() => {
+    const base = SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight;
+    const known = new Set(base.map((s) => s.label));
+    const extras = discoveredSensors
+      .filter((name) => name && !known.has(name))
+      .map((label) => ({
+        label,
+        formatHint: "raw" as const,
+        hint: "Seen on live radio",
+      }));
+    return extras.length ? [...base, ...extras] : base;
+  }, [protocol, discoveredSensors]);
   const [bindFormat, setBindFormat] = useState<TextFormat>("raw");
   const [nameDraft, setNameDraft] = useState(meta.name);
 
