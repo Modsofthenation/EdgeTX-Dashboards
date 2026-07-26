@@ -107,7 +107,9 @@ export function ChatMessageList({
               >
                 <span className={styles.galleryCardTitle}>{item.title}</span>
                 <span className={styles.galleryCardArchetype}>
-                  {item.archetype}
+                  {item.variant
+                    ? `${item.variant} · ${item.archetype}`
+                    : item.archetype}
                 </span>
               </button>
             ))}

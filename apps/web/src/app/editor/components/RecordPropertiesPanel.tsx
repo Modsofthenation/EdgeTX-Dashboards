@@ -16,7 +16,7 @@ import {
 import type { EdgeColor } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { catalogForDrawKind } from "../elementMeta";
-import { SENSOR_CATALOG } from "../lib/sensorCatalog";
+import { SENSOR_CATALOG, formatSensorOptionLabel } from "../lib/sensorCatalog";
 import styles from "../editor.module.css";
 
 const LAYOUT_OPTIONS = [
@@ -322,8 +322,8 @@ export function RecordPropertiesPanel({
                 }}
               >
                 {sensorOptions(slot.sensor).map((s) => (
-                  <option key={s.label} value={s.label}>
-                    {s.label}
+                  <option key={s.label} value={s.label} title={s.hint}>
+                    {formatSensorOptionLabel(s)}
                     {"defaultSensor" in slot && s.label === slot.defaultSensor
                       ? " (default)"
                       : ""}
@@ -615,8 +615,12 @@ export function RecordPropertiesPanel({
                     >
                       <option value="">Bind sensor…</option>
                       {sensors.map((s) => (
-                        <option key={s.label} value={s.label}>
-                          {s.label}
+                        <option
+                          key={s.label}
+                          value={s.label}
+                          title={s.hint ?? undefined}
+                        >
+                          {formatSensorOptionLabel(s)}
                           {s.formatHint !== bindFormat
                             ? ` (${s.formatHint})`
                             : ""}

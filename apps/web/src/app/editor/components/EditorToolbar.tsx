@@ -20,7 +20,11 @@ interface EditorToolbarProps {
   onRedo: () => void;
   onAdd: (kind: InsertDrawKind) => void;
   onAddPrefab?: (prefabId: string) => void;
+  onAddFullStacyDash?: () => void;
   onSave: () => void;
+  onSaveNamed?: () => void;
+  onOpenRecent?: () => void;
+  onOpenLast?: () => void;
   onValidate: () => void;
   saving: boolean;
   valid: boolean | null;
@@ -29,6 +33,9 @@ interface EditorToolbarProps {
   onVerifySim: () => void;
   previewScenarioId: string;
   onPreviewScenarioChange: (id: string) => void;
+  liveTelemetryActive?: boolean;
+  onToggleLiveTelemetry?: () => void;
+  liveTelemetrySupported?: boolean;
 }
 
 export function EditorToolbar({
@@ -38,7 +45,11 @@ export function EditorToolbar({
   onRedo,
   onAdd,
   onAddPrefab,
+  onAddFullStacyDash,
   onSave,
+  onSaveNamed,
+  onOpenRecent,
+  onOpenLast,
   onValidate,
   saving,
   valid,
@@ -47,6 +58,9 @@ export function EditorToolbar({
   onVerifySim,
   previewScenarioId,
   onPreviewScenarioChange,
+  liveTelemetryActive,
+  onToggleLiveTelemetry,
+  liveTelemetrySupported,
 }: EditorToolbarProps) {
   return (
     <div className={styles.toolbar}>
@@ -116,7 +130,12 @@ export function EditorToolbar({
 
         <div className={styles.toolbarDivider} aria-hidden />
 
-        <InsertMenu onInsert={onAdd} onInsertPrefab={onAddPrefab} />
+        <InsertMenu
+          protocol={protocol}
+          onInsert={onAdd}
+          onInsertPrefab={onAddPrefab}
+          onInsertFullStacyDash={onAddFullStacyDash}
+        />
 
         <label className={styles.toolbarSelect}>
           <span className={styles.toolbarSelectLabel}>Protocol</span>
@@ -138,6 +157,7 @@ export function EditorToolbar({
             value={previewScenarioId}
             onChange={(e) => onPreviewScenarioChange(e.target.value)}
             title="Mock telemetry scenario (canvas + sim)"
+            disabled={Boolean(liveTelemetryActive)}
           >
             {SCENARIOS.map((s) => (
               <option key={s.id} value={s.id}>
@@ -146,6 +166,22 @@ export function EditorToolbar({
             ))}
           </select>
         </label>
+
+        {onToggleLiveTelemetry ? (
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={onToggleLiveTelemetry}
+            disabled={!liveTelemetrySupported && !liveTelemetryActive}
+            title={
+              liveTelemetrySupported
+                ? "Stream CRSF/ELRS over Web Serial into the preview"
+                : "Web Serial requires Chrome/Edge on desktop"
+            }
+          >
+            {liveTelemetryActive ? "Live: on" : "Live radio"}
+          </button>
+        ) : null}
       </div>
 
       <div className={styles.toolbarRight}>
@@ -159,6 +195,34 @@ export function EditorToolbar({
             Invalid
           </span>
         )}
+        {onOpenLast ? (
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
+            onClick={onOpenLast}
+            title="Open last project"
+          >
+            Open last
+          </button>
+        ) : null}
+        {onOpenRecent ? (
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
+            onClick={onOpenRecent}
+          >
+            Recent
+          </button>
+        ) : null}
+        {onSaveNamed ? (
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
+            onClick={onSaveNamed}
+          >
+            Save as…
+          </button>
+        ) : null}
         <button
           type="button"
           className={styles.secondaryBtn}

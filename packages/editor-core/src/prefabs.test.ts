@@ -197,4 +197,14 @@ describe("StacyDash Rotorflight prefabs", () => {
     assert.equal(bindings.find((b) => b.key === "hspd")?.sensor, "RPM");
     assert.equal(bindings.find((b) => b.key === "curr")?.sensor, "Curr");
   });
+
+  it("inserts full StacyDash board in canonical order", () => {
+    const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
+      ...STACYDASH_TX15_LAYOUT_ORDER,
+    ]);
+    assert.deepEqual(inserted, [...STACYDASH_TX15_LAYOUT_ORDER]);
+    for (const id of STACYDASH_TX15_LAYOUT_ORDER) {
+      assert.match(source, new RegExp(`--\\s*prefab:${id}`));
+    }
+  });
 });

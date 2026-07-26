@@ -6,6 +6,8 @@ import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { WidgetSnapshot, WidgetVersionEntry } from "~/lib/chatTypes";
 import { Preview480x320 } from "../Preview480x320";
 import { InstallGuidePanel } from "../InstallGuidePanel";
+import { InstallWizard } from "../InstallWizard";
+import { RefineDiffPanel } from "./RefineDiffPanel";
 import { PanelCollapseButton } from "./CollapsibleAside";
 import { ArtifactVersionSelect } from "./ArtifactVersionSelect";
 import styles from "./ArtifactPanel.module.css";
@@ -157,6 +159,24 @@ export const ArtifactPanel = memo(function ArtifactPanel({
         />
       )}
 
+      {(() => {
+        const previous = artifactVersions
+          .filter((v) => v.version < viewingVersion && v.luaSource)
+          .sort((a, b) => b.version - a.version)[0];
+        const currentLua =
+          artifact?.luaSource ??
+          artifactVersions.find((v) => v.version === viewingVersion)?.luaSource;
+        if (!previous?.luaSource || !currentLua) return null;
+        return (
+          <RefineDiffPanel
+            previousLua={previous.luaSource}
+            currentLua={currentLua}
+            previousLabel={`v${previous.version}`}
+            currentLabel={`v${viewingVersion}`}
+          />
+        );
+      })()}
+
       {!hasPreview && !showPreviewLoader ? (
         <div className={styles.empty}>
           <span className={styles.emptyIcon} aria-hidden>
@@ -287,6 +307,14 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 protocol={protocol}
                 widgetName={artifact.name}
               />
+              <div className={styles.installWrap}>
+                <InstallWizard
+                  widgetName={artifact.name}
+                  luaSource={artifact.luaSource}
+                  workspaceKey={artifact.instanceId ?? null}
+                  sessionId={sessionId}
+                />
+              </div>
             </>
           )}
         </>

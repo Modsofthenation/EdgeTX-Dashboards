@@ -1,0 +1,72 @@
+.root {
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 12px;
+  padding: 1rem 1.1rem 1.15rem;
+  background: var(--surface, #fff);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.lead {
+  margin: 0.35rem 0 0.85rem;
+  color: var(--text-secondary, #57606a);
+  font-size: 0.9rem;
+}
+
+.checklist {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+}
+
+.checklist label {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  align-items: center;
+}
+
+.primary,
+.secondary {
+  border-radius: 8px;
+  border: 1px solid var(--border, #d0d7de);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--accent, #1f6feb);
+  border-color: transparent;
+  color: #fff;
+}
+
+.secondary {
+  background: transparent;
+}
+
+.hint,
+.path,
+.status,
+.done {
+  margin: 0.55rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #57606a);
+}
+
+.done {
+  color: var(--success, #1a7f37);
+  font-weight: 600;
+}

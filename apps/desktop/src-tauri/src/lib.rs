@@ -23,11 +23,46 @@ mod sidecar {
       .port()
   }
 
-  fn find_node() -> PathBuf {
+  fn find_node(app: &tauri::AppHandle) -> PathBuf {
     if let Ok(from_env) = std::env::var("EDGETX_NODE_PATH") {
       let path = PathBuf::from(from_env);
       if path.exists() {
         return path;
+      }
+    }
+
+    // Prefer the portable Node embedded next to the installer resources.
+    if let Ok(resource_dir) = app.path().resource_dir() {
+      let bundled = [
+        resource_dir.join("node").join("node.exe"),
+        resource_dir.join("node").join("node"),
+        resource_dir.join("node").join("bin").join("node"),
+        resource_dir
+          .join("_up_")
+          .join("resources")
+          .join("node")
+          .join("node.exe"),
+        resource_dir
+          .join("_up_")
+          .join("resources")
+          .join("node")
+          .join("node"),
+      ];
+      for candidate in bundled {
+        if candidate.is_file() {
+          return candidate;
+        }
+      }
+    }
+
+    #[cfg(debug_assertions)]
+    {
+      let dev_node = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/node");
+      for name in ["node.exe", "node"] {
+        let candidate = dev_node.join(name);
+        if candidate.is_file() {
+          return candidate;
+        }
       }
     }
 
@@ -139,7 +174,7 @@ mod sidecar {
     let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
 
-    let node = find_node();
+    let node = find_node(app);
     let mut child = Command::new(&node)
       .arg("apps/web/server.js")
       .current_dir(&standalone)
@@ -152,7 +187,7 @@ mod sidecar {
       .spawn()
       .map_err(|e| {
         format!(
-          "Failed to spawn Node ({node:?}): {e}. Install Node.js 22+ on PATH, or set EDGETX_NODE_PATH."
+          "Failed to spawn Node ({node:?}): {e}. The installer should embed Node under resources/node; otherwise install Node.js 22+ or set EDGETX_NODE_PATH."
         )
       })?;
 
@@ -200,7 +235,7 @@ mod sidecar {
         "<!doctype html><html><body style='font-family:system-ui;padding:2rem;background:#eef1f4;color:#0f172a'>\
          <h1>Could not start EdgeTX Dashboards</h1>\
          <p>{}</p>\
-         <p>Release builds need the embedded Next.js sidecar plus <strong>Node.js 22+</strong> on PATH (or <code>EDGETX_NODE_PATH</code>).</p>\
+         <p>Release builds embed a portable Node binary plus the Next.js sidecar. If startup still fails, set <code>EDGETX_NODE_PATH</code> or reinstall from a fresh desktop package.</p>\
          </body></html>",
         html_escape(err)
       );
@@ -212,11 +247,40 @@ mod sidecar {
   }
 }
 
+#[tauri::command]
+fn install_widget_to_sd(
+  sd_root: String,
+  widget_name: String,
+  lua_source: String,
+  install_md: Option<String>,
+) -> Result<serde_json::Value, String> {
+  let name = widget_name.trim();
+  if name.is_empty() || name.len() > 10 || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+  {
+    return Err("Widget name must be 1–10 letters, digits, or underscore".into());
+  }
+  let root = std::path::PathBuf::from(sd_root.trim());
+  if !root.is_dir() {
+    return Err(format!("SD root is not a directory: {}", root.display()));
+  }
+  let dest = root.join("WIDGETS").join(name);
+  std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+  std::fs::write(dest.join("main.lua"), lua_source).map_err(|e| e.to_string())?;
+  if let Some(md) = install_md {
+    if !md.trim().is_empty() {
+      let _ = std::fs::write(dest.join("INSTALL.md"), md);
+    }
+  }
+  Ok(serde_json::json!({ "dest": dest.display().to_string() }))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
+    .plugin(tauri_plugin_dialog::init())
     .manage(SidecarState(Mutex::new(None)))
+    .invoke_handler(tauri::generate_handler![install_widget_to_sd])
     .setup(|app| {
       #[cfg(not(dev))]
       {

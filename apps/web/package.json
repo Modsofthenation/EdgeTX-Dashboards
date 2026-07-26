@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@edgetx/simulator-ui": "^0.1.0",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.2",
     "@widget-gen/editor-core": "*",
     "@widget-gen/generator": "*",
     "@widget-gen/layout-verify": "*",

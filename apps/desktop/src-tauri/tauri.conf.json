@@ -37,7 +37,8 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../resources/standalone/": "standalone/"
+      "../resources/standalone/": "standalone/",
+      "../resources/node/": "node/"
     },
     "category": "DeveloperTool",
     "shortDescription": "Generate and edit EdgeTX Lua dashboards",

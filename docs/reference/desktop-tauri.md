@@ -10,9 +10,9 @@ Native desktop packaging for EdgeTX Dashboards using [Tauri 2](https://v2.tauri.
 | `npm run desktop:prepare` | Builds Next `standalone` + copies WASM/static into desktop resources |
 | `npm run desktop:build`   | Packages a native installer; release launches a local Next sidecar   |
 
-Static export is **not** used. Production embeds a Next.js standalone server and navigates the webview after `/api/health` succeeds. Node 22+ must be available on PATH (or via `EDGETX_NODE_PATH`) for the sidecar.
+Static export is **not** used. Production embeds a Next.js standalone server and navigates the webview after `/api/health` succeeds. A portable **Node 22** binary is fetched into `apps/desktop/resources/node/` during prepare and mapped to `$RESOURCE/node/` so installers do not require a system Node (override with `EDGETX_NODE_PATH` if needed).
 
-`tauri.conf.json` maps `../resources/standalone/` → `standalone/` so release builds find `$RESOURCE/standalone/apps/web/server.js`. Do not use the array form `["../resources/standalone"]` — Tauri rewrites `../` to `_up_/`, which breaks the sidecar lookup.
+`tauri.conf.json` maps `../resources/standalone/` → `standalone/` and `../resources/node/` → `node/` so release builds find `$RESOURCE/standalone/apps/web/server.js` plus the bundled Node binary. Do not use the array form `["../resources/standalone"]` — Tauri rewrites `../` to `_up_/`, which breaks the sidecar lookup.
 
 ## Preferences
 

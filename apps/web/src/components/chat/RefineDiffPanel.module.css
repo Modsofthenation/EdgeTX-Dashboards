@@ -1,0 +1,33 @@
+.root {
+  margin: 0.75rem 0 0;
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 8px;
+  background: var(--surface-2, #f6f8fa);
+  overflow: hidden;
+}
+
+.summary {
+  cursor: pointer;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #57606a);
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.diff {
+  margin: 0;
+  padding: 0.75rem;
+  max-height: 280px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  background: #0d1117;
+  color: #e6edf3;
+  white-space: pre;
+}

@@ -156,6 +156,17 @@
   flex-wrap: wrap;
 }
 
+.protocolCallout {
+  margin: 0;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--accent, #1f6feb) 10%, transparent);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 .toolbarLeft,
 .toolbarRight {
   display: flex;

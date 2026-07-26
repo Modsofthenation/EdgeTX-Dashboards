@@ -9,6 +9,8 @@ import {
   interpretDocument,
   insertDrawLineWithId,
   insertPrefabSection,
+  insertPrefabSections,
+  STACYDASH_TX15_LAYOUT_ORDER,
   parseDocumentMeta,
   patchRecordArgs,
   patchWidgetName,
@@ -45,6 +47,21 @@ import { EditorToolbar } from "./components/EditorToolbar";
 import { SimVerifyModal } from "./components/SimVerifyModal";
 import type { InsertDrawKind } from "./elementMeta";
 import { AppPreferencesButton } from "~/components/AppPreferences";
+import {
+  getLastOpenProjectId,
+  getProject,
+  listRecentProjects,
+  loadProjectSource,
+  markProjectOpened,
+  newProjectId,
+  saveProjectSource,
+  upsertProject,
+} from "~/lib/projectLibrary";
+import {
+  isWebSerialSupported,
+  openLiveTelemetryPort,
+  type LiveTelemetryHandle,
+} from "~/lib/liveTelemetryBridge";
 import styles from "./editor.module.css";
 
 type MobileTab = "layers" | "canvas" | "properties";
@@ -92,6 +109,16 @@ export function EditorApp() {
   const [dirty, setDirty] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("canvas");
   const [previewScenarioId, setPreviewScenarioId] = useState("editor-preview");
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [liveTelemetryActive, setLiveTelemetryActive] = useState(false);
+  const [liveTelemetryNote, setLiveTelemetryNote] = useState<string | null>(
+    null,
+  );
+  const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
+  const liveTelemetrySupported = useMemo(
+    () => (typeof window !== "undefined" ? isWebSerialSupported() : false),
+    [],
+  );
   const loadRequestIdRef = useRef(0);
   const savedSourceRef = useRef<string | null>(null);
 
@@ -375,6 +402,119 @@ export function EditorApp() {
     },
     [setSource, markDirty],
   );
+
+  const handleAddFullStacyDash = useCallback(() => {
+    setSource((prev) => {
+      const { source: next } = insertPrefabSections(prev, [
+        ...STACYDASH_TX15_LAYOUT_ORDER,
+      ]);
+      return next;
+    });
+    markDirty();
+  }, [setSource, markDirty]);
+
+  const handleSaveNamed = useCallback(() => {
+    const name =
+      window.prompt("Project name", meta.name || "Dashboard")?.trim() ||
+      meta.name ||
+      "Dashboard";
+    const id = projectId ?? newProjectId();
+    upsertProject({
+      id,
+      name,
+      protocol,
+      workspaceKey: workspaceKey ?? undefined,
+      sessionId: sessionId ?? undefined,
+      sourcePreview: source.slice(0, 120),
+    });
+    saveProjectSource(id, source);
+    setProjectId(id);
+  }, [meta.name, projectId, protocol, workspaceKey, sessionId, source]);
+
+  const openProjectById = useCallback(
+    (id: string) => {
+      const project = getProject(id);
+      const lua = loadProjectSource(id);
+      if (!lua) {
+        window.alert("No saved Lua for that project in this browser.");
+        return;
+      }
+      setSource(lua);
+      setProjectId(id);
+      if (project?.protocol) {
+        setProtocol(project.protocol as TelemetryProtocol);
+      }
+      markProjectOpened(id);
+      setDirty(false);
+    },
+    [setSource],
+  );
+
+  const handleOpenRecent = useCallback(() => {
+    const recent = listRecentProjects();
+    if (recent.length === 0) {
+      window.alert("No recent projects yet — use Save as… first.");
+      return;
+    }
+    const lines = recent
+      .slice(0, 8)
+      .map((p, i) => `${i + 1}. ${p.name} (${p.protocol})`)
+      .join("\n");
+    const pick = window.prompt(
+      `Open recent project:\n${lines}\n\nEnter number`,
+    );
+    const idx = Number(pick) - 1;
+    if (!Number.isFinite(idx) || idx < 0 || idx >= recent.length) return;
+    openProjectById(recent[idx]!.id);
+  }, [openProjectById]);
+
+  const handleOpenLast = useCallback(() => {
+    const id = getLastOpenProjectId();
+    if (!id) {
+      window.alert("No last project — use Save as… first.");
+      return;
+    }
+    openProjectById(id);
+  }, [openProjectById]);
+
+  const handleToggleLiveTelemetry = useCallback(async () => {
+    if (liveTelemetryActive) {
+      await liveHandleRef.current?.close();
+      liveHandleRef.current = null;
+      setLiveTelemetryActive(false);
+      setLiveTelemetryNote(null);
+      return;
+    }
+    try {
+      const handle = await openLiveTelemetryPort((values) => {
+        const keys = Object.keys(values);
+        setLiveTelemetryNote(
+          keys.length
+            ? `Live · ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""}`
+            : "Live · waiting for CRSF frames",
+        );
+      });
+      liveHandleRef.current = handle;
+      setLiveTelemetryActive(true);
+      setLiveTelemetryNote("Live · waiting for CRSF frames");
+    } catch (err) {
+      setLiveTelemetryNote(
+        err instanceof Error ? err.message : "Failed to open serial port",
+      );
+    }
+  }, [liveTelemetryActive]);
+
+  useEffect(() => {
+    return () => {
+      void liveHandleRef.current?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    const last = getLastOpenProjectId();
+    if (!last || hasRemoteWidget) return;
+    // Soft prompt once per mount via note — user clicks Open last.
+  }, [hasRemoteWidget]);
 
   const handleDeleteIds = useCallback(
     (ids: string[]) => {
@@ -822,7 +962,13 @@ export function EditorApp() {
         }}
         onAdd={handleAdd}
         onAddPrefab={handleAddPrefab}
+        onAddFullStacyDash={
+          protocol === "rotorflight" ? handleAddFullStacyDash : undefined
+        }
         onSave={handleSave}
+        onSaveNamed={handleSaveNamed}
+        onOpenRecent={handleOpenRecent}
+        onOpenLast={handleOpenLast}
         onValidate={handleValidate}
         saving={saving}
         valid={valid}
@@ -831,7 +977,23 @@ export function EditorApp() {
         onVerifySim={openSim}
         previewScenarioId={previewScenarioId}
         onPreviewScenarioChange={setPreviewScenarioId}
+        liveTelemetryActive={liveTelemetryActive}
+        onToggleLiveTelemetry={handleToggleLiveTelemetry}
+        liveTelemetrySupported={liveTelemetrySupported}
       />
+
+      {protocol === "rotorflight" ? (
+        <div className={styles.protocolCallout} role="status">
+          Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
+          On), then Telemetry → Discover new for HSpd / EscT / Vbec / Vcel /
+          Gov. Use Insert → Full StacyDash board for the TX15 prefab layout.
+        </div>
+      ) : null}
+      {liveTelemetryNote ? (
+        <div className={styles.protocolCallout} role="status">
+          {liveTelemetryNote}
+        </div>
+      ) : null}
 
       <div
         className={styles.mobileTabs}

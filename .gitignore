@@ -95,3 +95,6 @@ apps/desktop/src-tauri/target/
 apps/desktop/fallback/
 apps/desktop/resources/standalone/*
 !apps/desktop/resources/standalone/README.md
+apps/desktop/resources/node/*
+!apps/desktop/resources/node/README.md
+apps/desktop/resources/.node-tmp/
