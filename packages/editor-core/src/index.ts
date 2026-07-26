@@ -5,6 +5,7 @@ export * from "./colors.ts";
 export * from "./ids.ts";
 export * from "./luaDocument.ts";
 export * from "./telemetryBinding.ts";
+export * from "./templateBoards.ts";
 export * from "./prefabs/index.ts";
 export {
   sceneToLua,

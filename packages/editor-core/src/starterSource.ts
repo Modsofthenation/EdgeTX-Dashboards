@@ -57,6 +57,52 @@ local function refresh(widget, event, touchState)
 
   lcd.drawFilledRectangle(0, 0, w, headerH, GREY)
   lcd.drawText(pad, 10, name, MIDSIZE + fg)
+
+  if widget.options.ShowLink == 1 then
+    local rqly = telem(widget.src.rqly)
+    local rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%"
+    lcd.drawFilledRectangle(pad, headerH + pad, colW, 100, DARKGREY)
+    lcd.drawRectangle(pad, headerH + pad, colW, 100, GREY)
+    lcd.drawText(pad + 8, headerH + pad + 8, "LINK", SMLSIZE + GREY)
+    lcd.drawText(pad + 8, headerH + pad + 24, rqlyStr, MIDSIZE + GREEN)
+    local barW = colW - 16
+    local barY = headerH + pad + 72
+    lcd.drawFilledRectangle(pad + 8, barY, barW, 10, GREY)
+    local fillW = math.floor(barW * math.max(0, math.min(100, rqly)) / 100)
+    if fillW > 0 then
+      lcd.drawFilledRectangle(pad + 8, barY, fillW, 10, GREEN)
+    end
+  end
+
+  if widget.options.ShowBatt == 1 then
+    local volts = telem(widget.src.rxbt)
+    local vStr = string.format("%.1f", volts)
+    local rx = pad * 2 + colW
+    lcd.drawFilledRectangle(rx, headerH + pad, colW, 100, DARKGREY)
+    lcd.drawRectangle(rx, headerH + pad, colW, 100, GREY)
+    lcd.drawText(rx + 8, headerH + pad + 8, "BATTERY", SMLSIZE + GREY)
+    lcd.drawText(rx + 8, headerH + pad + 22, vStr, DBLSIZE + YELLOW)
+  end
+
+  if widget.options.ShowGPS == 1 then
+    local gy = headerH + pad + 112
+    local altStr = tostring(telem(widget.src.alt))
+    local spdStr = tostring(telem(widget.src.gspd))
+    local satsStr = tostring(telem(widget.src.sats))
+    local altLine = "Alt " .. altStr .. " m"
+    local spdLine = "Spd " .. spdStr .. " km/h"
+    local satsLine = "Sats " .. satsStr
+    lcd.drawFilledRectangle(pad, gy, w - pad * 2, 64, DARKGREY)
+    lcd.drawRectangle(pad, gy, w - pad * 2, 64, GREY)
+    lcd.drawText(pad + 8, gy + 8, altLine, MIDSIZE + fg)
+    lcd.drawText(pad + 8, gy + 30, spdLine, SMLSIZE + fg)
+    lcd.drawText(pad + 200, gy + 8, satsLine, SMLSIZE + fg)
+  end
+
+  local fm = telem(widget.src.fm)
+  if type(fm) == "string" and fm ~= "" then
+    lcd.drawText(pad, h - 20, fm, SMLSIZE + fg)
+  end
 end
 
 return {

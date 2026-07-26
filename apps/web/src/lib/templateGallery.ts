@@ -3,7 +3,16 @@
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
 export type TemplateLayoutPrefab =
-  "starter" | "rf-heli-electric" | "rf-heli-nitro" | "minimal";
+  | "starter"
+  | "minimal"
+  | "minimal-quad"
+  | "dense-crsf"
+  | "whoop"
+  | "freestyle-quad"
+  | "battery-tool"
+  | "flight-logger"
+  | "rf-heli-electric"
+  | "rf-heli-nitro";
 
 export interface TemplateGalleryItem {
   id: string;
@@ -15,7 +24,7 @@ export interface TemplateGalleryItem {
   /** Optional visual/variant tag shown in the gallery. */
   variant?: string;
   /**
-   * Prefab to load in Layout when opening without AI.
+   * Prefab / board to load in Layout when opening without AI.
    * Gallery primary action opens /editor with this prefab.
    */
   layoutPrefab?: TemplateLayoutPrefab;
@@ -29,7 +38,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "hero-minimal",
     protocol: "betaflight",
     variant: "freestyle",
-    layoutPrefab: "starter",
+    layoutPrefab: "minimal-quad",
   },
   {
     id: "heli-electric",
@@ -57,7 +66,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     prompt: "Dense CRSF telemetry grid with link, GPS, and attitude",
     archetype: "telemetry-dense",
     protocol: "generic-crsf",
-    layoutPrefab: "starter",
+    layoutPrefab: "dense-crsf",
   },
   {
     id: "whoop",
@@ -67,7 +76,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "quad-overview",
     protocol: "betaflight",
     variant: "whoop",
-    layoutPrefab: "starter",
+    layoutPrefab: "whoop",
   },
   {
     id: "freestyle-quad",
@@ -77,7 +86,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "quad-overview",
     protocol: "betaflight",
     variant: "freestyle",
-    layoutPrefab: "starter",
+    layoutPrefab: "freestyle-quad",
   },
   {
     id: "battery-tool",
@@ -85,7 +94,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     prompt: "Battery dashboard plus a TOOLS script to select 4S/6S pack",
     archetype: "battery-tool-suite",
     protocol: "betaflight",
-    layoutPrefab: "starter",
+    layoutPrefab: "battery-tool",
   },
   {
     id: "flight-logger",
@@ -94,7 +103,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
       "Flight logger telemetry script with last-flight summary on the dashboard",
     archetype: "flight-logger-suite",
     protocol: "betaflight",
-    layoutPrefab: "starter",
+    layoutPrefab: "flight-logger",
   },
 ];
 
