@@ -175,7 +175,7 @@ mod sidecar {
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
 
     let node = find_node(app);
-    let child = Command::new(&node)
+    let mut child = Command::new(&node)
       .arg("apps/web/server.js")
       .current_dir(&standalone)
       .env("PORT", port.to_string())
