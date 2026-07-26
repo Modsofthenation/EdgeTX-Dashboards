@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import {
   bindTextRecordToSensorDetailed,
   createStarterSource,
@@ -45,20 +44,20 @@ import {
   resolvePreviewDimensions,
   type LayoutProfileId,
 } from "@widget-gen/shared";
-import { useRouter } from "next/navigation";
 import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
 import { EditorToolbar } from "./components/EditorToolbar";
+import { EditorMenu } from "./components/EditorMenu";
 import { SimVerifyModal } from "./components/SimVerifyModal";
 import {
   ProjectLibraryModal,
   type ProjectLibraryMode,
 } from "./components/ProjectLibraryModal";
 import type { InsertDrawKind } from "./elementMeta";
-import { AppPreferencesButton } from "~/components/AppPreferences";
+import { openAppPreferences } from "~/components/AppPreferences";
 import {
   deleteProject,
   getLastOpenProjectId,
@@ -146,7 +145,6 @@ function parseProtocol(raw: string | null): TelemetryProtocol {
 
 export function EditorApp() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const instanceId = searchParams.get("instanceId");
   const widgetName = searchParams.get("name");
   const sid = searchParams.get("sessionId");
@@ -1127,29 +1125,6 @@ export function EditorApp() {
     [records],
   );
 
-  const backHref = useMemo(() => {
-    const params = new URLSearchParams();
-    if (chatId) params.set("chatId", chatId);
-    const q = params.toString();
-    return q ? `/?${q}` : "/";
-  }, [chatId]);
-
-  const confirmLeave = useCallback(() => {
-    if (!dirty) return true;
-    return window.confirm("Discard unsaved changes?");
-  }, [dirty]);
-
-  const navigateBack = useCallback(
-    (e?: React.MouseEvent) => {
-      if (!confirmLeave()) {
-        e?.preventDefault();
-        return;
-      }
-      if (!e) router.push(backHref);
-    },
-    [confirmLeave, router, backHref],
-  );
-
   useEffect(() => {
     const nudgeActive = { current: false };
     const endNudge = () => {
@@ -1301,36 +1276,17 @@ export function EditorApp() {
         layoutHref={layoutSelfHref}
         actions={
           <>
-            <AppPreferencesButton className={styles.ghostBtn} />
-            <Link
-              href={backHref}
-              className={styles.ghostBtn}
-              onClick={navigateBack}
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={openSim}
             >
-              <span className={styles.actionLabelFull}>Back to Generate</span>
-              <span className={styles.actionLabelShort}>Generate</span>
-            </Link>
-            <button type="button" className={styles.ghostBtn} onClick={openSim}>
-              <span className={styles.actionLabelFull}>Run in simulator</span>
+              <span className={styles.actionLabelFull}>Simulator</span>
               <span className={styles.actionLabelShort}>Sim</span>
             </button>
             <button
               type="button"
-              className={`${styles.ghostBtn} ${styles.hideOnNarrow}`}
-              onClick={() => void handleCopyLua()}
-            >
-              {copyDone ? (
-                "Copied"
-              ) : (
-                <>
-                  <span className={styles.actionLabelFull}>Copy Lua</span>
-                  <span className={styles.actionLabelShort}>Copy</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              className={styles.ghostBtn}
+              className={styles.primaryBtn}
               disabled={downloading || valid === false}
               title={
                 valid === false
@@ -1343,30 +1299,45 @@ export function EditorApp() {
                 "Downloading…"
               ) : (
                 <>
-                  <span className={styles.actionLabelFull}>Download zip</span>
+                  <span className={styles.actionLabelFull}>Download</span>
                   <span className={styles.actionLabelShort}>Zip</span>
                 </>
               )}
             </button>
-            <button
-              type="button"
-              className={`${styles.ghostBtn} ${styles.hideOnNarrow}`}
-              onClick={() => setPasteOpen(true)}
-            >
-              <span className={styles.actionLabelFull}>Import Lua</span>
-              <span className={styles.actionLabelShort}>Import</span>
-            </button>
-            <button
-              type="button"
-              className={`${styles.ghostBtn} ${styles.hideOnNarrow}`}
-              onClick={() => {
-                if (dirty && !window.confirm("Discard unsaved changes?"))
-                  return;
-                loadFromSource(createStarterSource(), true);
-              }}
-            >
-              New
-            </button>
+            <EditorMenu
+              label="More"
+              variant="ghost"
+              align="right"
+              title="Copy, import, and preferences"
+              items={[
+                {
+                  id: "copy",
+                  label: copyDone ? "Copied" : "Copy Lua",
+                  onClick: () => void handleCopyLua(),
+                },
+                {
+                  id: "import",
+                  label: "Import Lua…",
+                  onClick: () => setPasteOpen(true),
+                },
+                {
+                  id: "new",
+                  label: "New board",
+                  separatorBefore: true,
+                  onClick: () => {
+                    if (dirty && !window.confirm("Discard unsaved changes?"))
+                      return;
+                    loadFromSource(createStarterSource(), true);
+                  },
+                },
+                {
+                  id: "prefs",
+                  label: "Preferences…",
+                  separatorBefore: true,
+                  onClick: () => openAppPreferences(),
+                },
+              ]}
+            />
           </>
         }
       />
@@ -1439,7 +1410,6 @@ export function EditorApp() {
         valid={valid}
         protocol={protocol}
         onProtocolChange={setProtocol}
-        onVerifySim={openSim}
         previewScenarioId={previewScenarioId}
         onPreviewScenarioChange={setPreviewScenarioId}
         liveTelemetryActive={liveTelemetryActive}
