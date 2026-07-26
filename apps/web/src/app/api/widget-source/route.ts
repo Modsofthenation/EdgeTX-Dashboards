@@ -1,14 +1,27 @@
+import { randomUUID } from "node:crypto";
 import { checkApiAuth } from "~/lib/apiSecurity";
 import {
+  ensureWidgetInstanceDir,
   isTelemetryProtocol,
   readWidgetLuaSource,
   resolveWidgetWorkspaceFromSession,
+  sanitizeWidgetName,
   validateWidgetSource,
   writeWidgetLuaSource,
 } from "~/server/generatorFacade";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function displayNameFromSource(source: string): string {
+  const m = source.match(/local\s+name\s*=\s*"([^"]+)"/);
+  const raw = m?.[1]?.trim() || "DashStart";
+  try {
+    return sanitizeWidgetName(raw.slice(0, 10));
+  } catch {
+    return "DashStart";
+  }
+}
 
 export async function GET(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
@@ -64,6 +77,8 @@ export async function PUT(request: Request): Promise<Response> {
     name?: string;
     protocol?: string;
     radioId?: string;
+    /** When true and no workspace resolves, mint a new UUID instance. */
+    allocate?: boolean;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -76,11 +91,19 @@ export async function PUT(request: Request): Promise<Response> {
     return Response.json({ error: "source is required" }, { status: 400 });
   }
 
-  const resolved = resolveWidgetWorkspaceFromSession(
+  let resolved = resolveWidgetWorkspaceFromSession(
     body.sessionId ?? null,
     body.instanceId ?? null,
     body.name ?? null,
   );
+
+  if ((resolved.pending || !resolved.workspaceKey) && body.allocate) {
+    const id = randomUUID();
+    const displayName = displayNameFromSource(source);
+    ensureWidgetInstanceDir(id, displayName, 0);
+    resolved = { workspaceKey: id, displayName };
+  }
+
   if (resolved.pending || !resolved.workspaceKey) {
     return Response.json({ error: "Workspace not found" }, { status: 404 });
   }

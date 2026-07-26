@@ -2,8 +2,8 @@
  * Shared dashboard prefab sections — reusable multi-primitive layout blocks
  * for the visual editor and AI generator.
  *
- * StacyDash (800×480 LVGL) is adapted here to TX15 480×320 with direct lcd.*
- * calls so web preview / layout-verify can interpret them.
+ * Community heli dashboards (often 800×480 LVGL) are adapted here to TX15
+ * 480×320 with direct lcd.* calls so web preview / layout-verify can interpret them.
  */
 
 export type PrefabProtocol =
@@ -26,7 +26,7 @@ export interface PrefabSection {
   shortLabel: string;
   description: string;
   /** Origin inspiration / family. */
-  family: "stacydash-rotorflight";
+  family: "rotorflight-heli";
   protocol: PrefabProtocol;
   category: PrefabCategory;
   /** Sensors that must exist in the protocol catalog for meaningful data. */

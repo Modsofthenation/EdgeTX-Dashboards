@@ -644,6 +644,25 @@ export function RecordPropertiesPanel({
                     and rewrites this drawText. Sensor menu resets after bind —
                     check Static text / canvas for the live value.
                   </p>
+                  {discoveredSensors.length > 0 ? (
+                    <div className={styles.liveSeenRow}>
+                      <p className={styles.sectionTitle}>Seen on live radio</p>
+                      <div className={styles.liveSeenChips}>
+                        {discoveredSensors.map((sensor) => (
+                          <button
+                            key={sensor}
+                            type="button"
+                            className={styles.liveSeenChip}
+                            onClick={() =>
+                              onBindTelemetry(record, sensor, bindFormat)
+                            }
+                          >
+                            Bind {sensor}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </>

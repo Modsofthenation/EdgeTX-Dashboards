@@ -1,8 +1,8 @@
 import type { PrefabCatalogEntry, PrefabSection } from "./types.ts";
-import { STACYDASH_ROTORFLIGHT_PREFABS } from "./stacyDashSections.ts";
+import { ROTORFLIGHT_HELI_PREFABS } from "./rotorflightSections.ts";
 
 const BY_ID = new Map<string, PrefabSection>(
-  STACYDASH_ROTORFLIGHT_PREFABS.map((p) => [p.id, p]),
+  ROTORFLIGHT_HELI_PREFABS.map((p) => [p.id, p]),
 );
 
 /** All registered prefab sections (editor + AI shared catalog). */
@@ -10,7 +10,7 @@ export function listPrefabSections(filter?: {
   protocol?: string;
   family?: string;
 }): PrefabSection[] {
-  return STACYDASH_ROTORFLIGHT_PREFABS.filter((p) => {
+  return ROTORFLIGHT_HELI_PREFABS.filter((p) => {
     if (filter?.family && p.family !== filter.family) return false;
     if (
       filter?.protocol &&
@@ -53,7 +53,7 @@ export function formatPrefabCatalogForPrompt(protocol?: string): string {
   const lines = [
     "### Prefab sections (compose dashboards from these blocks)",
     "",
-    "Use these modular sections when the user wants a StacyDash-style Rotorflight layout on TX15.",
+    "Use these modular sections when the user wants a Rotorflight heli layout on TX15.",
     "Each id maps to a tested lcd.* block — prefer composing from prefabs over inventing new geometry.",
     "",
   ];

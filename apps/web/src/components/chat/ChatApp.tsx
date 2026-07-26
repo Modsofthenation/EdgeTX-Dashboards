@@ -11,7 +11,10 @@ import {
   WidgetChatProvider,
 } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
-import type { TemplateGalleryItem } from "~/lib/templateGallery";
+import {
+  buildTemplateEditorHref,
+  type TemplateGalleryItem,
+} from "~/lib/templateGallery";
 import { buildBlankEditorHref, buildEditorHref } from "~/lib/editorHref";
 import { usePanelCollapse } from "~/lib/usePanelCollapse";
 import { AppChrome } from "../AppChrome";
@@ -288,6 +291,7 @@ function ChatHistoryAside({
 }
 
 function ChatMessageListSection() {
+  const router = useRouter();
   const { messages, scrollRevision } = useChatMessages();
   const { running, sendMessage, chatId } = useChatSession();
   const { artifact } = useArtifactPanel();
@@ -303,6 +307,20 @@ function ChatMessageListSection() {
     [protocol, radioId, layoutProfileId, chatId],
   );
   const handleSuggestion = useCallback(
+    (item: TemplateGalleryItem) => {
+      router.push(
+        buildTemplateEditorHref({
+          templateId: item.id,
+          protocol: item.protocol,
+          radioId,
+          layoutProfileId,
+          chatId,
+        }),
+      );
+    },
+    [router, radioId, layoutProfileId, chatId],
+  );
+  const handleGenerateSuggestion = useCallback(
     (item: TemplateGalleryItem) =>
       void sendMessage(item.prompt, { protocol: item.protocol }),
     [sendMessage],
@@ -323,6 +341,7 @@ function ChatMessageListSection() {
       scrollRevision={scrollRevision}
       running={running}
       onSuggestion={handleSuggestion}
+      onGenerateSuggestion={handleGenerateSuggestion}
       dashboardReadyCue={Boolean(artifact?.luaSource) && !running}
       onRetry={handleRetry}
       blankLayoutHref={blankLayoutHref}

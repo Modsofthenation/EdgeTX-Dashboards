@@ -6,10 +6,11 @@ import {
   hitTestRecords,
   isRectLike,
   resizeRecordBox,
-  snapToGrid,
+  snapDeltaToGuides,
   type BoundingBox,
   type DocumentRecord,
   type ResizeHandle,
+  type SnapGuide,
   type ZoneOffset,
 } from "@widget-gen/editor-core";
 import { measurePreviewText } from "~/lib/luaPreviewEngine";
@@ -28,6 +29,9 @@ interface RecordSelectionOverlayProps {
   onResize: (id: string, box: BoundingBox) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
+  /** When true (default), snap to element/LCD edges then grid. */
+  snapEnabled?: boolean;
+  onSnapGuidesChange?: (guides: SnapGuide[]) => void;
 }
 
 function screenToZone(
@@ -55,6 +59,8 @@ export function RecordSelectionOverlay({
   onResize,
   onGestureStart,
   onGestureEnd,
+  snapEnabled = true,
+  onSnapGuidesChange,
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<{
     mode: "move" | "resize";
@@ -79,8 +85,9 @@ export function RecordSelectionOverlay({
   const finishGesture = useCallback(() => {
     if (!dragRef.current) return;
     dragRef.current = null;
+    onSnapGuidesChange?.([]);
     onGestureEnd?.();
-  }, [onGestureEnd]);
+  }, [onGestureEnd, onSnapGuidesChange]);
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent) => {
@@ -139,15 +146,38 @@ export function RecordSelectionOverlay({
       if (!drag || !layout || !frameRef.current) return;
       const rect = frameRef.current.getBoundingClientRect();
       const pointer = screenToZone(event.clientX, event.clientY, rect, layout);
-      const snap = !drag.shiftKey;
+      const snap = snapEnabled && !drag.shiftKey;
 
       if (drag.mode === "move") {
         const rawDx = pointer.x - drag.startX;
         const rawDy = pointer.y - drag.startY;
         if (Math.abs(rawDx) < 0.5 && Math.abs(rawDy) < 0.5) return;
 
-        const sdx = snap ? snapToGrid(rawDx, 12, true) : Math.round(rawDx);
-        const sdy = snap ? snapToGrid(rawDy, 12, true) : Math.round(rawDy);
+        let sdx = Math.round(rawDx);
+        let sdy = Math.round(rawDy);
+        if (snap) {
+          const movingBoxes = drag.recordIds
+            .map((id) => records.find((r) => r.id === id))
+            .filter((r): r is DocumentRecord => Boolean(r))
+            .map((r) => bboxForRecordInZone(r, zone, measureText))
+            .filter((b): b is BoundingBox => Boolean(b));
+          const otherBoxes = records
+            .filter((r) => !drag.recordIds.includes(r.id!))
+            .map((r) => bboxForRecordInZone(r, zone, measureText))
+            .filter((b): b is BoundingBox => Boolean(b));
+          const snapped = snapDeltaToGuides(
+            rawDx,
+            rawDy,
+            movingBoxes,
+            otherBoxes,
+            { w: zone.zoneW, h: zone.zoneH },
+          );
+          sdx = snapped.dx;
+          sdy = snapped.dy;
+          onSnapGuidesChange?.(snapped.guides);
+        } else {
+          onSnapGuidesChange?.([]);
+        }
         if (sdx === 0 && sdy === 0) return;
 
         onTranslate(drag.recordIds, sdx, sdy);
@@ -174,7 +204,17 @@ export function RecordSelectionOverlay({
         drag.moved = true;
       }
     },
-    [layout, onTranslate, onResize, frameRef],
+    [
+      layout,
+      onTranslate,
+      onResize,
+      frameRef,
+      snapEnabled,
+      records,
+      zone,
+      measureText,
+      onSnapGuidesChange,
+    ],
   );
 
   const onPointerUp = useCallback(() => {

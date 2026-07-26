@@ -9,7 +9,7 @@ import { renderInstallMd } from "./package.ts";
 import {
   loadRadioProfile,
   loadTelemetryCatalog,
-  readStacyDashSectionsGuide,
+  readRotorflightHeliSectionsGuide,
 } from "./knowledge.ts";
 import { validateGenerateRequest } from "./requestValidate.ts";
 import { findLatestWidgetName, pickActiveWidgetName } from "./widgetResolve.ts";
@@ -260,16 +260,16 @@ describe("renderInstallMd", () => {
     assert.ok(md.includes("RF2Dash"));
     assert.ok(md.includes("rf2bg"));
     assert.ok(
-      (catalog.setupNotes ?? []).some((n) => /HSpd|Vbec|StacyDash/i.test(n)),
-      "rotorflight catalog should call out StacyDash-style custom CRSF sensors",
+      (catalog.setupNotes ?? []).some((n) => /HSpd|Vbec|rf2bg/i.test(n)),
+      "rotorflight catalog should call out custom CRSF sensors",
     );
     assert.ok(
       md.includes("Vbec") || md.includes("HSpd") || md.includes("rf2bg"),
     );
   });
 
-  it("exposes StacyDash sections guide for rotorflight prompts", () => {
-    const guide = readStacyDashSectionsGuide();
+  it("exposes Rotorflight heli sections guide for rotorflight prompts", () => {
+    const guide = readRotorflightHeliSectionsGuide();
     assert.ok(guide.includes("rf-headspeed-hero"));
     assert.ok(guide.includes("rf2bg"));
     assert.ok(guide.includes("Vbec"));

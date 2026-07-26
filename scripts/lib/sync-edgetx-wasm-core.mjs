@@ -3,8 +3,8 @@
  * Shared EdgeTX WASM sync core — used by CLI (`sync-edgetx-wasm.mjs`) and
  * optionally mirrored by the web API. Keep logic here so both stay aligned.
  *
- * Syncs TX15 (versioned 2.11/2.12) plus other color radios that match
- * knowledge LCD sizes (see COLOR_WASM_RADIOS).
+ * Syncs TX15 (versioned 2.11/2.12) plus other radios that match
+ * knowledge LCD sizes (see WASM_RADIOS / packages/shared/src/wasmFirmware.ts).
  */
 import { createHash } from "node:crypto";
 import { mkdir, writeFile, readFile, stat, copyFile } from "node:fs/promises";
@@ -21,7 +21,7 @@ export const FIRMWARE_VERSIONS = [
 ];
 
 /** Mirrors packages/shared/src/wasmFirmware.ts — keep in sync. */
-export const COLOR_WASM_RADIOS = [
+export const WASM_RADIOS = [
   {
     id: "tx15",
     flavour: "tx15",
@@ -58,7 +58,52 @@ export const COLOR_WASM_RADIOS = [
     name: "FrSky Horus X12S",
     display: { w: 480, h: 272, depth: 16 },
   },
+  {
+    id: "nv14",
+    flavour: "nv14",
+    name: "Flysky NV14 / EL18",
+    display: { w: 320, h: 480, depth: 16 },
+  },
+  {
+    id: "boxer",
+    flavour: "boxer",
+    name: "RadioMaster Boxer",
+    display: { w: 128, h: 64, depth: 1 },
+  },
+  {
+    id: "mt12",
+    flavour: "mt12",
+    name: "RadioMaster MT12",
+    display: { w: 128, h: 64, depth: 1 },
+  },
+  {
+    id: "zorro",
+    flavour: "zorro",
+    name: "RadioMaster Zorro",
+    display: { w: 128, h: 64, depth: 1 },
+  },
+  {
+    id: "tx12",
+    flavour: "tx12mk2",
+    name: "RadioMaster TX12 MKII",
+    display: { w: 128, h: 64, depth: 1 },
+  },
+  {
+    id: "t20",
+    flavour: "t20",
+    name: "Jumper T20",
+    display: { w: 128, h: 64, depth: 1 },
+  },
+  {
+    id: "x7",
+    flavour: "x7access",
+    name: "FrSky Taranis X7 / X7S",
+    display: { w: 128, h: 64, depth: 1 },
+  },
 ];
+
+/** @deprecated Prefer WASM_RADIOS */
+export const COLOR_WASM_RADIOS = WASM_RADIOS;
 
 export const LEGACY_WASM = "edgetx-tx15-simulator.wasm";
 

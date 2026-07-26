@@ -678,6 +678,30 @@
   line-height: 1.45;
 }
 
+.liveSeenRow {
+  margin-top: 0.75rem;
+}
+
+.liveSeenChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.liveSeenChip {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+
+.liveSeenChip:hover {
+  border-color: var(--border-strong);
+}
+
 .propDetails {
   margin: 0.5rem 0 0;
   padding: 0 0.15rem 0.75rem;
@@ -1232,6 +1256,22 @@
     linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
   opacity: 0.55;
+}
+
+.snapGuideV,
+.snapGuideH {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  background: rgba(94, 196, 255, 0.85);
+}
+
+.snapGuideV {
+  width: 1px;
+}
+
+.snapGuideH {
+  height: 1px;
 }
 
 .toolbarSelect {

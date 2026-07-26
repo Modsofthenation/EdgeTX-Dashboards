@@ -21,8 +21,8 @@ interface EditorToolbarProps {
   onRedo: () => void;
   onAdd: (kind: InsertDrawKind) => void;
   onAddPrefab?: (prefabId: string) => void;
-  onAddFullStacyDash?: () => void;
-  onAddNitroStacyDash?: () => void;
+  onAddFullRfHeliElectric?: () => void;
+  onAddRfHeliNitro?: () => void;
   onAddCompanionSuite?: (suiteId: string) => void;
   companionSuiteIds?: string[];
   onSave: () => void;
@@ -60,8 +60,8 @@ export function EditorToolbar({
   onRedo,
   onAdd,
   onAddPrefab,
-  onAddFullStacyDash,
-  onAddNitroStacyDash,
+  onAddFullRfHeliElectric,
+  onAddRfHeliNitro,
   onAddCompanionSuite,
   companionSuiteIds,
   onSave,
@@ -164,8 +164,8 @@ export function EditorToolbar({
           protocol={protocol}
           onInsert={onAdd}
           onInsertPrefab={onAddPrefab}
-          onInsertFullStacyDash={onAddFullStacyDash}
-          onInsertNitroStacyDash={onAddNitroStacyDash}
+          onInsertFullRfHeliElectric={onAddFullRfHeliElectric}
+          onInsertRfHeliNitro={onAddRfHeliNitro}
           onInsertCompanionSuite={onAddCompanionSuite}
           companionSuiteIds={companionSuiteIds}
         />

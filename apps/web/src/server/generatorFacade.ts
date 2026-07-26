@@ -20,6 +20,7 @@ import {
   listAvailableModels,
   listRadioProfiles,
   MAX_ACTIVE_SESSIONS,
+  ensureWidgetInstanceDir,
   packageWidget,
   readWidgetInstanceMeta,
   readWidgetVersionSource,
@@ -48,6 +49,7 @@ export {
   isWidgetInstanceId,
   sanitizeWidgetInstanceId,
   validateWidgetSource,
+  ensureWidgetInstanceDir,
 };
 
 export function getDataDirectory(): string {

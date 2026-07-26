@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const MAX_UNDO = 50;
+const MAX_UNDO = 100;
 
 export function useSourceUndoStack(initialSource: string) {
   const [source, setSourceState] = useState(initialSource);
@@ -93,5 +93,7 @@ export function useSourceUndoStack(initialSource: string) {
     redo,
     canUndo: undoStack.length > 0,
     canRedo: redoStack.length > 0,
+    undoDepth: undoStack.length,
+    maxUndo: MAX_UNDO,
   };
 }

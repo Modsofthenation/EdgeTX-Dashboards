@@ -203,7 +203,7 @@ export function insertPrefabSection(
   return { source: next, prefab, insertedDrawCount: drawCount };
 }
 
-/** Insert multiple prefabs in order (e.g. full StacyDash-style board). */
+/** Insert multiple prefabs in order (e.g. full RF heli-style board). */
 export function insertPrefabSections(
   source: string,
   prefabIds: string[],
@@ -219,8 +219,8 @@ export function insertPrefabSections(
   return { source: next, inserted };
 }
 
-/** Canonical StacyDash TX15 layout order (electric). */
-export const STACYDASH_TX15_LAYOUT_ORDER = [
+/** Canonical RF heli TX15 layout order (electric). */
+export const ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER = [
   "rf-topbar-link",
   "rf-model-panel",
   "rf-governor-card",
@@ -229,8 +229,8 @@ export const STACYDASH_TX15_LAYOUT_ORDER = [
   "rf-battery-bar",
 ] as const;
 
-/** Nitro / OMP StacyDash TX15 order — pack tiles + RX voltage bar. */
-export const STACYDASH_NITRO_LAYOUT_ORDER = [
+/** Nitro / OMP RF heli TX15 order — pack tiles + RX voltage bar. */
+export const ROTORFLIGHT_NITRO_LAYOUT_ORDER = [
   "rf-topbar-link",
   "rf-model-panel",
   "rf-governor-card",

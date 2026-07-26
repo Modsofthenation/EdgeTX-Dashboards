@@ -25,7 +25,10 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   scrollRevision: number;
   running: boolean;
+  /** Primary: open template prefab in Layout (no AI). */
   onSuggestion: (item: TemplateGalleryItem) => void;
+  /** Secondary: send template prompt to the agent. */
+  onGenerateSuggestion?: (item: TemplateGalleryItem) => void;
   dashboardReadyCue?: boolean;
   onRetry?: () => void;
   /** Open Layout with a starter dashboard (no AI generate). */
@@ -37,6 +40,7 @@ export function ChatMessageList({
   scrollRevision,
   running,
   onSuggestion,
+  onGenerateSuggestion,
   dashboardReadyCue = false,
   onRetry,
   blankLayoutHref = null,
@@ -148,21 +152,36 @@ export function ChatMessageList({
           </div>
           <div className={styles.gallery}>
             {galleryItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={styles.galleryCard}
-                disabled={running}
-                onClick={() => onSuggestion(item)}
-              >
-                <span className={styles.galleryCardTitle}>{item.title}</span>
-                <span className={styles.galleryCardArchetype}>
-                  {item.variant
-                    ? `${item.variant} · ${item.archetype}`
-                    : item.archetype}
-                  {` · ${item.protocol}`}
-                </span>
-              </button>
+              <div key={item.id} className={styles.galleryCardWrap}>
+                <button
+                  type="button"
+                  className={styles.galleryCard}
+                  disabled={running}
+                  onClick={() => onSuggestion(item)}
+                >
+                  <span className={styles.galleryCardTitle}>{item.title}</span>
+                  <span className={styles.galleryCardArchetype}>
+                    {item.variant
+                      ? `${item.variant} · ${item.archetype}`
+                      : item.archetype}
+                    {` · ${item.protocol}`}
+                  </span>
+                  <span className={styles.galleryCardAction}>
+                    Open in Layout
+                  </span>
+                </button>
+                {onGenerateSuggestion ? (
+                  <button
+                    type="button"
+                    className={styles.galleryCardAi}
+                    disabled={running}
+                    onClick={() => onGenerateSuggestion(item)}
+                    title={item.prompt}
+                  >
+                    Generate with AI
+                  </button>
+                ) : null}
+              </div>
             ))}
           </div>
 
@@ -175,7 +194,7 @@ export function ChatMessageList({
                 disabled={running}
                 onClick={() => onSuggestion(item)}
               >
-                {item.prompt}
+                Layout: {item.title}
               </button>
             ))}
           </div>

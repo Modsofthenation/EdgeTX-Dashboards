@@ -25,6 +25,9 @@ export {
   lcdFrameByteSize,
   cropZoneFromFramebuffer,
   rgb565ToImageData,
+  mono1ToImageData,
+  gray4ToImageData,
+  LCD_BACKLIGHT_RGB,
 } from "./framebuffer.ts";
 export { WIDGET_LAUNCH_DELAY_FRAMES } from "./SimRuntime.ts";
 export type {

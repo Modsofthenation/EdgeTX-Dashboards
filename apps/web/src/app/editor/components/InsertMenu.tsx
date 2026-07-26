@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   listPrefabCatalog,
-  STACYDASH_TX15_LAYOUT_ORDER,
-  STACYDASH_NITRO_LAYOUT_ORDER,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
 } from "@widget-gen/editor-core";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { COMPANION_SUITES } from "~/lib/companionSuites";
@@ -18,10 +18,10 @@ interface InsertMenuProps {
   protocol: TelemetryProtocol;
   onInsert: (kind: InsertDrawKind) => void;
   onInsertPrefab?: (prefabId: string) => void;
-  /** Insert every StacyDash TX15 section in canonical order. */
-  onInsertFullStacyDash?: () => void;
-  /** Insert nitro / OMP StacyDash variant. */
-  onInsertNitroStacyDash?: () => void;
+  /** Insert every RF heli TX15 section in canonical order. */
+  onInsertFullRfHeliElectric?: () => void;
+  /** Insert nitro / OMP RF heli variant. */
+  onInsertRfHeliNitro?: () => void;
   /** Add companion suite stubs for SD install (tools/telemetry). */
   onInsertCompanionSuite?: (suiteId: string) => void;
   companionSuiteIds?: string[];
@@ -31,8 +31,8 @@ export function InsertMenu({
   protocol,
   onInsert,
   onInsertPrefab,
-  onInsertFullStacyDash,
-  onInsertNitroStacyDash,
+  onInsertFullRfHeliElectric,
+  onInsertRfHeliNitro,
   onInsertCompanionSuite,
   companionSuiteIds = EMPTY_SUITE_IDS,
 }: InsertMenuProps) {
@@ -133,14 +133,14 @@ export function InsertMenu({
                 Needs rf2bg · Discover new
               </span>
             </div>
-            {onInsertFullStacyDash ? (
+            {onInsertFullRfHeliElectric ? (
               <button
                 type="button"
                 role="menuitem"
                 className={styles.insertItem}
-                title={`Insert ${STACYDASH_TX15_LAYOUT_ORDER.length} sections in order`}
+                title={`Insert ${ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER.length} sections in order`}
                 onClick={() => {
-                  onInsertFullStacyDash();
+                  onInsertFullRfHeliElectric();
                   setOpen(false);
                 }}
               >
@@ -149,23 +149,23 @@ export function InsertMenu({
                 </span>
                 <span className={styles.insertItemCopy}>
                   <span className={styles.insertItemLabel}>
-                    Full StacyDash board
+                    Full RF heli board
                   </span>
                   <span className={styles.insertItemDesc}>
-                    Electric · all {STACYDASH_TX15_LAYOUT_ORDER.length} TX15
-                    sections
+                    Electric · all {ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER.length}{" "}
+                    TX15 sections
                   </span>
                 </span>
               </button>
             ) : null}
-            {onInsertNitroStacyDash ? (
+            {onInsertRfHeliNitro ? (
               <button
                 type="button"
                 role="menuitem"
                 className={styles.insertItem}
-                title={`Insert ${STACYDASH_NITRO_LAYOUT_ORDER.length} nitro sections`}
+                title={`Insert ${ROTORFLIGHT_NITRO_LAYOUT_ORDER.length} nitro sections`}
                 onClick={() => {
-                  onInsertNitroStacyDash();
+                  onInsertRfHeliNitro();
                   setOpen(false);
                 }}
               >
@@ -174,7 +174,7 @@ export function InsertMenu({
                 </span>
                 <span className={styles.insertItemCopy}>
                   <span className={styles.insertItemLabel}>
-                    StacyDash nitro board
+                    RF heli nitro board
                   </span>
                   <span className={styles.insertItemDesc}>
                     Nitro/OMP · RX pack tiles + voltage bar

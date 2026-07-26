@@ -2,6 +2,9 @@
 
 import type { TelemetryProtocol } from "@widget-gen/shared";
 
+export type TemplateLayoutPrefab =
+  "starter" | "rf-heli-electric" | "rf-heli-nitro" | "minimal";
+
 export interface TemplateGalleryItem {
   id: string;
   title: string;
@@ -11,6 +14,11 @@ export interface TemplateGalleryItem {
   protocol: TelemetryProtocol;
   /** Optional visual/variant tag shown in the gallery. */
   variant?: string;
+  /**
+   * Prefab to load in Layout when opening without AI.
+   * Gallery primary action opens /editor with this prefab.
+   */
+  layoutPrefab?: TemplateLayoutPrefab;
 }
 
 export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
@@ -21,15 +29,17 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "hero-minimal",
     protocol: "betaflight",
     variant: "freestyle",
+    layoutPrefab: "starter",
   },
   {
     id: "heli-electric",
     title: "RF heli (electric)",
     prompt:
-      "StacyDash-style Rotorflight TX15 electric board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
+      "RF heli-style Rotorflight TX15 electric board using prefab sections: top bar + link, model panel, governor, headspeed hero, motor tiles (AMPS/CELL/BEC/ESC), and battery % bar. Call out rf2bg telemetry requirements.",
     archetype: "heli-rotorflight",
     protocol: "rotorflight",
     variant: "electric",
+    layoutPrefab: "rf-heli-electric",
   },
   {
     id: "heli-nitro",
@@ -39,6 +49,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "heli-rotorflight",
     protocol: "rotorflight",
     variant: "nitro",
+    layoutPrefab: "rf-heli-nitro",
   },
   {
     id: "dense-crsf",
@@ -46,6 +57,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     prompt: "Dense CRSF telemetry grid with link, GPS, and attitude",
     archetype: "telemetry-dense",
     protocol: "generic-crsf",
+    layoutPrefab: "starter",
   },
   {
     id: "whoop",
@@ -55,6 +67,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "quad-overview",
     protocol: "betaflight",
     variant: "whoop",
+    layoutPrefab: "starter",
   },
   {
     id: "freestyle-quad",
@@ -64,6 +77,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     archetype: "quad-overview",
     protocol: "betaflight",
     variant: "freestyle",
+    layoutPrefab: "starter",
   },
   {
     id: "battery-tool",
@@ -71,6 +85,7 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
     prompt: "Battery dashboard plus a TOOLS script to select 4S/6S pack",
     archetype: "battery-tool-suite",
     protocol: "betaflight",
+    layoutPrefab: "starter",
   },
   {
     id: "flight-logger",
@@ -79,5 +94,29 @@ export const TEMPLATE_GALLERY: TemplateGalleryItem[] = [
       "Flight logger telemetry script with last-flight summary on the dashboard",
     archetype: "flight-logger-suite",
     protocol: "betaflight",
+    layoutPrefab: "starter",
   },
 ];
+
+export function getTemplateById(id: string): TemplateGalleryItem | undefined {
+  return TEMPLATE_GALLERY.find((t) => t.id === id);
+}
+
+/** Build /editor URL that loads a gallery prefab (no AI generate). */
+export function buildTemplateEditorHref(options: {
+  templateId: string;
+  protocol: string;
+  radioId?: string | null;
+  layoutProfileId?: string | null;
+  chatId?: string | null;
+}): string {
+  const params = new URLSearchParams({
+    protocol: options.protocol,
+    template: options.templateId,
+  });
+  if (options.layoutProfileId)
+    params.set("layoutProfile", options.layoutProfileId);
+  if (options.radioId) params.set("radioId", options.radioId);
+  if (options.chatId) params.set("chatId", options.chatId);
+  return `/editor?${params.toString()}`;
+}

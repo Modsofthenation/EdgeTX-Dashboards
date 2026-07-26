@@ -6,9 +6,9 @@ export type {
   PrefabSection,
 } from "./types.ts";
 export {
-  STACYDASH_ROTORFLIGHT_PREFABS,
-  listStacyDashPrefabIds,
-} from "./stacyDashSections.ts";
+  ROTORFLIGHT_HELI_PREFABS,
+  listRotorflightHeliPrefabIds,
+} from "./rotorflightSections.ts";
 export {
   formatPrefabCatalogForPrompt,
   getPrefabSection,
@@ -18,8 +18,8 @@ export {
 export {
   insertPrefabSection,
   insertPrefabSections,
-  STACYDASH_TX15_LAYOUT_ORDER,
-  STACYDASH_NITRO_LAYOUT_ORDER,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
   type InsertPrefabResult,
 } from "./insertPrefab.ts";
 export {

@@ -20,6 +20,125 @@ export function snapToGrid(
   return Math.round(value / grid) * grid;
 }
 
+export type SnapGuide = {
+  orientation: "v" | "h";
+  /** Position in zone coordinates */
+  pos: number;
+};
+
+export type SnapDeltaResult = {
+  dx: number;
+  dy: number;
+  guides: SnapGuide[];
+};
+
+function uniqueSorted(values: number[]): number[] {
+  return [...new Set(values.map((v) => Math.round(v)))].sort((a, b) => a - b);
+}
+
+function edgeTargets(boxes: BoundingBox[], axis: "x" | "y"): number[] {
+  const out: number[] = [];
+  for (const box of boxes) {
+    if (axis === "x") {
+      out.push(box.x, box.x + box.w / 2, box.x + box.w);
+    } else {
+      out.push(box.y, box.y + box.h / 2, box.y + box.h);
+    }
+  }
+  return out;
+}
+
+/**
+ * Snap a move delta to LCD edges/centers and other element edges/centers.
+ * Falls back to grid snap when no guide is within threshold.
+ */
+export function snapDeltaToGuides(
+  dx: number,
+  dy: number,
+  movingBoxes: BoundingBox[],
+  otherBoxes: BoundingBox[],
+  zone: { w: number; h: number },
+  opts?: { threshold?: number; grid?: number; gridEnabled?: boolean },
+): SnapDeltaResult {
+  const threshold = opts?.threshold ?? 6;
+  const grid = opts?.grid ?? SNAP_GRID;
+  const gridEnabled = opts?.gridEnabled !== false;
+
+  if (movingBoxes.length === 0) {
+    return {
+      dx: gridEnabled ? snapToGrid(dx, grid, true) : Math.round(dx),
+      dy: gridEnabled ? snapToGrid(dy, grid, true) : Math.round(dy),
+      guides: [],
+    };
+  }
+
+  const xGuides = uniqueSorted([
+    0,
+    zone.w / 2,
+    zone.w,
+    ...edgeTargets(otherBoxes, "x"),
+  ]);
+  const yGuides = uniqueSorted([
+    0,
+    zone.h / 2,
+    zone.h,
+    ...edgeTargets(otherBoxes, "y"),
+  ]);
+
+  let bestDx = dx;
+  let bestDy = dy;
+  let bestAbsDx = Number.POSITIVE_INFINITY;
+  let bestAbsDy = Number.POSITIVE_INFINITY;
+  let snapGuideX: number | null = null;
+  let snapGuideY: number | null = null;
+
+  for (const box of movingBoxes) {
+    for (const edge of [
+      box.x + dx,
+      box.x + box.w / 2 + dx,
+      box.x + box.w + dx,
+    ]) {
+      for (const guide of xGuides) {
+        const delta = guide - edge;
+        const abs = Math.abs(delta);
+        if (abs <= threshold && abs < bestAbsDx) {
+          bestAbsDx = abs;
+          bestDx = dx + delta;
+          snapGuideX = guide;
+        }
+      }
+    }
+    for (const edge of [
+      box.y + dy,
+      box.y + box.h / 2 + dy,
+      box.y + box.h + dy,
+    ]) {
+      for (const guide of yGuides) {
+        const delta = guide - edge;
+        const abs = Math.abs(delta);
+        if (abs <= threshold && abs < bestAbsDy) {
+          bestAbsDy = abs;
+          bestDy = dy + delta;
+          snapGuideY = guide;
+        }
+      }
+    }
+  }
+
+  if (snapGuideX == null) {
+    bestDx = gridEnabled ? snapToGrid(dx, grid, true) : Math.round(dx);
+  }
+  if (snapGuideY == null) {
+    bestDy = gridEnabled ? snapToGrid(dy, grid, true) : Math.round(dy);
+  }
+
+  const guides: SnapGuide[] = [];
+  if (snapGuideX != null) guides.push({ orientation: "v", pos: snapGuideX });
+  if (snapGuideY != null) guides.push({ orientation: "h", pos: snapGuideY });
+
+  return { dx: bestDx, dy: bestDy, guides };
+}
+
 export function elementToDrawRecord(el: EditorElement): DrawRecord | null {
   if (!el.visible) return null;
 

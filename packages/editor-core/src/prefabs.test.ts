@@ -11,8 +11,8 @@ import {
   listPrefabSections,
   listPrefabSpans,
   prefabIdForSourceLine,
-  STACYDASH_TX15_LAYOUT_ORDER,
-  STACYDASH_ROTORFLIGHT_PREFABS,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_HELI_PREFABS,
 } from "./prefabs/index.ts";
 import { interpretDocument } from "./luaDocument.ts";
 import { listSrcBindings, remapSrcSensor } from "./telemetryBinding.ts";
@@ -48,13 +48,13 @@ return {
 }
 `;
 
-describe("StacyDash Rotorflight prefabs", () => {
+describe("Rotorflight heli prefabs", () => {
   it("registers electric + nitro TX15 sections", () => {
-    assert.equal(STACYDASH_ROTORFLIGHT_PREFABS.length, 8);
+    assert.equal(ROTORFLIGHT_HELI_PREFABS.length, 8);
     assert.deepEqual(
       listPrefabSections({ protocol: "rotorflight" }).map((p) => p.id),
       [
-        ...STACYDASH_TX15_LAYOUT_ORDER,
+        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
         "rf-nitro-pack-tiles",
         "rf-nitro-rx-bar",
       ],
@@ -62,7 +62,7 @@ describe("StacyDash Rotorflight prefabs", () => {
     assert.deepEqual(
       listPrefabSections({ protocol: "betaflight" }),
       [],
-      "StacyDash prefabs are rotorflight-only",
+      "Rotorflight heli prefabs are rotorflight-only",
     );
   });
 
@@ -74,7 +74,7 @@ describe("StacyDash Rotorflight prefabs", () => {
     assert.ok(hero!.requiredSensors.includes("HSpd"));
   });
 
-  for (const id of STACYDASH_TX15_LAYOUT_ORDER) {
+  for (const id of ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER) {
     it(`inserts ${id} with lcd draws and sensor cache`, () => {
       const prefab = getPrefabSection(id)!;
       const result = insertPrefabSection(MINIMAL_SHELL, id);
@@ -104,9 +104,9 @@ describe("StacyDash Rotorflight prefabs", () => {
 
   it("assembles full layout without losing helpers", () => {
     const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
-      ...STACYDASH_TX15_LAYOUT_ORDER,
+      ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
     ]);
-    assert.deepEqual(inserted, [...STACYDASH_TX15_LAYOUT_ORDER]);
+    assert.deepEqual(inserted, [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER]);
     assert.equal(
       (source.match(/function cacheSource/g) || []).length,
       1,
@@ -115,9 +115,9 @@ describe("StacyDash Rotorflight prefabs", () => {
     assert.equal((source.match(/function telem/g) || []).length, 1);
   });
 
-  it("validates programmatically assembled full StacyDash board", () => {
+  it("validates programmatically assembled full Rotorflight heli board", () => {
     const { source } = insertPrefabSections(MINIMAL_SHELL, [
-      ...STACYDASH_TX15_LAYOUT_ORDER,
+      ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
     ]);
     const sensors = loadTelemetryCatalog("rotorflight").sensors.map(
       (s) => s.name,
@@ -126,8 +126,7 @@ describe("StacyDash Rotorflight prefabs", () => {
       knownSensors: sensors,
       strictTelemetry: true,
       layoutArchetype: "heli-rotorflight",
-      userPrompt:
-        "StacyDash Rotorflight headspeed ESC temperature battery board",
+      userPrompt: "Rotorflight heli headspeed ESC temperature battery board",
       strictIntent: true,
     });
     const errors = result.issues.filter((i) => i.severity === "error");
@@ -137,7 +136,7 @@ describe("StacyDash Rotorflight prefabs", () => {
 
   it("validates gold example against rotorflight catalog", () => {
     const example = readFileSync(
-      join(repoRoot, "examples", "tx15-stacydash-sections.lua"),
+      join(repoRoot, "examples", "tx15-rotorflight-sections.lua"),
       "utf8",
     );
     const sensors = loadTelemetryCatalog("rotorflight").sensors.map(
@@ -147,8 +146,7 @@ describe("StacyDash Rotorflight prefabs", () => {
       knownSensors: sensors,
       strictTelemetry: true,
       layoutArchetype: "heli-rotorflight",
-      userPrompt:
-        "StacyDash Rotorflight headspeed ESC temperature battery board",
+      userPrompt: "Rotorflight heli headspeed ESC temperature battery board",
       strictIntent: true,
     });
     const errors = result.issues.filter((i) => i.severity === "error");
@@ -160,7 +158,7 @@ describe("StacyDash Rotorflight prefabs", () => {
     const known = new Set(
       loadTelemetryCatalog("rotorflight").sensors.map((s) => s.name),
     );
-    for (const prefab of STACYDASH_ROTORFLIGHT_PREFABS) {
+    for (const prefab of ROTORFLIGHT_HELI_PREFABS) {
       for (const sensor of [
         ...prefab.requiredSensors,
         ...prefab.optionalSensors,
@@ -202,12 +200,12 @@ describe("StacyDash Rotorflight prefabs", () => {
     assert.equal(bindings.find((b) => b.key === "curr")?.sensor, "Curr");
   });
 
-  it("inserts full StacyDash board in canonical order", () => {
+  it("inserts full Rotorflight heli board in canonical order", () => {
     const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
-      ...STACYDASH_TX15_LAYOUT_ORDER,
+      ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
     ]);
-    assert.deepEqual(inserted, [...STACYDASH_TX15_LAYOUT_ORDER]);
-    for (const id of STACYDASH_TX15_LAYOUT_ORDER) {
+    assert.deepEqual(inserted, [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER]);
+    for (const id of ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER) {
       assert.match(source, new RegExp(`--\\s*prefab:${id}`));
     }
   });

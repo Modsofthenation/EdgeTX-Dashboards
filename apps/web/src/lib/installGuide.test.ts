@@ -8,9 +8,9 @@ import {
 describe("formatInstallGuideMarkdown", () => {
   it("includes widget name, protocol, and SD path guidance", () => {
     const md = formatInstallGuideMarkdown(
-      buildInstallGuide("rotorflight", "StacyDash"),
+      buildInstallGuide("rotorflight", "HeliDash"),
     );
-    assert.match(md, /# Install StacyDash/);
+    assert.match(md, /# Install HeliDash/);
     assert.match(md, /Rotorflight/i);
     assert.match(md, /WIDGETS/);
     assert.match(md, /rf2bg/i);

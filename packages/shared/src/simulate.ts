@@ -2,6 +2,7 @@ import tx15Profile from "./layouts/tx15.json" with { type: "json" };
 import color272Profile from "./layouts/color272.json" with { type: "json" };
 import taranis212Profile from "./layouts/taranis212.json" with { type: "json" };
 import compact128Profile from "./layouts/compact128.json" with { type: "json" };
+import nv14Profile from "./layouts/nv14.json" with { type: "json" };
 import type { LayoutProfileId } from "./radios.ts";
 
 export interface WidgetZoneRect {
@@ -40,6 +41,7 @@ const LAYOUT_PROFILES: Record<LayoutProfileId, SimulateLayoutProfile> = {
   color272: color272Profile as SimulateLayoutProfile,
   taranis212: taranis212Profile as SimulateLayoutProfile,
   compact128: compact128Profile as SimulateLayoutProfile,
+  nv14: nv14Profile as SimulateLayoutProfile,
 };
 
 /** Canonical layout profiles (from packages/shared/src/layouts/*.json). */

@@ -2,10 +2,11 @@
   "$schema": "./_schema.json",
   "id": "boxer",
   "name": "RadioMaster Boxer",
-  "lcdW": 480,
-  "lcdH": 272,
+  "lcdW": 128,
+  "lcdH": 64,
   "touch": false,
-  "maxOptions": 10,
+  "maxOptions": 6,
   "edgeTxMin": "2.10.0",
-  "layoutProfile": "color272"
+  "layoutProfile": "compact128",
+  "notes": "128×64 monochrome LCD (bw128x64 SD pack)."
 }
