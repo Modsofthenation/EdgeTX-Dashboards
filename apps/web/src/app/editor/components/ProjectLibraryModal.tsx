@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ProjectSummary } from "~/lib/projectLibrary";
 import { listRecentProjects } from "~/lib/projectLibrary";
-import styles from "../app/editor/editor.module.css";
+import styles from "../editor.module.css";
 
 export type ProjectLibraryMode = "save" | "recent";
 
