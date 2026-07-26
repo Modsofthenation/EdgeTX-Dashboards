@@ -104,17 +104,11 @@ import {
   type TemplateLayoutPrefab,
 } from "~/lib/templateGallery";
 import { fetchRadioCatalog } from "~/lib/radioCatalog";
-import { saveBlobToDisk } from "~/lib/desktopDownload";
 import {
   buildInstallGuide,
   formatInstallGuideMarkdown,
 } from "~/lib/installGuide";
-import { InstallWizard } from "~/components/InstallWizard";
-import {
-  parseDownloadValidationFailure,
-  ValidationFailureDialog,
-  type DownloadValidationFailure,
-} from "~/components/ValidationFailureDialog";
+import { ExportInstallModal } from "./components/ExportInstallModal";
 import {
   alignSelectedRecords,
   distributeSelectedRecords,
@@ -189,14 +183,12 @@ export function EditorApp() {
     [],
   );
   const [saving, setSaving] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [downloadValidationFailure, setDownloadValidationFailure] =
-    useState<DownloadValidationFailure | null>(null);
   const [copyDone, setCopyDone] = useState(false);
   const [workspaceKey, setWorkspaceKey] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
   const [simOpen, setSimOpen] = useState(false);
   const [simReloadKey, setSimReloadKey] = useState(0);
   const [remoteLoadPending, setRemoteLoadPending] = useState(hasRemoteWidget);
@@ -1216,75 +1208,6 @@ export function EditorApp() {
     }
   }, [workspaceKey, sessionId, source, protocol, radioId, chatId, replaceSource]);
 
-  const handleDownload = useCallback(async () => {
-    if (valid === false) {
-      setDownloadValidationFailure({
-        title: "Download blocked",
-        message: "Fix validation errors before downloading.",
-        hint: "Use the Validation panel in Properties, fix each error, Save, then try again.",
-        issues: validationIssues,
-        protocol,
-        radioId,
-      });
-      return;
-    }
-    setDownloading(true);
-    setLoadError(null);
-    setDownloadValidationFailure(null);
-    try {
-      let key = workspaceKey;
-      if (dirty || (!key && !sessionId)) {
-        key = (await handleSave()) ?? key;
-      }
-      if (!key && !sessionId && !meta.name) {
-        setLoadError("Save the widget before downloading");
-        return;
-      }
-      const params = new URLSearchParams({ protocol });
-      if (radioId) params.set("radioId", radioId);
-      if (key) params.set("instanceId", key);
-      else if (sessionId) params.set("sessionId", sessionId);
-      else params.set("name", meta.name);
-      const res = await fetch(`/api/download?${params}`);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        if (res.status === 422) {
-          setDownloadValidationFailure(
-            parseDownloadValidationFailure(body, res.status),
-          );
-          return;
-        }
-        const errBody = body as { error?: string; message?: string };
-        setLoadError(
-          errBody.message ?? errBody.error ?? `Download failed (${res.status})`,
-        );
-        return;
-      }
-      const blob = await res.blob();
-      const saved = await saveBlobToDisk(blob, `${meta.name}.zip`, {
-        title: "Save widget zip",
-        filters: [{ name: "Zip archive", extensions: ["zip"] }],
-      });
-      if (!saved.ok && "error" in saved) {
-        setLoadError(saved.error);
-      }
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Download failed");
-    } finally {
-      setDownloading(false);
-    }
-  }, [
-    valid,
-    validationIssues,
-    dirty,
-    workspaceKey,
-    sessionId,
-    handleSave,
-    protocol,
-    radioId,
-    meta.name,
-  ]);
-
   const handleCopyLua = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(source);
@@ -1355,6 +1278,7 @@ export function EditorApp() {
       }
       if (e.key === "Escape") {
         setPasteOpen(false);
+        setExportOpen(false);
         setSimOpen(false);
         setSelectedIds([]);
       }
@@ -1473,20 +1397,6 @@ export function EditorApp() {
   return (
     <div className={styles.editorRoot}>
       <AppPreferencesHost />
-      <ValidationFailureDialog
-        open={downloadValidationFailure != null}
-        failure={downloadValidationFailure}
-        onClose={() => setDownloadValidationFailure(null)}
-        onReview={() => {
-          setMobileTab("properties");
-          const first = (
-            downloadValidationFailure?.issues ?? validationIssues
-          ).find((i) => i.severity === "error" && i.line != null);
-          if (first && "line" in first) {
-            selectIssue(first as ValidationIssue);
-          }
-        }}
-      />
       <AppChrome
         surface="layout"
         subtitle={subtitle}
@@ -1507,22 +1417,15 @@ export function EditorApp() {
             <button
               type="button"
               className={styles.primaryBtn}
-              disabled={downloading || valid === false}
               title={
                 valid === false
-                  ? "Fix validation errors before downloading"
-                  : undefined
+                  ? "Export package — fix validation errors before download"
+                  : "Export zip or copy to SD card"
               }
-              onClick={() => void handleDownload()}
+              onClick={() => setExportOpen(true)}
             >
-              {downloading ? (
-                "Downloading…"
-              ) : (
-                <>
-                  <span className={styles.actionLabelFull}>Download</span>
-                  <span className={styles.actionLabelShort}>Zip</span>
-                </>
-              )}
+              <span className={styles.actionLabelFull}>Export</span>
+              <span className={styles.actionLabelShort}>Export</span>
             </button>
             <EditorMenu
               label="More"
@@ -1830,42 +1733,45 @@ export function EditorApp() {
               </ul>
             </div>
           )}
-
-          <div className={styles.installPanel}>
-            <InstallWizard
-              widgetName={meta.name}
-              luaSource={source}
-              installMd={installMd}
-              workspaceKey={workspaceKey}
-              sessionId={sessionId}
-              protocol={protocol}
-              radioId={radioId}
-              extraFiles={installExtraFiles}
-              companionLabels={companionLabels}
-              hasModelImage={
-                Boolean(modelPngBytes) || /drawBitmap|Bitmap\.open/.test(source)
-              }
-              radioName={radioDisplayName ?? undefined}
-              lcdW={getSimulateLayoutProfile(layoutProfileId).lcdW}
-              lcdH={getSimulateLayoutProfile(layoutProfileId).lcdH}
-              touch={radioTouch}
-              onBeforeDownload={async () => {
-                if (dirty || (!workspaceKey && !sessionId)) {
-                  return handleSave();
-                }
-                return workspaceKey;
-              }}
-              onReviewValidation={() => {
-                setMobileTab("properties");
-                const first = validationIssues.find(
-                  (i) => i.severity === "error" && i.line != null,
-                );
-                if (first) selectIssue(first);
-              }}
-            />
-          </div>
         </div>
       </div>
+
+      <ExportInstallModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        widgetName={meta.name}
+        luaSource={source}
+        installMd={installMd}
+        workspaceKey={workspaceKey}
+        sessionId={sessionId}
+        protocol={protocol}
+        radioId={radioId}
+        extraFiles={installExtraFiles}
+        companionLabels={companionLabels}
+        hasModelImage={
+          Boolean(modelPngBytes) || /drawBitmap|Bitmap\.open/.test(source)
+        }
+        radioName={radioDisplayName ?? undefined}
+        lcdW={getSimulateLayoutProfile(layoutProfileId).lcdW}
+        lcdH={getSimulateLayoutProfile(layoutProfileId).lcdH}
+        touch={radioTouch}
+        validationErrorCount={
+          validationIssues.filter((i) => i.severity === "error").length
+        }
+        onBeforeDownload={async () => {
+          if (dirty || (!workspaceKey && !sessionId)) {
+            return handleSave();
+          }
+          return workspaceKey;
+        }}
+        onReviewValidation={() => {
+          setMobileTab("properties");
+          const first = validationIssues.find(
+            (i) => i.severity === "error" && i.line != null,
+          );
+          if (first) selectIssue(first);
+        }}
+      />
 
       <SimVerifyModal
         source={source}

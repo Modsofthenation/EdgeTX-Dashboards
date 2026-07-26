@@ -35,6 +35,8 @@ interface InstallWizardProps {
   onBeforeDownload?: () => Promise<string | null | undefined>;
   /** Jump to editor validation / first issue when download is blocked. */
   onReviewValidation?: () => void;
+  /** Flatten chrome when hosted inside Export modal. */
+  embedded?: boolean;
 }
 
 type WizardStep = "checklist" | "copy" | "done";
@@ -67,6 +69,7 @@ export function InstallWizard({
   touch = true,
   onBeforeDownload,
   onReviewValidation,
+  embedded = false,
 }: InstallWizardProps) {
   const [step, setStep] = useState<WizardStep>("checklist");
   const [desktop, setDesktop] = useState(false);
@@ -254,12 +257,19 @@ export function InstallWizard({
   ]);
 
   return (
-    <section className={styles.root} aria-label="Install to SD card">
-      <h2 className={styles.title}>Install wizard</h2>
-      <p className={styles.lead}>
-        Get {widgetName ? <strong>{widgetName}</strong> : "this dashboard"} onto
-        your radio SD card.
-      </p>
+    <section
+      className={embedded ? styles.rootEmbedded : styles.root}
+      aria-label="Install to SD card"
+    >
+      {embedded ? null : (
+        <>
+          <h2 className={styles.title}>Install wizard</h2>
+          <p className={styles.lead}>
+            Get {widgetName ? <strong>{widgetName}</strong> : "this dashboard"}{" "}
+            onto your radio SD card.
+          </p>
+        </>
+      )}
 
       <ol className={styles.checklist}>
         <li>
