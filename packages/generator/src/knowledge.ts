@@ -226,6 +226,12 @@ export function readRotorflightHeliSectionsGuide(): string {
   );
 }
 
+export function readBetaflightQuadSectionsGuide(): string {
+  return readCachedTextIfExists(
+    join(getRepoRoot(), "knowledge", "design", "betaflight-quad-sections.md"),
+  );
+}
+
 export function readCompanionScriptsGuide(): string {
   return readCachedTextIfExists(
     join(getRepoRoot(), "knowledge", "design", "companion-scripts.md"),

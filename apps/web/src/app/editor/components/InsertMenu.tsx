@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  DENSE_CRSF_LAYOUT_ORDER,
+  FREESTYLE_LAYOUT_ORDER,
   listPrefabCatalog,
+  MINIMAL_QUAD_LAYOUT_ORDER,
   ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
   ROTORFLIGHT_NITRO_LAYOUT_ORDER,
+  WHOOP_LAYOUT_ORDER,
 } from "@widget-gen/editor-core";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { COMPANION_SUITES } from "~/lib/companionSuites";
@@ -22,6 +26,8 @@ interface InsertMenuProps {
   onInsertFullRfHeliElectric?: () => void;
   /** Insert nitro / OMP RF heli variant. */
   onInsertRfHeliNitro?: () => void;
+  /** Insert a full whoop / freestyle / minimal / dense quad board. */
+  onInsertQuadBoard?: (boardId: string) => void;
   /** Add companion suite stubs for SD install (tools/telemetry). */
   onInsertCompanionSuite?: (suiteId: string) => void;
   companionSuiteIds?: string[];
@@ -33,6 +39,7 @@ export function InsertMenu({
   onInsertPrefab,
   onInsertFullRfHeliElectric,
   onInsertRfHeliNitro,
+  onInsertQuadBoard,
   onInsertCompanionSuite,
   companionSuiteIds = EMPTY_SUITE_IDS,
 }: InsertMenuProps) {
@@ -45,6 +52,14 @@ export function InsertMenu({
     () =>
       protocol === "rotorflight"
         ? listPrefabCatalog({ protocol: "rotorflight" })
+        : [],
+    [protocol],
+  );
+
+  const quadPrefabs = useMemo(
+    () =>
+      protocol === "betaflight" || protocol === "generic-crsf"
+        ? listPrefabCatalog({ protocol })
         : [],
     [protocol],
   );
@@ -183,6 +198,138 @@ export function InsertMenu({
               </button>
             ) : null}
             {rotorflightPrefabs.map((prefab) => (
+              <button
+                key={prefab.id}
+                type="button"
+                role="menuitem"
+                className={styles.insertItem}
+                title={prefab.telemetryNotes.join("\n")}
+                onClick={() => {
+                  onInsertPrefab(prefab.id);
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.insertItemIcon} aria-hidden>
+                  {prefab.shortLabel}
+                </span>
+                <span className={styles.insertItemCopy}>
+                  <span className={styles.insertItemLabel}>{prefab.label}</span>
+                  <span className={styles.insertItemDesc}>
+                    {prefab.description}
+                    {prefab.requiredSensors.length > 0
+                      ? ` · ${prefab.requiredSensors.join(", ")}`
+                      : ""}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </>
+        ) : null}
+        {onInsertPrefab && quadPrefabs.length > 0 ? (
+          <>
+            <div className={styles.insertGroupLabel}>
+              Quad sections
+              <span className={styles.insertGroupHint}>
+                Betaflight / CRSF · TX15
+              </span>
+            </div>
+            {onInsertQuadBoard ? (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.insertItem}
+                  title={`Insert ${WHOOP_LAYOUT_ORDER.length} whoop sections`}
+                  onClick={() => {
+                    onInsertQuadBoard("whoop");
+                    setOpen(false);
+                  }}
+                >
+                  <span className={styles.insertItemIcon} aria-hidden>
+                    WP
+                  </span>
+                  <span className={styles.insertItemCopy}>
+                    <span className={styles.insertItemLabel}>
+                      Full whoop board
+                    </span>
+                    <span className={styles.insertItemDesc}>
+                      Armed banner · bars · voltage · attitude ·{" "}
+                      {WHOOP_LAYOUT_ORDER.length} sections
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.insertItem}
+                  title={`Insert ${FREESTYLE_LAYOUT_ORDER.length} freestyle sections`}
+                  onClick={() => {
+                    onInsertQuadBoard("freestyle-quad");
+                    setOpen(false);
+                  }}
+                >
+                  <span className={styles.insertItemIcon} aria-hidden>
+                    FS
+                  </span>
+                  <span className={styles.insertItemCopy}>
+                    <span className={styles.insertItemLabel}>
+                      Full freestyle board
+                    </span>
+                    <span className={styles.insertItemDesc}>
+                      Timer hero · power strip · GPS ·{" "}
+                      {FREESTYLE_LAYOUT_ORDER.length} sections
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.insertItem}
+                  title={`Insert ${MINIMAL_QUAD_LAYOUT_ORDER.length} minimal sections`}
+                  onClick={() => {
+                    onInsertQuadBoard("minimal-quad");
+                    setOpen(false);
+                  }}
+                >
+                  <span className={styles.insertItemIcon} aria-hidden>
+                    MN
+                  </span>
+                  <span className={styles.insertItemCopy}>
+                    <span className={styles.insertItemLabel}>
+                      Full minimal board
+                    </span>
+                    <span className={styles.insertItemDesc}>
+                      Voltage-first · timer card · link ·{" "}
+                      {MINIMAL_QUAD_LAYOUT_ORDER.length} sections
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.insertItem}
+                  title={`Insert ${DENSE_CRSF_LAYOUT_ORDER.length} dense sections`}
+                  onClick={() => {
+                    onInsertQuadBoard("dense-crsf");
+                    setOpen(false);
+                  }}
+                >
+                  <span className={styles.insertItemIcon} aria-hidden>
+                    DG
+                  </span>
+                  <span className={styles.insertItemCopy}>
+                    <span className={styles.insertItemLabel}>
+                      Full dense CRSF board
+                    </span>
+                    <span className={styles.insertItemDesc}>
+                      Metric grid · attitude ·{" "}
+                      {DENSE_CRSF_LAYOUT_ORDER.length} sections
+                    </span>
+                  </span>
+                </button>
+              </>
+            ) : null}
+            {quadPrefabs.map((prefab) => (
               <button
                 key={prefab.id}
                 type="button"

@@ -1,8 +1,14 @@
 import type { PrefabCatalogEntry, PrefabSection } from "./types.ts";
+import { BETAFLIGHT_QUAD_PREFABS } from "./betaflightQuadSections.ts";
 import { ROTORFLIGHT_HELI_PREFABS } from "./rotorflightSections.ts";
 
+const ALL_PREFABS: PrefabSection[] = [
+  ...ROTORFLIGHT_HELI_PREFABS,
+  ...BETAFLIGHT_QUAD_PREFABS,
+];
+
 const BY_ID = new Map<string, PrefabSection>(
-  ROTORFLIGHT_HELI_PREFABS.map((p) => [p.id, p]),
+  ALL_PREFABS.map((p) => [p.id, p]),
 );
 
 /** All registered prefab sections (editor + AI shared catalog). */
@@ -10,14 +16,15 @@ export function listPrefabSections(filter?: {
   protocol?: string;
   family?: string;
 }): PrefabSection[] {
-  return ROTORFLIGHT_HELI_PREFABS.filter((p) => {
+  return ALL_PREFABS.filter((p) => {
     if (filter?.family && p.family !== filter.family) return false;
-    if (
-      filter?.protocol &&
-      p.protocol !== "any" &&
-      p.protocol !== filter.protocol
-    ) {
-      return false;
+    if (filter?.protocol) {
+      if (p.protocol === "any") {
+        // Shared BF/CRSF blocks — hide from Rotorflight heli menus.
+        if (filter.protocol === "rotorflight") return false;
+      } else if (p.protocol !== filter.protocol) {
+        return false;
+      }
     }
     return true;
   });
@@ -50,10 +57,15 @@ export function formatPrefabCatalogForPrompt(protocol?: string): string {
   );
   if (items.length === 0) return "";
 
+  const familyHint =
+    protocol === "betaflight" || protocol === "generic-crsf"
+      ? "Use these modular sections when the user wants a Betaflight / CRSF quad layout on TX15."
+      : "Use these modular sections when the user wants a Rotorflight heli layout on TX15.";
+
   const lines = [
     "### Prefab sections (compose dashboards from these blocks)",
     "",
-    "Use these modular sections when the user wants a Rotorflight heli layout on TX15.",
+    familyHint,
     "Each id maps to a tested lcd.* block — prefer composing from prefabs over inventing new geometry.",
     "",
   ];

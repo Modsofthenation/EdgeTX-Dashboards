@@ -219,6 +219,52 @@ export function insertPrefabSections(
   return { source: next, inserted };
 }
 
+/** Empty widget shell suitable for assembling full boards from prefabs. */
+export function createPrefabShellSource(name = "Dash"): string {
+  return `---@type WidgetScript
+---@simulate Layout1x1 zone=0
+local name = "${name}"
+local options = {}
+
+local function cacheSource(sensorName)
+  local idx = getSourceIndex(sensorName)
+  if idx and idx > 0 then return idx end
+  return nil
+end
+
+local function telem(id)
+  if id then return getValue(id) end
+  return 0
+end
+
+local function create(zone, opts)
+  return {
+    zone = zone,
+    options = opts,
+    src = {},
+  }
+end
+
+local function update(widget, opts)
+  widget.options = opts
+  return widget
+end
+
+local function refresh(widget)
+  lcd.clear(BLACK)
+end
+
+return {
+  name = name,
+  options = options,
+  create = create,
+  update = update,
+  refresh = refresh,
+  background = function(widget) end,
+}
+`;
+}
+
 /** Canonical RF heli TX15 layout order (electric). */
 export const ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER = [
   "rf-topbar-link",

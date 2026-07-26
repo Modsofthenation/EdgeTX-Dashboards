@@ -10,6 +10,7 @@ import {
   readDesignGuideForArchetype,
   readRotorflightStyleGuide,
   readRotorflightHeliSectionsGuide,
+  readBetaflightQuadSectionsGuide,
   readCompanionScriptsGuide,
   readModelImageGuide,
   readModelHeroDashboardGuide,
@@ -163,6 +164,10 @@ export function buildGenerationPrompt(
     catalog.protocol === "rotorflight"
       ? readRotorflightHeliSectionsGuide()
       : "";
+  const bfQuadGuide =
+    catalog.protocol === "betaflight" || catalog.protocol === "generic-crsf"
+      ? readBetaflightQuadSectionsGuide()
+      : "";
   const companionGuide = readCompanionScriptsGuide();
   const modelImageGuide = wantsModelImage(userPrompt)
     ? readModelImageGuide()
@@ -271,6 +276,8 @@ ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (RQLY, zero handling —
 
 ${rfHeliGuide ? `\n## Rotorflight heli prefab sections (TX15 — prefer these modular blocks)\n${rfHeliGuide}` : ""}
 
+${bfQuadGuide ? `\n## Betaflight / CRSF quad prefab sections (TX15 — prefer these modular blocks)\n${bfQuadGuide}` : ""}
+
 ## Companion scripts (when user asks for tools, loggers, selectors)
 
 ${companionGuide}
@@ -367,6 +374,10 @@ export function buildRefinePrompt(
     resolvedProtocol === "rotorflight"
       ? readRotorflightHeliSectionsGuide()
       : "";
+  const bfQuadGuide =
+    resolvedProtocol === "betaflight" || resolvedProtocol === "generic-crsf"
+      ? readBetaflightQuadSectionsGuide()
+      : "";
   const companionGuide = readCompanionScriptsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt)
@@ -425,6 +436,7 @@ ${roundedCornersGuide ? `\n## Rounded card panels (user requested — lcd API on
 
 ${rotorflightGuide ? `\n## Rotorflight telemetry idioms (layout governed by creative brief + archetype)\n${rotorflightGuide}` : ""}
 ${rfHeliGuide ? `\n## Rotorflight heli prefab sections (TX15)\n${rfHeliGuide}` : ""}
+${bfQuadGuide ? `\n## Betaflight / CRSF quad prefab sections (TX15)\n${bfQuadGuide}` : ""}
 
 ## Companion scripts
 

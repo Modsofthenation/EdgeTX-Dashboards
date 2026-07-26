@@ -50,7 +50,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     summary:
       "Battery + link bars on top, flight timer center, GPS/alt/speed row, armed indicator.",
     layoutNotes:
-      "Emphasize timer, battery bar, and RSSI bar. Use ORANGE for armed state. Compact rows, not heli cards. **Mandatory:** reserved rectangles for every block (header, bars, gauge+satellite labels, strip cards, footer). Gauge effective height = `rOut*2 + satelliteBelowH()` — include amp/`LEFT` labels in budget before placing stripY. `barsBlockH` must derive from `barsPctY` (same formula as last drawText row). Every drawText → `textRowRect` in `textFootprintRects`; run `anyTextForeignOverlap` before draw. Compute mainTop/mainBottom before drawing; never clamp mainH to a literal after stripY is set. Phase 1 = fills/annulus, phase 2 = all text. See layout-reserved-rects.md and tx15-bfdash8f-whoop-dashboard.lua.",
+      "Prefer Betaflight/CRSF TX15 prefab sections (`quad-armed-banner`, `quad-topbar`, `quad-link-batt-bars`, `quad-voltage-hero`, `quad-timer-hero`, `quad-power-strip`, `quad-attitude-card`, `quad-gps-row`, `quad-mode-footer`) for whoop/freestyle boards. Emphasize timer, battery bar, and RSSI/link. Use ORANGE for armed state. Keep draw calls as direct lcd.* in refresh().",
   },
   "heli-rotorflight": {
     id: "heli-rotorflight",
@@ -66,7 +66,7 @@ const ARCHETYPES: Record<LayoutArchetypeId, LayoutArchetypeHint> = {
     summary:
       "Six to eight small readouts in a 2×3 or 3×3 grid for power users.",
     layoutNotes:
-      "Small cells (no large cards). Each cell: label + value only. Use BOOL options to hide rows. Good for 'show everything' requests.",
+      "Prefer `quad-topbar` + `quad-metric-grid` + `quad-attitude-band` + `quad-mode-footer` for dense CRSF boards. Small cells (no oversized heroes). Each cell: label + value only.",
   },
   "flight-logger-suite": {
     id: "flight-logger-suite",

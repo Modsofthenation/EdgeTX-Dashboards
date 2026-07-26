@@ -26,7 +26,7 @@ export interface PrefabSection {
   shortLabel: string;
   description: string;
   /** Origin inspiration / family. */
-  family: "rotorflight-heli";
+  family: "rotorflight-heli" | "betaflight-quad";
   protocol: PrefabProtocol;
   category: PrefabCategory;
   /** Sensors that must exist in the protocol catalog for meaningful data. */

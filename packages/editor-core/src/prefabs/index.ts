@@ -10,12 +10,21 @@ export {
   listRotorflightHeliPrefabIds,
 } from "./rotorflightSections.ts";
 export {
+  BETAFLIGHT_QUAD_PREFABS,
+  DENSE_CRSF_LAYOUT_ORDER,
+  FREESTYLE_LAYOUT_ORDER,
+  MINIMAL_QUAD_LAYOUT_ORDER,
+  WHOOP_LAYOUT_ORDER,
+  listBetaflightQuadPrefabIds,
+} from "./betaflightQuadSections.ts";
+export {
   formatPrefabCatalogForPrompt,
   getPrefabSection,
   listPrefabCatalog,
   listPrefabSections,
 } from "./registry.ts";
 export {
+  createPrefabShellSource,
   insertPrefabSection,
   insertPrefabSections,
   ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
