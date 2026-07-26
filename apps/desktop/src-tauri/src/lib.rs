@@ -175,12 +175,16 @@ mod sidecar {
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
 
     let node = find_node(app);
-    let mut child = Command::new(&node)
+    let child = Command::new(&node)
       .arg("apps/web/server.js")
       .current_dir(&standalone)
       .env("PORT", port.to_string())
       .env("HOSTNAME", "127.0.0.1")
       .env("WIDGET_GEN_DATA_DIR", &data_dir)
+      .env(
+        "WIDGET_GEN_SIM_DIR",
+        standalone.join("apps/web/public/sim").to_string_lossy().as_ref(),
+      )
       .env("NODE_ENV", "production")
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())
