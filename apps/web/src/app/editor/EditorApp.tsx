@@ -33,6 +33,8 @@ import {
   moveRecordLine,
   reorderRecordLine,
   getSourceLine,
+  insertRawRefreshLine,
+  luaToScene,
   remapPreviewOnlyColorLiterals,
   type DocumentRecord,
   type TextAlignFlag,
@@ -52,10 +54,12 @@ import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
 import {
   DEFAULT_RADIO_ID,
   getSimulateLayoutProfile,
+  hasColorWasmSim,
   isLayoutProfileId,
   resolvePreviewDimensions,
   type LayoutProfileId,
 } from "@widget-gen/shared";
+import dynamic from "next/dynamic";
 import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { EditorCanvas } from "./components/EditorCanvas";
@@ -68,6 +72,12 @@ import {
   ProjectLibraryModal,
   type ProjectLibraryMode,
 } from "./components/ProjectLibraryModal";
+
+const RadioSimPreview = dynamic(
+  () =>
+    import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
+  { ssr: false },
+);
 import type { InsertDrawKind } from "./elementMeta";
 import { openAppPreferences, AppPreferencesHost } from "~/components/AppPreferences";
 import {
@@ -243,6 +253,11 @@ export function EditorApp() {
   const [modelPngBytes, setModelPngBytes] = useState<Uint8Array | null>(null);
   const [modelPngName, setModelPngName] = useState<string | null>(null);
   const [showSnapGuides, setShowSnapGuides] = useState(true);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [inlineSim, setInlineSim] = useState(false);
+  const elementClipboardRef = useRef<string[]>([]);
+  const selectionTextsRef = useRef<string[]>([]);
+  const pendingSelectionRematchRef = useRef(false);
   const [enrichRotorflight, setEnrichRotorflight] = useState(
     readEnrichRotorflightPreference,
   );
@@ -1153,10 +1168,131 @@ export function EditorApp() {
         if (!record) continue;
         next = duplicateRecordLine(next, record);
       }
+      // Prefer selecting the newly inserted copies (last N matching line texts).
+      const copiedTexts = selectedIds
+        .map((id) => {
+          const r = interpretDocument(prev, previewScenario).find(
+            (row) => row.id === id,
+          );
+          const line = r?.sourceRef?.sourceLine ?? r?.sourceLine;
+          return line != null ? getSourceLine(prev, line) : null;
+        })
+        .filter((t): t is string => Boolean(t));
+      selectionTextsRef.current = copiedTexts;
+      // Match from the end so we prefer the duplicates.
+      const after = interpretDocument(next, previewScenario);
+      const used = new Set<string>();
+      const nextIds: string[] = [];
+      for (const text of copiedTexts) {
+        const match = after
+          .toReversed()
+          .find((r) => {
+            if (used.has(r.id)) return false;
+            const line = r.sourceRef?.sourceLine ?? r.sourceLine;
+            return line != null && getSourceLine(next, line) === text;
+          });
+        if (match) {
+          used.add(match.id);
+          nextIds.push(match.id);
+        }
+      }
+      if (nextIds.length) {
+        queueMicrotask(() => setSelectedIds(nextIds));
+      }
       return next;
     });
     markDirty();
   }, [selectedIds, setSource, previewScenario, markDirty]);
+
+  const rematchSelectionByLineTexts = useCallback(
+    (texts: string[], fromSource: string) => {
+      const nextIds = texts
+        .map(
+          (text) =>
+            findRecordByLineText(fromSource, text, previewScenario)?.id,
+        )
+        .filter((id): id is string => Boolean(id));
+      setSelectedIds(nextIds);
+    },
+    [previewScenario],
+  );
+
+  useEffect(() => {
+    if (!pendingSelectionRematchRef.current) return;
+    pendingSelectionRematchRef.current = false;
+    rematchSelectionByLineTexts(selectionTextsRef.current, source);
+  }, [source, rematchSelectionByLineTexts]);
+
+  const captureSelectionTexts = useCallback(() => {
+    selectionTextsRef.current = selectedIds
+      .map((id) => {
+        const r = records.find((row) => row.id === id);
+        const line = r?.sourceRef?.sourceLine ?? r?.sourceLine;
+        return line != null ? getSourceLine(source, line) : null;
+      })
+      .filter((t): t is string => Boolean(t));
+  }, [selectedIds, records, source]);
+
+  const handleCopyElements = useCallback(() => {
+    if (selectedIds.length === 0) return;
+    const lines: string[] = [];
+    for (const id of selectedIds) {
+      const r = records.find((row) => row.id === id);
+      const line = r?.sourceRef?.sourceLine ?? r?.sourceLine;
+      if (line == null) continue;
+      const text = getSourceLine(source, line).trim();
+      if (text) lines.push(text);
+    }
+    elementClipboardRef.current = lines;
+  }, [selectedIds, records, source]);
+
+  const handleCutElements = useCallback(() => {
+    handleCopyElements();
+    if (selectedIds.length > 0) handleDeleteIds(selectedIds);
+  }, [handleCopyElements, handleDeleteIds, selectedIds]);
+
+  const handlePasteElements = useCallback(() => {
+    const lines = elementClipboardRef.current;
+    if (lines.length === 0) return;
+    setSource((prev) => {
+      let next = prev;
+      for (const line of lines) {
+        next = insertRawRefreshLine(next, line);
+      }
+      const after = interpretDocument(next, previewScenario);
+      const used = new Set<string>();
+      const nextIds: string[] = [];
+      for (const text of lines) {
+        const match = after.toReversed().find((r) => {
+          if (used.has(r.id)) return false;
+          const line = r.sourceRef?.sourceLine ?? r.sourceLine;
+          return line != null && getSourceLine(next, line).trim() === text;
+        });
+        if (match) {
+          used.add(match.id);
+          nextIds.push(match.id);
+        }
+      }
+      if (nextIds.length) {
+        queueMicrotask(() => setSelectedIds(nextIds));
+      }
+      return next;
+    });
+    markDirty();
+  }, [previewScenario, setSource, markDirty]);
+
+  const sceneSummary = useMemo(() => {
+    try {
+      const { scene } = luaToScene(source);
+      return {
+        elements: scene.elements.length,
+        options: scene.options.length,
+        name: scene.name,
+      };
+    } catch {
+      return null;
+    }
+  }, [source]);
 
   const handleMoveLayer = useCallback(
     (id: string, dir: -1 | 1) => {
@@ -1562,6 +1698,8 @@ export function EditorApp() {
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
+        captureSelectionTexts();
+        pendingSelectionRematchRef.current = true;
         undo();
         markDirty();
       }
@@ -1570,6 +1708,8 @@ export function EditorApp() {
         (e.key === "y" || (e.key === "z" && e.shiftKey))
       ) {
         e.preventDefault();
+        captureSelectionTexts();
+        pendingSelectionRematchRef.current = true;
         redo();
         markDirty();
       }
@@ -1595,6 +1735,30 @@ export function EditorApp() {
         if (selectedIds.length === 0) return;
         e.preventDefault();
         handleDuplicateSelected();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (selectedIds.length === 0) return;
+        e.preventDefault();
+        handleCopyElements();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "x") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (selectedIds.length === 0) return;
+        e.preventDefault();
+        handleCutElements();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (elementClipboardRef.current.length === 0) return;
+        e.preventDefault();
+        handlePasteElements();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
@@ -1656,6 +1820,10 @@ export function EditorApp() {
     handleDeleteIds,
     handleDuplicateSelected,
     handleSelectAll,
+    handleCopyElements,
+    handleCutElements,
+    handlePasteElements,
+    captureSelectionTexts,
     markDirty,
     applyToRecords,
     zone,
@@ -1819,10 +1987,14 @@ export function EditorApp() {
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={() => {
+          captureSelectionTexts();
+          pendingSelectionRematchRef.current = true;
           undo();
           markDirty();
         }}
         onRedo={() => {
+          captureSelectionTexts();
+          pendingSelectionRematchRef.current = true;
           redo();
           markDirty();
         }}
@@ -1862,12 +2034,23 @@ export function EditorApp() {
         onModelPngChange={(file) => void handleModelPngChange(file)}
         showSnapGuides={showSnapGuides}
         onSnapGuidesChange={setShowSnapGuides}
+        snapEnabled={snapEnabled}
+        onSnapEnabledChange={setSnapEnabled}
+        inlineSim={inlineSim}
+        onInlineSimChange={setInlineSim}
         onAlign={handleAlign}
         onDistribute={handleDistribute}
         canAlign={selectedIds.length >= 1}
         canDistribute={selectedIds.length >= 3}
       />
 
+      {sceneSummary ? (
+        <div className={styles.protocolCallout} role="status">
+          Scene assist (read-only): <strong>{sceneSummary.name}</strong> ·{" "}
+          {sceneSummary.elements} elements · {sceneSummary.options} options.
+          Lua remains the edit source of truth.
+        </div>
+      ) : null}
       {protocol === "rotorflight" ? (
         <div className={styles.protocolCallout} role="status">
           Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
@@ -1942,6 +2125,7 @@ export function EditorApp() {
         <div className={`${styles.mobilePane} ${styles.mobilePaneLayers}`}>
           <RecordLayersPanel
             records={records}
+            source={source}
             selectedIds={selectedIds}
             onSelect={(id, additive) =>
               setSelectedIds((prev) =>
@@ -1950,6 +2134,13 @@ export function EditorApp() {
                     ? prev.filter((x) => x !== id)
                     : [...prev, id]
                   : [id],
+              )
+            }
+            onSelectMany={(ids, additive) =>
+              setSelectedIds((prev) =>
+                additive
+                  ? [...new Set([...prev, ...ids])]
+                  : ids,
               )
             }
             onDelete={handleDelete}
@@ -1977,12 +2168,26 @@ export function EditorApp() {
               onGestureStart={handleGestureStart}
               onGestureEnd={handleGestureEnd}
               showSnapGuides={showSnapGuides}
+              snapEnabled={snapEnabled}
               scenarioId={previewScenarioId}
               scenarioOverride={
                 liveTelemetryActive ? previewScenario : undefined
               }
               layoutProfileId={layoutProfileId}
               onContextMenu={openCanvasContextMenu}
+              inlineSim={
+                inlineSim && hasColorWasmSim(radioId) ? (
+                  <RadioSimPreview
+                    luaSource={source}
+                    layoutProfileId={layoutProfileId}
+                    radioId={radioId}
+                    mock={previewScenario.mock}
+                    active={inlineSim}
+                    fillHost
+                    modelPng={modelPngBytes}
+                  />
+                ) : null
+              }
             />
           )}
         </div>

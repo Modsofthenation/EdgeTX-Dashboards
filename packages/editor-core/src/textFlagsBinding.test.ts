@@ -37,7 +37,6 @@ describe("detectTextBinding", () => {
       text!,
       "RQLY",
       "percent",
-      { zoneX: 0, zoneY: 0, zoneW: 480, zoneH: 320 },
     );
     const live = interpretDocument(bound.source).find(
       (r) => r.id === bound.recordId,
