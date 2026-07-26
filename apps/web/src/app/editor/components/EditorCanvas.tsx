@@ -10,6 +10,7 @@ import type {
   ZoneOffset,
   BoundingBox,
   SnapGuide,
+  LiveDragState,
 } from "@widget-gen/editor-core";
 import type { LayoutScenario } from "@widget-gen/layout-verify";
 import { computeCanvasLayout, type CanvasLayout } from "../lib/canvasLayout";
@@ -57,6 +58,12 @@ export function EditorCanvas({
   const frameRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
   const [activeGuides, setActiveGuides] = useState<SnapGuide[]>([]);
+  const [liveDrag, setLiveDrag] = useState<LiveDragState | null>(null);
+
+  // Drop live overlay once Lua source catches up after pointerup commit.
+  useEffect(() => {
+    setLiveDrag(null);
+  }, [source]);
 
   const previewDims = useMemo(() => {
     try {
@@ -103,6 +110,7 @@ export function EditorCanvas({
           layout={layout}
           scenarioId={scenarioId}
           scenarioOverride={scenarioOverride}
+          liveDrag={liveDrag}
         />
         {showSnapGuides && layout ? (
           <div
@@ -154,6 +162,7 @@ export function EditorCanvas({
           onResize={onResize}
           onGestureStart={onGestureStart}
           onGestureEnd={onGestureEnd}
+          onLiveDragChange={setLiveDrag}
           snapEnabled={showSnapGuides}
           onSnapGuidesChange={setActiveGuides}
           onContextMenu={onContextMenu}

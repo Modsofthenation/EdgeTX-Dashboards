@@ -42,7 +42,6 @@ import {
   getPreviewScenario,
   isInterpretationReliable,
   mergeLiveIntoMock,
-  parseLuaToDrawCommands,
   type EdgeColor,
   type LayoutScenario,
 } from "@widget-gen/layout-verify";
@@ -286,14 +285,17 @@ export function EditorApp() {
   );
 
   const previewMeta = useMemo(() => {
-    const cmds = parseLuaToDrawCommands(source, previewScenario);
+    // interpretDocument already ran parseLuaToDrawCommands; reuse its meta.
     const parseMeta = getLastPreviewParseMeta();
     return {
       skippedTextCount: parseMeta.skippedTextCount,
-      unreliable: !isInterpretationReliable(cmds, parseMeta.skippedTextCount),
+      unreliable: !isInterpretationReliable(
+        records,
+        parseMeta.skippedTextCount,
+      ),
       warnings: parseMeta.warnings,
     };
-  }, [source, previewScenario]);
+  }, [records]);
 
   const zone = useMemo((): ZoneOffset => {
     const dims = resolvePreviewDimensions(
@@ -500,11 +502,14 @@ export function EditorApp() {
       opts?: { history?: boolean },
     ) => {
       setSource((prev) => {
+        const snapshot =
+          prev === source
+            ? records
+            : interpretDocument(prev, previewScenario);
+        const byId = new Map(snapshot.map((r) => [r.id, r]));
         let next = prev;
         for (const id of ids) {
-          const record = interpretDocument(next, previewScenario).find(
-            (r) => r.id === id,
-          );
+          const record = byId.get(id);
           if (!record) continue;
           next = updater(next, record);
         }
@@ -512,11 +517,12 @@ export function EditorApp() {
       }, opts);
       markDirty();
     },
-    [setSource, markDirty, previewScenario],
+    [setSource, markDirty, previewScenario, source, records],
   );
 
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
+      if (dx === 0 && dy === 0) return;
       applyToRecords(
         ids,
         (current, record) => translateRecord(current, record, dx, dy, zone),
