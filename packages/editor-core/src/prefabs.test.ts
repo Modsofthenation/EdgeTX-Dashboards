@@ -4,19 +4,25 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  BETAFLIGHT_QUAD_PREFABS,
+  DENSE_CRSF_LAYOUT_ORDER,
+  FREESTYLE_LAYOUT_ORDER,
   getPrefabSection,
   insertPrefabSection,
   insertPrefabSections,
   listPrefabCatalog,
   listPrefabSections,
   listPrefabSpans,
+  MINIMAL_QUAD_LAYOUT_ORDER,
   prefabIdForSourceLine,
   ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
   ROTORFLIGHT_HELI_PREFABS,
+  WHOOP_LAYOUT_ORDER,
 } from "./prefabs/index.ts";
 import { interpretDocument } from "./luaDocument.ts";
 import { listSrcBindings, remapSrcSensor } from "./telemetryBinding.ts";
 import { validateWidgetLua, loadTelemetryCatalog } from "@widget-gen/generator";
+import { getLayoutTemplateBoardSource } from "./templateBoards.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..", "..");
@@ -59,10 +65,10 @@ describe("Rotorflight heli prefabs", () => {
         "rf-nitro-rx-bar",
       ],
     );
-    assert.deepEqual(
-      listPrefabSections({ protocol: "betaflight" }),
-      [],
-      "Rotorflight heli prefabs are rotorflight-only",
+    assert.ok(
+      listPrefabSections({ protocol: "rotorflight" }).every(
+        (p) => p.family === "rotorflight-heli",
+      ),
     );
   });
 
@@ -207,6 +213,141 @@ describe("Rotorflight heli prefabs", () => {
     assert.deepEqual(inserted, [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER]);
     for (const id of ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER) {
       assert.match(source, new RegExp(`--\\s*prefab:${id}`));
+    }
+  });
+});
+
+describe("Betaflight / CRSF quad prefabs", () => {
+  it("registers whoop/freestyle/dense sections for betaflight and generic-crsf", () => {
+    assert.ok(BETAFLIGHT_QUAD_PREFABS.length >= 12);
+    const bfIds = listPrefabSections({ protocol: "betaflight" }).map(
+      (p) => p.id,
+    );
+    assert.ok(bfIds.includes("quad-armed-banner"));
+    assert.ok(bfIds.includes("quad-metric-grid"));
+    assert.ok(
+      listPrefabSections({ protocol: "betaflight" }).every(
+        (p) => p.family === "betaflight-quad",
+      ),
+    );
+    const crsfIds = listPrefabSections({ protocol: "generic-crsf" }).map(
+      (p) => p.id,
+    );
+    assert.ok(crsfIds.includes("quad-topbar"));
+    assert.ok(
+      !crsfIds.includes("quad-armed-banner"),
+      "armed banner stays betaflight-only",
+    );
+  });
+
+  it("exposes catalog entries without person or repo branding", () => {
+    const catalog = listPrefabCatalog({ protocol: "betaflight" });
+    assert.ok(catalog.length > 0);
+    const blob = JSON.stringify(catalog).toLowerCase();
+    for (const banned of [
+      "edgedeck",
+      "fpvdash",
+      "ultidash",
+      "rf2-dash",
+      "shmuely",
+      "nige",
+      "github.com",
+    ]) {
+      assert.ok(!blob.includes(banned), `catalog must not mention ${banned}`);
+    }
+  });
+
+  for (const id of WHOOP_LAYOUT_ORDER) {
+    it(`inserts ${id} with lcd draws and sensor cache`, () => {
+      const prefab = getPrefabSection(id)!;
+      const result = insertPrefabSection(MINIMAL_SHELL, id);
+      assert.ok(result);
+      assert.ok(result!.insertedDrawCount > 0);
+      for (const [key, sensor] of Object.entries(prefab.createSrcBindings)) {
+        assert.match(
+          result!.source,
+          new RegExp(`${key}\\s*=\\s*cacheSource\\("${sensor}"`),
+        );
+      }
+      const records = interpretDocument(result!.source);
+      assert.ok(
+        records.some((r) => r.kind === "filledRect" || r.kind === "text"),
+        "expected interpretable draw records",
+      );
+    });
+  }
+
+  it("assembles whoop / freestyle / minimal / dense boards", () => {
+    for (const [label, order] of [
+      ["whoop", WHOOP_LAYOUT_ORDER],
+      ["freestyle", FREESTYLE_LAYOUT_ORDER],
+      ["minimal", MINIMAL_QUAD_LAYOUT_ORDER],
+      ["dense", DENSE_CRSF_LAYOUT_ORDER],
+    ] as const) {
+      const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
+        ...order,
+      ]);
+      assert.deepEqual(inserted, [...order], label);
+      assert.equal((source.match(/function cacheSource/g) || []).length, 1);
+      for (const id of order) {
+        assert.match(source, new RegExp(`--\\s*prefab:${id}`));
+      }
+      const records = interpretDocument(source);
+      assert.ok(
+        records.length >= 8,
+        `${label} expected rich draw list, got ${records.length}`,
+      );
+    }
+  });
+
+  it("validates assembled whoop board against betaflight catalog", () => {
+    const { source } = insertPrefabSections(MINIMAL_SHELL, [
+      ...WHOOP_LAYOUT_ORDER,
+    ]);
+    const sensors = loadTelemetryCatalog("betaflight").sensors.map(
+      (s) => s.name,
+    );
+    const result = validateWidgetLua(source, {
+      knownSensors: sensors,
+      strictTelemetry: true,
+      layoutArchetype: "quad-overview",
+      userPrompt: "tiny whoop armed banner voltage link pitch roll",
+      strictIntent: false,
+    });
+    const errors = result.issues.filter((i) => i.severity === "error");
+    assert.equal(errors.length, 0, errors.map((e) => e.message).join("; "));
+    assert.equal(result.valid, true);
+  });
+
+  it("required sensors exist in betaflight catalog", () => {
+    const known = new Set(
+      loadTelemetryCatalog("betaflight").sensors.map((s) => s.name),
+    );
+    for (const prefab of BETAFLIGHT_QUAD_PREFABS) {
+      for (const sensor of [
+        ...prefab.requiredSensors,
+        ...prefab.optionalSensors,
+        ...Object.values(prefab.createSrcBindings),
+      ]) {
+        assert.ok(
+          known.has(sensor),
+          `${prefab.id} references unknown sensor ${sensor}`,
+        );
+      }
+    }
+  });
+
+  it("gallery template boards resolve to prefab-assembled Lua", () => {
+    for (const id of [
+      "whoop",
+      "freestyle-quad",
+      "minimal-quad",
+      "dense-crsf",
+    ] as const) {
+      const source = getLayoutTemplateBoardSource(id);
+      assert.match(source, /--\s*prefab:quad-/);
+      const records = interpretDocument(source);
+      assert.ok(records.length >= 8, `${id} too sparse: ${records.length}`);
     }
   });
 });

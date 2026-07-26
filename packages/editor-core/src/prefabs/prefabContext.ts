@@ -115,6 +115,12 @@ function humanizeSrcKey(key: string): string {
     batp: "Battery %",
     capa: "Capacity",
     vbat: "Pack voltage (Vbat)",
+    pitch: "Pitch",
+    roll: "Roll",
+    alt: "Altitude",
+    gspd: "Ground speed",
+    sats: "Satellites",
+    rssi: "RSSI",
   };
   return known[key] ?? key;
 }

@@ -1,9 +1,18 @@
 /**
  * Complete Layout template boards for gallery → editor (no AI).
- * RF heli boards still assemble via prefab sections; these cover BF/CRSF stubs.
+ * Whoop / freestyle / minimal / dense CRSF boards assemble from betaflight-quad
+ * prefab sections. Battery + flight-logger remain monolithic (companion suites).
  */
 
 import { createStarterSource } from "./luaDocument.ts";
+import {
+  createPrefabShellSource,
+  DENSE_CRSF_LAYOUT_ORDER,
+  FREESTYLE_LAYOUT_ORDER,
+  insertPrefabSections,
+  MINIMAL_QUAD_LAYOUT_ORDER,
+  WHOOP_LAYOUT_ORDER,
+} from "./prefabs/index.ts";
 
 export type LayoutTemplateBoardId =
   | "starter"
@@ -25,506 +34,6 @@ local function telem(id)
   if id then return getValue(id) end
   return 0
 end
-`;
-
-/** Large voltage hero + link/timer secondaries — freestyle minimal. */
-export const MINIMAL_QUAD_BOARD = `---@type WidgetScript
----@simulate Layout1x1 zone=0
--- Minimal quad — voltage hero, link strip, timer
-
-local name = "MinQuad"
-
-local options = {
-  { "ShowAlt", BOOL, 1 },
-  { "ShowTimer", BOOL, 1 },
-  { "TextColor", COLOR, WHITE },
-  { "BgColor", COLOR, BLACK },
-}
-
-${SHARED_HELPERS}
-local function create(zone, opts)
-  return {
-    zone = zone,
-    options = opts,
-    src = {
-      rqly = cacheSource("RQLY"),
-      rxbt = cacheSource("RxBt"),
-      alt = cacheSource("Alt"),
-      curr = cacheSource("Curr"),
-    },
-  }
-end
-
-local function update(widget, opts)
-  widget.options = opts
-end
-
-local function refresh(widget, event, touchState)
-  local w = LCD_W
-  local h = LCD_H
-  local pad = 12
-  local fg = widget.options.TextColor
-  local bg = widget.options.BgColor
-
-  local volts = telem(widget.src.rxbt)
-  local rqly = telem(widget.src.rqly)
-  local amps = telem(widget.src.curr)
-  local alt = telem(widget.src.alt)
-  local vStr = string.format("%.1f", volts)
-  local rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%"
-  local aStr = string.format("%.0fA", amps)
-  local altStr = string.format("%.0fm", alt)
-  local tStr = "03:42"
-
-  lcd.clear(bg)
-
-  lcd.drawFilledRectangle(0, 0, w, 40, GREY)
-  lcd.drawText(pad, 12, "MINIMAL", MIDSIZE + fg)
-  lcd.drawText(w - pad - 56, 14, rqlyStr, SMLSIZE + GREEN)
-
-  lcd.drawText(pad, 64, "PACK", SMLSIZE + GREY)
-  lcd.drawText(pad, 84, vStr, DBLSIZE + YELLOW)
-  lcd.drawText(pad + 120, 100, "V", MIDSIZE + WHITE)
-  lcd.drawText(pad, 140, aStr, MIDSIZE + CYAN)
-
-  if widget.options.ShowTimer == 1 then
-    lcd.drawFilledRectangle(w - pad - 160, 64, 148, 88, DARKGREY)
-    lcd.drawRectangle(w - pad - 160, 64, 148, 88, GREY)
-    lcd.drawText(w - pad - 148, 72, "TIMER", SMLSIZE + GREY)
-    lcd.drawText(w - pad - 148, 96, tStr, DBLSIZE + WHITE)
-  end
-
-  local barY = 200
-  lcd.drawText(pad, barY - 16, "LINK", SMLSIZE + GREY)
-  lcd.drawFilledRectangle(pad, barY, w - pad * 2, 14, GREY)
-  local fillW = math.floor((w - pad * 2 - 4) * math.max(0, math.min(100, rqly)) / 100)
-  if fillW > 0 then
-    lcd.drawFilledRectangle(pad + 2, barY + 2, fillW, 10, GREEN)
-  end
-
-  if widget.options.ShowAlt == 1 then
-    lcd.drawText(pad, 236, "ALT", SMLSIZE + GREY)
-    lcd.drawText(pad + 40, 232, altStr, MIDSIZE + CYAN)
-  end
-
-  lcd.drawFilledRectangle(0, h - 28, w, 28, DARKGREY)
-  lcd.drawText(pad, h - 20, "Ready", SMLSIZE + GREY)
-end
-
-return {
-  name = name,
-  options = options,
-  create = create,
-  update = update,
-  refresh = refresh,
-}
-`;
-
-/** Dense CRSF telemetry grid with header + GPS strip. */
-export const DENSE_CRSF_BOARD = `---@type WidgetScript
----@simulate Layout1x1 zone=0
--- Dense CRSF grid — link, power, GPS, attitude cells
-
-local name = "DenseCRSF"
-
-local options = {
-  { "ShowGPS", BOOL, 1 },
-  { "ShowAtt", BOOL, 1 },
-  { "TextColor", COLOR, WHITE },
-  { "BgColor", COLOR, BLACK },
-}
-
-${SHARED_HELPERS}
-local function create(zone, opts)
-  return {
-    zone = zone,
-    options = opts,
-    src = {
-      rqly = cacheSource("RQLY"),
-      rssi = cacheSource("1RSS"),
-      rxbt = cacheSource("RxBt"),
-      curr = cacheSource("Curr"),
-      alt = cacheSource("Alt"),
-      gspd = cacheSource("GSpd"),
-      sats = cacheSource("Sats"),
-      pitch = cacheSource("Ptch"),
-      roll = cacheSource("Roll"),
-      fm = cacheSource("FM"),
-    },
-  }
-end
-
-local function update(widget, opts)
-  widget.options = opts
-end
-
-local function refresh(widget, event, touchState)
-  local w = LCD_W
-  local h = LCD_H
-  local pad = 12
-  local fg = widget.options.TextColor
-  local bg = widget.options.BgColor
-  local headerH = 40
-  local cols = 3
-  local rows = 2
-  local gap = 8
-  local cellW = math.floor((w - pad * 2 - gap * (cols - 1)) / cols)
-  local cellH = 72
-  local startY = headerH + pad
-
-  local rqly = telem(widget.src.rqly)
-  local rssi = telem(widget.src.rssi)
-  local volts = telem(widget.src.rxbt)
-  local amps = telem(widget.src.curr)
-  local alt = telem(widget.src.alt)
-  local gspd = telem(widget.src.gspd)
-  local sats = telem(widget.src.sats)
-  local pitch = telem(widget.src.pitch)
-  local roll = telem(widget.src.roll)
-  local fm = telem(widget.src.fm)
-
-  local cells = {
-    { "RQLY", tostring(math.floor(rqly + 0.5)) .. "%" },
-    { "1RSS", tostring(math.floor(rssi + 0.5)) },
-    { "VOLT", string.format("%.1fV", volts) },
-    { "CURR", string.format("%.1fA", amps) },
-    { "ALT", string.format("%.0fm", alt) },
-    { "GSPD", string.format("%.0f", gspd) },
-  }
-
-  lcd.clear(bg)
-  lcd.drawFilledRectangle(0, 0, w, headerH, GREY)
-  lcd.drawText(pad, 12, "CRSF GRID", MIDSIZE + fg)
-  lcd.drawText(w - pad - 48, 14, tostring(sats) .. " sat", SMLSIZE + CYAN)
-
-  -- Unrolled 2x3 grid (editor preview parses direct lcd.* only)
-  local x0 = pad
-  local x1 = pad + cellW + gap
-  local x2 = pad + 2 * (cellW + gap)
-  local y0 = startY
-  local y1 = startY + cellH + gap
-  local c1 = cells[1][2]
-  local c2 = cells[2][2]
-  local c3 = cells[3][2]
-  local c4 = cells[4][2]
-  local c5 = cells[5][2]
-  local c6 = cells[6][2]
-
-  lcd.drawFilledRectangle(x0, y0, cellW, cellH, DARKGREY)
-  lcd.drawRectangle(x0, y0, cellW, cellH, GREY)
-  lcd.drawText(x0 + 8, y0 + 8, "RQLY", SMLSIZE + GREY)
-  lcd.drawText(x0 + 8, y0 + 28, c1, MIDSIZE + WHITE)
-
-  lcd.drawFilledRectangle(x1, y0, cellW, cellH, DARKGREY)
-  lcd.drawRectangle(x1, y0, cellW, cellH, GREY)
-  lcd.drawText(x1 + 8, y0 + 8, "1RSS", SMLSIZE + GREY)
-  lcd.drawText(x1 + 8, y0 + 28, c2, MIDSIZE + WHITE)
-
-  lcd.drawFilledRectangle(x2, y0, cellW, cellH, DARKGREY)
-  lcd.drawRectangle(x2, y0, cellW, cellH, GREY)
-  lcd.drawText(x2 + 8, y0 + 8, "VOLT", SMLSIZE + GREY)
-  lcd.drawText(x2 + 8, y0 + 28, c3, MIDSIZE + WHITE)
-
-  lcd.drawFilledRectangle(x0, y1, cellW, cellH, DARKGREY)
-  lcd.drawRectangle(x0, y1, cellW, cellH, GREY)
-  lcd.drawText(x0 + 8, y1 + 8, "CURR", SMLSIZE + GREY)
-  lcd.drawText(x0 + 8, y1 + 28, c4, MIDSIZE + WHITE)
-
-  lcd.drawFilledRectangle(x1, y1, cellW, cellH, DARKGREY)
-  lcd.drawRectangle(x1, y1, cellW, cellH, GREY)
-  lcd.drawText(x1 + 8, y1 + 8, "ALT", SMLSIZE + GREY)
-  lcd.drawText(x1 + 8, y1 + 28, c5, MIDSIZE + WHITE)
-
-  lcd.drawFilledRectangle(x2, y1, cellW, cellH, DARKGREY)
-  lcd.drawRectangle(x2, y1, cellW, cellH, GREY)
-  lcd.drawText(x2 + 8, y1 + 8, "GSPD", SMLSIZE + GREY)
-  lcd.drawText(x2 + 8, y1 + 28, c6, MIDSIZE + WHITE)
-
-  local bandY = startY + rows * (cellH + gap)
-  if widget.options.ShowAtt == 1 then
-    local pitchStr = string.format("P %.0f", pitch)
-    local rollStr = string.format("R %.0f", roll)
-    lcd.drawFilledRectangle(pad, bandY, w - pad * 2, 40, DARKGREY)
-    lcd.drawRectangle(pad, bandY, w - pad * 2, 40, GREY)
-    lcd.drawText(pad + 8, bandY + 12, "ATTITUDE", SMLSIZE + GREY)
-    lcd.drawText(pad + 100, bandY + 10, pitchStr, MIDSIZE + WHITE)
-    lcd.drawText(pad + 220, bandY + 10, rollStr, MIDSIZE + WHITE)
-    bandY = bandY + 48
-  end
-
-  if widget.options.ShowGPS == 1 then
-    local satsLine = "Sats " .. tostring(sats)
-    lcd.drawText(pad, bandY, satsLine, SMLSIZE + CYAN)
-  end
-
-  lcd.drawFilledRectangle(0, h - 28, w, 28, DARKGREY)
-  if type(fm) == "string" and fm ~= "" then
-    lcd.drawText(pad, h - 20, fm, SMLSIZE + ORANGE)
-  else
-    lcd.drawText(pad, h - 20, "CRSF", SMLSIZE + GREY)
-  end
-end
-
-return {
-  name = name,
-  options = options,
-  create = create,
-  update = update,
-  refresh = refresh,
-}
-`;
-
-/** Tiny whoop overview — armed banner, bars, voltage, attitude cards. */
-export const WHOOP_BOARD = `---@type WidgetScript
----@simulate Layout1x1 zone=0
--- Tiny whoop overview — armed banner, link/batt bars, voltage + attitude
-
-local name = "Whoop"
-
-local options = {
-  { "ShowAtt", BOOL, 1 },
-  { "ShowCapa", BOOL, 1 },
-  { "TextColor", COLOR, WHITE },
-  { "BgColor", COLOR, BLACK },
-}
-
-${SHARED_HELPERS}
-local function create(zone, opts)
-  return {
-    zone = zone,
-    options = opts,
-    src = {
-      rqly = cacheSource("RQLY"),
-      rxbt = cacheSource("RxBt"),
-      curr = cacheSource("Curr"),
-      capa = cacheSource("Capa"),
-      pitch = cacheSource("Ptch"),
-      roll = cacheSource("Roll"),
-      fm = cacheSource("FM"),
-    },
-  }
-end
-
-local function update(widget, opts)
-  widget.options = opts
-end
-
-local function refresh(widget, event, touchState)
-  local w = LCD_W
-  local h = LCD_H
-  local pad = 12
-  local fg = widget.options.TextColor
-  local bg = widget.options.BgColor
-
-  local rqly = telem(widget.src.rqly)
-  local volts = telem(widget.src.rxbt)
-  local amps = telem(widget.src.curr)
-  local capa = telem(widget.src.capa)
-  local pitch = telem(widget.src.pitch)
-  local roll = telem(widget.src.roll)
-  local fm = telem(widget.src.fm)
-  local armed = type(fm) == "string" and string.find(string.upper(tostring(fm)), "ARM") ~= nil
-
-  local vStr = string.format("%.2f", volts)
-  local aStr = string.format("%.1fA", amps)
-  local capaStr = string.format("%.0f mAh", capa)
-  local pitchStr = string.format("%.0f", pitch)
-  local rollStr = string.format("%.0f", roll)
-  local rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%"
-  local battPct = math.max(0, math.min(100, (volts - 3.3) / (4.2 - 3.3) * 100))
-
-  lcd.clear(bg)
-
-  if armed then
-    lcd.drawFilledRectangle(0, 0, w, 36, ORANGE)
-    lcd.drawText(pad, 10, "ARMED", MIDSIZE + BLACK)
-  else
-    lcd.drawFilledRectangle(0, 0, w, 36, GREY)
-    lcd.drawText(pad, 10, "WHOOP", MIDSIZE + fg)
-  end
-  lcd.drawText(w - pad - 48, 12, rqlyStr, SMLSIZE + GREEN)
-
-  local barX = pad
-  local barW = w - pad * 2
-  lcd.drawText(barX, 48, "LINK", SMLSIZE + GREY)
-  lcd.drawFilledRectangle(barX, 64, barW, 12, GREY)
-  local linkFill = math.floor((barW - 4) * math.max(0, math.min(100, rqly)) / 100)
-  if linkFill > 0 then
-    lcd.drawFilledRectangle(barX + 2, 66, linkFill, 8, GREEN)
-  end
-
-  lcd.drawText(barX, 88, "BATT", SMLSIZE + GREY)
-  lcd.drawFilledRectangle(barX, 104, barW, 12, GREY)
-  local battFill = math.floor((barW - 4) * battPct / 100)
-  if battFill > 0 then
-    lcd.drawFilledRectangle(barX + 2, 106, battFill, 8, YELLOW)
-  end
-
-  local cardY = 132
-  local colW = math.floor((w - pad * 3) / 2)
-  lcd.drawFilledRectangle(pad, cardY, colW, 100, DARKGREY)
-  lcd.drawRectangle(pad, cardY, colW, 100, GREY)
-  lcd.drawText(pad + 8, cardY + 8, "VOLTAGE", SMLSIZE + GREY)
-  lcd.drawText(pad + 8, cardY + 28, vStr, DBLSIZE + YELLOW)
-  lcd.drawText(pad + 8, cardY + 72, aStr, MIDSIZE + WHITE)
-
-  local rx = pad * 2 + colW
-  lcd.drawFilledRectangle(rx, cardY, colW, 100, DARKGREY)
-  lcd.drawRectangle(rx, cardY, colW, 100, GREY)
-  if widget.options.ShowAtt == 1 then
-    lcd.drawText(rx + 8, cardY + 8, "PITCH / ROLL", SMLSIZE + GREY)
-    lcd.drawText(rx + 8, cardY + 32, pitchStr, MIDSIZE + WHITE)
-    lcd.drawText(rx + 8, cardY + 60, rollStr, MIDSIZE + WHITE)
-  else
-    lcd.drawText(rx + 8, cardY + 8, "CURRENT", SMLSIZE + GREY)
-    lcd.drawText(rx + 8, cardY + 32, aStr, DBLSIZE + CYAN)
-  end
-
-  if widget.options.ShowCapa == 1 then
-    lcd.drawText(pad, 248, "CAPA", SMLSIZE + GREY)
-    lcd.drawText(pad + 48, 244, capaStr, MIDSIZE + CYAN)
-  end
-
-  lcd.drawFilledRectangle(0, h - 28, w, 28, DARKGREY)
-  if type(fm) == "string" and fm ~= "" then
-    lcd.drawText(pad, h - 20, fm, SMLSIZE + ORANGE)
-  else
-    lcd.drawText(pad, h - 20, "Disarmed", SMLSIZE + GREY)
-  end
-end
-
-return {
-  name = name,
-  options = options,
-  create = create,
-  update = update,
-  refresh = refresh,
-}
-`;
-
-/** Freestyle quad — timer hero, pack + current, link, GPS row. */
-export const FREESTYLE_QUAD_BOARD = `---@type WidgetScript
----@simulate Layout1x1 zone=0
--- Freestyle quad — timer hero, pack/current strip, link, GPS
-
-local name = "FreeStyl"
-
-local options = {
-  { "ShowGPS", BOOL, 1 },
-  { "ShowArmed", BOOL, 1 },
-  { "TextColor", COLOR, WHITE },
-  { "BgColor", COLOR, BLACK },
-}
-
-${SHARED_HELPERS}
-local function create(zone, opts)
-  return {
-    zone = zone,
-    options = opts,
-    src = {
-      rqly = cacheSource("RQLY"),
-      rssi = cacheSource("1RSS"),
-      rxbt = cacheSource("RxBt"),
-      curr = cacheSource("Curr"),
-      alt = cacheSource("Alt"),
-      gspd = cacheSource("GSpd"),
-      sats = cacheSource("Sats"),
-      fm = cacheSource("FM"),
-    },
-  }
-end
-
-local function update(widget, opts)
-  widget.options = opts
-end
-
-local function refresh(widget, event, touchState)
-  local w = LCD_W
-  local h = LCD_H
-  local pad = 12
-  local fg = widget.options.TextColor
-  local bg = widget.options.BgColor
-  local headerH = 40
-
-  local rqly = telem(widget.src.rqly)
-  local rssi = telem(widget.src.rssi)
-  local volts = telem(widget.src.rxbt)
-  local amps = telem(widget.src.curr)
-  local alt = telem(widget.src.alt)
-  local gspd = telem(widget.src.gspd)
-  local sats = telem(widget.src.sats)
-  local fm = telem(widget.src.fm)
-  local armed = type(fm) == "string" and string.find(string.upper(tostring(fm)), "ARM") ~= nil
-
-  local tStr = "04:18"
-  local vStr = string.format("%.1fV", volts)
-  local aStr = string.format("%.1fA", amps)
-  local rqlyStr = tostring(math.floor(rqly + 0.5)) .. "%"
-  local rssiStr = tostring(math.floor(rssi + 0.5))
-  local altStr = string.format("%.0f m", alt)
-  local spdStr = string.format("%.0f km/h", gspd)
-  local satsStr = tostring(sats)
-
-  lcd.clear(bg)
-  lcd.drawFilledRectangle(0, 0, w, headerH, GREY)
-  lcd.drawText(pad, 12, "FREESTYLE", MIDSIZE + fg)
-  if widget.options.ShowArmed == 1 then
-    if armed then
-      lcd.drawFilledRectangle(w - pad - 72, 8, 60, 24, ORANGE)
-      lcd.drawText(w - pad - 60, 12, "ARM", SMLSIZE + BLACK)
-    else
-      lcd.drawText(w - pad - 56, 14, "SAFE", SMLSIZE + GREEN)
-    end
-  end
-
-  lcd.drawText(pad, 56, "TIMER", SMLSIZE + GREY)
-  lcd.drawText(pad, 76, tStr, DBLSIZE + WHITE)
-
-  local stripY = 130
-  local colW = math.floor((w - pad * 4) / 3)
-  lcd.drawFilledRectangle(pad, stripY, colW, 72, DARKGREY)
-  lcd.drawRectangle(pad, stripY, colW, 72, GREY)
-  lcd.drawText(pad + 8, stripY + 8, "PACK", SMLSIZE + GREY)
-  lcd.drawText(pad + 8, stripY + 28, vStr, MIDSIZE + YELLOW)
-
-  local x2 = pad * 2 + colW
-  lcd.drawFilledRectangle(x2, stripY, colW, 72, DARKGREY)
-  lcd.drawRectangle(x2, stripY, colW, 72, GREY)
-  lcd.drawText(x2 + 8, stripY + 8, "CURR", SMLSIZE + GREY)
-  lcd.drawText(x2 + 8, stripY + 28, aStr, MIDSIZE + CYAN)
-
-  local x3 = pad * 3 + colW * 2
-  lcd.drawFilledRectangle(x3, stripY, colW, 72, DARKGREY)
-  lcd.drawRectangle(x3, stripY, colW, 72, GREY)
-  lcd.drawText(x3 + 8, stripY + 8, "LINK", SMLSIZE + GREY)
-  lcd.drawText(x3 + 8, stripY + 28, rqlyStr, MIDSIZE + GREEN)
-  lcd.drawText(x3 + 8, stripY + 50, rssiStr, SMLSIZE + WHITE)
-
-  if widget.options.ShowGPS == 1 then
-    local gy = 220
-    lcd.drawFilledRectangle(pad, gy, w - pad * 2, 52, DARKGREY)
-    lcd.drawRectangle(pad, gy, w - pad * 2, 52, GREY)
-    lcd.drawText(pad + 8, gy + 8, "GPS", SMLSIZE + GREY)
-    lcd.drawText(pad + 8, gy + 26, altStr, MIDSIZE + WHITE)
-    lcd.drawText(pad + 140, gy + 26, spdStr, MIDSIZE + WHITE)
-    lcd.drawText(pad + 300, gy + 26, satsStr, MIDSIZE + CYAN)
-  end
-
-  lcd.drawFilledRectangle(0, h - 28, w, 28, DARKGREY)
-  if type(fm) == "string" and fm ~= "" then
-    lcd.drawText(pad, h - 20, fm, SMLSIZE + ORANGE)
-  else
-    lcd.drawText(pad, h - 20, "Freestyle", SMLSIZE + GREY)
-  end
-end
-
-return {
-  name = name,
-  options = options,
-  create = create,
-  update = update,
-  refresh = refresh,
-}
 `;
 
 /** Battery + pack tool dashboard (pairs with batt-select companion). */
@@ -759,15 +268,31 @@ return {
 }
 `;
 
-const BOARD_BY_ID: Record<LayoutTemplateBoardId, string> = {
-  starter: "", // resolved via createStarterSource()
-  minimal: MINIMAL_QUAD_BOARD,
-  "minimal-quad": MINIMAL_QUAD_BOARD,
-  "dense-crsf": DENSE_CRSF_BOARD,
-  whoop: WHOOP_BOARD,
-  "freestyle-quad": FREESTYLE_QUAD_BOARD,
+
+const MONOLITH_BOARDS: Partial<Record<LayoutTemplateBoardId, string>> = {
   "battery-tool": BATTERY_TOOL_BOARD,
   "flight-logger": FLIGHT_LOGGER_BOARD,
+};
+
+const PREFAB_BOARD_ORDERS: Partial<
+  Record<LayoutTemplateBoardId, readonly string[]>
+> = {
+  minimal: MINIMAL_QUAD_LAYOUT_ORDER,
+  "minimal-quad": MINIMAL_QUAD_LAYOUT_ORDER,
+  "dense-crsf": DENSE_CRSF_LAYOUT_ORDER,
+  whoop: WHOOP_LAYOUT_ORDER,
+  "freestyle-quad": FREESTYLE_LAYOUT_ORDER,
+};
+
+const BOARD_IDS: Record<LayoutTemplateBoardId, true> = {
+  starter: true,
+  minimal: true,
+  "minimal-quad": true,
+  "dense-crsf": true,
+  whoop: true,
+  "freestyle-quad": true,
+  "battery-tool": true,
+  "flight-logger": true,
 };
 
 /** Resolve Lua source for a non-RF gallery layout prefab. */
@@ -775,13 +300,30 @@ export function getLayoutTemplateBoardSource(
   boardId: string | null | undefined,
 ): string {
   if (!boardId || boardId === "starter") return createStarterSource();
-  const source = BOARD_BY_ID[boardId as LayoutTemplateBoardId];
-  if (source) return source;
+  const id = boardId as LayoutTemplateBoardId;
+  const order = PREFAB_BOARD_ORDERS[id];
+  if (order) {
+    const shellName =
+      id === "whoop"
+        ? "Whoop"
+        : id === "freestyle-quad"
+          ? "FreeStyl"
+          : id === "dense-crsf"
+            ? "DenseCRSF"
+            : "Minimal";
+    const { source } = insertPrefabSections(
+      createPrefabShellSource(shellName),
+      [...order],
+    );
+    return source;
+  }
+  const monolith = MONOLITH_BOARDS[id];
+  if (monolith) return monolith;
   return createStarterSource();
 }
 
 export function isLayoutTemplateBoardId(
   id: string,
 ): id is LayoutTemplateBoardId {
-  return id in BOARD_BY_ID;
+  return id in BOARD_IDS;
 }

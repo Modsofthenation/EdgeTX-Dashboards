@@ -24,6 +24,7 @@ interface EditorToolbarProps {
   onAddPrefab?: (prefabId: string) => void;
   onAddFullRfHeliElectric?: () => void;
   onAddRfHeliNitro?: () => void;
+  onAddQuadBoard?: (boardId: string) => void;
   onAddCompanionSuite?: (suiteId: string) => void;
   companionSuiteIds?: string[];
   onSave: () => void;
@@ -62,6 +63,7 @@ export function EditorToolbar({
   onAddPrefab,
   onAddFullRfHeliElectric,
   onAddRfHeliNitro,
+  onAddQuadBoard,
   onAddCompanionSuite,
   companionSuiteIds,
   onSave,
@@ -274,6 +276,7 @@ export function EditorToolbar({
           onInsertPrefab={onAddPrefab}
           onInsertFullRfHeliElectric={onAddFullRfHeliElectric}
           onInsertRfHeliNitro={onAddRfHeliNitro}
+          onInsertQuadBoard={onAddQuadBoard}
           onInsertCompanionSuite={onAddCompanionSuite}
           companionSuiteIds={companionSuiteIds}
         />

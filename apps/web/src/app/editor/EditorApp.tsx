@@ -8,10 +8,14 @@ import {
   getLayoutTemplateBoardSource,
   interpretDocument,
   insertDrawLineWithId,
+  DENSE_CRSF_LAYOUT_ORDER,
+  FREESTYLE_LAYOUT_ORDER,
   insertPrefabSection,
   insertPrefabSections,
+  MINIMAL_QUAD_LAYOUT_ORDER,
   ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
   ROTORFLIGHT_NITRO_LAYOUT_ORDER,
+  WHOOP_LAYOUT_ORDER,
   parseDocumentMeta,
   patchRecordArgs,
   patchWidgetName,
@@ -579,6 +583,42 @@ export function EditorApp() {
     });
     markDirty();
   }, [setSource, markDirty, source, records]);
+
+  const handleAddQuadBoard = useCallback(
+    (boardId: string) => {
+      const order =
+        boardId === "whoop"
+          ? WHOOP_LAYOUT_ORDER
+          : boardId === "freestyle-quad"
+            ? FREESTYLE_LAYOUT_ORDER
+            : boardId === "dense-crsf"
+              ? DENSE_CRSF_LAYOUT_ORDER
+              : MINIMAL_QUAD_LAYOUT_ORDER;
+      const label =
+        boardId === "whoop"
+          ? "whoop"
+          : boardId === "freestyle-quad"
+            ? "freestyle"
+            : boardId === "dense-crsf"
+              ? "dense CRSF"
+              : "minimal";
+      const busy = source.includes("-- prefab:") || records.length > 2;
+      if (
+        busy &&
+        !window.confirm(
+          `Add ${order.length} ${label} sections to this board? Existing elements stay; prefabs are appended.`,
+        )
+      ) {
+        return;
+      }
+      setSource((prev) => {
+        const { source: next } = insertPrefabSections(prev, [...order]);
+        return next;
+      });
+      markDirty();
+    },
+    [setSource, markDirty, source, records],
+  );
 
   const companionStorageKey = workspaceKey ?? projectId ?? "local-editor";
 
@@ -1407,6 +1447,11 @@ export function EditorApp() {
         }
         onAddRfHeliNitro={
           protocol === "rotorflight" ? handleAddRfHeliNitro : undefined
+        }
+        onAddQuadBoard={
+          protocol === "betaflight" || protocol === "generic-crsf"
+            ? handleAddQuadBoard
+            : undefined
         }
         onAddCompanionSuite={handleAddCompanionSuite}
         companionSuiteIds={companions.suites}
