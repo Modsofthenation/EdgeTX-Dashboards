@@ -1,7 +1,7 @@
 {
   "default": {
     "identifier": "default",
-    "description": "Default desktop capabilities",
+    "description": "Default desktop capabilities for the Next.js sidecar / dev server webview",
     "local": true,
     "windows": ["main"],
     "permissions": [
@@ -11,7 +11,14 @@
       "core:webview:allow-webview-size",
       "shell:allow-open",
       "dialog:default",
-      "dialog:allow-open"
-    ]
+      "dialog:allow-open",
+      "dialog:allow-save",
+      "dialog:allow-message",
+      "dialog:allow-ask",
+      "dialog:allow-confirm"
+    ],
+    "remote": {
+      "urls": ["http://localhost:*/*", "http://127.0.0.1:*/*"]
+    }
   }
 }

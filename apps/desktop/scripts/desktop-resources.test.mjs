@@ -66,4 +66,27 @@ describe("desktop Tauri standalone resources", () => {
     assert.match(rust, /ensure_writable_workspace/);
     assert.match(rust, /knowledge/);
   });
+
+  it("allows dialog save for localhost/127.0.0.1 remote webviews", () => {
+    const caps = JSON.parse(
+      readFileSync(join(root, "src-tauri", "capabilities", "default.json"), "utf8"),
+    );
+    assert.ok(Array.isArray(caps.remote?.urls));
+    assert.ok(
+      caps.remote.urls.some((u) => String(u).includes("localhost")),
+      "missing localhost remote URL",
+    );
+    assert.ok(
+      caps.remote.urls.some((u) => String(u).includes("127.0.0.1")),
+      "missing 127.0.0.1 remote URL",
+    );
+    assert.ok(
+      caps.permissions.includes("dialog:allow-save"),
+      "missing dialog:allow-save (Download / Save project)",
+    );
+    assert.ok(
+      caps.permissions.includes("dialog:allow-open"),
+      "missing dialog:allow-open (Pick SD / Open project)",
+    );
+  });
 });
