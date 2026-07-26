@@ -186,8 +186,9 @@ export function EditorCanvas({
         onPointerUp={onPointerUpPan}
         onPointerCancel={onPointerUpPan}
       >
-        {inlineSim}
-        {!inlineSim && (
+        {inlineSim ? (
+          <div className={styles.inlineSimHost}>{inlineSim}</div>
+        ) : (
           <EditorPreviewCanvas
             source={source}
             zone={zone}
@@ -280,9 +281,15 @@ export function EditorCanvas({
         </button>
         <span className={styles.canvasHint}>·</span>
         <span className={styles.canvasHint}>
-          Ctrl+wheel zoom · Space-drag pan · Shift+click multi · drag empty to
-          marquee
+          Ctrl+wheel zoom · Space-drag pan · Drag empty to marquee · Drag
+          sidebar edges to resize
         </span>
+        {inlineSim ? (
+          <>
+            <span className={styles.canvasHint}>·</span>
+            <span className={styles.canvasHint}>Inline radio sim</span>
+          </>
+        ) : null}
       </div>
     </div>
   );

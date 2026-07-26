@@ -483,19 +483,87 @@
 
 .editorBody {
   display: grid;
+  /* Default columns; desktop overrides via inline style from resize hook. */
   grid-template-columns: minmax(200px, 240px) 1fr minmax(220px, 280px);
   flex: 1;
   min-height: 0;
+  min-width: 0;
+}
+
+.editorBodyResizable {
+  /* left | handle | canvas | handle | right — widths set inline */
+  grid-template-columns: 240px 12px minmax(0, 1fr) 12px 280px;
+  overflow: hidden;
+}
+
+.panelResizeHandle {
+  position: relative;
+  z-index: 5;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 12px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  cursor: col-resize;
+  touch-action: none;
+  appearance: none;
+  user-select: none;
+  background: color-mix(in srgb, var(--bg) 88%, var(--bg-elevated));
+}
+
+.panelResizeHandle::after {
+  /* Expand hit target beyond the 12px gutter */
+  content: "";
+  position: absolute;
+  inset: 0 -6px;
+}
+
+.panelResizeHandle::before {
+  content: "";
+  position: absolute;
+  top: 16%;
+  bottom: 16%;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--border);
+  pointer-events: none;
+  transition:
+    background var(--transition),
+    width var(--transition),
+    box-shadow var(--transition);
+}
+
+.panelResizeHandle:hover,
+.panelResizeHandle[data-active="true"] {
+  background: color-mix(in srgb, var(--bg-elevated) 82%, var(--accent));
+}
+
+.panelResizeHandle:hover::before,
+.panelResizeHandle:focus-visible::before,
+.panelResizeHandle[data-active="true"]::before {
+  width: 4px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.panelResizeHandle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -2px;
 }
 
 @media (max-width: 1280px) and (min-width: 1101px) {
-  .editorBody {
+  .editorBody:not(.editorBodyResizable) {
     grid-template-columns: minmax(180px, 220px) 1fr minmax(200px, 250px);
   }
 }
 
 @media (max-width: 1100px) and (min-width: 901px) {
-  .editorBody {
+  .editorBody:not(.editorBodyResizable) {
     grid-template-columns: minmax(160px, 190px) 1fr minmax(180px, 220px);
   }
 }
@@ -504,12 +572,15 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   padding: 0.75rem;
   background: var(--bg-elevated);
+  overflow: hidden;
 }
 
 .layersPanel {
-  border-right: 1px solid var(--border);
+  border-right: none;
+  height: 100%;
 }
 
 .propsPanel {
@@ -522,7 +593,7 @@
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  border-left: 1px solid var(--border);
+  border-left: none;
   background: var(--bg-elevated);
   overflow: hidden;
 }
@@ -532,6 +603,21 @@
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.mobilePaneLayers,
+.mobilePaneProperties {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mobilePaneCanvas {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panelHead {
@@ -1060,6 +1146,23 @@
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+}
+
+.inlineSimHost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inlineSimHost > * {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .previewCanvas {
@@ -1675,6 +1778,25 @@
 }
 
 @media (max-width: 900px) {
+  .editorBody,
+  .editorBodyResizable {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr;
+  }
+
+  .panelResizeHandle {
+    display: none !important;
+  }
+
+  .editorBody[data-mobile-tab="layers"] .mobilePaneCanvas,
+  .editorBody[data-mobile-tab="layers"] .mobilePaneProperties,
+  .editorBody[data-mobile-tab="canvas"] .mobilePaneLayers,
+  .editorBody[data-mobile-tab="canvas"] .mobilePaneProperties,
+  .editorBody[data-mobile-tab="properties"] .mobilePaneLayers,
+  .editorBody[data-mobile-tab="properties"] .mobilePaneCanvas {
+    display: none;
+  }
+
   .actionLabelFull {
     display: none;
   }
