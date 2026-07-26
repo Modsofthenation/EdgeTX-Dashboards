@@ -15,6 +15,17 @@ function toClientStatus(status: ReturnType<typeof getSimFirmwareStatus>) {
     defaultVersion: status.defaultVersion ?? null,
     syncedAt: status.syncedAt ?? null,
     source: status.source ?? null,
+    radios: status.radios.map((radio) => ({
+      id: radio.id,
+      name: radio.name,
+      flavour: radio.flavour,
+      wasm: radio.wasm,
+      display: radio.display,
+      present: radio.present,
+      size: radio.size,
+      ok: radio.ok,
+      sizeLabel: formatBytes(radio.size),
+    })),
     files: status.files.map((file) => ({
       name: file.name,
       present: file.present,

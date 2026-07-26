@@ -17,12 +17,24 @@ export type SimFirmwareFileStatus = {
   ok: boolean;
 };
 
+export type SimFirmwareRadioStatus = {
+  id: string;
+  name: string;
+  flavour: string;
+  wasm: string;
+  display: { w: number; h: number; depth: number };
+  present: boolean;
+  size: number;
+  ok: boolean;
+};
+
 export type SimFirmwareStatus = {
   ready: boolean;
   reason: string;
   outDir: string;
   manifest: Record<string, unknown> | null;
   files: SimFirmwareFileStatus[];
+  radios: SimFirmwareRadioStatus[];
   source?: string;
   defaultVersion?: string | null;
   syncedAt?: string | null;
@@ -184,6 +196,18 @@ export function findRepoRoot(): string | null {
 }
 
 function statusFromDir(outDir: string): SimFirmwareStatus {
+  const emptyRadios = (): SimFirmwareRadioStatus[] =>
+    COLOR_WASM_RADIOS.map((radio) => ({
+      id: radio.id,
+      name: radio.name,
+      flavour: radio.flavour,
+      wasm: wasmFileForFlavour(radio.flavour),
+      display: radio.display,
+      present: false,
+      size: 0,
+      ok: false,
+    }));
+
   const manifestPath = join(outDir, "manifest.json");
   if (!existsSync(manifestPath)) {
     return {
@@ -192,6 +216,7 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
       outDir,
       manifest: null,
       files: [],
+      radios: emptyRadios(),
     };
   }
 
@@ -208,6 +233,7 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
       outDir,
       manifest: null,
       files: [],
+      radios: emptyRadios(),
     };
   }
 
@@ -219,10 +245,20 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
       if (entry?.wasm) names.add(entry.wasm);
     }
   }
-  const radios = manifest.radios as
-    Record<string, { wasm?: string }> | undefined;
-  if (radios) {
-    for (const radio of Object.values(radios)) {
+  const radiosMap = manifest.radios as
+    | Record<
+        string,
+        {
+          name?: string;
+          flavour?: string;
+          wasm?: string;
+          size?: number;
+          display?: { w: number; h: number; depth: number };
+        }
+      >
+    | undefined;
+  if (radiosMap) {
+    for (const radio of Object.values(radiosMap)) {
       if (radio?.wasm) names.add(radio.wasm);
     }
   }
@@ -238,12 +274,37 @@ function statusFromDir(outDir: string): SimFirmwareStatus {
     files.push({ name, present, size, ok });
   }
 
+  const radios: SimFirmwareRadioStatus[] = COLOR_WASM_RADIOS.map((radio) => {
+    const entry = radiosMap?.[radio.id];
+    const wasm = entry?.wasm ?? wasmFileForFlavour(radio.flavour);
+    const path = join(outDir, wasm);
+    const present = existsSync(path);
+    const size = present
+      ? statSync(path).size
+      : typeof entry?.size === "number"
+        ? entry.size
+        : 0;
+    const ok = present && size >= 1024;
+    if (!ok) ready = false;
+    return {
+      id: radio.id,
+      name: entry?.name ?? radio.name,
+      flavour: entry?.flavour ?? radio.flavour,
+      wasm,
+      display: entry?.display ?? radio.display,
+      present,
+      size,
+      ok,
+    };
+  });
+
   return {
     ready,
     reason: ready ? "ok" : "incomplete",
     outDir,
     manifest,
     files,
+    radios,
     source: typeof manifest.source === "string" ? manifest.source : undefined,
     defaultVersion:
       typeof manifest.defaultVersion === "string"
