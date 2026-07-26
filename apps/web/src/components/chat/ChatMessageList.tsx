@@ -82,10 +82,10 @@ export function ChatMessageList({
             What should your dashboard show?
           </h2>
           <p className={styles.emptyText}>
-            Describe a full-screen TX15 dashboard — the agent writes Lua,
-            validates it, and shows the preview in the panel on the right. Ask
-            for companion tools (battery selector, flight logger) when you need
-            them.
+            Describe a full-screen dashboard for your radio — the agent writes
+            Lua, validates it, and shows the preview in the panel on the right.
+            Ask for companion tools (battery selector, flight logger) when you
+            need them.
           </p>
           <ol className={styles.steps} aria-label="How it works">
             <li>

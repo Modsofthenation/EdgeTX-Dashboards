@@ -113,6 +113,7 @@ function validateLcdOnlyInRefresh(
 function validateLayoutGeometry(
   source: string,
   layoutArchetype?: LayoutArchetypeId,
+  simulateProfile?: SimulateLayoutProfile,
 ): ValidationIssue[] {
   if (!/lcd\.draw(Text|FilledRectangle|Annulus|FilledCircle)/.test(source)) {
     return [];
@@ -130,7 +131,13 @@ function validateLayoutGeometry(
 
   const issues: ValidationIssue[] = [];
   for (const scenario of scenarios) {
-    const scenarioIssues = validateDrawGeometry(source, { scenario, strict });
+    const scenarioIssues = validateDrawGeometry(source, {
+      scenario,
+      strict,
+      lcdW: simulateProfile?.lcdW,
+      lcdH: simulateProfile?.lcdH,
+      simulateProfile,
+    });
     const errors = scenarioIssues.filter((i) => i.severity === "error");
     if (errors.length > 0) {
       for (const err of errors) {
@@ -456,7 +463,13 @@ export function validateWidgetLua(
   }
 
   issues.push(...validateLcdApiUsage(source));
-  issues.push(...validateLayoutGeometry(source, options?.layoutArchetype));
+  issues.push(
+    ...validateLayoutGeometry(
+      source,
+      options?.layoutArchetype,
+      options?.simulateProfile,
+    ),
+  );
 
   if (options?.userPrompt) {
     issues.push(

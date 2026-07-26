@@ -14,6 +14,8 @@ const ALLOWED_MIME_TYPES = new Set([
 export function buildReferenceImagesSection(
   imageCount: number,
   radioName: string,
+  lcdW = 480,
+  lcdH = 320,
 ): string {
   if (imageCount <= 0) return "";
 
@@ -27,7 +29,7 @@ The user attached ${imageCount} reference ${noun} to this message (included as m
 - Typography hierarchy (title vs value vs label sizes)
 - Spacing rhythm and card/panel grouping
 
-Recreate the **functional dashboard layout and visual intent** on the ${radioName} LCD (${imageCount}×480×320 class screen). Ignore unrelated chrome in the screenshot (browser frames, desktop apps, radio bezels outside the widget area).`;
+Recreate the **functional dashboard layout and visual intent** on the ${radioName} LCD (${lcdW}×${lcdH}). Ignore unrelated chrome in the screenshot (browser frames, desktop apps, radio bezels outside the widget area).`;
 }
 
 export function buildSdkUserMessage(

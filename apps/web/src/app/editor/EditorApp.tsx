@@ -22,6 +22,8 @@ import {
   setRecordColor,
   setRecordText,
   translateRecord,
+  duplicateRecordLine,
+  moveRecordLine,
   type DocumentRecord,
   type TextFormat,
   type ZoneOffset,
@@ -76,11 +78,19 @@ import {
 } from "~/lib/liveTelemetryBridge";
 import {
   addCompanionSuite,
+  companionFilesToSd,
+  getCompanionSuite,
   loadEditorCompanions,
+  modelPngToSdFile,
   saveEditorCompanions,
   type CompanionSuiteId,
   type EditorCompanionState,
 } from "~/lib/companionSuites";
+import {
+  buildInstallGuide,
+  formatInstallGuideMarkdown,
+} from "~/lib/installGuide";
+import { InstallWizard } from "~/components/InstallWizard";
 import {
   alignSelectedRecords,
   distributeSelectedRecords,
@@ -90,6 +100,27 @@ import {
 import styles from "./editor.module.css";
 
 type MobileTab = "layers" | "canvas" | "properties";
+
+const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
+
+function readEnrichRotorflightPreference(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = localStorage.getItem(LIVE_ENRICH_STORAGE_KEY);
+    if (raw == null) return true;
+    return raw !== "0" && raw !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function writeEnrichRotorflightPreference(enabled: boolean): void {
+  try {
+    localStorage.setItem(LIVE_ENRICH_STORAGE_KEY, enabled ? "1" : "0");
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
 
 const PROTOCOLS: TelemetryProtocol[] = [
   "betaflight",
@@ -162,6 +193,10 @@ export function EditorApp() {
   } | null>(null);
   const [modelPngBytes, setModelPngBytes] = useState<Uint8Array | null>(null);
   const [modelPngName, setModelPngName] = useState<string | null>(null);
+  const [showSnapGuides, setShowSnapGuides] = useState(true);
+  const [enrichRotorflight, setEnrichRotorflight] = useState(
+    readEnrichRotorflightPreference,
+  );
   const [companions, setCompanions] = useState<EditorCompanionState>({
     suites: [],
     files: [],
@@ -448,17 +483,6 @@ export function EditorApp() {
     [setSource, markDirty, previewScenario],
   );
 
-  const handleAddPrefab = useCallback(
-    (prefabId: string) => {
-      setSource((prev) => {
-        const result = insertPrefabSection(prev, prefabId);
-        return result?.source ?? prev;
-      });
-      markDirty();
-    },
-    [setSource, markDirty],
-  );
-
   const handleAddFullStacyDash = useCallback(() => {
     // Starter has 2 draw records; confirm when the board already has work.
     const busy = source.includes("-- prefab:") || records.length > 2;
@@ -530,20 +554,124 @@ export function EditorApp() {
     [companions, companionStorageKey, workspaceKey, sessionId],
   );
 
-  const handleModelPngChange = useCallback(async (file: File | null) => {
-    if (!file) {
-      setModelPngBytes(null);
-      setModelPngName(null);
-      return;
+  const handleAddPrefab = useCallback(
+    (prefabId: string) => {
+      setSource((prev) => {
+        const result = insertPrefabSection(prev, prefabId);
+        return result?.source ?? prev;
+      });
+      markDirty();
+      if (prefabId === "rf-model-panel") {
+        handleAddCompanionSuite("flights-count");
+      }
+      if (prefabId === "rf-motor-tiles") {
+        handleAddCompanionSuite("motor-gate");
+      }
+    },
+    [setSource, markDirty, handleAddCompanionSuite],
+  );
+
+  const persistModelPngToWorkspace = useCallback(
+    async (bytes: Uint8Array, fileName: string) => {
+      const key = workspaceKey ?? sessionId;
+      if (!key) return;
+      const sd = modelPngToSdFile(bytes, fileName);
+      const rel = `images/${sd.path.replace(/^IMAGES\//, "")}`;
+      await fetch("/api/widget-companions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceKey: workspaceKey ?? undefined,
+          sessionId: sessionId ?? undefined,
+          files: [
+            {
+              relPath: rel,
+              content: sd.content,
+              encoding: "base64",
+            },
+          ],
+        }),
+      }).catch(() => {
+        /* zip may still omit image; desktop extraFiles covers install */
+      });
+    },
+    [workspaceKey, sessionId],
+  );
+
+  const handleModelPngChange = useCallback(
+    async (file: File | null) => {
+      if (!file) {
+        setModelPngBytes(null);
+        setModelPngName(null);
+        return;
+      }
+      if (file.type !== "image/png") {
+        window.alert("Model image must be a PNG.");
+        return;
+      }
+      const buf = new Uint8Array(await file.arrayBuffer());
+      setModelPngBytes(buf);
+      setModelPngName(file.name);
+      void persistModelPngToWorkspace(buf, file.name);
+    },
+    [persistModelPngToWorkspace],
+  );
+
+  const modelPngUrl = useMemo(() => {
+    if (!modelPngBytes) return null;
+    const copy = new Uint8Array(modelPngBytes);
+    const blob = new Blob([copy], { type: "image/png" });
+    return URL.createObjectURL(blob);
+  }, [modelPngBytes]);
+
+  useEffect(() => {
+    if (!modelPngUrl) return;
+    return () => URL.revokeObjectURL(modelPngUrl);
+  }, [modelPngUrl]);
+
+  const installExtraFiles = useMemo(() => {
+    const files = companionFilesToSd(companions.files);
+    if (modelPngBytes && modelPngName) {
+      files.push(modelPngToSdFile(modelPngBytes, modelPngName));
     }
-    if (file.type !== "image/png") {
-      window.alert("Model image must be a PNG.");
-      return;
-    }
-    const buf = new Uint8Array(await file.arrayBuffer());
-    setModelPngBytes(buf);
-    setModelPngName(file.name);
-  }, []);
+    return files;
+  }, [companions.files, modelPngBytes, modelPngName]);
+
+  const companionLabels = useMemo(
+    () =>
+      companions.suites
+        .map((id) => getCompanionSuite(id)?.label)
+        .filter((label): label is string => Boolean(label)),
+    [companions.suites],
+  );
+
+  const installMd = useMemo(() => {
+    const profile = getSimulateLayoutProfile(layoutProfileId);
+    return formatInstallGuideMarkdown(
+      buildInstallGuide(protocol, meta.name, {
+        radioName: searchParams.get("radioName") ?? undefined,
+        lcdW: profile.lcdW,
+        lcdH: profile.lcdH,
+        touch: layoutProfileId === "tx15" || layoutProfileId === "color272",
+      }),
+    );
+  }, [protocol, meta.name, layoutProfileId, searchParams]);
+
+  const handleEnrichChange = useCallback(
+    (enabled: boolean) => {
+      setEnrichRotorflight(enabled);
+      writeEnrichRotorflightPreference(enabled);
+      liveHandleRef.current?.setEnrichRotorflight(enabled);
+      if (liveTelemetryActive && protocol === "rotorflight") {
+        setLiveTelemetryNote(
+          enabled
+            ? "Live radio · enrich ON — HSpd/Gov/Vbec filled until rf2bg sensors appear"
+            : "Live radio · enrich OFF — wire CRSF sensors only",
+        );
+      }
+    },
+    [liveTelemetryActive, protocol],
+  );
 
   const handleAlign = useCallback(
     (mode: string) => {
@@ -672,13 +800,15 @@ export function EditorApp() {
               : "Live radio · waiting for CRSF frames",
           );
         },
-        { enrichRotorflight: protocol === "rotorflight" },
+        { enrichRotorflight },
       );
       liveHandleRef.current = handle;
       setLiveTelemetryActive(true);
       setLiveTelemetryNote(
         protocol === "rotorflight"
-          ? "Live radio · CRSF on wire; HSpd/Gov/Vbec filled by preview enrich until rf2bg sensors appear"
+          ? enrichRotorflight
+            ? "Live radio · CRSF on wire; enrich ON — HSpd/Gov/Vbec filled until rf2bg"
+            : "Live radio · CRSF on wire; enrich OFF — wire sensors only"
           : "Live radio · waiting for CRSF frames",
       );
     } catch (err) {
@@ -686,7 +816,7 @@ export function EditorApp() {
         err instanceof Error ? err.message : "Failed to open serial port",
       );
     }
-  }, [liveTelemetryActive, protocol]);
+  }, [liveTelemetryActive, protocol, enrichRotorflight]);
 
   const discoveredSensors = useMemo(() => {
     if (!liveTelemetryValues) return [] as string[];
@@ -733,6 +863,36 @@ export function EditorApp() {
       handleDeleteIds([id]);
     },
     [handleDeleteIds],
+  );
+
+  const handleDuplicateSelected = useCallback(() => {
+    if (selectedIds.length === 0) return;
+    setSource((prev) => {
+      let next = prev;
+      for (const id of selectedIds) {
+        const record = interpretDocument(next, previewScenario).find(
+          (r) => r.id === id,
+        );
+        if (!record) continue;
+        next = duplicateRecordLine(next, record);
+      }
+      return next;
+    });
+    markDirty();
+  }, [selectedIds, setSource, previewScenario, markDirty]);
+
+  const handleMoveLayer = useCallback(
+    (id: string, dir: -1 | 1) => {
+      setSource((prev) => {
+        const record = interpretDocument(prev, previewScenario).find(
+          (r) => r.id === id,
+        );
+        if (!record) return prev;
+        return moveRecordLine(prev, record, dir);
+      });
+      markDirty();
+    },
+    [setSource, previewScenario, markDirty],
   );
 
   const handleValidate = useCallback(async () => {
@@ -939,6 +1099,14 @@ export function EditorApp() {
         e.preventDefault();
         handleDeleteIds(selectedIds);
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (selectedIds.length === 0) return;
+        e.preventDefault();
+        handleDuplicateSelected();
+        return;
+      }
       if (
         selectedIds.length > 0 &&
         (e.key === "ArrowLeft" ||
@@ -989,6 +1157,7 @@ export function EditorApp() {
     redo,
     selectedIds,
     handleDeleteIds,
+    handleDuplicateSelected,
     markDirty,
     applyToRecords,
     zone,
@@ -1185,8 +1354,13 @@ export function EditorApp() {
         liveTelemetryActive={liveTelemetryActive}
         onToggleLiveTelemetry={handleToggleLiveTelemetry}
         liveTelemetrySupported={liveTelemetrySupported}
+        enrichRotorflight={enrichRotorflight}
+        onEnrichChange={handleEnrichChange}
         modelPngName={modelPngName}
+        modelPngUrl={modelPngUrl}
         onModelPngChange={(file) => void handleModelPngChange(file)}
+        showSnapGuides={showSnapGuides}
+        onSnapGuidesChange={setShowSnapGuides}
         onAlign={handleAlign}
         onDistribute={handleDistribute}
         canAlign={selectedIds.length >= 2}
@@ -1226,8 +1400,10 @@ export function EditorApp() {
             <>
               {" "}
               <span className={styles.calloutMuted}>
-                Enrich fills missing HSpd/Gov/Vbec — not true FC sensors until
-                rf2bg + Discover new.
+                Enrich {enrichRotorflight ? "ON" : "OFF"} —{" "}
+                {enrichRotorflight
+                  ? "fills missing HSpd/Gov/Vbec (not true FC sensors until rf2bg + Discover new)."
+                  : "showing wire CRSF sensors only."}
               </span>
             </>
           ) : null}
@@ -1276,6 +1452,8 @@ export function EditorApp() {
               )
             }
             onDelete={handleDelete}
+            onMoveUp={(id) => handleMoveLayer(id, 1)}
+            onMoveDown={(id) => handleMoveLayer(id, -1)}
           />
         </div>
 
@@ -1295,7 +1473,7 @@ export function EditorApp() {
               onResize={handleResize}
               onGestureStart={handleGestureStart}
               onGestureEnd={handleGestureEnd}
-              showSnapGuides
+              showSnapGuides={showSnapGuides}
               scenarioId={previewScenarioId}
               scenarioOverride={
                 liveTelemetryActive ? previewScenario : undefined
@@ -1364,6 +1542,21 @@ export function EditorApp() {
               </ul>
             </div>
           )}
+
+          <div className={styles.installPanel}>
+            <InstallWizard
+              widgetName={meta.name}
+              luaSource={source}
+              installMd={installMd}
+              workspaceKey={workspaceKey}
+              sessionId={sessionId}
+              extraFiles={installExtraFiles}
+              companionLabels={companionLabels}
+              hasModelImage={
+                Boolean(modelPngBytes) || /drawBitmap|Bitmap\.open/.test(source)
+              }
+            />
+          </div>
         </div>
       </div>
 

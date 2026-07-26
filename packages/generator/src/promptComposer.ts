@@ -169,7 +169,7 @@ export function buildGenerationPrompt(
     ? readModelHeroDashboardGuide()
     : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
-  const textLayoutGuide = readTextLayoutGuide();
+  const textLayoutGuide = readTextLayoutGuide(radio.id);
   const layoutReservedRectsGuide = readLayoutReservedRectsGuide();
   const themePalettesGuide = readThemePalettesGuide();
   const roundedCornersGuide = wantsRoundedCorners(userPrompt)
@@ -215,6 +215,8 @@ export function buildGenerationPrompt(
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
     radio.name,
+    radio.lcdW,
+    radio.lcdH,
   );
 
   return `You are generating an EdgeTX Lua **full-screen dashboard** (widget script) for ${radio.name}.
@@ -373,15 +375,18 @@ export function buildRefinePrompt(
     ? readModelHeroDashboardGuide()
     : "";
   const runtimeApiPitfalls = readRuntimeApiPitfallsGuide();
-  const textLayoutGuide = readTextLayoutGuide();
+  const textLayoutGuide = readTextLayoutGuide(radioId);
   const layoutReservedRectsGuide = readLayoutReservedRectsGuide();
   const layoutRefFile = layoutReferenceExample(archetype.id, userPrompt);
   const layoutRefSnippet = layoutRefFile
     ? readLayoutExampleSnippet(layoutRefFile)
     : "";
+  const refineRadio = loadRadioProfile(radioId);
   const referenceImagesSection = buildReferenceImagesSection(
     ctx?.referenceImageCount ?? 0,
-    loadRadioProfile(radioId).name,
+    refineRadio.name,
+    refineRadio.lcdW,
+    refineRadio.lcdH,
   );
 
   return `Refine the existing EdgeTX dashboard${widgetName ? ` (display name "${widgetName}")` : ""}${ctx?.widgetInstanceId ? ` in workspace \`${ctx.widgetInstanceId}\` (v${ctx.widgetVersion ?? 0})` : ""}.

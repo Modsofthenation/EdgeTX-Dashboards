@@ -1,0 +1,45 @@
+# Live telemetry (Web Serial) vs radio sensors
+
+## What “Live radio” does today
+
+The desktop/browser **Live radio** control opens a **Web Serial** port and parses
+**standard CRSF frames** (link, battery, attitude, GPS, vario, flight mode).
+
+Those frames map to common catalog keys (`RxBt`, `Curr`, `RQLY`, `FM`, …).
+
+## Rotorflight custom sensors (rf2bg)
+
+Sensors such as `HSpd`, `Gov`, `Vbec`, `Vcel`, `EscT` are published by **rf2bg**
+on the **radio’s EdgeTX telemetry table**. They are **not** standard CRSF frame
+types on a USB serial wire from the radio.
+
+| Path                                            | What you get                                                                 |
+| ----------------------------------------------- | ---------------------------------------------------------------------------- |
+| Web Serial CRSF                                 | True live values for standard CRSF keys                                      |
+| Preview **enrich** (default on for Rotorflight) | Synthetic fill for missing HSpd/Gov/Vbec/… so StacyDash boards stay readable |
+| Radio + rf2bg + Discover new                    | True FC sensors **on the radio**; bind them in Layout / Generate             |
+
+### Enrich vs live toggle
+
+In Layout and Generate preview:
+
+- **Enrich on** — missing RF keys are filled for preview (not FC truth).
+- **Enrich off** — only keys present on the CRSF stream (and any that appear
+  under “Seen on live radio” in Properties).
+
+### Path to true RF values in the app
+
+Until EdgeTX exposes a USB telemetry dump of the full sensor table (or a Lua
+bridge script writes sensors over serial), **true HSpd/Gov/Vbec in the web
+preview requires those values to appear on the CRSF stream**. Practical workflow:
+
+1. Special Function → **rf2bg** (Repeat On) on the radio
+2. Telemetry → Discover new
+3. Fly / bench on the radio for truth
+4. Use Live radio + **Enrich off** in the app for standard CRSF only
+5. Bind discovered keys in Layout when they show under live sensors
+
+## Related
+
+- `apps/web/src/lib/liveTelemetryBridge.ts`
+- `knowledge/design/stacydash-rotorflight-sections.md`

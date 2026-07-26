@@ -25,7 +25,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "desktop:dev": "npm run tauri --workspace=@widget-gen/desktop -- dev",
     "desktop:build": "npm run tauri --workspace=@widget-gen/desktop -- build",
-    "desktop:prepare": "npm run prepare:standalone --workspace=@widget-gen/desktop"
+    "desktop:prepare": "npm run prepare:standalone --workspace=@widget-gen/desktop",
+    "desktop:smoke": "npm run smoke:standalone --workspace=@widget-gen/desktop"
   },
   "engines": {
     "node": ">=22.13.0"

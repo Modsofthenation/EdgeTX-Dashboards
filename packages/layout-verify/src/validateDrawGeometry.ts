@@ -1,4 +1,5 @@
 import type { ValidationIssue } from "@widget-gen/shared";
+import type { SimulateLayoutProfile } from "@widget-gen/shared";
 import { findOverlaps, formatOverlapHit } from "./overlap.ts";
 import { interpretWidgetLayout } from "./interpreter/luaDrawInterpreter.ts";
 import { DEFAULT_LAYOUT_SCENARIO } from "./scenarios/tortureGallery.ts";
@@ -11,6 +12,8 @@ export interface ValidateDrawGeometryOptions {
   strict?: boolean;
   lcdW?: number;
   lcdH?: number;
+  /** When set, LCD_W/LCD_H in Lua resolve to this radio profile. */
+  simulateProfile?: SimulateLayoutProfile;
 }
 
 export function validateDrawGeometry(
@@ -21,6 +24,7 @@ export function validateDrawGeometry(
   const { records, warnings, skippedTextCount } = interpretWidgetLayout(
     source,
     scenario,
+    options.simulateProfile,
   );
 
   const issues: ValidationIssue[] = [];
@@ -47,8 +51,8 @@ export function validateDrawGeometry(
   }
 
   const hits = findOverlaps(records, {
-    lcdW: options.lcdW,
-    lcdH: options.lcdH,
+    lcdW: options.lcdW ?? options.simulateProfile?.lcdW,
+    lcdH: options.lcdH ?? options.simulateProfile?.lcdH,
   });
   const severity = options.strict ? "error" : "warning";
 

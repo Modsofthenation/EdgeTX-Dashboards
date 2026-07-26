@@ -346,6 +346,67 @@ export function insertDrawLineWithId(
   return { source: next, insertedId: inserted?.id ?? null };
 }
 
+/** Insert raw Lua line at end of refresh() body. */
+export function insertRawRefreshLine(source: string, luaLine: string): string {
+  const bodyEnd = findRefreshBodyEndIndex(source);
+  if (bodyEnd < 0) return source;
+  const indent = "  ";
+  const trimmed = luaLine.trim();
+  const line = `${indent}${trimmed}`;
+  const prefix = source.slice(0, bodyEnd);
+  const needsLeadingNl = prefix.length > 0 && !prefix.endsWith("\n");
+  return (
+    prefix + (needsLeadingNl ? "\n" : "") + line + "\n" + source.slice(bodyEnd)
+  );
+}
+
+/** Duplicate an anchored draw record (inserts a copy at end of refresh). */
+export function duplicateRecordLine(
+  source: string,
+  record: DrawRecord,
+): string {
+  const lineNum = record.sourceRef?.sourceLine ?? record.sourceLine;
+  if (!lineNum) return source;
+  const line = getSourceLine(source, lineNum).trim();
+  if (!line) return source;
+  return insertRawRefreshLine(source, line);
+}
+
+/**
+ * Move a draw line within the refresh body (dir -1 = earlier / behind,
+ * +1 = later / in front). Returns original source if move is impossible.
+ */
+export function moveRecordLine(
+  source: string,
+  record: DrawRecord,
+  dir: -1 | 1,
+): string {
+  const lineNum = record.sourceRef?.sourceLine ?? record.sourceLine;
+  if (!lineNum) return source;
+  const startLine1 = findRefreshBodyStartLine(source);
+  const endIdx = findRefreshBodyEndIndex(source);
+  if (startLine1 < 0 || endIdx < 0) return source;
+  const startIdx = startLine1 - 1;
+  const lines = source.split("\n");
+  let endLine = startIdx;
+  let acc = 0;
+  for (let i = 0; i < lines.length; i++) {
+    acc += lines[i]!.length + 1;
+    if (acc > endIdx) {
+      endLine = i;
+      break;
+    }
+  }
+  const from = lineNum - 1;
+  const to = from + dir;
+  if (from < startIdx || from >= lines.length) return source;
+  if (to < startIdx || to >= endLine) return source;
+  const [row] = lines.splice(from, 1);
+  if (row == null) return source;
+  lines.splice(to, 0, row);
+  return lines.join("\n");
+}
+
 export function patchWidgetName(source: string, name: string): string {
   const trimmed = name.slice(0, 10);
   if (/local\s+name\s*=/.test(source)) {

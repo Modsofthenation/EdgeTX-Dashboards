@@ -13,9 +13,15 @@ interface InstallWizardProps {
   sessionId?: string | null;
   /** Extra SD files (companions / IMAGES) merged when package API is empty. */
   extraFiles?: SdFile[];
+  /** Companion suite labels included in the package (shown in checklist). */
+  companionLabels?: string[];
+  /** True when a model PNG / bitmap is part of the package. */
+  hasModelImage?: boolean;
 }
 
 type WizardStep = "checklist" | "copy" | "done";
+
+const EMPTY_COMPANION_LABELS: string[] = [];
 
 async function isTauri(): Promise<boolean> {
   try {
@@ -33,6 +39,8 @@ export function InstallWizard({
   workspaceKey,
   sessionId,
   extraFiles,
+  companionLabels = EMPTY_COMPANION_LABELS,
+  hasModelImage = false,
 }: InstallWizardProps) {
   const [step, setStep] = useState<WizardStep>("checklist");
   const [desktop, setDesktop] = useState(false);
@@ -42,6 +50,8 @@ export function InstallWizard({
   const [checks, setChecks] = useState({
     unzip: false,
     widgets: false,
+    companions: false,
+    modelBitmap: false,
     model: false,
     rf2bg: false,
   });
@@ -186,6 +196,35 @@ export function InstallWizard({
             <code>SCRIPTS/</code> companions when present)
           </label>
         </li>
+        {companionLabels.length > 0 ? (
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                checked={checks.companions}
+                onChange={(e) =>
+                  setChecks((c) => ({ ...c, companions: e.target.checked }))
+                }
+              />
+              Confirm companion scripts are present under <code>SCRIPTS/</code>
+            </label>
+          </li>
+        ) : null}
+        {hasModelImage ? (
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                checked={checks.modelBitmap}
+                onChange={(e) =>
+                  setChecks((c) => ({ ...c, modelBitmap: e.target.checked }))
+                }
+              />
+              Assign model bitmap on SD (<code>IMAGES/</code> /{" "}
+              <code>drawBitmap</code> path)
+            </label>
+          </li>
+        ) : null}
         <li>
           <label>
             <input
@@ -211,6 +250,17 @@ export function InstallWizard({
           </label>
         </li>
       </ol>
+
+      {companionLabels.length > 0 ? (
+        <div className={styles.companionStatus}>
+          <p className={styles.companionStatusTitle}>Companion suites</p>
+          <ul className={styles.companionList}>
+            {companionLabels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className={styles.actions}>
         <button

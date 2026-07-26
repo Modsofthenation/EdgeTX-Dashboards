@@ -47,12 +47,18 @@ export function renderInstallMd(
   radio: RadioProfile,
   catalog: TelemetryCatalog,
   sensorNames: string[],
-  companions?: { tools: string[]; telemetry: string[] },
+  companions?: {
+    tools: string[];
+    telemetry: string[];
+    assets?: string[];
+    images?: string[];
+  },
 ): string {
   let tpl = readTemplate("INSTALL.md.tpl");
   const sensors = catalog.sensors.filter((s) => sensorNames.includes(s.name));
   const tools = companions?.tools ?? [];
   const telemetry = companions?.telemetry ?? [];
+  const images = companions?.images ?? [];
 
   tpl = tpl.replace(/\{\{WIDGET_NAME\}\}/g, widgetName);
   tpl = tpl.replace(/\{\{RADIO_NAME\}\}/g, radio.name);
@@ -84,11 +90,13 @@ export function renderInstallMd(
       : "- See generated dashboard source for sensor references";
   tpl = tpl.replace(/\{\{#SENSORS\}\}[\s\S]*?\{\{\/SENSORS\}\}/, sensorBlock);
 
-  if (tools.length > 0 || telemetry.length > 0) {
+  const hasCompanions =
+    tools.length > 0 || telemetry.length > 0 || images.length > 0;
+  if (hasCompanions) {
     const companionBlock = [
-      "## Companion scripts",
+      "## Companion scripts & assets",
       "",
-      "This package includes helper scripts alongside the dashboard widget.",
+      "This package includes helpers alongside the dashboard widget. Copy every path in the zip to the same location on the SD card.",
       "",
       tools.length > 0
         ? [
@@ -108,6 +116,17 @@ export function renderInstallMd(
             ...telemetry.map(
               (t) =>
                 `1. Copy \`${t}\` to \`SD:/SCRIPTS/TELEMETRY/${t}\`.\n2. **Model** → **Telemetry** (or **Display**) → set a screen to **Script** → pick **${t.replace(/\.lua$/, "")}**.`,
+            ),
+            "",
+          ].join("\n")
+        : "",
+      images.length > 0
+        ? [
+            "### Model images (`IMAGES/`)",
+            "",
+            ...images.map(
+              (img) =>
+                `1. Copy \`${img}\` to \`SD:/IMAGES/${img}\`.\n2. **Model Setup** → **Assign Bitmap** → select \`${img.replace(/\.png$/i, "")}\` (or match \`model.getInfo().bitmap\`).`,
             ),
             "",
           ].join("\n")

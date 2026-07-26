@@ -151,15 +151,17 @@ export function readDesignGuideForArchetype(
   archetypeId?: string,
 ): string {
   const principles = readLayoutPrinciples();
+  const radioGuide = readDesignGuide(radioId);
+  const layoutKey = getLayoutProfileId(loadRadioProfile(radioId));
   const cardArchetypes = new Set(["card-grid", "heli-rotorflight"]);
-  if (archetypeId && cardArchetypes.has(archetypeId)) {
+  // TX15 card-grid recipe is 480×320-specific — skip for other layout classes.
+  if (archetypeId && cardArchetypes.has(archetypeId) && layoutKey === "tx15") {
     const recipe = readCardGridRecipe();
-    return [principles, recipe].filter(Boolean).join("\n\n");
+    return [principles, recipe, radioGuide].filter(Boolean).join("\n\n");
   }
 
-  if (principles) return principles;
-
-  return readDesignGuide(radioId);
+  const combined = [principles, radioGuide].filter(Boolean).join("\n\n");
+  return combined || radioGuide;
 }
 
 export function readExampleSnippet(exampleFile: string, maxLines = 55): string {
@@ -247,10 +249,24 @@ export function readModelHeroDashboardGuide(): string {
   );
 }
 
-export function readTextLayoutGuide(): string {
-  return readCachedTextIfExists(
-    join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md"),
-  );
+export function readTextLayoutGuide(radioId = DEFAULT_RADIO_ID): string {
+  const radio = loadRadioProfile(radioId);
+  const layoutKey = getLayoutProfileId(radio);
+  const candidates = [
+    join(getRepoRoot(), "knowledge", "design", `${layoutKey}-text-layout.md`),
+    join(getRepoRoot(), "knowledge", "design", `${radioId}-text-layout.md`),
+  ];
+  for (const path of candidates) {
+    const text = readCachedTextIfExists(path);
+    if (text) return text;
+  }
+  // Dense TX15 text rules only apply to the 480×320 profile.
+  if (layoutKey === "tx15") {
+    return readCachedTextIfExists(
+      join(getRepoRoot(), "knowledge", "design", "tx15-text-layout.md"),
+    );
+  }
+  return "";
 }
 
 export function readRuntimeApiPitfallsGuide(): string {
