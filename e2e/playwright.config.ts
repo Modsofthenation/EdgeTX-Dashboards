@@ -1,11 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const rootDir = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const rootDir = path.join(__dirname, "..");
 const dataDir = path.join(rootDir, "data", "e2e");
 const port = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${port}`;

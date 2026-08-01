@@ -29,6 +29,25 @@ export async function gotoEditor(
   await page.getByRole("navigation", { name: "Primary" }).waitFor();
 }
 
+/** Primary chrome nav link (exact), not "Open Layout" / "Build in Layout". */
+export function primaryNavLink(page: Page, name: "Generate" | "Layout") {
+  return page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
+    name,
+    exact: true,
+  });
+}
+
+export async function ensureChatsPanelOpen(page: Page): Promise<void> {
+  const show = page.getByRole("button", { name: "Show Chats panel" });
+  if (await show.isVisible().catch(() => false)) {
+    await show.click();
+  }
+  await page.getByRole("heading", { name: "Chats" }).waitFor({
+    state: "visible",
+    timeout: 10_000,
+  });
+}
+
 export async function openPreferences(
   page: Page,
   tab?: "Appearance" | "AI" | "Simulator WASM",

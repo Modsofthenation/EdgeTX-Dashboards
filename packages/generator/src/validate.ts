@@ -260,7 +260,10 @@ function validateVisualDesign(
 }
 
 function validateReturnTable(source: string, issues: ValidationIssue[]): void {
-  const lastReturn = source.lastIndexOf("return {");
+  const lastReturn = Math.max(
+    source.lastIndexOf("return {"),
+    source.lastIndexOf("return{"),
+  );
   if (lastReturn === -1) {
     issues.push({
       severity: "error",
@@ -269,9 +272,31 @@ function validateReturnTable(source: string, issues: ValidationIssue[]): void {
     return;
   }
 
-  const tail = source.slice(lastReturn);
-  const blockMatch = tail.match(/return\s*\{([\s\S]*)\n\}/);
-  const block = blockMatch?.[1] ?? "";
+  const openBrace = source.indexOf("{", lastReturn);
+  if (openBrace === -1) {
+    issues.push({
+      severity: "error",
+      message: "Missing return { ... } widget table",
+    });
+    return;
+  }
+
+  let depth = 0;
+  let closeBrace = -1;
+  for (let i = openBrace; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        closeBrace = i;
+        break;
+      }
+    }
+  }
+
+  const block =
+    closeBrace === -1 ? "" : source.slice(openBrace + 1, closeBrace);
 
   if (!/\bname\b/.test(block)) {
     issues.push({

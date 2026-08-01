@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createChat } from "../helpers/api.ts";
-import { gotoHome } from "../helpers/ui.ts";
+import { ensureChatsPanelOpen, gotoHome } from "../helpers/ui.ts";
 
 test.describe("Chat history UI", () => {
   test("sidebar lists chats created via API after refresh", async ({
@@ -11,23 +11,12 @@ test.describe("Chat history UI", () => {
     const chat = await createChat(request, { title });
 
     await gotoHome(page);
-    // Expand chats panel if collapsed
-    const chatsToggle = page.getByRole("button", { name: /Chats/i });
-    if (await chatsToggle.isVisible().catch(() => false)) {
-      const expanded = await page
-        .getByText(title)
-        .isVisible()
-        .catch(() => false);
-      if (!expanded) {
-        await chatsToggle.click();
-      }
-    }
+    await ensureChatsPanelOpen(page);
 
     await expect(page.getByText(title).first()).toBeVisible({
       timeout: 15_000,
     });
 
-    // Selecting chat should update URL
     await page.getByText(title).first().click();
     await expect(page).toHaveURL(new RegExp(`chatId=${chat.id}`));
   });
@@ -52,22 +41,19 @@ test.describe("Chat history UI", () => {
     request,
   }) => {
     const title = `Delete me ${Date.now()}`;
-    const chat = await createChat(request, { title });
+    await createChat(request, { title });
     await gotoHome(page);
-
-    const chatsToggle = page.getByRole("button", { name: /Chats/i });
-    if (await chatsToggle.isVisible().catch(() => false)) {
-      const visible = await page
-        .getByText(title)
-        .isVisible()
-        .catch(() => false);
-      if (!visible) await chatsToggle.click();
-    }
+    await ensureChatsPanelOpen(page);
 
     await expect(page.getByText(title).first()).toBeVisible();
 
-    await page.getByRole("button", { name: `Delete ${title}` }).click();
-    await page.getByRole("button", { name: "Delete" }).click();
+    const row = page.getByRole("listitem").filter({ hasText: title });
+    await row.hover();
+    await row.getByRole("button", { name: `Delete ${title}` }).click();
+    await page
+      .getByRole("alertdialog", { name: "Delete chat?" })
+      .getByRole("button", { name: "Delete", exact: true })
+      .click();
 
     await expect(page.getByText(title)).toHaveCount(0, { timeout: 15_000 });
   });

@@ -115,9 +115,7 @@ test.describe("Editor workflow", () => {
 
     await page.getByRole("button", { name: "Simulator" }).click();
     await expect(
-      page
-        .getByRole("heading", { name: /Run in simulator|Simulator/i })
-        .or(page.getByText(/Run in simulator|interactive sim/i)),
+      page.getByRole("heading", { name: "Run in simulator" }),
     ).toBeVisible({ timeout: 15_000 });
   });
 

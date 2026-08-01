@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { dismissFirstRunWizard, gotoHome } from "../helpers/ui.ts";
+import {
+  dismissFirstRunWizard,
+  gotoHome,
+  primaryNavLink,
+} from "../helpers/ui.ts";
 
 test.describe("Home boot & empty state", () => {
   test("loads product chrome and empty dashboard prompt", async ({ page }) => {
@@ -9,8 +13,8 @@ test.describe("Home boot & empty state", () => {
       page.getByRole("link", { name: "EdgeTX Dashboard Generator home" }),
     ).toBeVisible();
     await expect(page.getByText("EdgeTX Dashboards")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Generate" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Layout" })).toBeVisible();
+    await expect(primaryNavLink(page, "Generate")).toBeVisible();
+    await expect(primaryNavLink(page, "Layout")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "What should your dashboard show?" }),
     ).toBeVisible();
@@ -112,17 +116,23 @@ test.describe("Home boot & empty state", () => {
     const filters = page.getByRole("group", { name: "Template variants" });
     await expect(filters).toBeVisible();
 
-    await expect(page.getByText("Minimal quad")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Minimal quad/i }).first(),
+    ).toBeVisible();
 
     const rfElectric = filters.getByRole("button", { name: /RF electric/i });
     if (await rfElectric.isVisible()) {
       await rfElectric.click();
-      await expect(page.getByText("RF heli (electric)")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /RF heli \(electric\)/i }).first(),
+      ).toBeVisible();
     }
 
     const all = filters.getByRole("button", { name: /^All$/i });
     await all.click();
-    await expect(page.getByText("Minimal quad")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Minimal quad/i }).first(),
+    ).toBeVisible();
   });
 
   test("Generate with AI is present on templates", async ({ page }) => {

@@ -78,6 +78,52 @@ describe("archetype-aware validateVisualDesign", () => {
   });
 });
 
+describe("validateReturnTable", () => {
+  it("accepts a single-line return { name, create, refresh }", () => {
+    const source = [
+      "---@type WidgetScript",
+      "---@simulate Layout1x1 zone=0",
+      'local name = "OneLine"',
+      "local function create(zone, opts) return { zone = zone, options = opts } end",
+      "local function refresh(widget)",
+      "  lcd.clear(BLACK)",
+      '  lcd.drawText(10, 10, "OK", SMLSIZE + WHITE)',
+      "end",
+      "return { name = name, create = create, refresh = refresh }",
+    ].join("\n");
+    const result = validateWidgetLua(source);
+    const returnIssues = result.issues.filter((i) =>
+      /Return table must include/i.test(i.message),
+    );
+    assert.equal(returnIssues.length, 0);
+    assert.equal(result.valid, true);
+  });
+
+  it("accepts a multi-line return table", () => {
+    const source = [
+      "---@type WidgetScript",
+      "---@simulate Layout1x1 zone=0",
+      'local name = "MultiLn"',
+      "local function create(zone, opts) return { zone = zone, options = opts } end",
+      "local function refresh(widget)",
+      "  lcd.clear(BLACK)",
+      '  lcd.drawText(10, 10, "OK", SMLSIZE + WHITE)',
+      "end",
+      "return {",
+      "  name = name,",
+      "  create = create,",
+      "  refresh = refresh,",
+      "}",
+    ].join("\n");
+    const result = validateWidgetLua(source);
+    const returnIssues = result.issues.filter((i) =>
+      /Return table must include/i.test(i.message),
+    );
+    assert.equal(returnIssues.length, 0);
+    assert.equal(result.valid, true);
+  });
+});
+
 describe("validateNoWidgetNameChrome", () => {
   it("errors when the widget display name is drawn on screen", () => {
     const source = [

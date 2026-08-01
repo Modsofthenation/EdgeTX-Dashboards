@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { closePreferences, gotoHome, openPreferences } from "../helpers/ui.ts";
+import {
+  closePreferences,
+  gotoHome,
+  openPreferences,
+  primaryNavLink,
+} from "../helpers/ui.ts";
 
 test.describe("Preferences", () => {
   test.beforeEach(async ({ page }) => {
@@ -13,8 +18,10 @@ test.describe("Preferences", () => {
       dialog.getByRole("tab", { name: "Appearance" }),
     ).toHaveAttribute("aria-selected", "true");
     await expect(dialog.locator("[data-theme-preview]").first()).toBeVisible();
-    await expect(dialog.getByText("Dark")).toBeVisible();
-    await expect(dialog.getByText("Light")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /^Dark\b/ })).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: /^Light\b/ }),
+    ).toBeVisible();
   });
 
   test("switching theme updates document attribute", async ({ page }) => {
@@ -82,11 +89,11 @@ test.describe("Preferences", () => {
     await dialog.locator('[data-theme-preview="ocean"]').click();
     await closePreferences(page);
 
-    await page.getByRole("link", { name: "Layout" }).click();
+    await primaryNavLink(page, "Layout").click();
     await expect(page).toHaveURL(/\/editor/);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "ocean");
 
-    await page.getByRole("link", { name: "Generate" }).click();
+    await primaryNavLink(page, "Generate").click();
     await expect(page).toHaveURL(/\/(\?|$)/);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "ocean");
   });

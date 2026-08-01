@@ -275,12 +275,16 @@ test.describe("API smoke", () => {
     expect(body.files.length).toBeGreaterThan(0);
   });
 
-  test("widget-source GET returns 204 for unknown widget", async ({
+  test("widget-source GET returns 204 for unknown or invalid widget keys", async ({
     request,
   }) => {
-    const res = await request.get(
+    const missing = await request.get("/api/widget-source?name=MissingWdg");
+    expect(missing.status()).toBe(204);
+
+    // Over-long / invalid names must not 500
+    const invalid = await request.get(
       "/api/widget-source?name=DoesNotExistWidgetXYZ",
     );
-    expect([204, 404]).toContain(res.status());
+    expect([204, 400]).toContain(invalid.status());
   });
 });

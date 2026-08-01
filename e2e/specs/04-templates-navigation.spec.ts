@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { gotoEditor, gotoHome } from "../helpers/ui.ts";
+import { gotoEditor, gotoHome, primaryNavLink } from "../helpers/ui.ts";
 
 test.describe("Templates & navigation", () => {
   test("Build in Layout navigates to blank editor", async ({ page }) => {
@@ -31,16 +31,16 @@ test.describe("Templates & navigation", () => {
 
   test("chrome Layout and Generate round-trip", async ({ page }) => {
     await gotoHome(page);
-    await page.getByRole("link", { name: "Layout" }).click();
+    await primaryNavLink(page, "Layout").click();
     await expect(page).toHaveURL(/\/editor/);
-    await expect(page.getByRole("link", { name: "Layout" })).toHaveAttribute(
+    await expect(primaryNavLink(page, "Layout")).toHaveAttribute(
       "aria-current",
       "page",
     );
 
-    await page.getByRole("link", { name: "Generate" }).click();
+    await primaryNavLink(page, "Generate").click();
     await expect(page).toHaveURL(/\/(\?|$)/);
-    await expect(page.getByRole("link", { name: "Generate" })).toHaveAttribute(
+    await expect(primaryNavLink(page, "Generate")).toHaveAttribute(
       "aria-current",
       "page",
     );

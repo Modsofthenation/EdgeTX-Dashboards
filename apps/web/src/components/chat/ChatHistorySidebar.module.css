@@ -187,7 +187,7 @@
   position: absolute;
   top: 0.4rem;
   right: 0.25rem;
-  z-index: 1;
+  z-index: 2;
   width: 1.75rem;
   height: 1.75rem;
   display: grid;
@@ -199,13 +199,14 @@
   line-height: 1;
   border-radius: var(--radius-sm);
   opacity: 0;
-  pointer-events: none;
+  /* Remain hittable while visually hover-revealed so the absolute ×
+     is not blocked by the full-bleed item button underneath. */
+  pointer-events: auto;
 }
 
 .item:hover .deleteBtn,
 .item:focus-within .deleteBtn {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .deleteBtn:hover:not(:disabled) {
@@ -241,7 +242,6 @@
 
   .deleteBtn {
     opacity: 1;
-    pointer-events: auto;
   }
 }
 
