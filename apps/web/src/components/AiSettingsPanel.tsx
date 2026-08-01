@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import type { AiProviderId } from "@widget-gen/shared";
-import { AI_PROVIDERS, providerMeta } from "@widget-gen/shared";
+import { AI_PROVIDERS, formatList, providerMeta } from "@widget-gen/shared";
 import { useAiSettings } from "~/components/AiSettingsProvider";
 import {
   DEFAULT_CHAT_MODEL,
@@ -135,13 +135,31 @@ export function AiSettingsPanel() {
         : "Ready (server key)"
       : "Not configured";
 
+  const providerLabels = formatList(
+    AI_PROVIDERS.map((p) => p.label),
+    "and",
+  );
+  const providerEnvVars = AI_PROVIDERS.map((p) => p.envVar);
+  const envVarSep = (i: number) => {
+    if (i === 0) return null;
+    if (i === providerEnvVars.length - 1) {
+      return providerEnvVars.length === 2 ? " or " : ", or ";
+    }
+    return ", ";
+  };
+
   return (
     <section className={styles.panel}>
       <p className={styles.hint}>
-        Generation supports Cursor, Anthropic, and OpenAI. Configure a browser
-        key here, or set the matching server env var (
-        <code>CURSOR_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>,{" "}
-        <code>OPENAI_API_KEY</code>).
+        Generation supports {providerLabels}. Configure a browser key here, or
+        set the matching server env var (
+        {providerEnvVars.map((env, i) => (
+          <span key={env}>
+            {envVarSep(i)}
+            <code>{env}</code>
+          </span>
+        ))}
+        ).
       </p>
 
       <label className={styles.label} htmlFor={providerFieldId}>

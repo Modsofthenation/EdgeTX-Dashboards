@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   ANTHROPIC_MODELS,
   defaultModelForProvider,
+  GEMINI_MODELS,
   isAllowedModelForProvider,
   listModelsForProvider,
   OPENAI_MODELS,
@@ -87,6 +88,18 @@ describe("providerModels", () => {
     assert.equal(fetchCalls, 1);
   });
 
+  it("returns the static Gemini catalog", async () => {
+    const gemini = await listModelsForProvider("gemini");
+    assert.equal(gemini.source, "fallback");
+    assert.deepEqual(gemini.models, GEMINI_MODELS);
+    assert.equal(gemini.defaultId, defaultModelForProvider("gemini"));
+    assert.ok(gemini.models.some((m) => m.id === "gemini-3.5-flash"));
+    assert.equal(
+      gemini.models.some((m) => m.id === "gemini-2.0-flash"),
+      false,
+    );
+  });
+
   it("falls back to static catalogs when provider APIs fail", async (t) => {
     t.mock.method(globalThis, "fetch", async () => {
       throw new Error("network unavailable");
@@ -148,6 +161,11 @@ describe("providerModels", () => {
     );
     assert.equal(isAllowedModelForProvider("anthropic", "gpt-4.1"), false);
     assert.equal(isAllowedModelForProvider("openai", "gpt-4.1"), true);
+    assert.equal(
+      isAllowedModelForProvider("gemini", defaultModelForProvider("gemini")),
+      true,
+    );
+    assert.equal(isAllowedModelForProvider("gemini", "gpt-4.1"), false);
   });
 });
 
@@ -179,6 +197,22 @@ describe("validateGenerateRequest provider", () => {
         anthropic.request.modelId,
         defaultModelForProvider("anthropic"),
       );
+    }
+
+    const gemini = validateGenerateRequest(
+      {
+        prompt: "battery row",
+        radioId: "tx15",
+        protocol: "betaflight",
+        provider: "gemini",
+        modelId: defaultModelForProvider("gemini"),
+      },
+      { allowedModelIds: [defaultModelForProvider("gemini")] },
+    );
+    assert.equal(gemini.ok, true);
+    if (gemini.ok) {
+      assert.equal(gemini.request.provider, "gemini");
+      assert.equal(gemini.request.modelId, defaultModelForProvider("gemini"));
     }
   });
 

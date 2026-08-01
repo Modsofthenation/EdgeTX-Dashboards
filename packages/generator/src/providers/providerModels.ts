@@ -87,9 +87,28 @@ export const OPENAI_MODELS: ModelCatalogEntry[] = [
   },
 ];
 
+export const GEMINI_MODELS: ModelCatalogEntry[] = [
+  {
+    id: "gemini-3.5-flash",
+    label: "Gemini 3.5 Flash",
+    description: "Fast coding + tool use (recommended)",
+  },
+  {
+    id: "gemini-2.5-pro",
+    label: "Gemini 2.5 Pro",
+    description: "Highest quality, slower",
+  },
+  {
+    id: "gemini-2.5-flash",
+    label: "Gemini 2.5 Flash",
+    description: "Previous-gen flash model",
+  },
+];
+
 export function defaultModelForProvider(provider: AiProviderId): string {
   if (provider === "anthropic") return ANTHROPIC_MODELS[0]!.id;
   if (provider === "openai") return OPENAI_MODELS[0]!.id;
+  if (provider === "gemini") return GEMINI_MODELS[0]!.id;
   return DEFAULT_MODEL_ID;
 }
 
@@ -222,6 +241,13 @@ export async function listModelsForProvider(
       return fallbackCatalog("openai");
     }
   }
+  if (provider === "gemini") {
+    return {
+      models: [...GEMINI_MODELS],
+      defaultId: defaultModelForProvider("gemini"),
+      source: "fallback",
+    };
+  }
   const models = await listAvailableModels(apiKey);
   return {
     models,
@@ -249,6 +275,9 @@ export function isAllowedModelForProvider(
   }
   if (provider === "openai") {
     return OPENAI_MODELS.some((m) => m.id === modelId);
+  }
+  if (provider === "gemini") {
+    return GEMINI_MODELS.some((m) => m.id === modelId);
   }
   return FALLBACK_MODELS.some((m) => m.id === modelId) || Boolean(modelId);
 }

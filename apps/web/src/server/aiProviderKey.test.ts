@@ -10,6 +10,7 @@ describe("aiProviderKey", () => {
   afterEach(() => {
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
   });
 
   it("reads provider from x-ai-provider header", () => {
@@ -44,5 +45,22 @@ describe("aiProviderKey", () => {
       headers: { "x-ai-provider": "openai" },
     });
     assert.equal(resolveProviderApiKey(request, "openai"), "server_oai");
+  });
+
+  it("resolves Gemini browser and server keys", () => {
+    process.env.GEMINI_API_KEY = "server_gem";
+    const withBrowser = new Request("http://localhost/api/generate", {
+      headers: {
+        "x-ai-provider": "gemini",
+        "x-gemini-api-key": "browser_gem",
+      },
+    });
+    assert.equal(readBrowserProvider(withBrowser), "gemini");
+    assert.equal(resolveProviderApiKey(withBrowser, "gemini"), "browser_gem");
+
+    const serverOnly = new Request("http://localhost/api/generate", {
+      headers: { "x-ai-provider": "gemini" },
+    });
+    assert.equal(resolveProviderApiKey(serverOnly, "gemini"), "server_gem");
   });
 });

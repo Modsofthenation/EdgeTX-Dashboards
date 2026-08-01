@@ -62,6 +62,7 @@ describe("aiSettings storage", () => {
     clearStoredApiKey("cursor");
     clearStoredApiKey("anthropic");
     clearStoredApiKey("openai");
+    clearStoredApiKey("gemini");
     session.clear();
     local.clear();
   });
@@ -147,6 +148,12 @@ describe("aiSettings storage", () => {
     const headers = withProviderAuthHeaders(undefined, "openai", "sk-test");
     assert.equal(headers.get(AI_PROVIDER_HEADER), "openai");
     assert.equal(headers.get("x-openai-api-key"), "sk-test");
+  });
+
+  it("adds Gemini provider headers", () => {
+    const headers = withProviderAuthHeaders(undefined, "gemini", "AIza-test");
+    assert.equal(headers.get(AI_PROVIDER_HEADER), "gemini");
+    assert.equal(headers.get("x-gemini-api-key"), "AIza-test");
   });
 
   it("omits the key header when empty but still sets provider", () => {

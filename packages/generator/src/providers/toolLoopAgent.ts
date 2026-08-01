@@ -11,6 +11,7 @@ import {
 import type { ToolSessionDefaults } from "../agentTools.ts";
 
 const MAX_TURNS = 24;
+const PROVIDER_FETCH_TIMEOUT_MS = 60_000;
 
 export interface ToolLoopResult {
   runId: string;
@@ -50,11 +51,35 @@ function imagesToDataUrls(images?: PromptImage[]): string[] {
   });
 }
 
-function isAbortError(error: unknown, signal?: AbortSignal): boolean {
-  return (
-    signal?.aborted === true ||
-    (error instanceof Error && error.name === "AbortError")
-  );
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+/** Combine caller cancel with a per-request timeout. */
+function providerFetchSignal(userSignal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS);
+  if (!userSignal) return timeout;
+  return AbortSignal.any([userSignal, timeout]);
+}
+
+function abortResult(
+  error: unknown,
+  userSignal: AbortSignal | undefined,
+  runId: string,
+  agentId: string,
+): ToolLoopResult | null {
+  if (userSignal?.aborted) {
+    return { status: "cancelled", runId, agentId, error: "Cancelled" };
+  }
+  if (isAbortError(error)) {
+    return {
+      status: "error",
+      runId,
+      agentId,
+      error: `Provider request timed out after ${PROVIDER_FETCH_TIMEOUT_MS}ms`,
+    };
+  }
+  return null;
 }
 
 async function runOpenAiLoop(opts: {
@@ -133,12 +158,11 @@ async function runOpenAiLoop(opts: {
           tools: openaiTools,
           tool_choice: "auto",
         }),
-        signal,
+        signal: providerFetchSignal(signal),
       });
     } catch (error) {
-      if (isAbortError(error, signal)) {
-        return { status: "cancelled", runId, agentId, error: "Cancelled" };
-      }
+      const aborted = abortResult(error, signal, runId, agentId);
+      if (aborted) return aborted;
       throw error;
     }
 
@@ -147,9 +171,8 @@ async function runOpenAiLoop(opts: {
       try {
         body = await response.text();
       } catch (error) {
-        if (isAbortError(error, signal)) {
-          return { status: "cancelled", runId, agentId, error: "Cancelled" };
-        }
+        const aborted = abortResult(error, signal, runId, agentId);
+        if (aborted) return aborted;
         throw error;
       }
       return {
@@ -169,9 +192,8 @@ async function runOpenAiLoop(opts: {
     try {
       data = (await response.json()) as typeof data;
     } catch (error) {
-      if (isAbortError(error, signal)) {
-        return { status: "cancelled", runId, agentId, error: "Cancelled" };
-      }
+      const aborted = abortResult(error, signal, runId, agentId);
+      if (aborted) return aborted;
       throw error;
     }
     const message = data.choices?.[0]?.message;
@@ -321,12 +343,11 @@ async function runAnthropicLoop(opts: {
           messages,
           tools: anthropicTools,
         }),
-        signal,
+        signal: providerFetchSignal(signal),
       });
     } catch (error) {
-      if (isAbortError(error, signal)) {
-        return { status: "cancelled", runId, agentId, error: "Cancelled" };
-      }
+      const aborted = abortResult(error, signal, runId, agentId);
+      if (aborted) return aborted;
       throw error;
     }
 
@@ -335,9 +356,8 @@ async function runAnthropicLoop(opts: {
       try {
         body = await response.text();
       } catch (error) {
-        if (isAbortError(error, signal)) {
-          return { status: "cancelled", runId, agentId, error: "Cancelled" };
-        }
+        const aborted = abortResult(error, signal, runId, agentId);
+        if (aborted) return aborted;
         throw error;
       }
       return {
@@ -355,9 +375,8 @@ async function runAnthropicLoop(opts: {
     try {
       data = (await response.json()) as typeof data;
     } catch (error) {
-      if (isAbortError(error, signal)) {
-        return { status: "cancelled", runId, agentId, error: "Cancelled" };
-      }
+      const aborted = abortResult(error, signal, runId, agentId);
+      if (aborted) return aborted;
       throw error;
     }
     const content = data.content ?? [];
@@ -421,6 +440,268 @@ async function runAnthropicLoop(opts: {
   };
 }
 
+async function runGeminiLoop(opts: {
+  apiKey: string;
+  modelId: string;
+  userText: string;
+  images?: PromptImage[];
+  tools: HttpToolDefinition[];
+  callbacks?: RunCallbacks;
+  runId: string;
+  agentId: string;
+  signal?: AbortSignal;
+}): Promise<ToolLoopResult> {
+  const { apiKey, modelId, tools, callbacks, runId, agentId, signal } = opts;
+
+  type GeminiPart =
+    | { text: string }
+    | { inlineData: { mimeType: string; data: string } }
+    | { functionCall: { name: string; args?: Record<string, unknown> } }
+    | {
+        functionResponse: {
+          name: string;
+          response: Record<string, unknown>;
+        };
+      }
+    // Preserve opaque thought / signature fields from model turns.
+    | Record<string, unknown>;
+
+  type GeminiContent = { role: "user" | "model"; parts: GeminiPart[] };
+
+  const system = httpToolsSystemAddendum();
+  const userParts: GeminiPart[] = [];
+  for (const img of opts.images ?? []) {
+    userParts.push({
+      inlineData: {
+        mimeType: img.mimeType || "image/png",
+        data: img.data,
+      },
+    });
+  }
+  userParts.push({ text: opts.userText });
+
+  const contents: GeminiContent[] = [{ role: "user", parts: userParts }];
+
+  const geminiTools = [
+    {
+      functionDeclarations: tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        parameters: sanitizeGeminiParameters(t.parameters),
+      })),
+    },
+  ];
+
+  let assistantText = "";
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
+
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    if (signal?.aborted) {
+      return { status: "cancelled", runId, agentId, error: "Cancelled" };
+    }
+
+    callbacks?.onEvent?.({
+      type: "status",
+      content: `Gemini turn ${turn + 1}…`,
+      runId,
+      agentId,
+    });
+
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": apiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          tools: geminiTools,
+          generationConfig: { maxOutputTokens: 8192 },
+        }),
+        signal: providerFetchSignal(signal),
+      });
+    } catch (error) {
+      const aborted = abortResult(error, signal, runId, agentId);
+      if (aborted) return aborted;
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: `Gemini request failed: ${message}`,
+      };
+    }
+
+    if (!response.ok) {
+      let body: string;
+      try {
+        body = await response.text();
+      } catch (error) {
+        const aborted = abortResult(error, signal, runId, agentId);
+        if (aborted) return aborted;
+        throw error;
+      }
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: `Gemini API ${response.status}: ${body.slice(0, 400)}`,
+      };
+    }
+
+    let data: {
+      candidates?: Array<{
+        content?: { role?: string; parts?: GeminiPart[] };
+        finishReason?: string;
+      }>;
+      error?: { message?: string };
+    };
+    try {
+      data = (await response.json()) as typeof data;
+    } catch (error) {
+      const aborted = abortResult(error, signal, runId, agentId);
+      if (aborted) return aborted;
+      throw error;
+    }
+
+    if (data.error?.message) {
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: `Gemini API error: ${data.error.message}`,
+      };
+    }
+
+    const candidate = data.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    const content = candidate?.content;
+    const parts = content?.parts ?? [];
+    if (parts.length === 0) {
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: finishReason
+          ? `Gemini returned no content parts (${finishReason})`
+          : "Gemini returned no content parts",
+      };
+    }
+
+    // Keep the full model turn (including thought signatures) for multi-turn tool use.
+    contents.push({ role: "model", parts });
+
+    const functionCalls: Array<{
+      name: string;
+      args: Record<string, unknown>;
+    }> = [];
+    let turnText = "";
+
+    for (const part of parts) {
+      if (
+        "text" in part &&
+        typeof (part as { text?: unknown }).text === "string"
+      ) {
+        const text = (part as { text: string }).text;
+        if (text.trim()) {
+          turnText += text;
+          assistantText += text;
+          callbacks?.onEvent?.({
+            type: "text",
+            content: text,
+            runId,
+            agentId,
+          });
+        }
+      }
+      if (
+        "functionCall" in part &&
+        part.functionCall &&
+        typeof part.functionCall === "object"
+      ) {
+        const call = part.functionCall as {
+          name?: string;
+          args?: Record<string, unknown>;
+        };
+        if (call.name) {
+          functionCalls.push({
+            name: call.name,
+            args: call.args ?? {},
+          });
+        }
+      }
+    }
+
+    if (functionCalls.length === 0) {
+      const usableTurnText = turnText.trim().length > 0;
+      if (finishReason && finishReason !== "STOP" && !usableTurnText) {
+        return {
+          runId,
+          agentId,
+          status: "error",
+          error: `Gemini stopped early (${finishReason})`,
+          result: assistantText,
+        };
+      }
+      return { runId, agentId, status: "finished", result: assistantText };
+    }
+
+    const responseParts: GeminiPart[] = [];
+    for (const call of functionCalls) {
+      if (signal?.aborted) {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
+      emitTool(callbacks, call.name, call.args, runId, agentId);
+      const tool = tools.find((t) => t.name === call.name);
+      const result = tool
+        ? await tool.execute(call.args)
+        : { text: `Unknown tool: ${call.name}`, isError: true };
+      responseParts.push({
+        functionResponse: {
+          name: call.name,
+          response: result.isError
+            ? { error: result.text }
+            : { result: result.text },
+        },
+      });
+    }
+    contents.push({ role: "user", parts: responseParts });
+  }
+
+  return {
+    runId,
+    agentId,
+    status: "error",
+    error: `Exceeded ${MAX_TURNS} tool turns`,
+    result: assistantText,
+  };
+}
+
+/**
+ * Gemini rejects some JSON Schema keywords (notably `default`) in
+ * functionDeclarations.parameters. Strip those while preserving executor fallbacks.
+ */
+export function sanitizeGeminiParameters(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!value || typeof value !== "object") return value;
+    const out: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      if (key === "default") continue;
+      out[key] = walk(child);
+    }
+    return out;
+  };
+  return walk(schema) as Record<string, unknown>;
+}
+
 export async function runProviderToolLoop(opts: {
   provider: Exclude<AiProviderId, "cursor">;
   apiKey: string;
@@ -438,5 +719,16 @@ export async function runProviderToolLoop(opts: {
   if (opts.provider === "openai") {
     return runOpenAiLoop({ ...opts, tools, runId, agentId });
   }
-  return runAnthropicLoop({ ...opts, tools, runId, agentId });
+  if (opts.provider === "gemini") {
+    return runGeminiLoop({ ...opts, tools, runId, agentId });
+  }
+  if (opts.provider === "anthropic") {
+    return runAnthropicLoop({ ...opts, tools, runId, agentId });
+  }
+  return {
+    runId,
+    agentId,
+    status: "error",
+    error: `Unsupported AI provider: ${opts.provider as string}`,
+  };
 }
