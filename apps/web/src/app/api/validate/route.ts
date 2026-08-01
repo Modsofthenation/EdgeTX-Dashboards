@@ -2,6 +2,8 @@ import { checkApiAuth } from "~/lib/apiSecurity";
 import {
   getSessionStore,
   isTelemetryProtocol,
+  isWidgetInstanceId,
+  sanitizeWidgetInstanceId,
   sanitizeWidgetName,
   validateWidgetRelease,
   validateWidgetSource,
@@ -11,13 +13,26 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function resolveWorkspaceKey(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    if (isWidgetInstanceId(trimmed)) {
+      return sanitizeWidgetInstanceId(trimmed);
+    }
+    return sanitizeWidgetName(trimmed);
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: Request): Promise<Response> {
   const authErr = checkApiAuth(request);
   if (authErr) return authErr;
 
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get("sessionId");
-  let name = searchParams.get("name");
+  let workspaceKey = searchParams.get("instanceId") ?? searchParams.get("name");
   let protocol = searchParams.get("protocol");
   let radioId = searchParams.get("radioId") ?? "tx15";
 
@@ -29,23 +44,28 @@ export async function GET(request: Request): Promise<Response> {
         { status: 404 },
       );
     }
-    if (stored.session.widgetName) name = stored.session.widgetName;
-    protocol = stored.session.protocol;
-    radioId = stored.session.radioId;
+    workspaceKey =
+      workspaceKey ??
+      stored.session.widgetInstanceId ??
+      stored.session.widgetName ??
+      null;
+    protocol = protocol ?? stored.session.protocol;
+    radioId = searchParams.get("radioId") ?? stored.session.radioId ?? radioId;
   }
 
-  if (!name) {
+  if (!workspaceKey) {
     return Response.json(
-      { error: "name or sessionId is required" },
+      { error: "instanceId, name, or sessionId is required" },
       { status: 400 },
     );
   }
 
-  let safeName: string;
-  try {
-    safeName = sanitizeWidgetName(name);
-  } catch {
-    return Response.json({ error: "Invalid widget name" }, { status: 400 });
+  const safeKey = resolveWorkspaceKey(workspaceKey);
+  if (!safeKey) {
+    return Response.json(
+      { error: "Invalid widget workspace key" },
+      { status: 400 },
+    );
   }
 
   if (!protocol || !isTelemetryProtocol(protocol)) {
@@ -55,7 +75,7 @@ export async function GET(request: Request): Promise<Response> {
     );
   }
 
-  const result = validateWidgetRelease(safeName, protocol, radioId);
+  const result = validateWidgetRelease(safeKey, protocol, radioId);
   return Response.json(result);
 }
 
