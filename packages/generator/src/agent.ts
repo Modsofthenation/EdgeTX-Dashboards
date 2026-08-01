@@ -355,12 +355,11 @@ export class WidgetGenerator {
     }
 
     const runFinished = streamed.status === "finished";
-    const runCancelled = streamed.status === "cancelled";
     let validated = false;
     let validationIssues: ValidationIssue[] = [];
     const workspaceKey = widgetInstanceId;
 
-    if (runFinished && !runCancelled) {
+    if (runFinished) {
       const finalization = await finalizeWidgetRun(
         workspaceKey,
         request.protocol,
@@ -432,21 +431,41 @@ export class WidgetGenerator {
     this.toolDefaults.radioId = radioId;
     this.toolDefaults.userPrompt = prompt;
 
+    const prevVersion = session?.widgetVersion ?? 0;
+    const nextVersion = prevVersion + 1;
+    const restoreWidgetVersion = () => {
+      if (!session) return;
+      session.widgetVersion = prevVersion;
+      this.toolDefaults.widgetVersion = prevVersion;
+    };
+    const runWithVersionRollback = async <T>(
+      operation: () => Promise<T>,
+    ): Promise<T> => {
+      try {
+        return await operation();
+      } catch (error) {
+        restoreWidgetVersion();
+        throw error;
+      }
+    };
+
     if (session) {
       if (widgetInstanceId) {
-        const prevVersion = session.widgetVersion ?? 0;
         archiveWidgetVersion(widgetInstanceId, prevVersion);
-        session.widgetVersion = prevVersion + 1;
-      } else {
-        session.widgetVersion = (session.widgetVersion ?? 0) + 1;
       }
+      session.widgetVersion = nextVersion;
       this.toolDefaults.widgetVersion = session.widgetVersion;
       if (widgetInstanceId && displayName) {
-        ensureWidgetInstanceDir(
-          widgetInstanceId,
-          displayName,
-          session.widgetVersion,
-        );
+        try {
+          ensureWidgetInstanceDir(
+            widgetInstanceId,
+            displayName,
+            session.widgetVersion,
+          );
+        } catch (error) {
+          restoreWidgetVersion();
+          throw error;
+        }
       }
     }
 
@@ -516,17 +535,20 @@ export class WidgetGenerator {
       widgetName?: string;
     };
 
-    if (this.provider !== "cursor") {
-      const loop = await runProviderToolLoop({
-        provider: this.provider,
-        apiKey: this.apiKey,
-        modelId: this.httpModelId ?? defaultModelForProvider(this.provider),
-        userText: refinePrompt,
-        images,
-        toolDefaults: this.toolDefaults,
-        callbacks,
-        signal,
-      });
+    const provider = this.provider;
+    if (provider !== "cursor") {
+      const loop = await runWithVersionRollback(() =>
+        runProviderToolLoop({
+          provider,
+          apiKey: this.apiKey,
+          modelId: this.httpModelId ?? defaultModelForProvider(provider),
+          userText: refinePrompt,
+          images,
+          toolDefaults: this.toolDefaults,
+          callbacks,
+          signal,
+        }),
+      );
       this.httpAgentId = loop.agentId;
       streamed = {
         runId: loop.runId,
@@ -551,40 +573,45 @@ export class WidgetGenerator {
       }
     } else {
       const cursorAgent = agent!;
-      const run = await cursorAgent.send(
-        buildSdkUserMessage(refinePrompt, images),
+      const run = await runWithVersionRollback(() =>
+        cursorAgent.send(buildSdkUserMessage(refinePrompt, images)),
       );
-      streamed = await streamAgentRun(
-        run,
-        cursorAgent.agentId,
-        callbacks,
-        () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
-        signal,
+      streamed = await runWithVersionRollback(() =>
+        streamAgentRun(
+          run,
+          cursorAgent.agentId,
+          callbacks,
+          () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+          signal,
+        ),
       );
     }
 
     const runFinished = streamed.status === "finished";
-    const runCancelled = streamed.status === "cancelled";
     let validated = false;
     let validationIssues: ValidationIssue[] = [];
     const workspaceKey = widgetInstanceId ?? streamed.widgetName;
 
-    if (workspaceKey && runFinished && !runCancelled) {
-      const finalization = await finalizeWidgetRun(
-        workspaceKey,
-        protocol,
-        radioId,
-        callbacks,
-        {
+    if (workspaceKey && runFinished) {
+      const finalization = await runWithVersionRollback(() =>
+        finalizeWidgetRun(workspaceKey, protocol, radioId, callbacks, {
           layoutArchetype: layoutArchetypeId,
           userPrompt: prompt,
-        },
+        }),
       );
       validated = finalization.validated;
       validationIssues = finalization.validationIssues;
     }
 
     const success = runFinished && validated;
+    if (session) {
+      if (success) {
+        session.widgetVersion = nextVersion;
+        this.toolDefaults.widgetVersion = nextVersion;
+      } else {
+        restoreWidgetVersion();
+      }
+    }
 
     return {
       runId: streamed.runId,

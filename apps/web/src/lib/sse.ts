@@ -50,6 +50,8 @@ export function createSseStream(
 
       try {
         await handler(send);
+      } catch (error) {
+        console.error("[sse] handler failed:", error);
       } finally {
         options?.signal?.removeEventListener("abort", onAbort);
         close();

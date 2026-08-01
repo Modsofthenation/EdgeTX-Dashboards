@@ -216,6 +216,7 @@ export function useWidgetChatState() {
       const snapshot = artifactRef.current;
       await syncChatRecord(id, {
         provider: providerRef.current,
+        modelId,
         sessionId: sessionIdRef.current,
         widgetName: widgetNameRef.current,
         widgetInstanceId: widgetInstanceIdRef.current,
@@ -229,7 +230,7 @@ export function useWidgetChatState() {
       });
       await refreshHistory();
     },
-    [refreshHistory],
+    [modelId, refreshHistory],
   );
 
   const setMessagesTracked = useCallback(

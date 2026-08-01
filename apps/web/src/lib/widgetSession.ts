@@ -94,16 +94,13 @@ export function emitRunCompletion(
   const label = result.widgetName
     ? `${result.widgetName}${result.widgetVersion !== undefined ? ` v${result.widgetVersion}` : ""}`
     : undefined;
+  const cancelled = result.status === "cancelled";
 
   ctx.send({
-    type: result.success
-      ? "done"
-      : result.status === "cancelled"
-        ? "status"
-        : "error",
+    type: result.success ? "done" : cancelled ? "status" : "error",
     content: result.success
       ? `Validated and ready: ${label}`
-      : result.status === "cancelled"
+      : cancelled
         ? `${actionLabel} cancelled`
         : result.validated === false && result.widgetName
           ? `Widget ${label} failed validation — download blocked`

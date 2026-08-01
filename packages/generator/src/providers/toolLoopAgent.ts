@@ -50,6 +50,13 @@ function imagesToDataUrls(images?: PromptImage[]): string[] {
   });
 }
 
+function isAbortError(error: unknown, signal?: AbortSignal): boolean {
+  return (
+    signal?.aborted === true ||
+    (error instanceof Error && error.name === "AbortError")
+  );
+}
+
 async function runOpenAiLoop(opts: {
   apiKey: string;
   modelId: string;
@@ -129,14 +136,22 @@ async function runOpenAiLoop(opts: {
         signal,
       });
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+      if (isAbortError(error, signal)) {
         return { status: "cancelled", runId, agentId, error: "Cancelled" };
       }
       throw error;
     }
 
     if (!response.ok) {
-      const body = await response.text();
+      let body: string;
+      try {
+        body = await response.text();
+      } catch (error) {
+        if (isAbortError(error, signal)) {
+          return { status: "cancelled", runId, agentId, error: "Cancelled" };
+        }
+        throw error;
+      }
       return {
         runId,
         agentId,
@@ -145,12 +160,20 @@ async function runOpenAiLoop(opts: {
       };
     }
 
-    const data = (await response.json()) as {
+    let data: {
       choices?: Array<{
         message?: Message;
         finish_reason?: string;
       }>;
     };
+    try {
+      data = (await response.json()) as typeof data;
+    } catch (error) {
+      if (isAbortError(error, signal)) {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
+      throw error;
+    }
     const message = data.choices?.[0]?.message;
     if (!message) {
       return {
@@ -178,6 +201,9 @@ async function runOpenAiLoop(opts: {
     }
 
     for (const call of toolCalls) {
+      if (signal?.aborted) {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
       const name = call.function.name;
       let args: Record<string, unknown> = {};
       try {
@@ -298,14 +324,22 @@ async function runAnthropicLoop(opts: {
         signal,
       });
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+      if (isAbortError(error, signal)) {
         return { status: "cancelled", runId, agentId, error: "Cancelled" };
       }
       throw error;
     }
 
     if (!response.ok) {
-      const body = await response.text();
+      let body: string;
+      try {
+        body = await response.text();
+      } catch (error) {
+        if (isAbortError(error, signal)) {
+          return { status: "cancelled", runId, agentId, error: "Cancelled" };
+        }
+        throw error;
+      }
       return {
         runId,
         agentId,
@@ -314,10 +348,18 @@ async function runAnthropicLoop(opts: {
       };
     }
 
-    const data = (await response.json()) as {
+    let data: {
       content?: ContentBlock[];
       stop_reason?: string;
     };
+    try {
+      data = (await response.json()) as typeof data;
+    } catch (error) {
+      if (isAbortError(error, signal)) {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
+      throw error;
+    }
     const content = data.content ?? [];
     messages.push({ role: "assistant", content });
 
@@ -352,6 +394,9 @@ async function runAnthropicLoop(opts: {
 
     const toolResults: ContentBlock[] = [];
     for (const call of toolUses) {
+      if (signal?.aborted) {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
       emitTool(callbacks, call.name, call.input, runId, agentId);
       const tool = tools.find((t) => t.name === call.name);
       const result = tool

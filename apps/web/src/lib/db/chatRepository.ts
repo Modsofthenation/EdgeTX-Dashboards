@@ -19,6 +19,7 @@ export interface CreateChatInput {
 export interface UpdateChatInput {
   title?: string;
   provider?: AiProviderId;
+  modelId?: string;
   sessionId?: string | null;
   widgetName?: string | null;
   widgetInstanceId?: string | null;

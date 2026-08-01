@@ -82,8 +82,12 @@ export function ProjectLibraryModal({
 
       try {
         let files = await listAppDataProjects();
-        const migrationDone =
-          localStorage.getItem(APP_DATA_MIGRATION_KEY) === "1";
+        let migrationDone = false;
+        try {
+          migrationDone = localStorage.getItem(APP_DATA_MIGRATION_KEY) === "1";
+        } catch {
+          // Storage access must not hide app-data projects.
+        }
         if (!migrationDone && files.length === 0 && localProjects.length > 0) {
           const packs = localProjects
             .map((project) => exportProjectPack(project.id))
@@ -101,7 +105,11 @@ export function ProjectLibraryModal({
             }
           }
           if (migrationOk) {
-            localStorage.setItem(APP_DATA_MIGRATION_KEY, "1");
+            try {
+              localStorage.setItem(APP_DATA_MIGRATION_KEY, "1");
+            } catch {
+              // The migration succeeded even if its browser marker cannot persist.
+            }
             files = await listAppDataProjects();
           }
         }

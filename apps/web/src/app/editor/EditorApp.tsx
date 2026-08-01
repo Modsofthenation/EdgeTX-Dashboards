@@ -1117,12 +1117,18 @@ export function EditorApp() {
           );
           const parsed = parseProjectPack(JSON.parse(json) as unknown);
           if ("error" in parsed) throw new Error(parsed.error);
-          const restored = restoreProjectPack(parsed.pack);
-          if ("error" in restored) throw new Error(restored.error);
-          project = restored.project;
-          lua = restored.source;
-          companionsPack = restored.companions ?? null;
-          model = restored.modelImage ?? null;
+          const appDataUpdatedAt = parsed.pack.project.updatedAt;
+          if (
+            !project ||
+            (appDataUpdatedAt != null && appDataUpdatedAt >= project.updatedAt)
+          ) {
+            const restored = restoreProjectPack(parsed.pack);
+            if ("error" in restored) throw new Error(restored.error);
+            project = restored.project;
+            lua = restored.source;
+            companionsPack = restored.companions ?? null;
+            model = restored.modelImage ?? null;
+          }
         } catch {
           // Older/local-only projects remain available as a desktop fallback.
         }
@@ -2558,6 +2564,10 @@ export function EditorApp() {
                   }
                 }
               }
+            } else {
+              setLiveTelemetryNote(
+                "Rename saved in browser, but app-data sync failed: project source is unavailable.",
+              );
             }
           }
         }}

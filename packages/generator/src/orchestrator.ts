@@ -143,9 +143,14 @@ export async function streamAgentRun(
       // Best-effort cancel
     }
   };
+  let cancelPromise: Promise<void> | undefined;
+  const requestCancel = () => {
+    cancelPromise ??= cancelRun();
+    return cancelPromise;
+  };
 
   if (signal?.aborted) {
-    await cancelRun();
+    await requestCancel();
     return {
       runId: run.id,
       status: "cancelled",
@@ -153,15 +158,21 @@ export async function streamAgentRun(
     };
   }
 
+  const waitAborted = Symbol("waitAborted");
+  let resolveWaitAbort: (() => void) | undefined;
+  const waitForAbort = new Promise<typeof waitAborted>((resolve) => {
+    resolveWaitAbort = () => resolve(waitAborted);
+  });
   const onAbort = () => {
-    void cancelRun();
+    resolveWaitAbort?.();
+    void requestCancel();
   };
   signal?.addEventListener("abort", onAbort, { once: true });
 
   try {
     for await (const event of run.stream()) {
       if (signal?.aborted) {
-        await cancelRun();
+        await requestCancel();
         return {
           runId: run.id,
           status: "cancelled",
@@ -191,7 +202,7 @@ export async function streamAgentRun(
     }
 
     if (signal?.aborted) {
-      await cancelRun();
+      await requestCancel();
       return {
         runId: run.id,
         status: "cancelled",
@@ -199,11 +210,19 @@ export async function streamAgentRun(
       };
     }
 
-    const result = await run.wait();
+    const result = await Promise.race([run.wait(), waitForAbort]);
+    if (result === waitAborted) {
+      await requestCancel();
+      return {
+        runId: run.id,
+        status: "cancelled",
+        widgetName: resolveName(),
+      };
+    }
     const widgetName = resolveName();
     return {
       runId: result.id,
-      status: signal?.aborted ? "cancelled" : result.status,
+      status: result.status,
       result: result.result,
       widgetName,
     };

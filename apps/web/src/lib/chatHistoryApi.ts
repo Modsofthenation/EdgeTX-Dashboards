@@ -41,6 +41,7 @@ export async function syncChatRecord(
   id: string,
   input: {
     provider?: AiProviderId;
+    modelId?: string;
     sessionId?: string | null;
     widgetName?: string | null;
     widgetInstanceId?: string | null;
@@ -52,6 +53,7 @@ export async function syncChatRecord(
 ): Promise<StoredChat | null> {
   const payload = {
     provider: input.provider,
+    modelId: input.modelId,
     sessionId: input.sessionId ?? null,
     widgetName: input.widgetName ?? null,
     widgetInstanceId: input.widgetInstanceId ?? null,

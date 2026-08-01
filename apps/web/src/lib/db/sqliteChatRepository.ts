@@ -508,6 +508,10 @@ export class SqliteChatRepository implements ChatRepository {
       fields.push("provider = ?");
       values.push(parseAiProviderId(input.provider));
     }
+    if (input.modelId !== undefined) {
+      fields.push("model_id = ?");
+      values.push(input.modelId);
+    }
     if (input.sessionId !== undefined) {
       fields.push("session_id = ?");
       values.push(input.sessionId);

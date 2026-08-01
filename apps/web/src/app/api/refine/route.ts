@@ -219,12 +219,6 @@ export async function POST(request: Request): Promise<Response> {
         emitRunCompletion(ctx, result, { action: "refine" });
       } catch (err) {
         if (request.signal.aborted) {
-          send({
-            type: "status",
-            content: "Refine cancelled",
-            sessionId: effectiveSessionId,
-            success: false,
-          });
           return;
         }
         const message =

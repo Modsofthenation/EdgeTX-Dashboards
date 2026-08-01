@@ -136,12 +136,6 @@ export async function POST(request: Request): Promise<Response> {
         emitRunCompletion(ctx, result, { action: "generate" });
       } catch (err) {
         if (request.signal.aborted) {
-          send({
-            type: "status",
-            content: "Generation cancelled",
-            sessionId: session.id,
-            success: false,
-          });
           return;
         }
         const message =

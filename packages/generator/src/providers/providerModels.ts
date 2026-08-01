@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { AiProviderId } from "@widget-gen/shared";
 import type { ModelCatalogEntry } from "../models.ts";
 import {
@@ -5,6 +6,50 @@ import {
   FALLBACK_MODELS,
   listAvailableModels,
 } from "../models.ts";
+
+type ApiProvider = "anthropic" | "openai";
+type ProviderModelCatalog = {
+  models: ModelCatalogEntry[];
+  defaultId: string;
+  source: "api" | "fallback";
+};
+
+const API_CATALOG_TTL_MS = 5 * 60 * 1000;
+const apiCatalogCache = new Map<
+  string,
+  { catalog: ProviderModelCatalog; expiresAt: number }
+>();
+
+function catalogCacheKey(provider: ApiProvider, apiKey: string): string {
+  const keyFingerprint = createHash("sha256").update(apiKey).digest("hex");
+  return `${provider}:${keyFingerprint}`;
+}
+
+function getCachedCatalog(
+  provider: ApiProvider,
+  apiKey: string,
+): ProviderModelCatalog | null {
+  const cacheKey = catalogCacheKey(provider, apiKey);
+  const cached = apiCatalogCache.get(cacheKey);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    apiCatalogCache.delete(cacheKey);
+    return null;
+  }
+  return cached.catalog;
+}
+
+function cacheCatalog(
+  provider: ApiProvider,
+  apiKey: string,
+  catalog: ProviderModelCatalog,
+): ProviderModelCatalog {
+  apiCatalogCache.set(catalogCacheKey(provider, apiKey), {
+    catalog,
+    expiresAt: Date.now() + API_CATALOG_TTL_MS,
+  });
+  return catalog;
+}
 
 export const ANTHROPIC_MODELS: ModelCatalogEntry[] = [
   {
@@ -81,6 +126,8 @@ export async function listModelsForProvider(
   if (provider === "anthropic") {
     const key = apiKey || process.env.ANTHROPIC_API_KEY;
     if (!key) return fallbackCatalog("anthropic");
+    const cached = getCachedCatalog("anthropic", key);
+    if (cached) return cached;
 
     try {
       const response = await fetch(
@@ -90,6 +137,7 @@ export async function listModelsForProvider(
             "x-api-key": key,
             "anthropic-version": "2023-06-01",
           },
+          signal: AbortSignal.timeout(5000),
         },
       );
       if (!response.ok) return fallbackCatalog("anthropic");
@@ -112,11 +160,11 @@ export async function listModelsForProvider(
       );
       if (models.length === 0) return fallbackCatalog("anthropic");
 
-      return {
+      return cacheCatalog("anthropic", key, {
         models,
         defaultId: defaultIdForCatalog("anthropic", models),
         source: "api",
-      };
+      });
     } catch {
       return fallbackCatalog("anthropic");
     }
@@ -124,10 +172,13 @@ export async function listModelsForProvider(
   if (provider === "openai") {
     const key = apiKey || process.env.OPENAI_API_KEY;
     if (!key) return fallbackCatalog("openai");
+    const cached = getCachedCatalog("openai", key);
+    if (cached) return cached;
 
     try {
       const response = await fetch("https://api.openai.com/v1/models", {
         headers: { authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(5000),
       });
       if (!response.ok) return fallbackCatalog("openai");
 
@@ -162,11 +213,11 @@ export async function listModelsForProvider(
       ];
       if (models.length === 0) return fallbackCatalog("openai");
 
-      return {
+      return cacheCatalog("openai", key, {
         models,
         defaultId: defaultIdForCatalog("openai", models),
         source: "api",
-      };
+      });
     } catch {
       return fallbackCatalog("openai");
     }

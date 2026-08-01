@@ -35,15 +35,21 @@ test("applies filtered scene geometry without rewriting other Lua", () => {
   const rectangle = scene.elements.find(
     (element) => element.kind === "filledRect",
   );
+  const text = scene.elements.find((element) => element.kind === "text");
   assert.ok(rectangle && rectangle.kind === "filledRect");
+  assert.ok(text && text.kind === "text");
 
   const updatedScene = {
     ...scene,
-    elements: scene.elements.map((element) =>
-      element.id === rectangle.id
-        ? { ...element, x: 24, y: 32, w: 96, h: 48 }
-        : element,
-    ),
+    elements: scene.elements.map((element) => {
+      if (element.id === rectangle.id) {
+        return { ...element, x: 24, y: 32, w: 96, h: 48 };
+      }
+      if (element.id === text.id) {
+        return { ...element, x: 200, y: 210 };
+      }
+      return element;
+    }),
   };
   const result = applySceneGeometryToSource(
     source,

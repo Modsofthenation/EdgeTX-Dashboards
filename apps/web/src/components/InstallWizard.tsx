@@ -132,7 +132,9 @@ export function InstallWizard({
       else if (sessionId) params.set("sessionId", sessionId);
       else return [];
       const res = await fetch(`/api/widget-package-files?${params}`);
-      if (!res.ok) return [];
+      if (!res.ok) {
+        throw new Error(`Could not load package files (${res.status}).`);
+      }
       const data = (await res.json()) as { files?: SdFile[] };
       return Array.isArray(data.files) ? data.files : [];
     },
@@ -163,9 +165,15 @@ export function InstallWizard({
 
       let files = await fetchPackageFiles(key);
       if (extraFiles?.length) {
-        const existing = new Set(files.map((f) => f.path));
+        const existing = new Set(
+          files.map((file) => file.path.replaceAll("\\", "/")),
+        );
         for (const extra of extraFiles) {
-          if (!existing.has(extra.path)) files.push(extra);
+          const path = extra.path.replaceAll("\\", "/");
+          if (!existing.has(path)) {
+            files.push({ ...extra, path });
+            existing.add(path);
+          }
         }
       }
 
@@ -173,18 +181,8 @@ export function InstallWizard({
       const installPath = `WIDGETS/${widgetName}/INSTALL.md`;
       files = files.filter((file) => {
         const path = file.path.replaceAll("\\", "/");
-        return (
-          path !== mainPath && (!installMd?.trim() || path !== installPath)
-        );
+        return path !== mainPath && path !== installPath;
       });
-      files.push({ path: mainPath, content: luaSource, encoding: "utf8" });
-      if (installMd?.trim()) {
-        files.push({
-          path: installPath,
-          content: installMd,
-          encoding: "utf8",
-        });
-      }
 
       const result = await invoke<{ dest: string; files?: string[] }>(
         "install_widget_to_sd",

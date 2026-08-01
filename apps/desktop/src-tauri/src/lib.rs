@@ -425,7 +425,10 @@ fn sd_destination(
   if !canonical_parent.starts_with(canonical_root) {
     return Err(format!("Refusing SD path outside selected root: {rel}"));
   }
-  Ok(dest)
+  let file_name = dest
+    .file_name()
+    .ok_or_else(|| format!("Invalid SD destination: {rel}"))?;
+  Ok(canonical_parent.join(file_name))
 }
 
 #[tauri::command]
@@ -462,7 +465,6 @@ fn install_widget_to_sd(
     return Err("WIDGETS directory is outside the selected SD root".into());
   }
 
-  let mut written: Vec<String> = Vec::new();
   let mut decoded_files: Vec<(String, Vec<u8>)> = Vec::new();
   let mut total_bytes = lua_source.len();
   if let Some(md) = install_md.as_ref().filter(|md| !md.trim().is_empty()) {
@@ -500,28 +502,28 @@ fn install_widget_to_sd(
     ));
   }
 
-  for (rel, bytes) in decoded_files {
-    let dest = sd_destination(&canonical_root, &rel)?;
-    std::fs::write(&dest, bytes).map_err(|e| e.to_string())?;
-    if !written.contains(&rel) {
-      written.push(rel);
-    }
-  }
-
   let main_rel = format!("WIDGETS/{name}/main.lua");
-  let main_dest = sd_destination(&canonical_root, &main_rel)?;
-  std::fs::write(main_dest, lua_source).map_err(|e| e.to_string())?;
-  if !written.contains(&main_rel) {
-    written.push(main_rel);
-  }
+  decoded_files.push((main_rel, lua_source.into_bytes()));
   if let Some(md) = install_md {
     if !md.trim().is_empty() {
       let install_rel = format!("WIDGETS/{name}/INSTALL.md");
-      let install_dest = sd_destination(&canonical_root, &install_rel)?;
-      std::fs::write(install_dest, md).map_err(|e| e.to_string())?;
-      if !written.contains(&install_rel) {
-        written.push(install_rel);
-      }
+      decoded_files.push((install_rel, md.into_bytes()));
+    }
+  }
+
+  let resolved_files = decoded_files
+    .into_iter()
+    .map(|(rel, bytes)| {
+      let dest = sd_destination(&canonical_root, &rel)?;
+      Ok((rel, dest, bytes))
+    })
+    .collect::<Result<Vec<_>, String>>()?;
+
+  let mut written: Vec<String> = Vec::new();
+  for (rel, dest, bytes) in resolved_files {
+    std::fs::write(dest, bytes).map_err(|e| e.to_string())?;
+    if !written.contains(&rel) {
+      written.push(rel);
     }
   }
   let dest = canonical_root.join("WIDGETS").join(name);
@@ -973,6 +975,49 @@ mod tests {
     assert!(error.contains("outside selected root"));
     let _ = std::fs::remove_dir_all(root);
     let _ = std::fs::remove_dir_all(outside);
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn sd_install_resolves_all_destinations_before_writing() {
+    use std::os::unix::fs::symlink;
+
+    let root = temp_sd_root();
+    let outside = root.with_extension("outside");
+    let _ = std::fs::remove_dir_all(&outside);
+    std::fs::create_dir_all(&outside).unwrap();
+    symlink(&outside, root.join("WIDGETS/Test")).unwrap();
+    let files = vec![SdInstallFile {
+      path: "SCRIPTS/TOOLS/helper.lua".into(),
+      content: "helper".into(),
+      encoding: None,
+    }];
+
+    let error = install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "live".into(),
+      None,
+      Some(files),
+    )
+    .unwrap_err();
+
+    assert!(error.contains("outside selected root"));
+    assert!(!root.join("SCRIPTS/TOOLS/helper.lua").exists());
+    let _ = std::fs::remove_dir_all(root);
+    let _ = std::fs::remove_dir_all(outside);
+  }
+
+  #[test]
+  fn sanitize_app_data_project_file_name_strips_paths_and_rejects_traversal() {
+    assert_eq!(
+      sanitize_app_data_project_file_name("folder\\nested/project.edgetx-project.json")
+        .unwrap(),
+      "project.edgetx-project.json"
+    );
+    assert!(sanitize_app_data_project_file_name("../..").is_err());
+    assert!(sanitize_app_data_project_file_name("project.txt").is_err());
+    assert!(sanitize_app_data_project_file_name("   ").is_err());
   }
 }
 
