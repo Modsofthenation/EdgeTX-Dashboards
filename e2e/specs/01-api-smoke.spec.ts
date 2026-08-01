@@ -51,6 +51,10 @@ test.describe("API smoke", () => {
   });
 
   test("GET /api/ai/status is not ready without keys", async ({ request }) => {
+    test.skip(
+      process.env.E2E_ALLOW_SERVER_AI === "1",
+      "Server AI keys are enabled; the no-key path cannot be exercised.",
+    );
     const { status, body } = await getJson<{
       ready: boolean;
       serverKeyConfigured: boolean;
@@ -72,11 +76,7 @@ test.describe("API smoke", () => {
     expect(status).toBe(200);
     expect(Array.isArray(body.radios)).toBe(true);
     expect(Array.isArray(body.files)).toBe(true);
-    // After postinstall sync, TX15 firmware should be present in this environment.
-    const tx15 = body.radios.find((r) => r.id === "tx15");
-    if (tx15) {
-      expect(tx15.present).toBe(true);
-    }
+    // Strict TX15 presence lives in 08-sim-firmware.spec.ts.
   });
 
   test("chat CRUD lifecycle", async ({ request }) => {
@@ -145,7 +145,7 @@ test.describe("API smoke", () => {
       protocol: "betaflight",
       radioId: "tx15",
     });
-    expect([200, 422]).toContain(status);
+    expect(status).toBe(200);
     expect(body.valid).toBe(false);
   });
 
@@ -160,7 +160,7 @@ test.describe("API smoke", () => {
       protocol: "betaflight",
       radioId: "tx15",
     });
-    expect([200, 422]).toContain(status);
+    expect(status).toBe(200);
     expect(body.valid).toBe(false);
   });
 
@@ -197,13 +197,12 @@ test.describe("API smoke", () => {
     expect(buf[1]).toBe(0x4b);
   });
 
-  test("download returns 422 for invalid on-disk widget after bad validate path", async ({
+  test("invalid PUT to widget-source is rejected and leaves stored widget downloadable", async ({
     request,
   }) => {
-    // Allocate with valid source first
     const widget = await seedValidWidget(request);
 
-    // Overwrite via validate-only won't mutate; try writing invalid through put — should 422
+    // Invalid Lua must not overwrite the on-disk widget.
     const badPut = await putJson<{ valid?: boolean; error?: string }>(
       request,
       "/api/widget-source",
@@ -217,7 +216,6 @@ test.describe("API smoke", () => {
     expect(badPut.status).toBe(422);
     expect(badPut.body.valid).toBe(false);
 
-    // Original valid widget should still download
     const dl = await request.get(
       `/api/download?instanceId=${encodeURIComponent(widget.workspaceKey)}&protocol=betaflight&radioId=tx15`,
     );
@@ -225,6 +223,10 @@ test.describe("API smoke", () => {
   });
 
   test("POST /api/generate returns 503 without AI key", async ({ request }) => {
+    test.skip(
+      process.env.E2E_ALLOW_SERVER_AI === "1",
+      "Server AI keys are enabled; the no-key path cannot be exercised.",
+    );
     const { status, body } = await postJson<{ error: string }>(
       request,
       "/api/generate",
@@ -281,10 +283,12 @@ test.describe("API smoke", () => {
     const missing = await request.get("/api/widget-source?name=MissingWdg");
     expect(missing.status()).toBe(204);
 
-    // Over-long / invalid names must not 500
-    const invalid = await request.get(
-      "/api/widget-source?name=DoesNotExistWidgetXYZ",
-    );
-    expect([204, 400]).toContain(invalid.status());
+    // Over-long and traversal-style names must not 500
+    for (const name of ["A".repeat(512), "../../etc/passwd"]) {
+      const invalid = await request.get(
+        `/api/widget-source?name=${encodeURIComponent(name)}`,
+      );
+      expect([204, 400]).toContain(invalid.status());
+    }
   });
 });

@@ -259,10 +259,96 @@ function validateVisualDesign(
   }
 }
 
+/**
+ * Replace Lua string / comment contents with spaces so brace and `return`
+ * scans ignore non-code text. Length and newlines are preserved.
+ */
+function maskLuaNonCode(source: string): string {
+  const out = source.split("");
+  let i = 0;
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+
+    // Long comment: --[=*[ ... ]=*]
+    if (ch === "-" && next === "-") {
+      const after = source.slice(i + 2);
+      const longOpen = after.match(/^\[(=*)\[/);
+      if (longOpen) {
+        const eqs = longOpen[1] ?? "";
+        const close = `]${eqs}]`;
+        const start = i;
+        const closeAt = source.indexOf(close, i + 2 + longOpen[0].length);
+        const end = closeAt === -1 ? source.length : closeAt + close.length;
+        for (let j = start; j < end; j++) {
+          if (out[j] !== "\n") out[j] = " ";
+        }
+        i = end;
+        continue;
+      }
+      // Line comment
+      const start = i;
+      while (i < source.length && source[i] !== "\n") {
+        out[i] = " ";
+        i++;
+      }
+      continue;
+    }
+
+    // Long string: [=[ ... ]=]
+    if (ch === "[") {
+      const longOpen = source.slice(i).match(/^\[(=*)\[/);
+      if (longOpen) {
+        const eqs = longOpen[1] ?? "";
+        const close = `]${eqs}]`;
+        const start = i;
+        const closeAt = source.indexOf(close, i + longOpen[0].length);
+        const end = closeAt === -1 ? source.length : closeAt + close.length;
+        for (let j = start; j < end; j++) {
+          if (out[j] !== "\n") out[j] = " ";
+        }
+        i = end;
+        continue;
+      }
+    }
+
+    // Quoted string
+    if (ch === '"' || ch === "'") {
+      const quote = ch;
+      out[i] = " ";
+      i++;
+      while (i < source.length) {
+        if (source[i] === "\\") {
+          out[i] = " ";
+          if (i + 1 < source.length) {
+            out[i + 1] = " ";
+            i += 2;
+            continue;
+          }
+          i++;
+          break;
+        }
+        if (source[i] === quote) {
+          out[i] = " ";
+          i++;
+          break;
+        }
+        if (out[i] !== "\n") out[i] = " ";
+        i++;
+      }
+      continue;
+    }
+
+    i++;
+  }
+  return out.join("");
+}
+
 function validateReturnTable(source: string, issues: ValidationIssue[]): void {
+  const masked = maskLuaNonCode(source);
   const lastReturn = Math.max(
-    source.lastIndexOf("return {"),
-    source.lastIndexOf("return{"),
+    masked.lastIndexOf("return {"),
+    masked.lastIndexOf("return{"),
   );
   if (lastReturn === -1) {
     issues.push({
@@ -272,7 +358,7 @@ function validateReturnTable(source: string, issues: ValidationIssue[]): void {
     return;
   }
 
-  const openBrace = source.indexOf("{", lastReturn);
+  const openBrace = masked.indexOf("{", lastReturn);
   if (openBrace === -1) {
     issues.push({
       severity: "error",
@@ -283,8 +369,8 @@ function validateReturnTable(source: string, issues: ValidationIssue[]): void {
 
   let depth = 0;
   let closeBrace = -1;
-  for (let i = openBrace; i < source.length; i++) {
-    const ch = source[i];
+  for (let i = openBrace; i < masked.length; i++) {
+    const ch = masked[i];
     if (ch === "{") depth++;
     else if (ch === "}") {
       depth--;
@@ -295,6 +381,7 @@ function validateReturnTable(source: string, issues: ValidationIssue[]): void {
     }
   }
 
+  // Use original source for field checks (masked only guides brace bounds).
   const block =
     closeBrace === -1 ? "" : source.slice(openBrace + 1, closeBrace);
 

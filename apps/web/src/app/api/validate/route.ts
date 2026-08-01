@@ -32,7 +32,10 @@ export async function GET(request: Request): Promise<Response> {
 
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get("sessionId");
-  let workspaceKey = searchParams.get("instanceId") ?? searchParams.get("name");
+  let workspaceKey =
+    searchParams.get("instanceId")?.trim() ||
+    searchParams.get("name")?.trim() ||
+    null;
   let protocol = searchParams.get("protocol");
   let radioId = searchParams.get("radioId") ?? "tx15";
 
@@ -45,9 +48,9 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
     workspaceKey =
-      workspaceKey ??
-      stored.session.widgetInstanceId ??
-      stored.session.widgetName ??
+      workspaceKey ||
+      stored.session.widgetInstanceId?.trim() ||
+      stored.session.widgetName?.trim() ||
       null;
     protocol = protocol ?? stored.session.protocol;
     radioId = searchParams.get("radioId") ?? stored.session.radioId ?? radioId;

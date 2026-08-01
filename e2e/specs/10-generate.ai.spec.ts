@@ -14,16 +14,20 @@ const aiKey =
   process.env.GEMINI_API_KEY ||
   "";
 
-const provider =
-  (process.env.E2E_AI_PROVIDER as
-    "cursor" | "anthropic" | "openai" | "gemini" | undefined) ??
-  (process.env.ANTHROPIC_API_KEY
-    ? "anthropic"
-    : process.env.OPENAI_API_KEY
-      ? "openai"
-      : process.env.GEMINI_API_KEY
-        ? "gemini"
-        : "cursor");
+function resolveProvider(): "cursor" | "anthropic" | "openai" | "gemini" {
+  if (process.env.E2E_AI_PROVIDER) {
+    return process.env.E2E_AI_PROVIDER as
+      "cursor" | "anthropic" | "openai" | "gemini";
+  }
+  // Match aiKey precedence: E2E_AI_KEY / CURSOR → cursor, then anthropic, openai, gemini.
+  if (process.env.E2E_AI_KEY || process.env.CURSOR_API_KEY) return "cursor";
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (process.env.OPENAI_API_KEY) return "openai";
+  if (process.env.GEMINI_API_KEY) return "gemini";
+  return "cursor";
+}
+
+const provider = resolveProvider();
 
 test.describe("Live AI generation", () => {
   test.skip(!aiKey, "Set E2E_AI_KEY (or provider key) to run live AI E2E");

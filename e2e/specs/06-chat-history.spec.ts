@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { createChat } from "../helpers/api.ts";
-import { ensureChatsPanelOpen, gotoHome } from "../helpers/ui.ts";
+import {
+  dismissFirstRunWizard,
+  ensureChatsPanelOpen,
+  gotoHome,
+} from "../helpers/ui.ts";
 
 test.describe("Chat history UI", () => {
   test("sidebar lists chats created via API after refresh", async ({
@@ -18,16 +22,20 @@ test.describe("Chat history UI", () => {
     });
 
     await page.getByText(title).first().click();
-    await expect(page).toHaveURL(new RegExp(`chatId=${chat.id}`));
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("chatId") === chat.id,
+    );
   });
 
   test("New chat clears URL chatId", async ({ page, request }) => {
     const chat = await createChat(request, {
       title: `Clearable ${Date.now()}`,
     });
-    await gotoHome(page);
+    await dismissFirstRunWizard(page);
     await page.goto(`/?chatId=${encodeURIComponent(chat.id)}`);
-    await expect(page).toHaveURL(new RegExp(`chatId=${chat.id}`));
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("chatId") === chat.id,
+    );
 
     await page.getByRole("button", { name: "New chat" }).click();
     await expect(page).not.toHaveURL(/chatId=/);

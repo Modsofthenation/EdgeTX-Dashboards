@@ -43,6 +43,12 @@ Default project (`chromium`) clears server AI env keys so “not configured” p
 - Uses `WIDGET_GEN_DATA_DIR=data/e2e` for SQLite / chat data
 - Default port `3100` (`E2E_PORT` / `E2E_BASE_URL` override)
 - `workers: 1` to avoid SQLite races
+- Does **not** reuse an already-running Next server by default (avoids leaking host AI keys / wrong data dir). Opt in with `E2E_REUSE_SERVER=1`.
+
+## Prerequisites
+
+- Chromium via `npx playwright install chromium`
+- For `08-sim-firmware` TX15 presence assertions: WASM synced (`npm install` / `npm run sync-wasm`). The suite soft-skips those checks when `/api/sim-firmware` reports `ready: false`.
 
 ## Adding tests
 

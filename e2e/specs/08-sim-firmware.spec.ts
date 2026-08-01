@@ -19,6 +19,11 @@ test.describe("Simulator firmware", () => {
     expect(status).toBe(200);
     expect(body.radios.length).toBeGreaterThan(0);
 
+    test.skip(
+      !body.ready,
+      "WASM firmware not synced — run npm run sync-wasm (or postinstall) first",
+    );
+
     const tx15 = body.radios.find((r) => r.id === "tx15");
     expect(tx15).toBeTruthy();
     expect(tx15!.present).toBe(true);

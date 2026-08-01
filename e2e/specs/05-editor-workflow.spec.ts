@@ -35,8 +35,12 @@ test.describe("Editor workflow", () => {
   test("Validate on starter scene reports a result", async ({ page }) => {
     await gotoEditor(page, { protocol: "betaflight", radioId: "tx15" });
     await page.getByRole("button", { name: "Validate" }).click();
-    const status = page.getByText(/Valid|Invalid|error|issue|ok/i).first();
-    await expect(status).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("editor-validation-status")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("editor-validation-status")).toHaveText(
+      /^(Valid|Invalid)$/,
+    );
   });
 
   test("template board loads layers for Minimal quad", async ({ page }) => {
@@ -69,19 +73,19 @@ test.describe("Editor workflow", () => {
       .toBeGreaterThan(0);
 
     await page.getByRole("button", { name: "Validate" }).click();
-    await page.waitForTimeout(800);
+    await expect(page.getByTestId("editor-validation-status")).toBeVisible({
+      timeout: 15_000,
+    });
 
     const save = page.getByRole("button", { name: "Save" });
     await expect(save).toBeEnabled({ timeout: 15_000 });
     await save.click();
 
-    // Should not show a blocking failure dialog; allow "Saved" or valid status.
-    await expect(
-      page.getByRole("dialog", { name: /failed|error/i }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByText(/Saved|valid|Ready|ok|Invalid/i).first(),
-    ).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("editor-validation-status")).toHaveText(
+      "Valid",
+      { timeout: 20_000 },
+    );
+    await expect(page.locator('[class*="errorBanner"]')).toHaveCount(0);
   });
 
   test("Export modal opens Install wizard for seeded instance", async ({
