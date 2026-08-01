@@ -181,6 +181,7 @@ export class WidgetGenerator {
     request: GenerateRequest,
     callbacks?: RunCallbacks,
     session?: GenerateSession,
+    options?: { signal?: AbortSignal },
   ): Promise<{
     runId: string;
     agentId: string;
@@ -193,6 +194,7 @@ export class WidgetGenerator {
     validated?: boolean;
     validationIssues?: ValidationIssue[];
   }> {
+    const signal = options?.signal;
     const agent = await this.ensureAgent();
     const radio = loadRadioProfile(request.radioId);
     const catalog = loadTelemetryCatalog(request.protocol);
@@ -308,6 +310,7 @@ export class WidgetGenerator {
         images: request.images,
         toolDefaults: this.toolDefaults,
         callbacks,
+        signal,
       });
       this.httpAgentId = loop.agentId;
       streamed = {
@@ -319,6 +322,14 @@ export class WidgetGenerator {
         callbacks?.onEvent?.({
           type: "error",
           content: loop.error,
+          runId: loop.runId,
+          agentId: loop.agentId,
+        });
+      }
+      if (loop.status === "cancelled") {
+        callbacks?.onEvent?.({
+          type: "status",
+          content: "Cancelled",
           runId: loop.runId,
           agentId: loop.agentId,
         });
@@ -339,6 +350,7 @@ export class WidgetGenerator {
         cursorAgent.agentId,
         callbacks,
         () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+        signal,
       );
     }
 
@@ -387,6 +399,7 @@ export class WidgetGenerator {
     session?: GenerateSession,
     images?: GenerateRequest["images"],
     refineHistory?: RefineHistoryInput,
+    options?: { signal?: AbortSignal },
   ): Promise<{
     runId: string;
     status: string;
@@ -397,6 +410,7 @@ export class WidgetGenerator {
     validated?: boolean;
     validationIssues?: ValidationIssue[];
   }> {
+    const signal = options?.signal;
     const agent = await this.ensureAgent();
 
     this.syncToolDefaults(session);
@@ -417,21 +431,41 @@ export class WidgetGenerator {
     this.toolDefaults.radioId = radioId;
     this.toolDefaults.userPrompt = prompt;
 
+    const prevVersion = session?.widgetVersion ?? 0;
+    const nextVersion = prevVersion + 1;
+    const restoreWidgetVersion = () => {
+      if (!session) return;
+      session.widgetVersion = prevVersion;
+      this.toolDefaults.widgetVersion = prevVersion;
+    };
+    const runWithVersionRollback = async <T>(
+      operation: () => Promise<T>,
+    ): Promise<T> => {
+      try {
+        return await operation();
+      } catch (error) {
+        restoreWidgetVersion();
+        throw error;
+      }
+    };
+
     if (session) {
       if (widgetInstanceId) {
-        const prevVersion = session.widgetVersion ?? 0;
         archiveWidgetVersion(widgetInstanceId, prevVersion);
-        session.widgetVersion = prevVersion + 1;
-      } else {
-        session.widgetVersion = (session.widgetVersion ?? 0) + 1;
       }
+      session.widgetVersion = nextVersion;
       this.toolDefaults.widgetVersion = session.widgetVersion;
       if (widgetInstanceId && displayName) {
-        ensureWidgetInstanceDir(
-          widgetInstanceId,
-          displayName,
-          session.widgetVersion,
-        );
+        try {
+          ensureWidgetInstanceDir(
+            widgetInstanceId,
+            displayName,
+            session.widgetVersion,
+          );
+        } catch (error) {
+          restoreWidgetVersion();
+          throw error;
+        }
       }
     }
 
@@ -501,16 +535,20 @@ export class WidgetGenerator {
       widgetName?: string;
     };
 
-    if (this.provider !== "cursor") {
-      const loop = await runProviderToolLoop({
-        provider: this.provider,
-        apiKey: this.apiKey,
-        modelId: this.httpModelId ?? defaultModelForProvider(this.provider),
-        userText: refinePrompt,
-        images,
-        toolDefaults: this.toolDefaults,
-        callbacks,
-      });
+    const provider = this.provider;
+    if (provider !== "cursor") {
+      const loop = await runWithVersionRollback(() =>
+        runProviderToolLoop({
+          provider,
+          apiKey: this.apiKey,
+          modelId: this.httpModelId ?? defaultModelForProvider(provider),
+          userText: refinePrompt,
+          images,
+          toolDefaults: this.toolDefaults,
+          callbacks,
+          signal,
+        }),
+      );
       this.httpAgentId = loop.agentId;
       streamed = {
         runId: loop.runId,
@@ -525,16 +563,27 @@ export class WidgetGenerator {
           agentId: loop.agentId,
         });
       }
+      if (loop.status === "cancelled") {
+        callbacks?.onEvent?.({
+          type: "status",
+          content: "Cancelled",
+          runId: loop.runId,
+          agentId: loop.agentId,
+        });
+      }
     } else {
       const cursorAgent = agent!;
-      const run = await cursorAgent.send(
-        buildSdkUserMessage(refinePrompt, images),
+      const run = await runWithVersionRollback(() =>
+        cursorAgent.send(buildSdkUserMessage(refinePrompt, images)),
       );
-      streamed = await streamAgentRun(
-        run,
-        cursorAgent.agentId,
-        callbacks,
-        () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+      streamed = await runWithVersionRollback(() =>
+        streamAgentRun(
+          run,
+          cursorAgent.agentId,
+          callbacks,
+          () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+          signal,
+        ),
       );
     }
 
@@ -544,21 +593,25 @@ export class WidgetGenerator {
     const workspaceKey = widgetInstanceId ?? streamed.widgetName;
 
     if (workspaceKey && runFinished) {
-      const finalization = await finalizeWidgetRun(
-        workspaceKey,
-        protocol,
-        radioId,
-        callbacks,
-        {
+      const finalization = await runWithVersionRollback(() =>
+        finalizeWidgetRun(workspaceKey, protocol, radioId, callbacks, {
           layoutArchetype: layoutArchetypeId,
           userPrompt: prompt,
-        },
+        }),
       );
       validated = finalization.validated;
       validationIssues = finalization.validationIssues;
     }
 
     const success = runFinished && validated;
+    if (session) {
+      if (success) {
+        session.widgetVersion = nextVersion;
+        this.toolDefaults.widgetVersion = nextVersion;
+      } else {
+        restoreWidgetVersion();
+      }
+    }
 
     return {
       runId: streamed.runId,

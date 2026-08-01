@@ -109,6 +109,8 @@ interface AgentRunLike {
   id: string;
   stream(): AsyncIterable<SDKMessage>;
   wait(): Promise<{ id: string; status: string; result?: string }>;
+  cancel?: () => Promise<void>;
+  supports?: (capability: never) => boolean;
 }
 
 /** Stream SDK run events to callbacks; returns run metadata after stream completes. */
@@ -117,6 +119,7 @@ export async function streamAgentRun(
   agentId: string,
   callbacks: RunCallbacks | undefined,
   resolveName: () => string | undefined,
+  signal?: AbortSignal,
 ): Promise<{
   runId: string;
   status: string;
@@ -125,36 +128,107 @@ export async function streamAgentRun(
 }> {
   let lastReportedName: string | undefined;
 
-  for await (const event of run.stream()) {
-    const text = extractTextFromMessage(event);
-    if (text) {
-      callbacks?.onEvent?.({
-        type: "text",
-        content: text,
-        runId: run.id,
-        agentId,
-      });
+  const cancelRun = async () => {
+    try {
+      if (typeof run.cancel === "function") {
+        const canCancel =
+          typeof run.supports !== "function" ||
+          // Cursor SDK types `supports("cancel")` narrowly; call via cast.
+          (run.supports as (op: string) => boolean)("cancel");
+        if (canCancel) {
+          await run.cancel();
+        }
+      }
+    } catch {
+      // Best-effort cancel
     }
+  };
+  let cancelPromise: Promise<void> | undefined;
+  const requestCancel = () => {
+    cancelPromise ??= cancelRun();
+    return cancelPromise;
+  };
 
-    for (const toolEvent of extractToolEventsFromMessage(event)) {
-      callbacks?.onEvent?.({ ...toolEvent, runId: run.id, agentId });
-    }
-
-    const name = resolveName();
-    if (name && name !== lastReportedName) {
-      lastReportedName = name;
-      callbacks?.onWidgetName?.(name);
-    }
+  if (signal?.aborted) {
+    await requestCancel();
+    return {
+      runId: run.id,
+      status: "cancelled",
+      widgetName: resolveName(),
+    };
   }
 
-  const result = await run.wait();
-  const widgetName = resolveName();
-  return {
-    runId: result.id,
-    status: result.status,
-    result: result.result,
-    widgetName,
+  const waitAborted = Symbol("waitAborted");
+  let resolveWaitAbort: (() => void) | undefined;
+  const waitForAbort = new Promise<typeof waitAborted>((resolve) => {
+    resolveWaitAbort = () => resolve(waitAborted);
+  });
+  const onAbort = () => {
+    resolveWaitAbort?.();
+    void requestCancel();
   };
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    for await (const event of run.stream()) {
+      if (signal?.aborted) {
+        await requestCancel();
+        return {
+          runId: run.id,
+          status: "cancelled",
+          widgetName: resolveName(),
+        };
+      }
+
+      const text = extractTextFromMessage(event);
+      if (text) {
+        callbacks?.onEvent?.({
+          type: "text",
+          content: text,
+          runId: run.id,
+          agentId,
+        });
+      }
+
+      for (const toolEvent of extractToolEventsFromMessage(event)) {
+        callbacks?.onEvent?.({ ...toolEvent, runId: run.id, agentId });
+      }
+
+      const name = resolveName();
+      if (name && name !== lastReportedName) {
+        lastReportedName = name;
+        callbacks?.onWidgetName?.(name);
+      }
+    }
+
+    if (signal?.aborted) {
+      await requestCancel();
+      return {
+        runId: run.id,
+        status: "cancelled",
+        widgetName: resolveName(),
+      };
+    }
+
+    const result = await Promise.race([run.wait(), waitForAbort]);
+    if (result === waitAborted) {
+      await requestCancel();
+      return {
+        runId: run.id,
+        status: "cancelled",
+        widgetName: resolveName(),
+      };
+    }
+    const widgetName = resolveName();
+    return {
+      runId: result.id,
+      status: result.status,
+      result: result.result,
+      widgetName,
+    };
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+  }
 }
 
 /** Validate and package a widget after a successful agent run. */

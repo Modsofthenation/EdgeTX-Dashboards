@@ -5,6 +5,7 @@ import {
   type CreateChatInput,
 } from "~/lib/db/chatStore";
 import type { TelemetryProtocol } from "@widget-gen/shared";
+import { parseAiProviderId } from "@widget-gen/shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const chat = createChat({
     title: data.title.trim(),
+    provider: parseAiProviderId(data.provider),
     protocol: data.protocol as TelemetryProtocol,
     modelId: data.modelId,
     edgeTxVersion: data.edgeTxVersion ?? "2.11.0",

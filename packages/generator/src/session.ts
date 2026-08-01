@@ -49,7 +49,11 @@ export class SessionStore {
     const resolvedProvider = parseAiProviderId(provider);
     const resolvedModel =
       modelId?.trim() || defaultModelForProvider(resolvedProvider);
-    const generator = new WidgetGenerator(apiKey, { protocol, radioId }, resolvedProvider);
+    const generator = new WidgetGenerator(
+      apiKey,
+      { protocol, radioId },
+      resolvedProvider,
+    );
     const session: GenerateSession = {
       id,
       agentId: "",
@@ -77,6 +81,28 @@ export class SessionStore {
     const id = input.id ?? randomUUID();
     const existing = this.sessions.get(id);
     if (existing) {
+      const provider = parseAiProviderId(
+        input.provider ?? existing.session.provider,
+      );
+      if (provider !== existing.session.provider) {
+        void existing.generator.dispose().catch(() => {});
+        existing.generator = new WidgetGenerator(
+          input.apiKey,
+          {
+            protocol: input.protocol,
+            radioId: input.radioId,
+            widgetName: input.widgetName ?? existing.session.widgetName,
+            widgetInstanceId:
+              input.widgetInstanceId ?? existing.session.widgetInstanceId,
+            widgetVersion:
+              input.widgetVersion ?? existing.session.widgetVersion,
+          },
+          provider,
+        );
+        existing.session.provider = provider;
+        existing.session.modelId =
+          input.modelId?.trim() || defaultModelForProvider(provider);
+      }
       if (input.widgetName) {
         existing.session.widgetName = input.widgetName;
       }
@@ -87,7 +113,10 @@ export class SessionStore {
         existing.session.widgetVersion = input.widgetVersion;
       }
       existing.generator.resolveWidgetWorkspaceKey(
-        input.widgetInstanceId ?? input.widgetName,
+        input.widgetInstanceId ??
+          input.widgetName ??
+          existing.session.widgetInstanceId ??
+          existing.session.widgetName,
       );
       return existing.session;
     }

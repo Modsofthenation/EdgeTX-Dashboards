@@ -39,6 +39,7 @@ interface ChatComposerProps {
   onEdgeTxChange: (version: string) => void;
   onRadioChange: (radioId: string) => void;
   onSend: (prompt: string, images?: PendingPromptImage[]) => void;
+  onStop?: () => void;
 }
 
 function AttachImageIcon() {
@@ -77,6 +78,14 @@ function RemoveIcon() {
   );
 }
 
+function StopIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect x="4" y="4" width="8" height="8" rx="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
 function SendIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -106,6 +115,7 @@ export const ChatComposer = memo(function ChatComposer({
   onEdgeTxChange,
   onRadioChange,
   onSend,
+  onStop,
 }: ChatComposerProps) {
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<PendingPromptImage[]>([]);
@@ -447,16 +457,20 @@ export const ChatComposer = memo(function ChatComposer({
               }
             />
             <button
-              type="submit"
-              className={`${styles.sendBtn} ${canSend ? styles.sendBtnActive : ""}`}
-              disabled={!canSend}
-              aria-label={running ? "Generating" : "Send message"}
+              type={running ? "button" : "submit"}
+              className={`${styles.sendBtn} ${canSend || running ? styles.sendBtnActive : ""}`}
+              disabled={running ? !onStop : !canSend}
+              aria-label={running ? "Stop generation" : "Send message"}
+              onClick={
+                running
+                  ? (e) => {
+                      e.preventDefault();
+                      onStop?.();
+                    }
+                  : undefined
+              }
             >
-              {running ? (
-                <span className={styles.sendSpinner} aria-hidden />
-              ) : (
-                <SendIcon />
-              )}
+              {running ? <StopIcon /> : <SendIcon />}
             </button>
           </div>
         </div>

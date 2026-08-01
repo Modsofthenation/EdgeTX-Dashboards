@@ -11,7 +11,9 @@ interface SceneAssistPanelProps {
   onSelectRecord: (id: string) => void;
 }
 
-function elementLabel(el: LuaToSceneResult["scene"]["elements"][number]): string {
+function elementLabel(
+  el: LuaToSceneResult["scene"]["elements"][number],
+): string {
   if (el.label) return el.label;
   if (el.kind === "text" && "content" in el && el.content) {
     return el.content.slice(0, 24);
@@ -30,7 +32,9 @@ export function SceneAssistPanel({
   const stats = useMemo(() => {
     if (!assist) return null;
     const { scene, warnings } = assist;
-    const low = scene.elements.filter((e) => e.importConfidence === "low").length;
+    const low = scene.elements.filter(
+      (e) => e.importConfidence === "low",
+    ).length;
     const linked = scene.elements.filter((e) => e.sourceLine != null).length;
     return {
       name: scene.name,
@@ -68,8 +72,8 @@ export function SceneAssistPanel({
       {open ? (
         <div className={styles.sceneAssistBody}>
           <p className={styles.sceneAssistNote}>
-            Lua remains the edit source of truth. Click a node to select its
-            matching draw record (L#line).
+            Geometry edits sync linked scene elements back to Lua. Click a node
+            to select its matching draw record (L#line).
           </p>
           {stats.warnings.length > 0 ? (
             <ul className={styles.sceneAssistWarnings}>

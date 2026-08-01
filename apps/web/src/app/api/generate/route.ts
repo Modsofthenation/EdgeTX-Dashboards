@@ -107,48 +107,55 @@ export async function POST(request: Request): Promise<Response> {
 
   const store = getSessionStore();
 
-  const stream = createSseStream(async (send) => {
-    send({ type: "status", content: "Session ready", sessionId: session.id });
+  const stream = createSseStream(
+    async (send) => {
+      send({ type: "status", content: "Session ready", sessionId: session.id });
 
-    if (!store.tryAcquire(session.id)) {
-      send({
-        type: "error",
-        content: "Session busy",
-        sessionId: session.id,
-        success: false,
-      });
-      return;
-    }
+      if (!store.tryAcquire(session.id)) {
+        send({
+          type: "error",
+          content: "Session busy",
+          sessionId: session.id,
+          success: false,
+        });
+        return;
+      }
 
-    try {
-      await stored.generator.createAgent(validated.request.modelId);
-      session.agentId = stored.generator.agentId ?? "";
+      try {
+        await stored.generator.createAgent(validated.request.modelId);
+        session.agentId = stored.generator.agentId ?? "";
 
-      const ctx = { session, generator: stored.generator, send };
-      const result = await stored.generator.generate(
-        validated.request,
-        createRunCallbacks(ctx),
-        session,
-      );
+        const ctx = { session, generator: stored.generator, send };
+        const result = await stored.generator.generate(
+          validated.request,
+          createRunCallbacks(ctx),
+          session,
+          { signal: request.signal },
+        );
 
-      emitRunCompletion(ctx, result, { action: "generate" });
-    } catch (err) {
-      const message =
-        err instanceof CursorAgentError
-          ? `Startup failed: ${err.message}`
-          : err instanceof Error
-            ? err.message
-            : "Unknown error";
-      send({
-        type: "error",
-        content: message,
-        sessionId: session.id,
-        success: false,
-      });
-    } finally {
-      store.release(session.id);
-    }
-  });
+        emitRunCompletion(ctx, result, { action: "generate" });
+      } catch (err) {
+        if (request.signal.aborted) {
+          return;
+        }
+        const message =
+          err instanceof CursorAgentError
+            ? `Startup failed: ${err.message}`
+            : err instanceof Error
+              ? err.message
+              : "Unknown error";
+        send({
+          type: "error",
+          content: message,
+          sessionId: session.id,
+          success: false,
+        });
+      } finally {
+        store.release(session.id);
+      }
+    },
+    { signal: request.signal },
+  );
 
   return createSseResponse(stream);
 }
