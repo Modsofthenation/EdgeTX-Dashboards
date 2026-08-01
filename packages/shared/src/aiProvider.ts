@@ -1,5 +1,5 @@
 /** Supported AI backends for Generate / Refine. Cursor remains the default. */
-export type AiProviderId = "cursor" | "anthropic" | "openai";
+export type AiProviderId = "cursor" | "anthropic" | "openai" | "gemini";
 
 export const AI_PROVIDERS: {
   id: AiProviderId;
@@ -33,10 +33,23 @@ export const AI_PROVIDERS: {
     envVar: "OPENAI_API_KEY",
     header: "x-openai-api-key",
   },
+  {
+    id: "gemini",
+    label: "Gemini",
+    keyLabel: "Gemini API key",
+    keyPlaceholder: "AIza…",
+    envVar: "GEMINI_API_KEY",
+    header: "x-gemini-api-key",
+  },
 ];
 
 export function isAiProviderId(value: unknown): value is AiProviderId {
-  return value === "cursor" || value === "anthropic" || value === "openai";
+  return (
+    value === "cursor" ||
+    value === "anthropic" ||
+    value === "openai" ||
+    value === "gemini"
+  );
 }
 
 export function parseAiProviderId(value: unknown): AiProviderId {

@@ -135,13 +135,23 @@ export function AiSettingsPanel() {
         : "Ready (server key)"
       : "Not configured";
 
+  const providerLabels = AI_PROVIDERS.map((p) => p.label)
+    .join(", ")
+    .replace(/, ([^,]+)$/, ", and $1");
+  const providerEnvVars = AI_PROVIDERS.map((p) => p.envVar);
+
   return (
     <section className={styles.panel}>
       <p className={styles.hint}>
-        Generation supports Cursor, Anthropic, and OpenAI. Configure a browser
-        key here, or set the matching server env var (
-        <code>CURSOR_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>,{" "}
-        <code>OPENAI_API_KEY</code>).
+        Generation supports {providerLabels}. Configure a browser key here, or
+        set the matching server env var (
+        {providerEnvVars.map((env, i) => (
+          <span key={env}>
+            {i > 0 ? (i === providerEnvVars.length - 1 ? ", or " : ", ") : null}
+            <code>{env}</code>
+          </span>
+        ))}
+        ).
       </p>
 
       <label className={styles.label} htmlFor={providerFieldId}>

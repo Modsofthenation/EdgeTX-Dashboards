@@ -269,6 +269,9 @@ More detail: [docs/README.md](docs/README.md) · [workspace layout](docs/referen
 | Variable               | Required | Description                                          |
 | ---------------------- | -------- | ---------------------------------------------------- |
 | `CURSOR_API_KEY`       | Yes*     | Cursor API key for generation (*or Preferences → AI) |
+| `ANTHROPIC_API_KEY`    | No*      | Anthropic key when provider is Anthropic             |
+| `OPENAI_API_KEY`       | No*      | OpenAI key when provider is OpenAI                   |
+| `GEMINI_API_KEY`       | No*      | Gemini key when provider is Gemini                   |
 | `GENERATOR_API_SECRET` | No       | Protects API routes when set                         |
 | `SKIP_WASM_SYNC`       | No       | Set to `1` to skip WASM download on install/dev      |
 | `WIDGET_GEN_DATA_DIR`  | No       | Override data dir (desktop sidecar uses app data)    |

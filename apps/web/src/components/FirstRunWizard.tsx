@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { AI_PROVIDERS } from "@widget-gen/shared";
 import { useAiSettings } from "~/components/AiSettingsProvider";
 import { openAppPreferences } from "~/components/AppPreferences";
 import styles from "./FirstRunWizard.module.css";
@@ -8,13 +9,17 @@ import styles from "./FirstRunWizard.module.css";
 const DISMISS_KEY = "edgetx.firstRunWizard.dismissed.v1";
 
 /**
- * One-time desktop/browser gate: nudge pilots to set a Cursor API key
+ * One-time desktop/browser gate: nudge pilots to set an AI API key
  * before generate fails with a cryptic error.
  */
 export function FirstRunWizard() {
   const { ready, hydrated, statusLoading } = useAiSettings();
   const titleId = useId();
   const [open, setOpen] = useState(false);
+  const providerLabels = AI_PROVIDERS.map((p) => p.label)
+    .join(", ")
+    .replace(/, ([^,]+)$/, ", or $1");
+  const providerEnvVars = AI_PROVIDERS.map((p) => p.envVar);
 
   useEffect(() => {
     if (!hydrated || statusLoading) return;
@@ -52,15 +57,26 @@ export function FirstRunWizard() {
           Set up AI generation
         </h2>
         <p className={styles.lead}>
-          Add an AI API key (Cursor, Anthropic, or OpenAI) to generate Lua from
-          chat, or skip AI and build visually in Layout (Insert / prefabs). You
-          can also set <code>CURSOR_API_KEY</code>,{" "}
-          <code>ANTHROPIC_API_KEY</code>, or <code>OPENAI_API_KEY</code> on the
-          server for shared installs.
+          Add an AI API key ({providerLabels}) to generate Lua from chat, or
+          skip AI and build visually in Layout (Insert / prefabs). You can also
+          set{" "}
+          {providerEnvVars.map((env, i) => (
+            <span key={env}>
+              {i > 0
+                ? i === providerEnvVars.length - 1
+                  ? ", or "
+                  : ", "
+                : null}
+              <code>{env}</code>
+            </span>
+          ))}{" "}
+          on the server for shared installs.
         </p>
         <ol className={styles.steps}>
           <li>Open Preferences → AI (optional for generate)</li>
-          <li>Choose a provider, paste your API key, and Save — or open Layout</li>
+          <li>
+            Choose a provider, paste your API key, and Save — or open Layout
+          </li>
           <li>Describe a dashboard, or place elements by hand</li>
         </ol>
         <div className={styles.actions}>

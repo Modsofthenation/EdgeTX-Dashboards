@@ -7,7 +7,7 @@ import type {
   TelemetryProtocol,
   ValidationIssue,
 } from "@widget-gen/shared";
-import { parseAiProviderId } from "@widget-gen/shared";
+import { parseAiProviderId, providerMeta } from "@widget-gen/shared";
 import {
   buildGenerationPrompt,
   buildRefinePrompt,
@@ -64,23 +64,13 @@ export class WidgetGenerator {
   ) {
     this.repoRoot = getRepoRoot();
     this.provider = parseAiProviderId(provider);
-    this.apiKey =
-      apiKey ??
-      (this.provider === "anthropic"
-        ? process.env.ANTHROPIC_API_KEY
-        : this.provider === "openai"
-          ? process.env.OPENAI_API_KEY
-          : process.env.CURSOR_API_KEY) ??
-      "";
+    const meta = providerMeta(this.provider);
+    this.apiKey = apiKey ?? process.env[meta.envVar] ?? "";
     this.toolDefaults = toolDefaults ?? {};
     if (!this.apiKey) {
-      const env =
-        this.provider === "anthropic"
-          ? "ANTHROPIC_API_KEY"
-          : this.provider === "openai"
-            ? "OPENAI_API_KEY"
-            : "CURSOR_API_KEY";
-      throw new Error(`${env} is required for provider "${this.provider}"`);
+      throw new Error(
+        `${meta.envVar} is required for provider "${this.provider}"`,
+      );
     }
   }
 
@@ -334,11 +324,8 @@ export class WidgetGenerator {
         runId: run.id,
         agentId: cursorAgent.agentId,
       });
-      streamed = await streamAgentRun(
-        run,
-        cursorAgent.agentId,
-        callbacks,
-        () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+      streamed = await streamAgentRun(run, cursorAgent.agentId, callbacks, () =>
+        this.resolveWidgetWorkspaceKey(widgetInstanceId),
       );
     }
 
@@ -530,11 +517,8 @@ export class WidgetGenerator {
       const run = await cursorAgent.send(
         buildSdkUserMessage(refinePrompt, images),
       );
-      streamed = await streamAgentRun(
-        run,
-        cursorAgent.agentId,
-        callbacks,
-        () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+      streamed = await streamAgentRun(run, cursorAgent.agentId, callbacks, () =>
+        this.resolveWidgetWorkspaceKey(widgetInstanceId),
       );
     }
 

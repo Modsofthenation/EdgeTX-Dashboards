@@ -223,7 +223,10 @@ async function runAnthropicLoop(opts: {
         is_error?: boolean;
       };
 
-  type Message = { role: "user" | "assistant"; content: string | ContentBlock[] };
+  type Message = {
+    role: "user" | "assistant";
+    content: string | ContentBlock[];
+  };
 
   const system = httpToolsSystemAddendum();
   const userBlocks: ContentBlock[] = [];
@@ -345,6 +348,193 @@ async function runAnthropicLoop(opts: {
   };
 }
 
+async function runGeminiLoop(opts: {
+  apiKey: string;
+  modelId: string;
+  userText: string;
+  images?: PromptImage[];
+  tools: HttpToolDefinition[];
+  callbacks?: RunCallbacks;
+  runId: string;
+  agentId: string;
+}): Promise<ToolLoopResult> {
+  const { apiKey, modelId, tools, callbacks, runId, agentId } = opts;
+
+  type GeminiPart =
+    | { text: string }
+    | { inlineData: { mimeType: string; data: string } }
+    | { functionCall: { name: string; args?: Record<string, unknown> } }
+    | {
+        functionResponse: {
+          name: string;
+          response: Record<string, unknown>;
+        };
+      }
+    // Preserve opaque thought / signature fields from model turns.
+    | Record<string, unknown>;
+
+  type GeminiContent = { role: "user" | "model"; parts: GeminiPart[] };
+
+  const system = httpToolsSystemAddendum();
+  const userParts: GeminiPart[] = [];
+  for (const img of opts.images ?? []) {
+    userParts.push({
+      inlineData: {
+        mimeType: img.mimeType || "image/png",
+        data: img.data,
+      },
+    });
+  }
+  userParts.push({ text: opts.userText });
+
+  const contents: GeminiContent[] = [{ role: "user", parts: userParts }];
+
+  const geminiTools = [
+    {
+      functionDeclarations: tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters,
+      })),
+    },
+  ];
+
+  let assistantText = "";
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
+
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    callbacks?.onEvent?.({
+      type: "status",
+      content: `Gemini turn ${turn + 1}…`,
+      runId,
+      agentId,
+    });
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents,
+        tools: geminiTools,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: `Gemini API ${response.status}: ${body.slice(0, 400)}`,
+      };
+    }
+
+    const data = (await response.json()) as {
+      candidates?: Array<{
+        content?: { role?: string; parts?: GeminiPart[] };
+        finishReason?: string;
+      }>;
+      error?: { message?: string };
+    };
+
+    if (data.error?.message) {
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: `Gemini API error: ${data.error.message}`,
+      };
+    }
+
+    const content = data.candidates?.[0]?.content;
+    const parts = content?.parts ?? [];
+    if (parts.length === 0) {
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: "Gemini returned no content parts",
+      };
+    }
+
+    // Keep the full model turn (including thought signatures) for multi-turn tool use.
+    contents.push({ role: "model", parts });
+
+    const functionCalls: Array<{
+      name: string;
+      args: Record<string, unknown>;
+    }> = [];
+
+    for (const part of parts) {
+      if (
+        "text" in part &&
+        typeof (part as { text?: unknown }).text === "string"
+      ) {
+        const text = (part as { text: string }).text;
+        if (text.trim()) {
+          assistantText += text;
+          callbacks?.onEvent?.({
+            type: "text",
+            content: text,
+            runId,
+            agentId,
+          });
+        }
+      }
+      if (
+        "functionCall" in part &&
+        part.functionCall &&
+        typeof part.functionCall === "object"
+      ) {
+        const call = part.functionCall as {
+          name?: string;
+          args?: Record<string, unknown>;
+        };
+        if (call.name) {
+          functionCalls.push({
+            name: call.name,
+            args: call.args ?? {},
+          });
+        }
+      }
+    }
+
+    if (functionCalls.length === 0) {
+      return { runId, agentId, status: "finished", result: assistantText };
+    }
+
+    const responseParts: GeminiPart[] = [];
+    for (const call of functionCalls) {
+      emitTool(callbacks, call.name, call.args, runId, agentId);
+      const tool = tools.find((t) => t.name === call.name);
+      const result = tool
+        ? await tool.execute(call.args)
+        : { text: `Unknown tool: ${call.name}`, isError: true };
+      responseParts.push({
+        functionResponse: {
+          name: call.name,
+          response: result.isError
+            ? { error: result.text }
+            : { result: result.text },
+        },
+      });
+    }
+    contents.push({ role: "user", parts: responseParts });
+  }
+
+  return {
+    runId,
+    agentId,
+    status: "error",
+    error: `Exceeded ${MAX_TURNS} tool turns`,
+    result: assistantText,
+  };
+}
+
 export async function runProviderToolLoop(opts: {
   provider: Exclude<AiProviderId, "cursor">;
   apiKey: string;
@@ -361,5 +551,16 @@ export async function runProviderToolLoop(opts: {
   if (opts.provider === "openai") {
     return runOpenAiLoop({ ...opts, tools, runId, agentId });
   }
-  return runAnthropicLoop({ ...opts, tools, runId, agentId });
+  if (opts.provider === "gemini") {
+    return runGeminiLoop({ ...opts, tools, runId, agentId });
+  }
+  if (opts.provider === "anthropic") {
+    return runAnthropicLoop({ ...opts, tools, runId, agentId });
+  }
+  return {
+    runId,
+    agentId,
+    status: "error",
+    error: `Unsupported AI provider: ${opts.provider as string}`,
+  };
 }

@@ -8,7 +8,7 @@ import {
 import { validateGenerateRequest } from "../requestValidate.ts";
 
 describe("providerModels", () => {
-  it("returns static Anthropic and OpenAI catalogs", async () => {
+  it("returns static Anthropic, OpenAI, and Gemini catalogs", async () => {
     const anthropic = await listModelsForProvider("anthropic");
     assert.ok(anthropic.models.length >= 1);
     assert.equal(anthropic.defaultId, defaultModelForProvider("anthropic"));
@@ -17,15 +17,29 @@ describe("providerModels", () => {
     const openai = await listModelsForProvider("openai");
     assert.ok(openai.models.length >= 1);
     assert.equal(openai.defaultId, defaultModelForProvider("openai"));
+
+    const gemini = await listModelsForProvider("gemini");
+    assert.ok(gemini.models.length >= 1);
+    assert.equal(gemini.defaultId, defaultModelForProvider("gemini"));
+    assert.equal(gemini.source, "fallback");
+    assert.ok(gemini.models.some((m) => m.id === "gemini-2.5-flash"));
   });
 
   it("validates model ids per provider", () => {
     assert.equal(
-      isAllowedModelForProvider("anthropic", defaultModelForProvider("anthropic")),
+      isAllowedModelForProvider(
+        "anthropic",
+        defaultModelForProvider("anthropic"),
+      ),
       true,
     );
     assert.equal(isAllowedModelForProvider("anthropic", "gpt-4.1"), false);
     assert.equal(isAllowedModelForProvider("openai", "gpt-4.1"), true);
+    assert.equal(
+      isAllowedModelForProvider("gemini", defaultModelForProvider("gemini")),
+      true,
+    );
+    assert.equal(isAllowedModelForProvider("gemini", "gpt-4.1"), false);
   });
 });
 
@@ -57,6 +71,22 @@ describe("validateGenerateRequest provider", () => {
         anthropic.request.modelId,
         defaultModelForProvider("anthropic"),
       );
+    }
+
+    const gemini = validateGenerateRequest(
+      {
+        prompt: "battery row",
+        radioId: "tx15",
+        protocol: "betaflight",
+        provider: "gemini",
+        modelId: defaultModelForProvider("gemini"),
+      },
+      { allowedModelIds: [defaultModelForProvider("gemini")] },
+    );
+    assert.equal(gemini.ok, true);
+    if (gemini.ok) {
+      assert.equal(gemini.request.provider, "gemini");
+      assert.equal(gemini.request.modelId, defaultModelForProvider("gemini"));
     }
   });
 

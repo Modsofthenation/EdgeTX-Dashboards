@@ -86,6 +86,7 @@ export {
 export {
   ANTHROPIC_MODELS,
   OPENAI_MODELS,
+  GEMINI_MODELS,
   defaultModelForProvider,
   listModelsForProvider,
   isAllowedModelForProvider,
