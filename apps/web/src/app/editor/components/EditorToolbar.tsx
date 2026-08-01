@@ -218,7 +218,7 @@ export function EditorToolbar({
     if (onInlineSimChange) {
       items.push({
         id: "inline-sim",
-        label: "Inline radio sim",
+        label: inlineSim ? "Hide radio preview" : "Show radio preview",
         onClick: () => onInlineSimChange(!inlineSim),
       });
     }

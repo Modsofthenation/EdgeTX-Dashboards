@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import {
   parseLuaToDrawCommands,
   getLastPreviewParseMeta,
+  edgeTxDegToCanvasRad,
 } from "./luaPreviewEngine.ts";
 import { BASE_MOCK } from "./mockTelemetry.ts";
 import { BFMODEL_DT8_SOURCE } from "./fixtures/bfmodel-dt8.ts";
@@ -382,5 +383,51 @@ describe("parseLuaToDrawCommands", () => {
       meta.skippedTextCount === 0,
       `skipped text: ${meta.warnings.join("; ")}`,
     );
+  });
+
+  it("parses drawFilledRectangle opacity (6th arg 0–15)", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local function refresh(widget)",
+      "  lcd.drawFilledRectangle(0, 0, 100, 50, BLACK, 10)",
+      "  lcd.drawFilledRectangle(10, 10, 40, 20, DARKGREY)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    const withOpacity = cmds.find(
+      (c) => c.kind === "filledRect" && c.opacity === 10,
+    );
+    const opaque = cmds.find(
+      (c) => c.kind === "filledRect" && c.w === 40 && c.opacity == null,
+    );
+    assert.ok(withOpacity, "expected filledRect with opacity 10");
+    assert.ok(opaque, "expected 5-arg filledRect without opacity");
+  });
+
+  it("evaluates fmtNum in drawText args", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local function refresh(widget)",
+      "  local volts = 16.25",
+      "  lcd.drawText(10, 20, fmtNum(volts, 1), DBLSIZE + YELLOW)",
+      "end",
+      "return {}",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    const text = cmds.find((c) => c.kind === "text");
+    assert.equal(text?.text, "16.3");
+    const meta = getLastPreviewParseMeta();
+    assert.equal(meta.skippedTextCount, 0);
+  });
+});
+
+describe("edgeTxDegToCanvasRad", () => {
+  it("maps EdgeTX 0° (up) to canvas -90°", () => {
+    assert.ok(Math.abs(edgeTxDegToCanvasRad(0) - -Math.PI / 2) < 1e-9);
+    assert.ok(Math.abs(edgeTxDegToCanvasRad(90) - 0) < 1e-9);
+    assert.ok(Math.abs(edgeTxDegToCanvasRad(180) - Math.PI / 2) < 1e-9);
   });
 });

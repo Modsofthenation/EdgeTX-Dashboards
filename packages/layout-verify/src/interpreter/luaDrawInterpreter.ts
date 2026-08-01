@@ -965,6 +965,10 @@ function resolveTextTemplate(
     /^tostring\s*\(/.test(t) ||
     /^string\.format\s*\(/.test(t) ||
     /^truncStr\s*\(/.test(t) ||
+    /^fmtNum\s*\(/.test(t) ||
+    /^fmtDuration\s*\(/.test(t) ||
+    /^fmtTimer\s*\(/.test(t) ||
+    /^telem\s*\(/.test(t) ||
     /\band\s+.+\s+or\s+/.test(t)
   ) {
     const value = evalValue(t, ctx, dims, srcMap, mock);
@@ -1629,8 +1633,20 @@ export function applyMockToCommands(
     }
 
     const fillParsed = parseLcdCallWithSource(line, "drawFilledRectangle");
-    if (fillParsed?.args.length === 5) {
+    if (
+      fillParsed &&
+      fillParsed.args.length >= 5 &&
+      fillParsed.args.length <= 6
+    ) {
       const fillArgs = fillParsed.args;
+      const opacityRaw =
+        fillArgs.length >= 6
+          ? evalNumberExpr(fillArgs[5]!, ctx, evalDims)
+          : undefined;
+      const opacity =
+        opacityRaw != null && Number.isFinite(opacityRaw)
+          ? Math.max(0, Math.min(15, Math.round(opacityRaw)))
+          : undefined;
       commands.push(
         attach(
           {
@@ -1640,6 +1656,7 @@ export function applyMockToCommands(
             w: evalNumberExpr(fillArgs[2]!, ctx, evalDims),
             h: evalNumberExpr(fillArgs[3]!, ctx, evalDims),
             color: resolveDrawColor(fillArgs[4]!, rgbMap, ctx),
+            ...(opacity != null ? { opacity } : {}),
           },
           fillParsed,
         ),

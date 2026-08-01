@@ -42,6 +42,11 @@ function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
 
+/** EdgeTX: 0° = up, clockwise → Canvas2D: 0° = east, clockwise (y-down). */
+function edgeTxDegToCanvasRad(deg: number): number {
+  return degToRad(deg - 90);
+}
+
 function fillPreviewText(
   ctx: SKRSContext2D,
   text: string,
@@ -74,10 +79,17 @@ export function renderPreviewCommands(
         ctx.fillStyle = cmd.color ?? "#000000";
         ctx.fillRect(0, 0, lcdW, lcdH);
         break;
-      case "filledRect":
+      case "filledRect": {
         ctx.fillStyle = cmd.color ?? "#808080";
+        const prevAlpha = ctx.globalAlpha;
+        if (cmd.opacity != null) {
+          ctx.globalAlpha =
+            prevAlpha * Math.max(0, Math.min(1, cmd.opacity / 15));
+        }
         ctx.fillRect(cmd.x ?? 0, cmd.y ?? 0, cmd.w ?? 0, cmd.h ?? 0);
+        ctx.globalAlpha = prevAlpha;
         break;
+      }
       case "rect":
         ctx.strokeStyle = cmd.color ?? "#ffffff";
         ctx.lineWidth = 1;
@@ -168,8 +180,8 @@ export function renderPreviewCommands(
           cx,
           cy,
           r,
-          degToRad(cmd.startAngle ?? 0),
-          degToRad(cmd.endAngle ?? 360),
+          edgeTxDegToCanvasRad(cmd.startAngle ?? 0),
+          edgeTxDegToCanvasRad(cmd.endAngle ?? 360),
         );
         ctx.stroke();
         break;
@@ -189,8 +201,8 @@ export function renderPreviewCommands(
           cx,
           cy,
           midR,
-          degToRad(cmd.startAngle ?? 0),
-          degToRad(cmd.endAngle ?? 360),
+          edgeTxDegToCanvasRad(cmd.startAngle ?? 0),
+          edgeTxDegToCanvasRad(cmd.endAngle ?? 360),
         );
         ctx.stroke();
         break;

@@ -47,6 +47,8 @@ interface RadioSimPreviewProps {
   onInteractiveControls?: (
     controls: { openInteractive: () => void } | null,
   ) => void;
+  /** Fires when the WASM runtime reaches (or leaves) the running phase. */
+  onRunningChange?: (running: boolean) => void;
 }
 
 function SimInteractiveOverlay({
@@ -174,6 +176,7 @@ export function RadioSimPreview({
   fillHost = false,
   modelPng = null,
   onInteractiveControls,
+  onRunningChange,
 }: RadioSimPreviewProps) {
   const {
     state,
@@ -285,6 +288,11 @@ export function RadioSimPreview({
   }, [active, state.phase, openInteractive, onInteractiveControls]);
 
   useEffect(() => {
+    onRunningChange?.(active && state.phase === "running");
+    return () => onRunningChange?.(false);
+  }, [active, state.phase, onRunningChange]);
+
+  useEffect(() => {
     if (!active) setOverlayOpen(false);
   }, [active]);
 
@@ -381,7 +389,7 @@ export function RadioSimPreview({
         .catch(() => {
           // keep desired source; next running/source transition retries.
         });
-    }, 220);
+    }, 350);
 
     return () => window.clearTimeout(timer);
   }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);

@@ -127,7 +127,7 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 Environment is refreshed by the startup update script `npm install` (its `postinstall` patches `@edgetx/simulator-ui` and downloads the EdgeTX WASM firmware into `apps/web/public/sim/`). No extra setup is needed. Non-obvious caveats:
 
 - **`CURSOR_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` gate AI generation** (provider selected in Preferences → AI). Without a key for the selected provider, `npm run dev` still boots at `http://localhost:3000` and the editor, `/api/validate`, layout preview, and EdgeTX WASM simulator all work; only `/api/generate` and `/api/refine` are blocked. Add the matching secret to exercise the chat generation flow.
-- **The `/editor` center canvas is a scene/layers editor, not a live pixel preview** — it looks blank/black even for a valid widget. To see the widget actually rendered, use **Run in simulator** / **Verify in sim** in the editor (or the home-page **Preview** tab), which run the real EdgeTX firmware via WASM. A blank editor canvas is expected, not a bug.
+- **The `/editor` canvas paints a layout overlay** (static Lua interpreter) for hit-testing and drag/resize. For radios with WASM firmware (TX15 etc.), **radio preview** is on by default and shows real EdgeTX pixels under that overlay. Use **Simulator** for the full interactive radio UI. A dark LCD is normal (`lcd.clear(BLACK)`); an empty board means no draw records yet.
 - **Verify the WASM sim runtime headlessly** with `npm run test:wasm` (executes real firmware against the golden example widgets). Use `SKIP_WASM_SYNC=1` only if the firmware download is unavailable — the Sim/Preview tabs won't render without it.
 
 ## Reference links
