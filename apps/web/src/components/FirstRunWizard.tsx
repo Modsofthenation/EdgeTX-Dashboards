@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { AI_PROVIDERS } from "@widget-gen/shared";
+import { AI_PROVIDERS, formatList } from "@widget-gen/shared";
 import { useAiSettings } from "~/components/AiSettingsProvider";
 import { openAppPreferences } from "~/components/AppPreferences";
 import styles from "./FirstRunWizard.module.css";
@@ -16,10 +16,18 @@ export function FirstRunWizard() {
   const { ready, hydrated, statusLoading } = useAiSettings();
   const titleId = useId();
   const [open, setOpen] = useState(false);
-  const providerLabels = AI_PROVIDERS.map((p) => p.label)
-    .join(", ")
-    .replace(/, ([^,]+)$/, ", or $1");
+  const providerLabels = formatList(
+    AI_PROVIDERS.map((p) => p.label),
+    "or",
+  );
   const providerEnvVars = AI_PROVIDERS.map((p) => p.envVar);
+  const envVarSep = (i: number) => {
+    if (i === 0) return null;
+    if (i === providerEnvVars.length - 1) {
+      return providerEnvVars.length === 2 ? " or " : ", or ";
+    }
+    return ", ";
+  };
 
   useEffect(() => {
     if (!hydrated || statusLoading) return;
@@ -62,11 +70,7 @@ export function FirstRunWizard() {
           set{" "}
           {providerEnvVars.map((env, i) => (
             <span key={env}>
-              {i > 0
-                ? i === providerEnvVars.length - 1
-                  ? ", or "
-                  : ", "
-                : null}
+              {envVarSep(i)}
               <code>{env}</code>
             </span>
           ))}{" "}

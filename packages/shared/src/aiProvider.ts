@@ -59,3 +59,14 @@ export function parseAiProviderId(value: unknown): AiProviderId {
 export function providerMeta(id: AiProviderId) {
   return AI_PROVIDERS.find((p) => p.id === id) ?? AI_PROVIDERS[0]!;
 }
+
+/** Join labels with an Oxford-style conjunction (no comma for exactly two items). */
+export function formatList(
+  items: readonly string[],
+  conjunction: "and" | "or",
+): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0]!;
+  if (items.length === 2) return `${items[0]} ${conjunction} ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, ${conjunction} ${items[items.length - 1]}`;
+}

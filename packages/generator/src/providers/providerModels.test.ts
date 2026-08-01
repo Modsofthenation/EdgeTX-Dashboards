@@ -22,7 +22,11 @@ describe("providerModels", () => {
     assert.ok(gemini.models.length >= 1);
     assert.equal(gemini.defaultId, defaultModelForProvider("gemini"));
     assert.equal(gemini.source, "fallback");
-    assert.ok(gemini.models.some((m) => m.id === "gemini-2.5-flash"));
+    assert.ok(gemini.models.some((m) => m.id === "gemini-3.5-flash"));
+    assert.equal(
+      gemini.models.some((m) => m.id === "gemini-2.0-flash"),
+      false,
+    );
   });
 
   it("validates model ids per provider", () => {

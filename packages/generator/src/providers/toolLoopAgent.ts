@@ -11,6 +11,7 @@ import {
 import type { ToolSessionDefaults } from "../agentTools.ts";
 
 const MAX_TURNS = 24;
+const PROVIDER_FETCH_TIMEOUT_MS = 60_000;
 
 export interface ToolLoopResult {
   runId: string;
@@ -119,6 +120,7 @@ async function runOpenAiLoop(opts: {
         tools: openaiTools,
         tool_choice: "auto",
       }),
+      signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -274,6 +276,7 @@ async function runAnthropicLoop(opts: {
         messages,
         tools: anthropicTools,
       }),
+      signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -394,7 +397,7 @@ async function runGeminiLoop(opts: {
       functionDeclarations: tools.map((t) => ({
         name: t.name,
         description: t.description,
-        parameters: t.parameters,
+        parameters: sanitizeGeminiParameters(t.parameters),
       })),
     },
   ];
@@ -410,18 +413,31 @@ async function runGeminiLoop(opts: {
       agentId,
     });
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": apiKey,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        tools: geminiTools,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": apiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          tools: geminiTools,
+          generationConfig: { maxOutputTokens: 8192 },
+        }),
+        signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        runId,
+        agentId,
+        status: "error",
+        error: `Gemini request failed: ${message}`,
+      };
+    }
 
     if (!response.ok) {
       const body = await response.text();
@@ -450,14 +466,18 @@ async function runGeminiLoop(opts: {
       };
     }
 
-    const content = data.candidates?.[0]?.content;
+    const candidate = data.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    const content = candidate?.content;
     const parts = content?.parts ?? [];
     if (parts.length === 0) {
       return {
         runId,
         agentId,
         status: "error",
-        error: "Gemini returned no content parts",
+        error: finishReason
+          ? `Gemini returned no content parts (${finishReason})`
+          : "Gemini returned no content parts",
       };
     }
 
@@ -468,6 +488,7 @@ async function runGeminiLoop(opts: {
       name: string;
       args: Record<string, unknown>;
     }> = [];
+    let turnText = "";
 
     for (const part of parts) {
       if (
@@ -476,6 +497,7 @@ async function runGeminiLoop(opts: {
       ) {
         const text = (part as { text: string }).text;
         if (text.trim()) {
+          turnText += text;
           assistantText += text;
           callbacks?.onEvent?.({
             type: "text",
@@ -504,6 +526,16 @@ async function runGeminiLoop(opts: {
     }
 
     if (functionCalls.length === 0) {
+      const usableTurnText = turnText.trim().length > 0;
+      if (finishReason && finishReason !== "STOP" && !usableTurnText) {
+        return {
+          runId,
+          agentId,
+          status: "error",
+          error: `Gemini stopped early (${finishReason})`,
+          result: assistantText,
+        };
+      }
       return { runId, agentId, status: "finished", result: assistantText };
     }
 
@@ -533,6 +565,28 @@ async function runGeminiLoop(opts: {
     error: `Exceeded ${MAX_TURNS} tool turns`,
     result: assistantText,
   };
+}
+
+/**
+ * Gemini rejects some JSON Schema keywords (notably `default`) in
+ * functionDeclarations.parameters. Strip those while preserving executor fallbacks.
+ */
+export function sanitizeGeminiParameters(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!value || typeof value !== "object") return value;
+    const out: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      if (key === "default") continue;
+      out[key] = walk(child);
+    }
+    return out;
+  };
+  return walk(schema) as Record<string, unknown>;
 }
 
 export async function runProviderToolLoop(opts: {

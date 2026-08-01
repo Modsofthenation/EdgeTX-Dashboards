@@ -44,8 +44,8 @@ export const OPENAI_MODELS: ModelCatalogEntry[] = [
 
 export const GEMINI_MODELS: ModelCatalogEntry[] = [
   {
-    id: "gemini-2.5-flash",
-    label: "Gemini 2.5 Flash",
+    id: "gemini-3.5-flash",
+    label: "Gemini 3.5 Flash",
     description: "Fast coding + tool use (recommended)",
   },
   {
@@ -54,8 +54,8 @@ export const GEMINI_MODELS: ModelCatalogEntry[] = [
     description: "Highest quality, slower",
   },
   {
-    id: "gemini-2.0-flash",
-    label: "Gemini 2.0 Flash",
+    id: "gemini-2.5-flash",
+    label: "Gemini 2.5 Flash",
     description: "Previous-gen flash model",
   },
 ];

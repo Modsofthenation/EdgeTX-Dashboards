@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import type { AiProviderId } from "@widget-gen/shared";
-import { AI_PROVIDERS, providerMeta } from "@widget-gen/shared";
+import { AI_PROVIDERS, formatList, providerMeta } from "@widget-gen/shared";
 import { useAiSettings } from "~/components/AiSettingsProvider";
 import {
   DEFAULT_CHAT_MODEL,
@@ -135,10 +135,18 @@ export function AiSettingsPanel() {
         : "Ready (server key)"
       : "Not configured";
 
-  const providerLabels = AI_PROVIDERS.map((p) => p.label)
-    .join(", ")
-    .replace(/, ([^,]+)$/, ", and $1");
+  const providerLabels = formatList(
+    AI_PROVIDERS.map((p) => p.label),
+    "and",
+  );
   const providerEnvVars = AI_PROVIDERS.map((p) => p.envVar);
+  const envVarSep = (i: number) => {
+    if (i === 0) return null;
+    if (i === providerEnvVars.length - 1) {
+      return providerEnvVars.length === 2 ? " or " : ", or ";
+    }
+    return ", ";
+  };
 
   return (
     <section className={styles.panel}>
@@ -147,7 +155,7 @@ export function AiSettingsPanel() {
         set the matching server env var (
         {providerEnvVars.map((env, i) => (
           <span key={env}>
-            {i > 0 ? (i === providerEnvVars.length - 1 ? ", or " : ", ") : null}
+            {envVarSep(i)}
             <code>{env}</code>
           </span>
         ))}
