@@ -9,6 +9,32 @@ export async function isTauriDesktop(): Promise<boolean> {
   }
 }
 
+export interface AppDataProjectFile {
+  fileName: string;
+  path: string;
+  modifiedMs: number;
+}
+
+export async function listAppDataProjects(): Promise<AppDataProjectFile[]> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<AppDataProjectFile[]>("list_app_data_projects");
+}
+
+export async function readAppDataProject(fileName: string): Promise<string> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<string>("read_app_data_project", { fileName });
+}
+
+export async function deleteAppDataProject(fileName: string): Promise<void> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  await invoke<void>("delete_app_data_project", { fileName });
+}
+
+export function appDataProjectFileName(projectId: string): string {
+  const safeId = projectId.replace(/[^\w.-]+/g, "_") || "dashboard";
+  return `${safeId}.edgetx-project.json`;
+}
+
 export async function saveProjectPackToDisk(
   defaultName: string,
   json: string,
@@ -47,6 +73,14 @@ export async function openProjectPackFromDisk(): Promise<
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/** Persist an id-keyed pack under the desktop app data `projects/` folder. */
+export async function saveProjectPackToAppData(
+  projectId: string,
+  json: string,
+): Promise<{ path: string } | { error: string }> {
+  return syncProjectPackToAppData(appDataProjectFileName(projectId), json);
 }
 
 /** Persist pack under the desktop app data `projects/` folder. */

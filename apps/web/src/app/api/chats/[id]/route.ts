@@ -5,6 +5,7 @@ import {
   updateChat,
   type UpdateChatInput,
 } from "~/lib/db/chatStore";
+import { parseAiProviderId } from "@widget-gen/shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,7 +45,13 @@ export async function PUT(
   }
 
   try {
-    const input = body as UpdateChatInput;
+    const raw = body as UpdateChatInput;
+    const input: UpdateChatInput = {
+      ...raw,
+      ...(raw.provider !== undefined
+        ? { provider: parseAiProviderId(raw.provider) }
+        : {}),
+    };
     const chat = updateChat(id, input);
     if (!chat) {
       return Response.json({ error: "Chat not found" }, { status: 404 });

@@ -13,4 +13,8 @@ export {
   createEmptyScene,
   createDefaultElement,
 } from "./export/sceneToLua.ts";
+export {
+  applySceneGeometryToSource,
+  type SceneGeometryZone,
+} from "./export/applySceneGeometry.ts";
 export { luaToScene } from "./import/luaToScene.ts";

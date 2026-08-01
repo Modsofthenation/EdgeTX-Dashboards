@@ -352,7 +352,7 @@ function ChatMessageListSection() {
 }
 
 function ChatComposerSection() {
-  const { running, sendMessage, canRefine } = useChatSession();
+  const { running, sendMessage, stopGeneration, canRefine } = useChatSession();
   const {
     protocol,
     setProtocol,
@@ -388,6 +388,7 @@ function ChatComposerSection() {
       onEdgeTxChange={setEdgeTxVersion}
       onRadioChange={setRadioId}
       onSend={handleSend}
+      onStop={stopGeneration}
     />
   );
 }

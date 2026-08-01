@@ -1,4 +1,8 @@
-import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
+import type {
+  AiProviderId,
+  TelemetryProtocol,
+  ValidationIssue,
+} from "@widget-gen/shared";
 import { appendStreamLine, type StreamLine } from "~/lib/streamLines";
 
 export interface WidgetSnapshot {
@@ -67,6 +71,7 @@ export function formatVersionOptionLabel(
 export interface ChatSummary {
   id: string;
   title: string;
+  provider: AiProviderId;
   protocol: TelemetryProtocol;
   modelId: string;
   widgetName: string | null;
@@ -81,6 +86,7 @@ export interface StoredChat {
   id: string;
   title: string;
   sessionId: string | null;
+  provider: AiProviderId;
   protocol: TelemetryProtocol;
   modelId: string;
   edgeTxVersion: string;

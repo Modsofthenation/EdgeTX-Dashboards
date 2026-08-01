@@ -110,7 +110,7 @@ export function ExportInstallModal({
             <p>
               {validationErrorCount} validation error
               {validationErrorCount === 1 ? "" : "s"} must be fixed before
-              download.
+              export.
             </p>
             {onReviewValidation ? (
               <button
@@ -144,6 +144,7 @@ export function ExportInstallModal({
             lcdW={lcdW}
             lcdH={lcdH}
             touch={touch}
+            validationErrorCount={validationErrorCount}
             onBeforeDownload={onBeforeDownload}
             onReviewValidation={
               onReviewValidation

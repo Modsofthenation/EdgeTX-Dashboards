@@ -1,22 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProjectSummary } from "~/lib/projectLibrary";
 import {
   downloadProjectPack,
   exportProjectPack,
   importProjectPack,
   listRecentProjects,
+  parseProjectPack,
+  projectSummaryFromPack,
 } from "~/lib/projectLibrary";
 import {
   isTauriDesktop,
+  listAppDataProjects,
   openProjectPackFromDisk,
+  readAppDataProject,
+  saveProjectPackToAppData,
   saveProjectPackToDisk,
-  syncProjectPackToAppData,
 } from "~/lib/desktopProjectIo";
 import styles from "../editor.module.css";
 
 export type ProjectLibraryMode = "save" | "recent";
+const APP_DATA_MIGRATION_KEY = "edgetx.projectLibrary.appDataMigrated.v1";
 
 interface ProjectLibraryModalProps {
   open: boolean;
@@ -24,10 +29,14 @@ interface ProjectLibraryModalProps {
   defaultName?: string;
   projectId?: string | null;
   onClose: () => void;
-  onSave: (name: string) => void;
-  onOpen: (id: string) => void;
-  onRename?: (id: string, name: string) => void;
-  onDelete?: (id: string) => void;
+  onSave: (name: string) => void | Promise<void>;
+  onOpen: (id: string, appDataFileName?: string) => void | Promise<void>;
+  onRename?: (
+    id: string,
+    name: string,
+    appDataFileNames?: string[],
+  ) => void | Promise<void>;
+  onDelete?: (id: string, appDataFileNames?: string[]) => void | Promise<void>;
   onImported?: (id: string) => void;
 }
 
@@ -49,22 +58,110 @@ export function ProjectLibraryModal({
   const [listTick, setListTick] = useState(0);
   const [desktop, setDesktop] = useState(false);
   const [diskNote, setDiskNote] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const recent = useMemo(
-    () => (open && mode === "recent" ? listRecentProjects() : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- listTick forces refresh after mutate
-    [open, mode, listTick],
+  const [recent, setRecent] = useState<ProjectSummary[]>([]);
+  const [appDataFiles, setAppDataFiles] = useState<Record<string, string[]>>(
+    {},
   );
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && mode === "save") setName(defaultName);
-    if (open) {
-      setRenameId(null);
-      setDiskNote(null);
-      setListTick((t) => t + 1);
-      void isTauriDesktop().then(setDesktop);
-    }
-  }, [open, mode, defaultName]);
+    if (!open) return;
+    setRenameId(null);
+    setDiskNote(null);
+
+    let cancelled = false;
+    const localProjects = listRecentProjects();
+    if (mode === "recent") setRecent(localProjects);
+
+    void (async () => {
+      const isDesktop = await isTauriDesktop();
+      if (cancelled) return;
+      setDesktop(isDesktop);
+      if (!isDesktop || mode !== "recent") return;
+
+      try {
+        let files = await listAppDataProjects();
+        let migrationDone = false;
+        try {
+          migrationDone = localStorage.getItem(APP_DATA_MIGRATION_KEY) === "1";
+        } catch {
+          // Storage access must not hide app-data projects.
+        }
+        if (!migrationDone && files.length === 0 && localProjects.length > 0) {
+          const packs = localProjects
+            .map((project) => exportProjectPack(project.id))
+            .filter((pack) => pack != null);
+          let migrationOk = packs.length === localProjects.length;
+          for (const pack of packs) {
+            const result = await saveProjectPackToAppData(
+              pack.project.id,
+              JSON.stringify(pack, null, 2),
+            );
+            if ("error" in result) {
+              migrationOk = false;
+              if (!cancelled) setDiskNote(result.error);
+              break;
+            }
+          }
+          if (migrationOk) {
+            try {
+              localStorage.setItem(APP_DATA_MIGRATION_KEY, "1");
+            } catch {
+              // The migration succeeded even if its browser marker cannot persist.
+            }
+            files = await listAppDataProjects();
+          }
+        }
+
+        const appProjects: ProjectSummary[] = [];
+        const fileNames: Record<string, string[]> = {};
+        for (const file of files) {
+          try {
+            const json = await readAppDataProject(file.fileName);
+            const parsed = parseProjectPack(JSON.parse(json) as unknown);
+            if ("error" in parsed) continue;
+            const summary = projectSummaryFromPack(
+              parsed.pack,
+              file.modifiedMs,
+            );
+            if (!summary) continue;
+            fileNames[summary.id] = [
+              ...(fileNames[summary.id] ?? []),
+              file.fileName,
+            ];
+            if (fileNames[summary.id].length > 1) continue;
+            appProjects.push(summary);
+          } catch {
+            // One corrupt pack must not hide the rest of the library.
+          }
+        }
+        if (cancelled) return;
+        const merged = new Map(
+          localProjects.map((project) => [project.id, project]),
+        );
+        for (const project of appProjects) merged.set(project.id, project);
+        setRecent(
+          [...merged.values()].sort((a, b) =>
+            b.updatedAt.localeCompare(a.updatedAt),
+          ),
+        );
+        setAppDataFiles(fileNames);
+      } catch (err) {
+        if (!cancelled) {
+          setDiskNote(
+            err instanceof Error
+              ? err.message
+              : "Could not load app-data projects.",
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, defaultName, listTick]);
 
   if (!open) return null;
 
@@ -92,9 +189,8 @@ export function ProjectLibraryModal({
       setDiskNote("Save the project in-browser first (needs Lua source).");
       return;
     }
-    const fileName = `${pack.project.name.replace(/[^\w.-]+/g, "_") || "dashboard"}.edgetx-project.json`;
-    const result = await syncProjectPackToAppData(
-      fileName,
+    const result = await saveProjectPackToAppData(
+      pack.project.id,
       JSON.stringify(pack, null, 2),
     );
     if ("error" in result) {
@@ -166,7 +262,7 @@ export function ProjectLibraryModal({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     const trimmed = name.trim();
-                    if (trimmed) onSave(trimmed);
+                    if (trimmed) void onSave(trimmed);
                   }
                 }}
               />
@@ -183,7 +279,7 @@ export function ProjectLibraryModal({
                 type="button"
                 className={styles.primaryBtn}
                 disabled={!name.trim()}
-                onClick={() => onSave(name.trim())}
+                onClick={() => void onSave(name.trim())}
               >
                 Save
               </button>
@@ -291,8 +387,12 @@ export function ProjectLibraryModal({
                         <button
                           type="button"
                           className={styles.primaryBtn}
-                          onClick={() => {
-                            onRename?.(p.id, renameDraft);
+                          onClick={async () => {
+                            await onRename?.(
+                              p.id,
+                              renameDraft,
+                              appDataFiles[p.id],
+                            );
                             setRenameId(null);
                             setListTick((t) => t + 1);
                           }}
@@ -312,7 +412,9 @@ export function ProjectLibraryModal({
                         <button
                           type="button"
                           className={styles.projectListBtn}
-                          onClick={() => onOpen(p.id)}
+                          onClick={() =>
+                            void onOpen(p.id, appDataFiles[p.id]?.[0])
+                          }
                         >
                           <span className={styles.projectListName}>
                             {p.name}
@@ -366,11 +468,11 @@ export function ProjectLibraryModal({
                             type="button"
                             className={styles.ghostBtn}
                             title="Delete"
-                            onClick={() => {
+                            onClick={async () => {
                               if (
                                 window.confirm(`Delete project “${p.name}”?`)
                               ) {
-                                onDelete?.(p.id);
+                                await onDelete?.(p.id, appDataFiles[p.id]);
                                 setListTick((t) => t + 1);
                               }
                             }}

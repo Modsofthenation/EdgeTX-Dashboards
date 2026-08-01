@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
+import { parseAiProviderId } from "@widget-gen/shared";
 import type {
   ChatMessage,
   ChatSummary,
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS chats (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   session_id TEXT,
+  provider TEXT NOT NULL DEFAULT 'cursor',
   protocol TEXT NOT NULL,
   model_id TEXT NOT NULL,
   edge_tx_version TEXT NOT NULL DEFAULT '2.11.0',
@@ -74,6 +76,11 @@ function migrateSchema(db: Database.Database): void {
     name: string;
   }>;
   const chatNames = new Set(chatCols.map((c) => c.name));
+  if (!chatNames.has("provider")) {
+    db.exec(
+      `ALTER TABLE chats ADD COLUMN provider TEXT NOT NULL DEFAULT 'cursor'`,
+    );
+  }
   if (!chatNames.has("widget_instance_id")) {
     db.exec(`ALTER TABLE chats ADD COLUMN widget_instance_id TEXT`);
   }
@@ -129,6 +136,7 @@ function titleFromPrompt(prompt: string): string {
 function rowToSummary(row: {
   id: string;
   title: string;
+  provider: string;
   protocol: string;
   model_id: string;
   widget_name: string | null;
@@ -141,6 +149,7 @@ function rowToSummary(row: {
   return {
     id: row.id,
     title: row.title,
+    provider: parseAiProviderId(row.provider),
     protocol: row.protocol as TelemetryProtocol,
     modelId: row.model_id,
     widgetName: row.widget_name,
@@ -166,7 +175,7 @@ export class SqliteChatRepository implements ChatRepository {
   listChats(limit = 50): ChatSummary[] {
     const rows = this.db
       .prepare(
-        `SELECT c.id, c.title, c.protocol, c.model_id, c.widget_name, c.widget_instance_id, c.widget_version, c.updated_at,
+        `SELECT c.id, c.title, c.provider, c.protocol, c.model_id, c.widget_name, c.widget_instance_id, c.widget_version, c.updated_at,
                 COUNT(m.id) AS message_count,
                 COALESCE(a.validated, 0) AS validated
          FROM chats c
@@ -179,6 +188,7 @@ export class SqliteChatRepository implements ChatRepository {
       .all(limit) as Array<{
       id: string;
       title: string;
+      provider: string;
       protocol: string;
       model_id: string;
       widget_name: string | null;
@@ -195,7 +205,7 @@ export class SqliteChatRepository implements ChatRepository {
   getChat(id: string): StoredChat | null {
     const row = this.db
       .prepare(
-        `SELECT id, title, session_id, protocol, model_id, edge_tx_version, radio_id, widget_name, widget_instance_id, widget_version, created_at, updated_at
+        `SELECT id, title, session_id, provider, protocol, model_id, edge_tx_version, radio_id, widget_name, widget_instance_id, widget_version, created_at, updated_at
          FROM chats WHERE id = ?`,
       )
       .get(id) as
@@ -203,6 +213,7 @@ export class SqliteChatRepository implements ChatRepository {
           id: string;
           title: string;
           session_id: string | null;
+          provider: string;
           protocol: string;
           model_id: string;
           edge_tx_version: string;
@@ -290,6 +301,7 @@ export class SqliteChatRepository implements ChatRepository {
       id: row.id,
       title: row.title,
       sessionId: row.session_id,
+      provider: parseAiProviderId(row.provider),
       protocol: row.protocol as TelemetryProtocol,
       modelId: row.model_id,
       edgeTxVersion: row.edge_tx_version,
@@ -376,12 +388,13 @@ export class SqliteChatRepository implements ChatRepository {
 
     this.db
       .prepare(
-        `INSERT INTO chats (id, title, protocol, model_id, edge_tx_version, radio_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO chats (id, title, provider, protocol, model_id, edge_tx_version, radio_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
         title,
+        parseAiProviderId(input.provider),
         input.protocol,
         input.modelId,
         input.edgeTxVersion,
@@ -490,6 +503,14 @@ export class SqliteChatRepository implements ChatRepository {
     if (input.title !== undefined) {
       fields.push("title = ?");
       values.push(input.title);
+    }
+    if (input.provider !== undefined) {
+      fields.push("provider = ?");
+      values.push(parseAiProviderId(input.provider));
+    }
+    if (input.modelId !== undefined) {
+      fields.push("model_id = ?");
+      values.push(input.modelId);
     }
     if (input.sessionId !== undefined) {
       fields.push("session_id = ?");
