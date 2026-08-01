@@ -1,0 +1,206 @@
+import type { Page } from "@playwright/test";
+import {
+  assertFidelityGates,
+  compareRgbaBitmaps,
+  type PreviewCompareMetrics,
+  type RgbaBitmap,
+} from "./previewCompare.ts";
+
+export type CapturedPreviewPair = {
+  radio: RgbaBitmap;
+  approximate: RgbaBitmap;
+  metrics: PreviewCompareMetrics;
+  gateFailures: string[];
+};
+
+async function readCanvasBitmap(
+  page: Page,
+  testId: string,
+  options: { cropToContent?: boolean } = {},
+): Promise<RgbaBitmap> {
+  return page.evaluate(
+    ({ id, cropToContent }) => {
+      const canvas = document.querySelector(
+        `[data-testid="${id}"]`,
+      ) as HTMLCanvasElement | null;
+      if (!canvas) throw new Error(`canvas not found: ${id}`);
+      if (canvas.width < 8 || canvas.height < 8) {
+        throw new Error(
+          `canvas too small: ${id} ${canvas.width}x${canvas.height}`,
+        );
+      }
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error(`2d context missing: ${id}`);
+
+      let sx = 0;
+      let sy = 0;
+      let sw = canvas.width;
+      let sh = canvas.height;
+      if (cropToContent) {
+        const cx = Number(canvas.dataset.contentX ?? "0");
+        const cy = Number(canvas.dataset.contentY ?? "0");
+        const cw = Number(canvas.dataset.contentW ?? "0");
+        const ch = Number(canvas.dataset.contentH ?? "0");
+        if (cw > 0 && ch > 0) {
+          sx = Math.max(0, Math.round(cx));
+          sy = Math.max(0, Math.round(cy));
+          sw = Math.min(canvas.width - sx, Math.round(cw));
+          sh = Math.min(canvas.height - sy, Math.round(ch));
+        }
+      }
+
+      const image = ctx.getImageData(sx, sy, sw, sh);
+      return {
+        width: sw,
+        height: sh,
+        data: Array.from(image.data),
+      };
+    },
+    { id: testId, cropToContent: Boolean(options.cropToContent) },
+  );
+}
+
+async function clickViewMenuItem(page: Page, name: RegExp): Promise<void> {
+  await page.getByRole("button", { name: "View" }).click();
+  const item = page.getByRole("menuitem", { name });
+  await item.waitFor({ state: "visible", timeout: 10_000 });
+  await item.click();
+}
+
+/** True when the top strip looks like EdgeTX theme chrome (blue bar), not a black widget clear. */
+function topStripLooksLikeRadioChrome(bmp: RgbaBitmap): boolean {
+  const h = Math.min(24, Math.floor(bmp.height * 0.1));
+  if (h < 4) return false;
+  let sumR = 0;
+  let sumG = 0;
+  let sumB = 0;
+  let n = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < bmp.width; x += 4) {
+      const i = (y * bmp.width + x) * 4;
+      sumR += bmp.data[i]!;
+      sumG += bmp.data[i + 1]!;
+      sumB += bmp.data[i + 2]!;
+      n++;
+    }
+  }
+  if (n === 0) return false;
+  const r = sumR / n;
+  const g = sumG / n;
+  const b = sumB / n;
+  // Stock theme focus/secondary blues sit well above a black/dark dashboard header.
+  return b > 70 && b > r + 25 && b > g + 10;
+}
+
+/** Wait until inline radio preview has painted a non-trivial frame. */
+export async function waitForRadioPreviewReady(
+  page: Page,
+  timeoutMs = 90_000,
+): Promise<void> {
+  await page.getByTestId("editor-preview-mode-label").waitFor({
+    state: "visible",
+    timeout: 15_000,
+  });
+
+  const label = page.getByTestId("editor-preview-mode-label");
+  const text = await label.textContent();
+  if (text && /Approximate/i.test(text)) {
+    await clickViewMenuItem(page, /Show radio preview/i);
+  }
+
+  await page.waitForFunction(
+    () => {
+      const mode = document
+        .querySelector('[data-testid="editor-canvas-frame"]')
+        ?.getAttribute("data-preview-mode");
+      if (mode !== "radio") return false;
+      const canvas = document.querySelector(
+        '[data-testid="editor-radio-preview"]',
+      ) as HTMLCanvasElement | null;
+      if (!canvas || canvas.width < 8 || canvas.height < 8) return false;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return false;
+      const { data, width, height } = ctx.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
+      let lit = 0;
+      const step = 16;
+      for (let y = 0; y < height; y += step) {
+        for (let x = 0; x < width; x += step) {
+          const i = (y * width + x) * 4;
+          if (data[i]! > 20 || data[i + 1]! > 20 || data[i + 2]! > 20) lit++;
+        }
+      }
+      return lit > 8;
+    },
+    { timeout: timeoutMs },
+  );
+
+  // Replay fullscreen until top chrome disappears (or attempts exhausted).
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    await page.evaluate(() => {
+      window.__edgetxEnterWidgetFullscreen?.();
+    });
+    await page.waitForTimeout(1800);
+    const frame = await readCanvasBitmap(page, "editor-radio-preview");
+    if (!topStripLooksLikeRadioChrome(frame)) return;
+  }
+}
+
+export async function setRadioPreview(
+  page: Page,
+  enabled: boolean,
+): Promise<void> {
+  const label = page.getByTestId("editor-preview-mode-label");
+  await label.waitFor({ state: "visible", timeout: 15_000 });
+  const text = (await label.textContent()) ?? "";
+  const isRadio = /Radio preview|Editing overlay/i.test(text);
+  if (enabled === isRadio) return;
+
+  if (enabled) {
+    await clickViewMenuItem(page, /Show radio preview/i);
+  } else {
+    await clickViewMenuItem(page, /Hide radio preview/i);
+  }
+
+  await page.waitForFunction(
+    (wantRadio) => {
+      const mode = document
+        .querySelector('[data-testid="editor-canvas-frame"]')
+        ?.getAttribute("data-preview-mode");
+      return wantRadio ? mode === "radio" : mode === "approximate";
+    },
+    enabled,
+    { timeout: 15_000 },
+  );
+}
+
+/**
+ * Capture radio WASM pixels, then approximate parser pixels, and score them.
+ */
+export async function capturePreviewPair(
+  page: Page,
+): Promise<CapturedPreviewPair> {
+  await waitForRadioPreviewReady(page);
+  const radio = await readCanvasBitmap(page, "editor-radio-preview");
+
+  await setRadioPreview(page, false);
+  await page.getByTestId("editor-parser-preview").waitFor({
+    state: "visible",
+    timeout: 15_000,
+  });
+  await page.waitForTimeout(250);
+  const approximate = await readCanvasBitmap(page, "editor-parser-preview", {
+    cropToContent: true,
+  });
+
+  const metrics = compareRgbaBitmaps(radio, approximate, {
+    maskTopPx: Math.round(Math.min(radio.height, approximate.height) * 0.08),
+  });
+  const gateFailures = assertFidelityGates(metrics);
+  return { radio, approximate, metrics, gateFailures };
+}

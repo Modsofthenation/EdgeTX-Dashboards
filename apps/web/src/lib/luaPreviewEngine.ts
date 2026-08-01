@@ -192,20 +192,16 @@ export function renderPreviewCommands(
         const cy = cmd.y ?? 0;
         const rOut = Math.max(0, cmd.rOut ?? 0);
         const rIn = Math.max(0, Math.min(rOut, cmd.rIn ?? 0));
-        const midR = (rOut + rIn) / 2;
-        const width = Math.max(1, rOut - rIn);
-        ctx.strokeStyle = cmd.color ?? "#00ffff";
-        ctx.lineWidth = width;
-        ctx.lineCap = "butt";
+        const start = edgeTxDegToCanvasRad(cmd.startAngle ?? 0);
+        const end = edgeTxDegToCanvasRad(cmd.endAngle ?? 360);
+        ctx.fillStyle = cmd.color ?? "#00ffff";
         ctx.beginPath();
-        ctx.arc(
-          cx,
-          cy,
-          midR,
-          edgeTxDegToCanvasRad(cmd.startAngle ?? 0),
-          edgeTxDegToCanvasRad(cmd.endAngle ?? 360),
-        );
-        ctx.stroke();
+        ctx.arc(cx, cy, rOut, start, end, false);
+        if (rIn > 0) {
+          ctx.arc(cx, cy, rIn, end, start, true);
+        }
+        ctx.closePath();
+        ctx.fill();
         break;
       }
     }

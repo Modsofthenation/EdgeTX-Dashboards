@@ -17,6 +17,8 @@ interface SimFrameCanvasProps {
    * Default false keeps native pixel size as the maximum (preview side panels).
    */
   allowUpscale?: boolean;
+  /** Optional test id for the LCD canvas element. */
+  canvasTestId?: string;
 }
 
 export function SimFrameCanvas({
@@ -25,6 +27,7 @@ export function SimFrameCanvas({
   className,
   ignoreChatScrollPause = false,
   allowUpscale = false,
+  canvasTestId,
 }: SimFrameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,6 +103,7 @@ export function SimFrameCanvas({
         ref={canvasRef}
         className={className ?? styles.canvas}
         aria-label="EdgeTX widget preview"
+        data-testid={canvasTestId ?? "edgetx-widget-preview"}
       />
     </div>
   );

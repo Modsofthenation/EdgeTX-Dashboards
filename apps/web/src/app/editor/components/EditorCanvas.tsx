@@ -190,10 +190,18 @@ export function EditorCanvas({
   const hasRadioPreview = Boolean(inlineSim);
 
   return (
-    <div className={styles.canvasStage}>
+    <div className={styles.canvasStage} data-testid="editor-canvas-stage">
       <div
         className={styles.simWrapper}
         ref={frameRef}
+        data-testid="editor-canvas-frame"
+        data-preview-mode={
+          hasRadioPreview
+            ? liveDrag
+              ? "editing-overlay"
+              : "radio"
+            : "approximate"
+        }
         onWheel={onWheel}
         onPointerDown={onPointerDownPan}
         onPointerMove={onPointerMovePan}
@@ -282,7 +290,7 @@ export function EditorCanvas({
           geometryEditsLocked={geometryEditsLocked}
         />
       </div>
-      <div className={styles.canvasMeta}>
+      <div className={styles.canvasMeta} data-testid="editor-canvas-meta">
         <span>
           {previewDims.zoneW} × {previewDims.zoneH}
         </span>
@@ -315,14 +323,20 @@ export function EditorCanvas({
         {hasRadioPreview ? (
           <>
             <span className={styles.canvasHint}>·</span>
-            <span className={styles.canvasHint}>
+            <span
+              className={styles.canvasHint}
+              data-testid="editor-preview-mode-label"
+            >
               {liveDrag ? "Editing overlay" : "Radio preview"}
             </span>
           </>
         ) : (
           <>
             <span className={styles.canvasHint}>·</span>
-            <span className={styles.canvasHint}>
+            <span
+              className={styles.canvasHint}
+              data-testid="editor-preview-mode-label"
+            >
               {geometryEditsLocked
                 ? "Approximate preview · geometry locked"
                 : "Approximate preview"}

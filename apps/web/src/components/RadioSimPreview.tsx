@@ -51,6 +51,13 @@ interface RadioSimPreviewProps {
   onRunningChange?: (running: boolean) => void;
 }
 
+declare global {
+  interface Window {
+    /** E2E / debug: replay widget fullscreen double-tap for inline radio preview. */
+    __edgetxEnterWidgetFullscreen?: () => void;
+  }
+}
+
 function SimInteractiveOverlay({
   radioProfile,
   previewDims,
@@ -293,6 +300,16 @@ export function RadioSimPreview({
   }, [active, state.phase, onRunningChange]);
 
   useEffect(() => {
+    if (!fillHost || !active) return;
+    window.__edgetxEnterWidgetFullscreen = () => {
+      enterWidgetFullscreen();
+    };
+    return () => {
+      delete window.__edgetxEnterWidgetFullscreen;
+    };
+  }, [fillHost, active, enterWidgetFullscreen]);
+
+  useEffect(() => {
     if (!active) setOverlayOpen(false);
   }, [active]);
 
@@ -465,6 +482,9 @@ export function RadioSimPreview({
         zone={frameZone}
         allowUpscale={fillHost}
         ignoreChatScrollPause={fillHost}
+        canvasTestId={
+          fillHost ? "editor-radio-preview" : "edgetx-widget-preview"
+        }
       />
 
       {overlayOpen && radioProfile && (

@@ -19,6 +19,13 @@ const EXAMPLES = join(ROOT, "examples");
 const GOLD_EXAMPLES = [
   "tx15-minimal-dashboard.lua",
   "tx15-bfdash8f-whoop-dashboard.lua",
+  "tx15-model-hero-dashboard.lua",
+  "tx15-rotorflight-heli.lua",
+  "tx15-rotorflight-sections.lua",
+  "tx15-strip-board.lua",
+  "tx15-quad-overview.lua",
+  "tx15-hero-minimal.lua",
+  "tx15-telemetry-dense.lua",
 ];
 
 /** Stable fingerprint of interpreter draw records for regression goldens. */

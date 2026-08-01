@@ -99,6 +99,11 @@ export function EditorPreviewCanvas({
         height={frameH}
         style={{ width: frameW, height: frameH }}
         aria-label="Dashboard preview"
+        data-testid="editor-parser-preview"
+        data-content-x={Math.round(layout.offsetX)}
+        data-content-y={Math.round(layout.offsetY)}
+        data-content-w={Math.round(layout.drawW)}
+        data-content-h={Math.round(layout.drawH)}
       />
     </div>
   );

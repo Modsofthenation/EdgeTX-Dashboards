@@ -183,8 +183,8 @@ describe("parseLuaToDrawCommands", () => {
     const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
     const clear = cmds.find((c) => c.kind === "clear");
     const text = cmds.find((c) => c.kind === "text");
-    assert.equal(clear?.color, "#d3d3d3");
-    assert.equal(text?.color, "#e0e0e8");
+    assert.equal(clear?.color, "#c0c0c0");
+    assert.equal(text?.color, "#125e99");
   });
 
   it("evaluates single-line if/then/end telemetry strings (strip-board style)", () => {

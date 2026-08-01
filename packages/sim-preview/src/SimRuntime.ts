@@ -39,9 +39,9 @@ const DEFAULT_STATE: RadioSimState = {
 export const WIDGET_LAUNCH_DELAY_FRAMES = 12;
 
 const FULLSCREEN_WAIT_FRAMES = 30;
-const FULLSCREEN_RETRY_WAIT_FRAMES = 15;
-const FULLSCREEN_TAP_GAP_FRAMES = 3;
-const FULLSCREEN_MAX_ATTEMPTS = 2;
+const FULLSCREEN_RETRY_WAIT_FRAMES = 20;
+const FULLSCREEN_TAP_GAP_FRAMES = 4;
+const FULLSCREEN_MAX_ATTEMPTS = 4;
 
 type FullscreenTapGesture = {
   x: number;
@@ -59,6 +59,7 @@ export class SimRuntime {
   private widgetLaunchDelayFrames = 0;
   private pendingWidget: { source: string; zone?: WidgetSimulateZone } | null =
     null;
+  private lastLoadedZone: WidgetSimulateZone | null = null;
   private modelBackup: Map<string, string> | null = null;
   private fullscreenTap: FullscreenTapGesture | null = null;
   private mock: MockTelemetryValues = { ...BASE_MOCK_TELEMETRY };
@@ -275,7 +276,7 @@ export class SimRuntime {
 
   /** Manual fallback: replay widget fullscreen double-tap on the 480×320 LCD. */
   requestEnterWidgetFullscreen(): void {
-    const zone = this.pendingWidget?.zone;
+    const zone = this.lastLoadedZone ?? this.pendingWidget?.zone;
     if (!zone?.enterFullscreen) return;
     this.beginFullscreenTap(zone);
   }
@@ -293,6 +294,7 @@ export class SimRuntime {
     this.loopRunning = false;
     this.scriptLaunched = false;
     this.pendingWidget = null;
+    this.lastLoadedZone = null;
     this.fullscreenTap = null;
     this.loadWidgetPending = null;
     this.loadWidgetChain = Promise.resolve();
@@ -442,7 +444,10 @@ export class SimRuntime {
     }
 
     if (zone?.enterFullscreen) {
+      this.lastLoadedZone = zone;
       this.beginFullscreenTap(zone);
+    } else {
+      this.lastLoadedZone = zone ?? null;
     }
   }
 

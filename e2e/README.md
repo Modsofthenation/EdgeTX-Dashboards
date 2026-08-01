@@ -23,18 +23,19 @@ npx playwright install chromium
 
 ## What is covered
 
-| Spec                      | Focus                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `01-api-smoke`            | Health, radios, models, AI status, chats CRUD, validate, widget-source, download zip, generate 503 gate, package files, install guide |
-| `02-home-boot`            | Product chrome, empty state, first-run wizard, AI banner, composer, template filters                                                  |
-| `03-preferences`          | Appearance themes, AI tab, Simulator WASM tab, persistence across Generate ↔ Layout                                                   |
-| `04-templates-navigation` | Template → Layout, chrome navigation, protocol query params                                                                           |
-| `05-editor-workflow`      | Insert / Validate / Save / Export / Simulator / More                                                                                  |
-| `06-chat-history`         | Sidebar list, New chat, delete                                                                                                        |
-| `07-validate-download`    | Validation gates, zip download from API + Export UI                                                                                   |
-| `08-sim-firmware`         | WASM status API + Preferences panel + `/sim/manifest.json`                                                                            |
-| `09-generate-gate`        | No-key generate UI + API errors                                                                                                       |
-| `10-generate.ai`          | Optional live agent generate (skipped without key)                                                                                    |
+| Spec                      | Focus                                                                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01-api-smoke`            | Health, radios, models, AI status, chats CRUD, validate, widget-source, download zip, generate 503 gate, package files, install guide                             |
+| `02-home-boot`            | Product chrome, empty state, first-run wizard, AI banner, composer, template filters                                                                              |
+| `03-preferences`          | Appearance themes, AI tab, Simulator WASM tab, persistence across Generate ↔ Layout                                                                               |
+| `04-templates-navigation` | Template → Layout, chrome navigation, protocol query params                                                                                                       |
+| `05-editor-workflow`      | Insert / Validate / Save / Export / Simulator / More                                                                                                              |
+| `06-chat-history`         | Sidebar list, New chat, delete                                                                                                                                    |
+| `07-validate-download`    | Validation gates, zip download from API + Export UI                                                                                                               |
+| `08-sim-firmware`         | WASM status API + Preferences panel + `/sim/manifest.json`                                                                                                        |
+| `09-generate-gate`        | No-key generate UI + API errors                                                                                                                                   |
+| `10-generate.ai`          | Optional live agent generate (skipped without key)                                                                                                                |
+| `11-editor-wasm-fidelity` | Approximate (parser) vs radio (WASM) dual-preview across all `examples/*.lua` + key template boards; metrics attached; soft pixel gates when radio chrome remains |
 
 Default project (`chromium`) clears server AI env keys so “not configured” paths are deterministic. Set `E2E_ALLOW_SERVER_AI=1` only when you intentionally want the webServer to inherit host keys.
 
