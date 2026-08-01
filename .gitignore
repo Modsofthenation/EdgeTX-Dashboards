@@ -36,6 +36,10 @@ apps/web/public/sim/*.wasm
 # Test & coverage
 coverage/
 .nyc_output/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.auth/
 
 # Logs
 *.log

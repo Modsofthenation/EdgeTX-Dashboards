@@ -107,9 +107,7 @@ export function EditorToolbar({
     const items: EditorMenuItem[] = [
       {
         id: "left",
-        label: canAlign
-          ? "Align left"
-          : "Align left (select a layer first)",
+        label: canAlign ? "Align left" : "Align left (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("left"),
       },
@@ -123,9 +121,7 @@ export function EditorToolbar({
       },
       {
         id: "right",
-        label: canAlign
-          ? "Align right"
-          : "Align right (select a layer first)",
+        label: canAlign ? "Align right" : "Align right (select a layer first)",
         disabled: !canAlign,
         onClick: () => onAlign("right"),
       },
@@ -443,12 +439,18 @@ export function EditorToolbar({
 
       <div className={styles.toolbarRight}>
         {valid === true && (
-          <span className={`${styles.statusPill} ${styles.statusPillOk}`}>
+          <span
+            className={`${styles.statusPill} ${styles.statusPillOk}`}
+            data-testid="editor-validation-status"
+          >
             Valid
           </span>
         )}
         {valid === false && (
-          <span className={`${styles.statusPill} ${styles.statusPillErr}`}>
+          <span
+            className={`${styles.statusPill} ${styles.statusPillErr}`}
+            data-testid="editor-validation-status"
+          >
             Invalid
           </span>
         )}

@@ -146,7 +146,14 @@ export function resolveWidgetWorkspaceFromSession(
 
   if (!workspaceKey) return { workspaceKey: "", pending: true };
 
-  const key = normalizeWorkspaceKey(workspaceKey);
+  let key: string;
+  try {
+    key = normalizeWorkspaceKey(workspaceKey);
+  } catch {
+    // Invalid name/instance id — treat as unresolved so routes can 204/400
+    // instead of throwing a 500 from sanitizeWidgetName.
+    return { workspaceKey: "", pending: true };
+  }
   if (isWidgetInstanceId(key)) {
     const meta = readWidgetInstanceMeta(key);
     return {
