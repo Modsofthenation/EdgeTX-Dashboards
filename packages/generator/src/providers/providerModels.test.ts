@@ -1,27 +1,103 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  ANTHROPIC_MODELS,
   defaultModelForProvider,
   isAllowedModelForProvider,
   listModelsForProvider,
+  OPENAI_MODELS,
 } from "./providerModels.ts";
 import { validateGenerateRequest } from "../requestValidate.ts";
 
 describe("providerModels", () => {
-  it("returns static Anthropic and OpenAI catalogs", async () => {
-    const anthropic = await listModelsForProvider("anthropic");
-    assert.ok(anthropic.models.length >= 1);
-    assert.equal(anthropic.defaultId, defaultModelForProvider("anthropic"));
-    assert.equal(anthropic.source, "fallback");
+  it("loads the Anthropic model catalog from the API", async (t) => {
+    t.mock.method(
+      globalThis,
+      "fetch",
+      async (input: string | URL | Request, init?: RequestInit) => {
+        assert.equal(
+          String(input),
+          "https://api.anthropic.com/v1/models?limit=1000",
+        );
+        const headers = new Headers(init?.headers);
+        assert.equal(headers.get("x-api-key"), "anthropic-key");
+        assert.equal(headers.get("anthropic-version"), "2023-06-01");
+        return Response.json({
+          data: [
+            { id: "claude-sonnet-live", display_name: "Claude Sonnet Live" },
+            { id: "claude-haiku-live", display_name: "Claude Haiku Live" },
+          ],
+        });
+      },
+    );
 
-    const openai = await listModelsForProvider("openai");
-    assert.ok(openai.models.length >= 1);
-    assert.equal(openai.defaultId, defaultModelForProvider("openai"));
+    const result = await listModelsForProvider("anthropic", "anthropic-key");
+
+    assert.equal(result.source, "api");
+    assert.equal(result.defaultId, "claude-sonnet-live");
+    assert.deepEqual(result.models, [
+      { id: "claude-sonnet-live", label: "Claude Sonnet Live" },
+      { id: "claude-haiku-live", label: "Claude Haiku Live" },
+    ]);
+  });
+
+  it("loads and orders chat-capable OpenAI models from the API", async (t) => {
+    t.mock.method(
+      globalThis,
+      "fetch",
+      async (input: string | URL | Request, init?: RequestInit) => {
+        assert.equal(String(input), "https://api.openai.com/v1/models");
+        assert.equal(
+          new Headers(init?.headers).get("authorization"),
+          "Bearer openai-key",
+        );
+        return Response.json({
+          data: [
+            { id: "o4-mini" },
+            { id: "gpt-5-live" },
+            { id: "text-embedding-3-small" },
+            { id: "gpt-4.1" },
+            { id: "chatgpt-4o-latest" },
+            { id: "o3-pro" },
+          ],
+        });
+      },
+    );
+
+    const result = await listModelsForProvider("openai", "openai-key");
+
+    assert.equal(result.source, "api");
+    assert.equal(result.defaultId, "gpt-4.1");
+    assert.deepEqual(
+      result.models.map((model) => model.id),
+      ["gpt-4.1", "o4-mini", "gpt-5-live", "chatgpt-4o-latest", "o3-pro"],
+    );
+    assert.equal(
+      result.models.find((model) => model.id === "gpt-4.1")?.label,
+      "GPT-4.1",
+    );
+  });
+
+  it("falls back to static catalogs when provider APIs fail", async (t) => {
+    t.mock.method(globalThis, "fetch", async () => {
+      throw new Error("network unavailable");
+    });
+
+    const anthropic = await listModelsForProvider("anthropic", "anthropic-key");
+    assert.equal(anthropic.source, "fallback");
+    assert.deepEqual(anthropic.models, ANTHROPIC_MODELS);
+
+    const openai = await listModelsForProvider("openai", "openai-key");
+    assert.equal(openai.source, "fallback");
+    assert.deepEqual(openai.models, OPENAI_MODELS);
   });
 
   it("validates model ids per provider", () => {
     assert.equal(
-      isAllowedModelForProvider("anthropic", defaultModelForProvider("anthropic")),
+      isAllowedModelForProvider(
+        "anthropic",
+        defaultModelForProvider("anthropic"),
+      ),
       true,
     );
     assert.equal(isAllowedModelForProvider("anthropic", "gpt-4.1"), false);

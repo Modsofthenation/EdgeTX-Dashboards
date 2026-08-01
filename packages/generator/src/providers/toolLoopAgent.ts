@@ -15,7 +15,7 @@ const MAX_TURNS = 24;
 export interface ToolLoopResult {
   runId: string;
   agentId: string;
-  status: "finished" | "error";
+  status: "finished" | "error" | "cancelled";
   result?: string;
   error?: string;
 }
@@ -59,8 +59,9 @@ async function runOpenAiLoop(opts: {
   callbacks?: RunCallbacks;
   runId: string;
   agentId: string;
+  signal?: AbortSignal;
 }): Promise<ToolLoopResult> {
-  const { apiKey, modelId, tools, callbacks, runId, agentId } = opts;
+  const { apiKey, modelId, tools, callbacks, runId, agentId, signal } = opts;
   type Message = {
     role: "system" | "user" | "assistant" | "tool";
     content?: string | ChatContent[];
@@ -100,6 +101,10 @@ async function runOpenAiLoop(opts: {
   let assistantText = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
+    if (signal?.aborted) {
+      return { status: "cancelled", runId, agentId, error: "Cancelled" };
+    }
+
     callbacks?.onEvent?.({
       type: "status",
       content: `OpenAI turn ${turn + 1}…`,
@@ -107,19 +112,28 @@ async function runOpenAiLoop(opts: {
       agentId,
     });
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: modelId,
-        messages,
-        tools: openaiTools,
-        tool_choice: "auto",
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages,
+          tools: openaiTools,
+          tool_choice: "auto",
+        }),
+        signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const body = await response.text();
@@ -206,8 +220,9 @@ async function runAnthropicLoop(opts: {
   callbacks?: RunCallbacks;
   runId: string;
   agentId: string;
+  signal?: AbortSignal;
 }): Promise<ToolLoopResult> {
-  const { apiKey, modelId, tools, callbacks, runId, agentId } = opts;
+  const { apiKey, modelId, tools, callbacks, runId, agentId, signal } = opts;
 
   type ContentBlock =
     | { type: "text"; text: string }
@@ -223,7 +238,10 @@ async function runAnthropicLoop(opts: {
         is_error?: boolean;
       };
 
-  type Message = { role: "user" | "assistant"; content: string | ContentBlock[] };
+  type Message = {
+    role: "user" | "assistant";
+    content: string | ContentBlock[];
+  };
 
   const system = httpToolsSystemAddendum();
   const userBlocks: ContentBlock[] = [];
@@ -250,6 +268,10 @@ async function runAnthropicLoop(opts: {
   let assistantText = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
+    if (signal?.aborted) {
+      return { status: "cancelled", runId, agentId, error: "Cancelled" };
+    }
+
     callbacks?.onEvent?.({
       type: "status",
       content: `Anthropic turn ${turn + 1}…`,
@@ -257,21 +279,30 @@ async function runAnthropicLoop(opts: {
       agentId,
     });
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: modelId,
-        max_tokens: 8192,
-        system,
-        messages,
-        tools: anthropicTools,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelId,
+          max_tokens: 8192,
+          system,
+          messages,
+          tools: anthropicTools,
+        }),
+        signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return { status: "cancelled", runId, agentId, error: "Cancelled" };
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const body = await response.text();
@@ -353,6 +384,7 @@ export async function runProviderToolLoop(opts: {
   images?: PromptImage[];
   toolDefaults?: ToolSessionDefaults;
   callbacks?: RunCallbacks;
+  signal?: AbortSignal;
 }): Promise<ToolLoopResult> {
   const runId = randomUUID();
   const agentId = `${opts.provider}-agent`;
