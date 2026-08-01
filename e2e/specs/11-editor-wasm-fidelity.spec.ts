@@ -8,6 +8,7 @@ import {
   setRadioPreview,
   waitForRadioPreviewReady,
 } from "../helpers/editorPreview.ts";
+import { assertSoftFidelity } from "../helpers/previewCompare.ts";
 import { VALID_MINIMAL_LUA } from "../helpers/lua-fixtures.ts";
 
 const ROOT = join(__dirname, "..", "..");
@@ -24,6 +25,25 @@ const TEMPLATE_BOARDS = [
   "freestyle-quad",
   "starter",
 ] as const;
+
+function softFidelityExpectors(testInfo: {
+  annotations: { type: string; description?: string }[];
+}) {
+  return {
+    annotate: (notice: string) => {
+      testInfo.annotations.push({ type: "notice", description: notice });
+    },
+    expectEqual: (actual: unknown, expected: unknown, message?: string) => {
+      expect(actual, message).toEqual(expected);
+    },
+    expectLessThan: (actual: number, bound: number) => {
+      expect(actual).toBeLessThan(bound);
+    },
+    expectGreaterThan: (actual: number, bound: number) => {
+      expect(actual).toBeGreaterThan(bound);
+    },
+  };
+}
 
 test.describe("Editor ↔ WASM preview fidelity", () => {
   test.describe.configure({ timeout: 180_000 });
@@ -92,20 +112,11 @@ test.describe("Editor ↔ WASM preview fidelity", () => {
 
     // Soft pixel gate: only enforce when WASM left radio chrome (widget fullscreen).
     // Headless double-tap fullscreen is firmware-dependent; still record metrics.
-    if (pair.metrics.coverageDelta < 0.35 && pair.metrics.mae < 100) {
-      expect(
-        pair.gateFailures,
-        `fidelity gates failed: ${pair.gateFailures.join("; ")} · metrics=${JSON.stringify(pair.metrics)}`,
-      ).toEqual([]);
-    } else {
-      test.info().annotations.push({
-        type: "notice",
-        description: `Soft-skipped strict pixel gates (likely residual radio chrome). metrics=${JSON.stringify(pair.metrics)}`,
-      });
-      // Still catch catastrophic approximate emptiness / total divergence.
-      expect(pair.metrics.mae).toBeLessThan(200);
-      expect(pair.metrics.coverageB).toBeGreaterThan(0.08);
-    }
+    assertSoftFidelity(pair, {
+      ...softFidelityExpectors(test.info()),
+      enforceWhen: { maxMae: 100, maxCoverageDelta: 0.35 },
+      softFallback: { maxMae: 200, minCoverageB: 0.08 },
+    });
   });
 
   for (const file of EXAMPLE_FILES) {
@@ -167,28 +178,17 @@ test.describe("Editor ↔ WASM preview fidelity", () => {
       expect(pair.radio.width).toBeGreaterThan(40);
       expect(pair.approximate.width).toBeGreaterThan(40);
 
-      if (pair.gateFailures.length === 0) {
-        expect(pair.gateFailures).toEqual([]);
-      } else if (
-        pair.metrics.mae < 70 &&
-        pair.metrics.hardMismatchRatio < 0.4 &&
-        pair.metrics.coverageDelta < 0.25
-      ) {
-        // Structure is close — allow histogram drift from fonts / residual chrome.
-        const structuralFails = pair.gateFailures.filter(
-          (f) => !f.includes("histCorrelation"),
-        );
-        expect(
-          structuralFails,
-          `${file} structural gates failed: ${structuralFails.join("; ")}`,
-        ).toEqual([]);
-      } else {
-        test.info().annotations.push({
-          type: "notice",
-          description: `${file}: soft pixel compare (chrome/fonts). gates=${pair.gateFailures.join("; ")} mae=${pair.metrics.mae.toFixed(1)}`,
-        });
-        expect(pair.metrics.mae).toBeLessThan(210);
-      }
+      assertSoftFidelity(pair, {
+        ...softFidelityExpectors(test.info()),
+        label: file,
+        enforceWhen: {
+          maxMae: 70,
+          maxCoverageDelta: 0.25,
+          maxHardMismatch: 0.4,
+        },
+        softFallback: { maxMae: 210 },
+        ignoreHistCorrelation: true,
+      });
     });
   }
 

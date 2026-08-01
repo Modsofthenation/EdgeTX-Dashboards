@@ -376,6 +376,9 @@ export function EditorApp() {
     };
   }, [records]);
 
+  const geometryEditsLocked =
+    previewMeta.unreliable && !(inlineSim && hasColorWasmSim(radioId));
+
   const zone = useMemo((): ZoneOffset => {
     const dims = resolvePreviewDimensions(
       source,
@@ -1935,6 +1938,7 @@ export function EditorApp() {
       ) {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (geometryEditsLocked) return;
         e.preventDefault();
         if (!nudgeActive.current) {
           nudgeActive.current = true;
@@ -1985,12 +1989,16 @@ export function EditorApp() {
     handleSave,
     saving,
     valid,
+    geometryEditsLocked,
   ]);
 
   const openSim = useCallback(() => {
-    setSimSeenThisSession(true);
     setSimReloadKey((k) => k + 1);
     setSimOpen(true);
+  }, []);
+
+  const handleSimRunningChange = useCallback((running: boolean) => {
+    if (running) setSimSeenThisSession(true);
   }, []);
 
   const handleInlineSimChange = useCallback((enabled: boolean) => {
@@ -2377,10 +2385,7 @@ export function EditorApp() {
               }
               layoutProfileId={layoutProfileId}
               onContextMenu={openCanvasContextMenu}
-              geometryEditsLocked={
-                previewMeta.unreliable &&
-                !(inlineSim && hasColorWasmSim(radioId))
-              }
+              geometryEditsLocked={geometryEditsLocked}
               inlineSim={
                 inlineSim && hasColorWasmSim(radioId) ? (
                   <RadioSimPreview
@@ -2391,9 +2396,7 @@ export function EditorApp() {
                     active={inlineSim}
                     fillHost
                     modelPng={modelPngBytes}
-                    onRunningChange={(running) => {
-                      if (running) setSimSeenThisSession(true);
-                    }}
+                    onRunningChange={handleSimRunningChange}
                   />
                 ) : null
               }
@@ -2569,6 +2572,7 @@ export function EditorApp() {
         layoutProfileId={layoutProfileId}
         radioId={radioId}
         modelPng={modelPngBytes}
+        onRunningChange={handleSimRunningChange}
       />
 
       <ProjectLibraryModal

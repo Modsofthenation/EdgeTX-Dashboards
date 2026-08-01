@@ -215,3 +215,69 @@ export function assertFidelityGates(
   }
   return fails;
 }
+
+export type SoftFidelityOptions = {
+  label?: string;
+  /** Enforce strict/structural gates when metrics fall inside this band. */
+  enforceWhen: {
+    maxMae: number;
+    maxCoverageDelta: number;
+    maxHardMismatch?: number;
+  };
+  /** Catastrophic bounds when residual chrome/fonts force a soft skip. */
+  softFallback: {
+    maxMae: number;
+    minCoverageB?: number;
+  };
+  /** When enforcing inside the soft band, ignore histCorrelation gate failures. */
+  ignoreHistCorrelation?: boolean;
+  annotate: (notice: string) => void;
+  expectEqual: (actual: unknown, expected: unknown, message?: string) => void;
+  expectLessThan: (actual: number, bound: number) => void;
+  expectGreaterThan: (actual: number, bound: number) => void;
+};
+
+/**
+ * Shared soft-gate for editor↔WASM compare: enforce when metrics look widget-only,
+ * otherwise annotate and apply catastrophic fallbacks.
+ */
+export function assertSoftFidelity(
+  pair: {
+    metrics: PreviewCompareMetrics;
+    gateFailures: string[];
+  },
+  opts: SoftFidelityOptions,
+): void {
+  const { metrics, gateFailures } = pair;
+  const label = opts.label ? `${opts.label} ` : "";
+  const withinSoftBand =
+    metrics.coverageDelta < opts.enforceWhen.maxCoverageDelta &&
+    metrics.mae < opts.enforceWhen.maxMae &&
+    (opts.enforceWhen.maxHardMismatch === undefined ||
+      metrics.hardMismatchRatio < opts.enforceWhen.maxHardMismatch);
+
+  if (gateFailures.length === 0) {
+    opts.expectEqual(gateFailures, []);
+    return;
+  }
+
+  if (withinSoftBand) {
+    const fails = opts.ignoreHistCorrelation
+      ? gateFailures.filter((f) => !f.includes("histCorrelation"))
+      : gateFailures;
+    opts.expectEqual(
+      fails,
+      [],
+      `${label}fidelity gates failed: ${fails.join("; ")} · metrics=${JSON.stringify(metrics)}`,
+    );
+    return;
+  }
+
+  opts.annotate(
+    `${label}soft-skipped strict pixel gates (likely residual radio chrome). gates=${gateFailures.join("; ")} metrics=${JSON.stringify(metrics)}`,
+  );
+  opts.expectLessThan(metrics.mae, opts.softFallback.maxMae);
+  if (opts.softFallback.minCoverageB !== undefined) {
+    opts.expectGreaterThan(metrics.coverageB, opts.softFallback.minCoverageB);
+  }
+}

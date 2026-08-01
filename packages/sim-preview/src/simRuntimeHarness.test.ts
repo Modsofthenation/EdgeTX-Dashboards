@@ -101,8 +101,7 @@ describe("interpreter golden contracts (always run)", () => {
         `${file}: expected visible draw kinds`,
       );
       assert.equal(
-        isInterpretationReliable(records, meta.skippedTextCount) ||
-          meta.skippedTextCount === 0,
+        isInterpretationReliable(records, meta.skippedTextCount),
         true,
         `${file}: unreliable interpretation (skipped=${meta.skippedTextCount})`,
       );
@@ -140,8 +139,7 @@ describe("interpreter↔WASM contract gate", () => {
         const records = parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO);
         const meta = getLastPreviewParseMeta();
         assert.ok(
-          isInterpretationReliable(records, meta.skippedTextCount) ||
-            meta.skippedTextCount === 0,
+          isInterpretationReliable(records, meta.skippedTextCount),
           `${file}: interpreter must be reliable when WASM is available`,
         );
         assert.ok(records.length > 3);

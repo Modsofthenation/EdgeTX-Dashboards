@@ -33,8 +33,7 @@ describe("template boards — parser fidelity for editor preview", () => {
         `${id}: expected visible kinds`,
       );
       assert.ok(
-        isInterpretationReliable(records, meta.skippedTextCount) ||
-          meta.skippedTextCount === 0,
+        isInterpretationReliable(records, meta.skippedTextCount),
         `${id}: unreliable (skipped=${meta.skippedTextCount}) ${meta.warnings.slice(0, 2).join("; ")}`,
       );
     });

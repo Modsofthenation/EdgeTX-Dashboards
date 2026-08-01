@@ -25,6 +25,7 @@ interface SimVerifyModalProps {
   layoutProfileId?: string;
   radioId?: string;
   modelPng?: Uint8Array | null;
+  onRunningChange?: (running: boolean) => void;
 }
 
 export function SimVerifyModal({
@@ -38,6 +39,7 @@ export function SimVerifyModal({
   layoutProfileId = "tx15",
   radioId = "tx15",
   modelPng = null,
+  onRunningChange,
 }: SimVerifyModalProps) {
   const [interactiveControls, setInteractiveControls] = useState<{
     openInteractive: () => void;
@@ -92,6 +94,7 @@ export function SimVerifyModal({
               live
               fillHost
               onInteractiveControls={setInteractiveControls}
+              onRunningChange={onRunningChange}
             />
           ) : (
             <p className={styles.modalHint}>

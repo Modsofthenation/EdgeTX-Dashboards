@@ -193,7 +193,22 @@ export async function capturePreviewPair(
     state: "visible",
     timeout: 15_000,
   });
-  await page.waitForTimeout(250);
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector(
+        '[data-testid="editor-parser-preview"]',
+      ) as HTMLCanvasElement | null;
+      if (!canvas || canvas.width < 8 || canvas.height < 8) return false;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return false;
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < data.length; i += 4 * 37) {
+        if (data[i]! > 4 || data[i + 1]! > 4 || data[i + 2]! > 4) return true;
+      }
+      return false;
+    },
+    { timeout: 5_000 },
+  );
   const approximate = await readCanvasBitmap(page, "editor-parser-preview", {
     cropToContent: true,
   });
