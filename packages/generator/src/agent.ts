@@ -181,6 +181,7 @@ export class WidgetGenerator {
     request: GenerateRequest,
     callbacks?: RunCallbacks,
     session?: GenerateSession,
+    options?: { signal?: AbortSignal },
   ): Promise<{
     runId: string;
     agentId: string;
@@ -193,6 +194,7 @@ export class WidgetGenerator {
     validated?: boolean;
     validationIssues?: ValidationIssue[];
   }> {
+    const signal = options?.signal;
     const agent = await this.ensureAgent();
     const radio = loadRadioProfile(request.radioId);
     const catalog = loadTelemetryCatalog(request.protocol);
@@ -308,6 +310,7 @@ export class WidgetGenerator {
         images: request.images,
         toolDefaults: this.toolDefaults,
         callbacks,
+        signal,
       });
       this.httpAgentId = loop.agentId;
       streamed = {
@@ -319,6 +322,14 @@ export class WidgetGenerator {
         callbacks?.onEvent?.({
           type: "error",
           content: loop.error,
+          runId: loop.runId,
+          agentId: loop.agentId,
+        });
+      }
+      if (loop.status === "cancelled") {
+        callbacks?.onEvent?.({
+          type: "status",
+          content: "Cancelled",
           runId: loop.runId,
           agentId: loop.agentId,
         });
@@ -339,15 +350,17 @@ export class WidgetGenerator {
         cursorAgent.agentId,
         callbacks,
         () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+        signal,
       );
     }
 
     const runFinished = streamed.status === "finished";
+    const runCancelled = streamed.status === "cancelled";
     let validated = false;
     let validationIssues: ValidationIssue[] = [];
     const workspaceKey = widgetInstanceId;
 
-    if (runFinished) {
+    if (runFinished && !runCancelled) {
       const finalization = await finalizeWidgetRun(
         workspaceKey,
         request.protocol,
@@ -387,6 +400,7 @@ export class WidgetGenerator {
     session?: GenerateSession,
     images?: GenerateRequest["images"],
     refineHistory?: RefineHistoryInput,
+    options?: { signal?: AbortSignal },
   ): Promise<{
     runId: string;
     status: string;
@@ -397,6 +411,7 @@ export class WidgetGenerator {
     validated?: boolean;
     validationIssues?: ValidationIssue[];
   }> {
+    const signal = options?.signal;
     const agent = await this.ensureAgent();
 
     this.syncToolDefaults(session);
@@ -510,6 +525,7 @@ export class WidgetGenerator {
         images,
         toolDefaults: this.toolDefaults,
         callbacks,
+        signal,
       });
       this.httpAgentId = loop.agentId;
       streamed = {
@@ -525,6 +541,14 @@ export class WidgetGenerator {
           agentId: loop.agentId,
         });
       }
+      if (loop.status === "cancelled") {
+        callbacks?.onEvent?.({
+          type: "status",
+          content: "Cancelled",
+          runId: loop.runId,
+          agentId: loop.agentId,
+        });
+      }
     } else {
       const cursorAgent = agent!;
       const run = await cursorAgent.send(
@@ -535,15 +559,17 @@ export class WidgetGenerator {
         cursorAgent.agentId,
         callbacks,
         () => this.resolveWidgetWorkspaceKey(widgetInstanceId),
+        signal,
       );
     }
 
     const runFinished = streamed.status === "finished";
+    const runCancelled = streamed.status === "cancelled";
     let validated = false;
     let validationIssues: ValidationIssue[] = [];
     const workspaceKey = widgetInstanceId ?? streamed.widgetName;
 
-    if (workspaceKey && runFinished) {
+    if (workspaceKey && runFinished && !runCancelled) {
       const finalization = await finalizeWidgetRun(
         workspaceKey,
         protocol,

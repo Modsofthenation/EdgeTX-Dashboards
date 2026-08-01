@@ -72,7 +72,9 @@ function readRaw(): ProjectLibraryState {
   }
 }
 
-function writeProjects(projects: ProjectSummary[]): { ok: true } | { ok: false; quota: true } {
+function writeProjects(
+  projects: ProjectSummary[],
+): { ok: true } | { ok: false; quota: true } {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
     return { ok: true };
@@ -319,6 +321,8 @@ export function exportProjectPack(id: string): ProjectPack | null {
       sessionId: project.sessionId,
       radioId: project.radioId,
       layoutProfileId: project.layoutProfileId,
+      updatedAt: project.updatedAt,
+      sourcePreview: project.sourcePreview,
     },
     source,
     ...(companions ? { companions } : {}),
@@ -327,14 +331,9 @@ export function exportProjectPack(id: string): ProjectPack | null {
   };
 }
 
-export function importProjectPack(raw: unknown):
-  | {
-      project: ProjectSummary;
-      source: string;
-      companions?: EditorCompanionState;
-      modelImage?: CompanionSdFile;
-    }
-  | { error: string } {
+export function parseProjectPack(
+  raw: unknown,
+): { pack: ProjectPack } | { error: string } {
   if (!raw || typeof raw !== "object") {
     return { error: "Invalid project pack" };
   }
@@ -349,6 +348,80 @@ export function importProjectPack(raw: unknown):
   if (!meta?.name || !meta.protocol) {
     return { error: "Project pack missing name/protocol" };
   }
+  return { pack: pack as ProjectPack };
+}
+
+export function projectSummaryFromPack(
+  pack: ProjectPack,
+  modifiedMs?: number,
+): ProjectSummary | null {
+  const meta = pack.project;
+  if (!meta.id || typeof meta.id !== "string") return null;
+  const fallbackUpdatedAt =
+    modifiedMs && modifiedMs > 0
+      ? new Date(modifiedMs).toISOString()
+      : pack.exportedAt;
+  return {
+    id: meta.id,
+    name: meta.name,
+    protocol: meta.protocol,
+    updatedAt: meta.updatedAt ?? fallbackUpdatedAt,
+    workspaceKey: meta.workspaceKey,
+    sessionId: meta.sessionId,
+    sourcePreview: meta.sourcePreview ?? pack.source.slice(0, 120),
+    radioId: meta.radioId,
+    layoutProfileId: meta.layoutProfileId,
+  };
+}
+
+/** Restore an app-data pack with its stable project id into browser state. */
+export function restoreProjectPack(
+  pack: ProjectPack,
+  modifiedMs?: number,
+):
+  | {
+      project: ProjectSummary;
+      source: string;
+      companions?: EditorCompanionState;
+      modelImage?: CompanionSdFile;
+    }
+  | { error: string } {
+  const summary = projectSummaryFromPack(pack, modifiedMs);
+  if (!summary) return { error: "Project pack missing project id" };
+  const project = upsertProject(summary);
+  saveProjectSource(project.id, pack.source);
+  if (pack.companions) {
+    saveProjectCompanions(project.id, pack.companions);
+  }
+  if (pack.modelImage) {
+    saveProjectModelImage(project.id, pack.modelImage);
+  }
+  if (Array.isArray(pack.versions) && pack.versions.length) {
+    writeProjectVersions(
+      project.id,
+      pack.versions.slice(0, MAX_NAMED_VERSIONS),
+    );
+  }
+  return {
+    project,
+    source: pack.source,
+    companions: pack.companions,
+    modelImage: pack.modelImage,
+  };
+}
+
+export function importProjectPack(raw: unknown):
+  | {
+      project: ProjectSummary;
+      source: string;
+      companions?: EditorCompanionState;
+      modelImage?: CompanionSdFile;
+    }
+  | { error: string } {
+  const parsed = parseProjectPack(raw);
+  if ("error" in parsed) return parsed;
+  const pack = parsed.pack;
+  const meta = pack.project;
   const id = newProjectId();
   const project = upsertProject({
     id,

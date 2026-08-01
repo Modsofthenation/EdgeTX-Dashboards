@@ -318,6 +318,9 @@ struct SdInstallFile {
   encoding: Option<String>,
 }
 
+const MAX_SD_INSTALL_FILES: usize = 64;
+const MAX_SD_INSTALL_BYTES: usize = 8 * 1024 * 1024;
+
 fn decode_sd_content(file: &SdInstallFile) -> Result<Vec<u8>, String> {
   let enc = file.encoding.as_deref().unwrap_or("utf8");
   if !enc.eq_ignore_ascii_case("base64") {
@@ -369,6 +372,62 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
   Ok(out)
 }
 
+fn validate_sd_relative_path(rel: &str, widget_name: &str) -> Result<(), String> {
+  let widget_prefix = format!("WIDGETS/{widget_name}/");
+  let allowed = rel.starts_with(&widget_prefix)
+    || rel.starts_with("SCRIPTS/TOOLS/")
+    || rel.starts_with("SCRIPTS/TELEMETRY/")
+    || rel.starts_with("IMAGES/");
+  let safe_components = !rel.is_empty()
+    && !rel.starts_with('/')
+    && !rel.ends_with('/')
+    && rel
+      .split('/')
+      .all(|part| !part.is_empty() && part != "." && part != "..");
+  if !allowed || !safe_components {
+    return Err(format!("Refusing unsafe SD path: {rel}"));
+  }
+  Ok(())
+}
+
+fn sd_destination(
+  canonical_root: &std::path::Path,
+  rel: &str,
+) -> Result<std::path::PathBuf, String> {
+  let dest = canonical_root.join(rel);
+  if !dest.starts_with(canonical_root) {
+    return Err(format!("Refusing SD path outside selected root: {rel}"));
+  }
+
+  if dest.exists() {
+    let canonical_dest = dest.canonicalize().map_err(|e| e.to_string())?;
+    if !canonical_dest.starts_with(canonical_root) {
+      return Err(format!("Refusing SD path outside selected root: {rel}"));
+    }
+  }
+
+  let parent = dest
+    .parent()
+    .ok_or_else(|| format!("Invalid SD destination: {rel}"))?;
+  let mut existing = parent;
+  while !existing.exists() {
+    existing = existing
+      .parent()
+      .ok_or_else(|| format!("Invalid SD destination: {rel}"))?;
+  }
+  let canonical_existing = existing.canonicalize().map_err(|e| e.to_string())?;
+  if !canonical_existing.starts_with(canonical_root) {
+    return Err(format!("Refusing SD path outside selected root: {rel}"));
+  }
+
+  std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+  let canonical_parent = parent.canonicalize().map_err(|e| e.to_string())?;
+  if !canonical_parent.starts_with(canonical_root) {
+    return Err(format!("Refusing SD path outside selected root: {rel}"));
+  }
+  Ok(dest)
+}
+
 #[tauri::command]
 fn install_widget_to_sd(
   sd_root: String,
@@ -386,47 +445,86 @@ fn install_widget_to_sd(
   if !root.is_dir() {
     return Err(format!("SD root is not a directory: {}", root.display()));
   }
+  let canonical_root = root
+    .canonicalize()
+    .map_err(|e| format!("Could not resolve SD root {}: {e}", root.display()))?;
+  let widgets_dir = canonical_root.join("WIDGETS");
+  if !widgets_dir.is_dir() {
+    return Err(format!(
+      "Selected SD root must contain a WIDGETS directory: {}",
+      widgets_dir.display()
+    ));
+  }
+  let canonical_widgets = widgets_dir
+    .canonicalize()
+    .map_err(|e| format!("Could not resolve WIDGETS directory: {e}"))?;
+  if !canonical_widgets.starts_with(&canonical_root) {
+    return Err("WIDGETS directory is outside the selected SD root".into());
+  }
 
   let mut written: Vec<String> = Vec::new();
+  let mut decoded_files: Vec<(String, Vec<u8>)> = Vec::new();
+  let mut total_bytes = lua_source.len();
+  if let Some(md) = install_md.as_ref().filter(|md| !md.trim().is_empty()) {
+    total_bytes = total_bytes
+      .checked_add(md.len())
+      .ok_or_else(|| "SD install payload is too large".to_string())?;
+  }
 
   if let Some(extra) = files {
-    if !extra.is_empty() {
-      for file in extra {
-        let rel = file.path.trim().replace('\\', "/");
-        if rel.is_empty()
-          || rel.starts_with('/')
-          || rel.contains("..")
-          || !(rel.starts_with("WIDGETS/")
-            || rel.starts_with("SCRIPTS/TOOLS/")
-            || rel.starts_with("SCRIPTS/TELEMETRY/")
-            || rel.starts_with("IMAGES/"))
-        {
-          return Err(format!("Refusing unsafe SD path: {rel}"));
-        }
-        let dest = root.join(&rel);
-        if let Some(parent) = dest.parent() {
-          std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        }
-        std::fs::write(&dest, decode_sd_content(&file)?).map_err(|e| e.to_string())?;
-        written.push(rel);
+    if extra.len() > MAX_SD_INSTALL_FILES {
+      return Err(format!(
+        "SD install package contains too many files (maximum {MAX_SD_INSTALL_FILES})"
+      ));
+    }
+    for file in extra {
+      let rel = file.path.trim().replace('\\', "/");
+      validate_sd_relative_path(&rel, name)?;
+      let bytes = decode_sd_content(&file)?;
+      total_bytes = total_bytes
+        .checked_add(bytes.len())
+        .ok_or_else(|| "SD install payload is too large".to_string())?;
+      if total_bytes > MAX_SD_INSTALL_BYTES {
+        return Err(format!(
+          "SD install payload exceeds {} MB",
+          MAX_SD_INSTALL_BYTES / (1024 * 1024)
+        ));
       }
-      return Ok(serde_json::json!({
-        "dest": root.join("WIDGETS").join(name).display().to_string(),
-        "files": written,
-      }));
+      decoded_files.push((rel, bytes));
+    }
+  }
+  if total_bytes > MAX_SD_INSTALL_BYTES {
+    return Err(format!(
+      "SD install payload exceeds {} MB",
+      MAX_SD_INSTALL_BYTES / (1024 * 1024)
+    ));
+  }
+
+  for (rel, bytes) in decoded_files {
+    let dest = sd_destination(&canonical_root, &rel)?;
+    std::fs::write(&dest, bytes).map_err(|e| e.to_string())?;
+    if !written.contains(&rel) {
+      written.push(rel);
     }
   }
 
-  let dest = root.join("WIDGETS").join(name);
-  std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
-  std::fs::write(dest.join("main.lua"), lua_source).map_err(|e| e.to_string())?;
-  written.push(format!("WIDGETS/{name}/main.lua"));
+  let main_rel = format!("WIDGETS/{name}/main.lua");
+  let main_dest = sd_destination(&canonical_root, &main_rel)?;
+  std::fs::write(main_dest, lua_source).map_err(|e| e.to_string())?;
+  if !written.contains(&main_rel) {
+    written.push(main_rel);
+  }
   if let Some(md) = install_md {
     if !md.trim().is_empty() {
-      let _ = std::fs::write(dest.join("INSTALL.md"), md);
-      written.push(format!("WIDGETS/{name}/INSTALL.md"));
+      let install_rel = format!("WIDGETS/{name}/INSTALL.md");
+      let install_dest = sd_destination(&canonical_root, &install_rel)?;
+      std::fs::write(install_dest, md).map_err(|e| e.to_string())?;
+      if !written.contains(&install_rel) {
+        written.push(install_rel);
+      }
     }
   }
+  let dest = canonical_root.join("WIDGETS").join(name);
   Ok(serde_json::json!({
     "dest": dest.display().to_string(),
     "files": written,
@@ -640,6 +738,15 @@ fn write_app_data_project(
   file_name: String,
   contents: String,
 ) -> Result<String, String> {
+  let safe = sanitize_app_data_project_file_name(&file_name)?;
+  let dir = app_data_projects_dir(&app)?;
+  std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+  let dest = dir.join(&safe);
+  std::fs::write(&dest, contents).map_err(|e| e.to_string())?;
+  Ok(dest.display().to_string())
+}
+
+fn sanitize_app_data_project_file_name(file_name: &str) -> Result<String, String> {
   let trimmed = file_name.trim().replace('\\', "/");
   let safe = trimmed
     .rsplit('/')
@@ -652,15 +759,221 @@ fn write_app_data_project(
   {
     return Err("fileName must be a *.json / *.edgetx-project.json basename".into());
   }
-  let dir = app
+  Ok(safe)
+}
+
+fn app_data_projects_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+  Ok(app
     .path()
     .app_data_dir()
     .map_err(|e| e.to_string())?
-    .join("projects");
-  std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-  let dest = dir.join(&safe);
-  std::fs::write(&dest, contents).map_err(|e| e.to_string())?;
-  Ok(dest.display().to_string())
+    .join("projects"))
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppDataProjectEntry {
+  file_name: String,
+  path: String,
+  modified_ms: u64,
+}
+
+#[tauri::command]
+fn list_app_data_projects(app: tauri::AppHandle) -> Result<Vec<AppDataProjectEntry>, String> {
+  let dir = app_data_projects_dir(&app)?;
+  if !dir.exists() {
+    return Ok(Vec::new());
+  }
+  let mut projects = Vec::new();
+  for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())? {
+    let entry = entry.map_err(|e| e.to_string())?;
+    let file_type = entry.file_type().map_err(|e| e.to_string())?;
+    if !file_type.is_file() {
+      continue;
+    }
+    let file_name = entry.file_name().to_string_lossy().to_string();
+    if sanitize_app_data_project_file_name(&file_name).is_err() {
+      continue;
+    }
+    let modified_ms = entry
+      .metadata()
+      .and_then(|metadata| metadata.modified())
+      .ok()
+      .and_then(|modified| modified.duration_since(std::time::UNIX_EPOCH).ok())
+      .map(|duration| duration.as_millis() as u64)
+      .unwrap_or(0);
+    projects.push(AppDataProjectEntry {
+      file_name,
+      path: entry.path().display().to_string(),
+      modified_ms,
+    });
+  }
+  projects.sort_by(|a, b| b.modified_ms.cmp(&a.modified_ms));
+  Ok(projects)
+}
+
+#[tauri::command]
+fn read_app_data_project(app: tauri::AppHandle, file_name: String) -> Result<String, String> {
+  let safe = sanitize_app_data_project_file_name(&file_name)?;
+  let src = app_data_projects_dir(&app)?.join(safe);
+  std::fs::read_to_string(src).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_app_data_project(app: tauri::AppHandle, file_name: String) -> Result<(), String> {
+  let safe = sanitize_app_data_project_file_name(&file_name)?;
+  let dest = app_data_projects_dir(&app)?.join(safe);
+  if !dest.exists() {
+    return Ok(());
+  }
+  std::fs::remove_file(dest).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::sync::atomic::{AtomicU64, Ordering};
+
+  static NEXT_TEMP_ID: AtomicU64 = AtomicU64::new(0);
+
+  fn temp_sd_root() -> std::path::PathBuf {
+    let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
+    let root = std::env::temp_dir().join(format!(
+      "edgetx-dashboard-sd-test-{}-{id}",
+      std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("WIDGETS")).expect("create test SD root");
+    root
+  }
+
+  #[test]
+  fn sd_install_overwrites_pack_with_live_widget_files() {
+    let root = temp_sd_root();
+    let files = vec![
+      SdInstallFile {
+        path: "WIDGETS/Test/main.lua".into(),
+        content: "stale lua".into(),
+        encoding: None,
+      },
+      SdInstallFile {
+        path: "WIDGETS/Test/INSTALL.md".into(),
+        content: "stale guide".into(),
+        encoding: None,
+      },
+    ];
+
+    install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "live lua".into(),
+      Some("live guide".into()),
+      Some(files),
+    )
+    .expect("install widget");
+
+    assert_eq!(
+      std::fs::read_to_string(root.join("WIDGETS/Test/main.lua")).unwrap(),
+      "live lua"
+    );
+    assert_eq!(
+      std::fs::read_to_string(root.join("WIDGETS/Test/INSTALL.md")).unwrap(),
+      "live guide"
+    );
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn sd_install_rejects_other_widget_paths_and_too_many_files() {
+    let root = temp_sd_root();
+    let wrong_widget = vec![SdInstallFile {
+      path: "WIDGETS/Other/main.lua".into(),
+      content: "lua".into(),
+      encoding: None,
+    }];
+    let error = install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "live".into(),
+      None,
+      Some(wrong_widget),
+    )
+    .unwrap_err();
+    assert!(error.contains("unsafe SD path"));
+
+    let too_many = (0..=MAX_SD_INSTALL_FILES)
+      .map(|index| SdInstallFile {
+        path: format!("SCRIPTS/TOOLS/file-{index}.lua"),
+        content: String::new(),
+        encoding: None,
+      })
+      .collect();
+    let error = install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "live".into(),
+      None,
+      Some(too_many),
+    )
+    .unwrap_err();
+    assert!(error.contains("too many files"));
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn sd_install_requires_widgets_directory_and_caps_total_bytes() {
+    let root = temp_sd_root();
+    let error = install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "x".repeat(MAX_SD_INSTALL_BYTES + 1),
+      None,
+      None,
+    )
+    .unwrap_err();
+    assert!(error.contains("exceeds 8 MB"));
+
+    std::fs::remove_dir_all(root.join("WIDGETS")).unwrap();
+    let error = install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "live".into(),
+      None,
+      None,
+    )
+    .unwrap_err();
+    assert!(error.contains("must contain a WIDGETS directory"));
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn sd_install_rejects_symlink_escape() {
+    use std::os::unix::fs::symlink;
+
+    let root = temp_sd_root();
+    let outside = root.with_extension("outside");
+    let _ = std::fs::remove_dir_all(&outside);
+    std::fs::create_dir_all(&outside).unwrap();
+    symlink(&outside, root.join("IMAGES")).unwrap();
+    let files = vec![SdInstallFile {
+      path: "IMAGES/model.png".into(),
+      content: "image".into(),
+      encoding: None,
+    }];
+
+    let error = install_widget_to_sd(
+      root.display().to_string(),
+      "Test".into(),
+      "live".into(),
+      None,
+      Some(files),
+    )
+    .unwrap_err();
+    assert!(error.contains("outside selected root"));
+    let _ = std::fs::remove_dir_all(root);
+    let _ = std::fs::remove_dir_all(outside);
+  }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -677,7 +990,10 @@ pub fn run() {
       write_text_file,
       write_bytes_file,
       read_text_file,
-      write_app_data_project
+      write_app_data_project,
+      list_app_data_projects,
+      read_app_data_project,
+      delete_app_data_project
     ])
     .setup(|app| {
       #[cfg(not(dev))]

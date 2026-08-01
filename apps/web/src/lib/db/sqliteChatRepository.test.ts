@@ -17,6 +17,7 @@ describe("SqliteChatRepository", () => {
   it("round-trips create, update, list, and delete", () => {
     const created = repo.createChat({
       title: "Build a vibrant heli dashboard with headspeed",
+      provider: "openai",
       protocol: "rotorflight",
       modelId: "claude-sonnet-4",
       edgeTxVersion: "2.11.0",
@@ -24,6 +25,7 @@ describe("SqliteChatRepository", () => {
     });
 
     assert.ok(created.id);
+    assert.equal(created.provider, "openai");
     assert.equal(created.messages.length, 0);
 
     const userMsg: ChatMessage = {
@@ -39,6 +41,7 @@ describe("SqliteChatRepository", () => {
     };
 
     const updated = repo.updateChat(created.id, {
+      provider: "anthropic",
       sessionId: "sess-1",
       widgetName: "heli_dash",
       messages: [userMsg, assistantMsg],
@@ -53,6 +56,7 @@ describe("SqliteChatRepository", () => {
     });
 
     assert.ok(updated);
+    assert.equal(updated!.provider, "anthropic");
     assert.equal(updated!.sessionId, "sess-1");
     assert.equal(updated!.widgetName, "heli_dash");
     assert.equal(updated!.messages.length, 2);
@@ -61,6 +65,7 @@ describe("SqliteChatRepository", () => {
 
     const listed = repo.listChats();
     assert.equal(listed.length, 1);
+    assert.equal(listed[0].provider, "anthropic");
     assert.equal(listed[0].messageCount, 2);
     assert.equal(listed[0].validated, true);
 

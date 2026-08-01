@@ -66,18 +66,6 @@ export async function POST(request: Request): Promise<Response> {
   const rateErr = checkRateLimit(request);
   if (rateErr) return rateErr;
 
-  const provider = parseAiProviderId(request.headers.get("x-ai-provider"));
-  const apiKey = resolveProviderApiKey(request, provider);
-  if (!apiKey) {
-    const meta = providerMeta(provider);
-    return Response.json(
-      {
-        error: `No ${meta.label} API key configured. Add one in Preferences → AI, or set ${meta.envVar} on the server.`,
-      },
-      { status: 503 },
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -91,6 +79,22 @@ export async function POST(request: Request): Promise<Response> {
     prompt?: string;
     images?: unknown;
   };
+  const persistedChat = data.chatId?.trim()
+    ? getChat(data.chatId.trim())
+    : null;
+  const provider = parseAiProviderId(
+    persistedChat?.provider ?? request.headers.get("x-ai-provider"),
+  );
+  const apiKey = resolveProviderApiKey(request, provider);
+  if (!apiKey) {
+    const meta = providerMeta(provider);
+    return Response.json(
+      {
+        error: `No ${meta.label} API key configured. Add one in Preferences → AI, or set ${meta.envVar} on the server.`,
+      },
+      { status: 503 },
+    );
+  }
 
   const imagesResult = validatePromptImages(data.images);
   if (!imagesResult.ok) {
@@ -151,7 +155,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const chat = data.chatId?.trim() ? getChat(data.chatId.trim()) : null;
+  const chat = persistedChat;
   const workspaceKey =
     stored.session.widgetInstanceId ??
     chat?.widgetInstanceId ??
@@ -182,52 +186,65 @@ export async function POST(request: Request): Promise<Response> {
     };
   }
 
-  const stream = createSseStream(async (send) => {
-    if (!store.tryAcquire(effectiveSessionId)) {
-      send({
-        type: "error",
-        content: "Session busy",
-        sessionId: effectiveSessionId,
-        success: false,
-      });
-      return;
-    }
+  const stream = createSseStream(
+    async (send) => {
+      if (!store.tryAcquire(effectiveSessionId)) {
+        send({
+          type: "error",
+          content: "Session busy",
+          sessionId: effectiveSessionId,
+          success: false,
+        });
+        return;
+      }
 
-    try {
-      const ctx = {
-        session: stored.session,
-        generator: stored.generator,
-        send,
-      };
-      const result = await stored.generator.refine(
-        effectivePrompt,
-        stored.session.protocol,
-        stored.session.radioId,
-        stored.session.widgetName,
-        createRunCallbacks(ctx),
-        stored.session,
-        imagesResult.images.length > 0 ? imagesResult.images : undefined,
-        refineHistory,
-      );
+      try {
+        const ctx = {
+          session: stored.session,
+          generator: stored.generator,
+          send,
+        };
+        const result = await stored.generator.refine(
+          effectivePrompt,
+          stored.session.protocol,
+          stored.session.radioId,
+          stored.session.widgetName,
+          createRunCallbacks(ctx),
+          stored.session,
+          imagesResult.images.length > 0 ? imagesResult.images : undefined,
+          refineHistory,
+          { signal: request.signal },
+        );
 
-      emitRunCompletion(ctx, result, { action: "refine" });
-    } catch (err) {
-      const message =
-        err instanceof CursorAgentError
-          ? `Startup failed: ${err.message}`
-          : err instanceof Error
-            ? err.message
-            : "Unknown error";
-      send({
-        type: "error",
-        content: message,
-        sessionId: effectiveSessionId,
-        success: false,
-      });
-    } finally {
-      store.release(effectiveSessionId);
-    }
-  });
+        emitRunCompletion(ctx, result, { action: "refine" });
+      } catch (err) {
+        if (request.signal.aborted) {
+          send({
+            type: "status",
+            content: "Refine cancelled",
+            sessionId: effectiveSessionId,
+            success: false,
+          });
+          return;
+        }
+        const message =
+          err instanceof CursorAgentError
+            ? `Startup failed: ${err.message}`
+            : err instanceof Error
+              ? err.message
+              : "Unknown error";
+        send({
+          type: "error",
+          content: message,
+          sessionId: effectiveSessionId,
+          success: false,
+        });
+      } finally {
+        store.release(effectiveSessionId);
+      }
+    },
+    { signal: request.signal },
+  );
 
   return createSseResponse(stream);
 }

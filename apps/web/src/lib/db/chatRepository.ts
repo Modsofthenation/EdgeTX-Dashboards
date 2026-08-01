@@ -1,4 +1,4 @@
-import type { TelemetryProtocol } from "@widget-gen/shared";
+import type { AiProviderId, TelemetryProtocol } from "@widget-gen/shared";
 import type {
   ChatMessage,
   ChatSummary,
@@ -9,6 +9,7 @@ import type {
 
 export interface CreateChatInput {
   title: string;
+  provider?: AiProviderId;
   protocol: TelemetryProtocol;
   modelId: string;
   edgeTxVersion: string;
@@ -17,6 +18,7 @@ export interface CreateChatInput {
 
 export interface UpdateChatInput {
   title?: string;
+  provider?: AiProviderId;
   sessionId?: string | null;
   widgetName?: string | null;
   widgetInstanceId?: string | null;

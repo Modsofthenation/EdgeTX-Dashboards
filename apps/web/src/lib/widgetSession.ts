@@ -96,12 +96,18 @@ export function emitRunCompletion(
     : undefined;
 
   ctx.send({
-    type: result.success ? "done" : "error",
+    type: result.success
+      ? "done"
+      : result.status === "cancelled"
+        ? "status"
+        : "error",
     content: result.success
       ? `Validated and ready: ${label}`
-      : result.validated === false && result.widgetName
-        ? `Widget ${label} failed validation — download blocked`
-        : `${actionLabel} failed (status: ${result.status})`,
+      : result.status === "cancelled"
+        ? `${actionLabel} cancelled`
+        : result.validated === false && result.widgetName
+          ? `Widget ${label} failed validation — download blocked`
+          : `${actionLabel} failed (status: ${result.status})`,
     sessionId: ctx.session.id,
     widgetName: result.widgetName,
     widgetInstanceId: result.widgetInstanceId,

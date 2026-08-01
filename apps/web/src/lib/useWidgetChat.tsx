@@ -11,7 +11,11 @@ import {
   type Context,
   type ReactNode,
 } from "react";
-import type { TelemetryProtocol, ValidationIssue } from "@widget-gen/shared";
+import type {
+  AiProviderId,
+  TelemetryProtocol,
+  ValidationIssue,
+} from "@widget-gen/shared";
 import {
   consumeGenerationStream,
   type GenerationSsePayload,
@@ -69,6 +73,7 @@ export function useWidgetChatState() {
   const preferredModelId = aiSettings?.preferredModelId ?? "";
   const aiProvider = aiSettings?.provider ?? "cursor";
   const authHeaders = aiSettings?.authHeaders;
+  const setAiProvider = aiSettings?.setProvider;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatId, setChatId] = useState<string | null>(null);
@@ -102,10 +107,15 @@ export function useWidgetChatState() {
   const artifactRef = useRef<WidgetSnapshot | null>(null);
   const artifactVersionsRef = useRef<WidgetVersionEntry[]>([]);
   const viewingVersionRef = useRef<number | null>(null);
+  const providerRef = useRef<AiProviderId>(aiProvider);
   const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamDraftRef = useRef<ChatMessage[] | null>(null);
   const streamFlushRef = useRef<number | null>(null);
   const [scrollRevision, setScrollRevision] = useState(0);
+
+  useEffect(() => {
+    providerRef.current = aiProvider;
+  }, [aiProvider]);
 
   const refreshHistory = useCallback(async () => {
     const chats = await fetchChatList();
@@ -205,6 +215,7 @@ export function useWidgetChatState() {
     async (id: string) => {
       const snapshot = artifactRef.current;
       await syncChatRecord(id, {
+        provider: providerRef.current,
         sessionId: sessionIdRef.current,
         widgetName: widgetNameRef.current,
         widgetInstanceId: widgetInstanceIdRef.current,
@@ -388,11 +399,13 @@ export function useWidgetChatState() {
       model: string,
       edgeTx: string,
       radio: string,
+      provider: AiProviderId,
     ) => {
       if (chatIdRef.current) return chatIdRef.current;
 
       const chat = await createChatRecord({
         title,
+        provider,
         protocol: proto,
         modelId: model,
         edgeTxVersion: edgeTx,
@@ -510,6 +523,7 @@ export function useWidgetChatState() {
           model,
           edgeTx,
           radio,
+          aiProvider,
         );
       }
 
@@ -680,7 +694,14 @@ export function useWidgetChatState() {
           onPayload: handlePayload,
         });
       } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+        if ((err as Error).name === "AbortError") {
+          setMessagesTracked((prev) =>
+            patchAssistant(prev, assistantId, {
+              isStreaming: false,
+              content: "Cancelled.",
+            }),
+          );
+        } else {
           setMessagesTracked((prev) =>
             patchAssistant(prev, assistantId, {
               isStreaming: false,
@@ -773,6 +794,12 @@ export function useWidgetChatState() {
         return;
       }
 
+      if (chat.provider) {
+        providerRef.current = chat.provider;
+        await setAiProvider?.(chat.provider);
+        if (loadGen !== chatLoadGenRef.current) return;
+      }
+
       chatIdRef.current = chat.id;
       setChatId(chat.id);
       widgetNameRef.current = chat.widgetName ?? chat.artifact?.name ?? null;
@@ -814,7 +841,9 @@ export function useWidgetChatState() {
 
       // Disk is source of truth for Layout edits — prefer workspace Lua over SQLite snapshot.
       const instanceIdForDisk =
-        widgetInstanceIdRef.current ?? chat.widgetInstanceId ?? chat.artifact?.instanceId;
+        widgetInstanceIdRef.current ??
+        chat.widgetInstanceId ??
+        chat.artifact?.instanceId;
       if (instanceIdForDisk) {
         const disk = await fetchWidgetSource(null, {
           instanceId: instanceIdForDisk,
@@ -824,16 +853,15 @@ export function useWidgetChatState() {
           const snapshot = {
             name: disk.name || chat.artifact?.name || chat.widgetName || "",
             instanceId: disk.instanceId ?? instanceIdForDisk,
-            version: disk.version || chat.artifact?.version || chat.widgetVersion || 0,
+            version:
+              disk.version || chat.artifact?.version || chat.widgetVersion || 0,
             luaSource: disk.source,
             validated: chat.artifact?.validated ?? false,
             validationIssues: chat.artifact?.validationIssues ?? [],
           };
           setArtifactTracked(snapshot);
           const latest =
-            chat.artifactVersions.at(-1)?.version ??
-            snapshot.version ??
-            0;
+            chat.artifactVersions.at(-1)?.version ?? snapshot.version ?? 0;
           setViewingVersion(latest);
           viewingVersionRef.current = latest;
           setArtifactLoading(false);
@@ -881,6 +909,7 @@ export function useWidgetChatState() {
       setMessagesTracked,
       setArtifactTracked,
       setArtifactVersionsTracked,
+      setAiProvider,
     ],
   );
 
@@ -919,6 +948,10 @@ export function useWidgetChatState() {
     [running, startNewChat, refreshHistory],
   );
 
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
   return {
     messages,
     scrollRevision,
@@ -948,6 +981,7 @@ export function useWidgetChatState() {
     selectViewingVersion,
     artifactLoading,
     sendMessage,
+    stopGeneration,
     startNewChat,
     loadChat,
     deleteChat,
@@ -965,6 +999,7 @@ type ChatSessionContextValue = Pick<
   ReturnType<typeof useWidgetChatState>,
   | "running"
   | "sendMessage"
+  | "stopGeneration"
   | "chatId"
   | "chatHistory"
   | "historyLoading"
@@ -1023,6 +1058,7 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
     () => ({
       running: state.running,
       sendMessage: state.sendMessage,
+      stopGeneration: state.stopGeneration,
       chatId: state.chatId,
       chatHistory: state.chatHistory,
       historyLoading: state.historyLoading,
@@ -1034,6 +1070,7 @@ export function WidgetChatProvider({ children }: { children: ReactNode }) {
     [
       state.running,
       state.sendMessage,
+      state.stopGeneration,
       state.chatId,
       state.chatHistory,
       state.historyLoading,

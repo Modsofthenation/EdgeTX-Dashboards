@@ -5,7 +5,7 @@ import type {
   WidgetSnapshot,
   WidgetVersionEntry,
 } from "~/lib/chatTypes";
-import type { TelemetryProtocol } from "@widget-gen/shared";
+import type { AiProviderId, TelemetryProtocol } from "@widget-gen/shared";
 
 export async function fetchChatList(): Promise<ChatSummary[]> {
   const res = await fetch("/api/chats");
@@ -22,6 +22,7 @@ export async function fetchChat(id: string): Promise<StoredChat | null> {
 
 export async function createChatRecord(input: {
   title: string;
+  provider: AiProviderId;
   protocol: TelemetryProtocol;
   modelId: string;
   edgeTxVersion: string;
@@ -39,6 +40,7 @@ export async function createChatRecord(input: {
 export async function syncChatRecord(
   id: string,
   input: {
+    provider?: AiProviderId;
     sessionId?: string | null;
     widgetName?: string | null;
     widgetInstanceId?: string | null;
@@ -49,6 +51,7 @@ export async function syncChatRecord(
   },
 ): Promise<StoredChat | null> {
   const payload = {
+    provider: input.provider,
     sessionId: input.sessionId ?? null,
     widgetName: input.widgetName ?? null,
     widgetInstanceId: input.widgetInstanceId ?? null,

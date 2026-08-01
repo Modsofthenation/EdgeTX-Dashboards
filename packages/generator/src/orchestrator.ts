@@ -109,6 +109,8 @@ interface AgentRunLike {
   id: string;
   stream(): AsyncIterable<SDKMessage>;
   wait(): Promise<{ id: string; status: string; result?: string }>;
+  cancel?: () => Promise<void>;
+  supports?: (capability: never) => boolean;
 }
 
 /** Stream SDK run events to callbacks; returns run metadata after stream completes. */
@@ -117,6 +119,7 @@ export async function streamAgentRun(
   agentId: string,
   callbacks: RunCallbacks | undefined,
   resolveName: () => string | undefined,
+  signal?: AbortSignal,
 ): Promise<{
   runId: string;
   status: string;
@@ -125,36 +128,88 @@ export async function streamAgentRun(
 }> {
   let lastReportedName: string | undefined;
 
-  for await (const event of run.stream()) {
-    const text = extractTextFromMessage(event);
-    if (text) {
-      callbacks?.onEvent?.({
-        type: "text",
-        content: text,
-        runId: run.id,
-        agentId,
-      });
+  const cancelRun = async () => {
+    try {
+      if (typeof run.cancel === "function") {
+        const canCancel =
+          typeof run.supports !== "function" ||
+          // Cursor SDK types `supports("cancel")` narrowly; call via cast.
+          (run.supports as (op: string) => boolean)("cancel");
+        if (canCancel) {
+          await run.cancel();
+        }
+      }
+    } catch {
+      // Best-effort cancel
     }
+  };
 
-    for (const toolEvent of extractToolEventsFromMessage(event)) {
-      callbacks?.onEvent?.({ ...toolEvent, runId: run.id, agentId });
-    }
-
-    const name = resolveName();
-    if (name && name !== lastReportedName) {
-      lastReportedName = name;
-      callbacks?.onWidgetName?.(name);
-    }
+  if (signal?.aborted) {
+    await cancelRun();
+    return {
+      runId: run.id,
+      status: "cancelled",
+      widgetName: resolveName(),
+    };
   }
 
-  const result = await run.wait();
-  const widgetName = resolveName();
-  return {
-    runId: result.id,
-    status: result.status,
-    result: result.result,
-    widgetName,
+  const onAbort = () => {
+    void cancelRun();
   };
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    for await (const event of run.stream()) {
+      if (signal?.aborted) {
+        await cancelRun();
+        return {
+          runId: run.id,
+          status: "cancelled",
+          widgetName: resolveName(),
+        };
+      }
+
+      const text = extractTextFromMessage(event);
+      if (text) {
+        callbacks?.onEvent?.({
+          type: "text",
+          content: text,
+          runId: run.id,
+          agentId,
+        });
+      }
+
+      for (const toolEvent of extractToolEventsFromMessage(event)) {
+        callbacks?.onEvent?.({ ...toolEvent, runId: run.id, agentId });
+      }
+
+      const name = resolveName();
+      if (name && name !== lastReportedName) {
+        lastReportedName = name;
+        callbacks?.onWidgetName?.(name);
+      }
+    }
+
+    if (signal?.aborted) {
+      await cancelRun();
+      return {
+        runId: run.id,
+        status: "cancelled",
+        widgetName: resolveName(),
+      };
+    }
+
+    const result = await run.wait();
+    const widgetName = resolveName();
+    return {
+      runId: result.id,
+      status: signal?.aborted ? "cancelled" : result.status,
+      result: result.result,
+      widgetName,
+    };
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+  }
 }
 
 /** Validate and package a widget after a successful agent run. */

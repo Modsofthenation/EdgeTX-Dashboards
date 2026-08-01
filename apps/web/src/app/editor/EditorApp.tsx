@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  applySceneGeometryToSource,
   applyDashboardBackground,
   bindTextRecordToSensorDetailed,
   createStarterSource,
@@ -24,11 +25,9 @@ import {
   removeRecordLines,
   remapRecordIdsAfterLineRemoval,
   remapSrcSensor,
-  resizeRecord,
   setRecordColor,
   setRecordText,
   setRecordTextFlags,
-  translateRecord,
   duplicateRecordLine,
   moveRecordLine,
   reorderRecordLine,
@@ -36,7 +35,9 @@ import {
   insertRawRefreshLine,
   luaToScene,
   remapPreviewOnlyColorLiterals,
+  sceneToLua,
   type DocumentRecord,
+  type EditorElement,
   type TextAlignFlag,
   type TextFormat,
   type TextSizeFlag,
@@ -76,14 +77,17 @@ import {
 } from "./components/ProjectLibraryModal";
 
 const RadioSimPreview = dynamic(
-  () =>
-    import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
+  () => import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
   { ssr: false },
 );
 import type { InsertDrawKind } from "./elementMeta";
-import { openAppPreferences, AppPreferencesHost } from "~/components/AppPreferences";
+import {
+  openAppPreferences,
+  AppPreferencesHost,
+} from "~/components/AppPreferences";
 import {
   deleteProject,
+  exportProjectPack,
   getLastOpenProjectId,
   getProject,
   loadProjectCompanions,
@@ -91,13 +95,22 @@ import {
   loadProjectSource,
   markProjectOpened,
   newProjectId,
+  parseProjectPack,
   renameProject,
+  restoreProjectPack,
   saveNamedVersion,
   saveProjectCompanions,
   saveProjectModelImage,
   saveProjectSource,
   upsertProject,
 } from "~/lib/projectLibrary";
+import {
+  appDataProjectFileName,
+  deleteAppDataProject,
+  isTauriDesktop,
+  readAppDataProject,
+  saveProjectPackToAppData,
+} from "~/lib/desktopProjectIo";
 import {
   isWebSerialSupported,
   openLiveTelemetryPort,
@@ -154,6 +167,37 @@ function findRecordByLineText(
     const line = r.sourceRef?.sourceLine ?? r.sourceLine;
     return line != null && getSourceLine(source, line) === lineText;
   });
+}
+
+function translateSceneElement(
+  element: EditorElement,
+  dx: number,
+  dy: number,
+): EditorElement {
+  if (element.kind === "line") {
+    return {
+      ...element,
+      x1: element.x1 + dx,
+      y1: element.y1 + dy,
+      x2: element.x2 + dx,
+      y2: element.y2 + dy,
+    };
+  }
+  return { ...element, x: element.x + dx, y: element.y + dy };
+}
+
+function resizeSceneElement(
+  element: EditorElement,
+  box: { x: number; y: number; w: number; h: number },
+): EditorElement {
+  if (
+    element.kind === "filledRect" ||
+    element.kind === "rect" ||
+    element.kind === "gauge"
+  ) {
+    return { ...element, ...box };
+  }
+  return element;
 }
 
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
@@ -291,12 +335,8 @@ export function EditorApp() {
   } = useSourceUndoStack(createStarterSource());
 
   const editorBodyRef = useRef<HTMLDivElement>(null);
-  const {
-    gridTemplateColumns,
-    activeSide,
-    onHandlePointerDown,
-    resetWidths,
-  } = useResizableEditorPanels(editorBodyRef);
+  const { gridTemplateColumns, activeSide, onHandlePointerDown, resetWidths } =
+    useResizableEditorPanels(editorBodyRef);
 
   const meta = useMemo(() => parseDocumentMeta(source), [source]);
   const previewScenario: LayoutScenario = useMemo(() => {
@@ -423,10 +463,7 @@ export function EditorApp() {
               `/api/widget-companions?workspaceKey=${encodeURIComponent(wk)}`,
               { signal: controller.signal },
             );
-            if (
-              companionsRes.ok &&
-              requestId === loadRequestIdRef.current
-            ) {
+            if (companionsRes.ok && requestId === loadRequestIdRef.current) {
               const data = (await companionsRes.json()) as {
                 files?: {
                   relPath: string;
@@ -525,6 +562,14 @@ export function EditorApp() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  const sceneAssist = useMemo(() => {
+    try {
+      return luaToScene(source);
+    } catch {
+      return null;
+    }
+  }, [source]);
+
   const selectedRecords = useMemo(
     () => records.filter((r) => selectedIds.includes(r.id)),
     [records, selectedIds],
@@ -555,28 +600,74 @@ export function EditorApp() {
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
       if (dx === 0 && dy === 0) return;
-      applyToRecords(
-        ids,
-        (current, record) => translateRecord(current, record, dx, dy, zone),
-        { history: false },
+      if (!sceneAssist) return;
+      const recordIds = new Set(ids);
+      const elementIds: string[] = [];
+      const scene = {
+        ...sceneAssist.scene,
+        elements: sceneAssist.scene.elements.map((element) => {
+          if (
+            element.sourceLine == null ||
+            !recordIds.has(`L${element.sourceLine}`)
+          ) {
+            return element;
+          }
+          elementIds.push(element.id);
+          return translateSceneElement(element, dx, dy);
+        }),
+      };
+      if (elementIds.length === 0) return;
+      setSource((prev) =>
+        applySceneGeometryToSource(
+          prev,
+          scene,
+          {
+            x: zone.zoneX,
+            y: zone.zoneY,
+            w: zone.zoneW,
+            h: zone.zoneH,
+          },
+          elementIds,
+        ),
       );
+      markDirty();
     },
-    [applyToRecords, zone],
+    [markDirty, sceneAssist, setSource, zone],
   );
 
   const handleResize = useCallback(
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
+      if (!sceneAssist) return;
+      const elementIds: string[] = [];
+      const scene = {
+        ...sceneAssist.scene,
+        elements: sceneAssist.scene.elements.map((element) => {
+          if (element.sourceLine == null || id !== `L${element.sourceLine}`) {
+            return element;
+          }
+          elementIds.push(element.id);
+          return resizeSceneElement(element, box);
+        }),
+      };
+      if (elementIds.length === 0) return;
       setSource(
-        (prev) => {
-          const record = recordsFor(prev).find((r) => r.id === id);
-          if (!record) return prev;
-          return resizeRecord(prev, record, box, zone);
-        },
+        (prev) =>
+          applySceneGeometryToSource(
+            prev,
+            scene,
+            {
+              x: zone.zoneX,
+              y: zone.zoneY,
+              w: zone.zoneW,
+              h: zone.zoneH,
+            },
+            elementIds,
+          ),
         { history: false },
       );
       markDirty();
     },
-    [setSource, zone, markDirty, recordsFor],
+    [setSource, zone, markDirty, sceneAssist],
   );
 
   const handleGestureStart = useCallback(() => {
@@ -752,7 +843,11 @@ export function EditorApp() {
         return;
       }
       setSource((prev) => {
-        const { source: next } = insertPrefabSections(prev, [...order], prefabLcd);
+        const { source: next } = insertPrefabSections(
+          prev,
+          [...order],
+          prefabLcd,
+        );
         return next;
       });
       markDirty();
@@ -956,7 +1051,7 @@ export function EditorApp() {
   );
 
   const handleSaveNamed = useCallback(
-    (name: string) => {
+    async (name: string) => {
       const id = projectId ?? newProjectId();
       upsertProject({
         id,
@@ -979,6 +1074,20 @@ export function EditorApp() {
       saveNamedVersion(id, name, source);
       setProjectId(id);
       setProjectModal(null);
+      if (await isTauriDesktop()) {
+        const pack = exportProjectPack(id);
+        if (pack) {
+          const result = await saveProjectPackToAppData(
+            id,
+            JSON.stringify(pack, null, 2),
+          );
+          if ("error" in result) {
+            setLiveTelemetryNote(
+              `Project saved in browser, but app-data sync failed: ${result.error}`,
+            );
+          }
+        }
+      }
     },
     [
       projectId,
@@ -995,12 +1104,33 @@ export function EditorApp() {
   );
 
   const openProjectById = useCallback(
-    (id: string) => {
-      const project = getProject(id);
-      const lua = loadProjectSource(id);
+    async (id: string, appDataFile?: string) => {
+      let project = getProject(id);
+      let lua = loadProjectSource(id);
+      let companionsPack = loadProjectCompanions(id);
+      let model = loadProjectModelImage(id);
+
+      if (await isTauriDesktop()) {
+        try {
+          const json = await readAppDataProject(
+            appDataFile ?? appDataProjectFileName(id),
+          );
+          const parsed = parseProjectPack(JSON.parse(json) as unknown);
+          if ("error" in parsed) throw new Error(parsed.error);
+          const restored = restoreProjectPack(parsed.pack);
+          if ("error" in restored) throw new Error(restored.error);
+          project = restored.project;
+          lua = restored.source;
+          companionsPack = restored.companions ?? null;
+          model = restored.modelImage ?? null;
+        } catch {
+          // Older/local-only projects remain available as a desktop fallback.
+        }
+      }
+
       if (!lua) {
         setLiveTelemetryNote(
-          "No saved Lua for that project in this browser — use Save as… after editing.",
+          "No saved Lua found for that project in app data or this browser.",
         );
         return;
       }
@@ -1016,10 +1146,9 @@ export function EditorApp() {
         setLayoutProfileId(project.layoutProfileId);
       }
       if (project?.radioId) setRadioId(project.radioId);
-      if (project?.workspaceKey) setWorkspaceKey(project.workspaceKey);
-      const companionsPack = loadProjectCompanions(id);
-      if (companionsPack) setCompanions(companionsPack);
-      const model = loadProjectModelImage(id);
+      setWorkspaceKey(project?.workspaceKey ?? null);
+      setSessionId(project?.sessionId ?? null);
+      setCompanions(companionsPack ?? { suites: [], files: [] });
       if (model?.encoding === "base64" && model.content) {
         try {
           const bin = atob(model.content);
@@ -1030,6 +1159,9 @@ export function EditorApp() {
         } catch {
           /* ignore */
         }
+      } else {
+        setModelPngBytes(null);
+        setModelPngName(null);
       }
       markProjectOpened(id);
       setDirty(false);
@@ -1049,7 +1181,7 @@ export function EditorApp() {
       setLiveTelemetryNote("No last project — use Save as… first.");
       return;
     }
-    openProjectById(id);
+    void openProjectById(id);
   }, [openProjectById]);
 
   const handleToggleLiveTelemetry = useCallback(async () => {
@@ -1197,13 +1329,11 @@ export function EditorApp() {
       const used = new Set<string>();
       const nextIds: string[] = [];
       for (const text of copiedTexts) {
-        const match = after
-          .toReversed()
-          .find((r) => {
-            if (used.has(r.id)) return false;
-            const line = r.sourceRef?.sourceLine ?? r.sourceLine;
-            return line != null && getSourceLine(next, line) === text;
-          });
+        const match = after.toReversed().find((r) => {
+          if (used.has(r.id)) return false;
+          const line = r.sourceRef?.sourceLine ?? r.sourceLine;
+          return line != null && getSourceLine(next, line) === text;
+        });
         if (match) {
           used.add(match.id);
           nextIds.push(match.id);
@@ -1221,8 +1351,7 @@ export function EditorApp() {
     (texts: string[], fromSource: string) => {
       const nextIds = texts
         .map(
-          (text) =>
-            findRecordByLineText(fromSource, text, previewScenario)?.id,
+          (text) => findRecordByLineText(fromSource, text, previewScenario)?.id,
         )
         .filter((id): id is string => Boolean(id));
       setSelectedIds(nextIds);
@@ -1294,13 +1423,18 @@ export function EditorApp() {
     markDirty();
   }, [previewScenario, setSource, markDirty]);
 
-  const sceneAssist = useMemo(() => {
-    try {
-      return luaToScene(source);
-    } catch {
-      return null;
+  const handleRebuildLuaFromScene = useCallback(() => {
+    if (!sceneAssist) return;
+    if (
+      !window.confirm(
+        "Rebuild the complete Lua file from the current scene? Custom Lua outside the scene model will be replaced.",
+      )
+    ) {
+      return;
     }
-  }, [source]);
+    setSource(sceneToLua(sceneAssist.scene));
+    markDirty();
+  }, [markDirty, sceneAssist, setSource]);
 
   const handleMoveLayer = useCallback(
     (id: string, dir: -1 | 1) => {
@@ -1645,7 +1779,15 @@ export function EditorApp() {
     } finally {
       setSaving(false);
     }
-  }, [workspaceKey, sessionId, source, protocol, radioId, chatId, replaceSource]);
+  }, [
+    workspaceKey,
+    sessionId,
+    source,
+    protocol,
+    radioId,
+    chatId,
+    replaceSource,
+  ]);
 
   const handleCopyLua = useCallback(async () => {
     try {
@@ -1793,11 +1935,7 @@ export function EditorApp() {
           e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy =
           e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
-        applyToRecords(
-          selectedIds,
-          (current, record) => translateRecord(current, record, dx, dy, zone),
-          { history: false },
-        );
+        handleTranslate(selectedIds, dx, dy);
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -1831,8 +1969,7 @@ export function EditorApp() {
     handlePasteElements,
     captureSelectionTexts,
     markDirty,
-    applyToRecords,
-    zone,
+    handleTranslate,
     beginTransient,
     endTransient,
     handleSave,
@@ -1880,9 +2017,7 @@ export function EditorApp() {
       <AppChrome
         surface="layout"
         subtitle={subtitle}
-        generateHref={
-          chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"
-        }
+        generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
         layoutHref={layoutSelfHref}
         actions={
           <>
@@ -1922,6 +2057,13 @@ export function EditorApp() {
                   id: "import",
                   label: "Import Lua…",
                   onClick: () => setPasteOpen(true),
+                },
+                {
+                  id: "rebuild-from-scene",
+                  label: "Rebuild Lua from scene…",
+                  disabled: !sceneAssist,
+                  separatorBefore: true,
+                  onClick: handleRebuildLuaFromScene,
                 },
                 {
                   id: "new",
@@ -2069,7 +2211,7 @@ export function EditorApp() {
           <button
             type="button"
             className={styles.calloutLink}
-            onClick={() => openProjectById(lastProjectOffer.id)}
+            onClick={() => void openProjectById(lastProjectOffer.id)}
           >
             Open last
           </button>
@@ -2236,11 +2378,9 @@ export function EditorApp() {
               markDirty();
             }}
             onPatchRecord={handlePatchRecord}
-            onTranslateSelected={(dx, dy) => {
-              applyToRecords(selectedIds, (current, record) =>
-                translateRecord(current, record, dx, dy, zone),
-              );
-            }}
+            onTranslateSelected={(dx, dy) =>
+              handleTranslate(selectedIds, dx, dy)
+            }
             onSetColor={handleSetColor}
             onSetColorSelected={(color) => {
               applyToRecords(selectedIds, (current, record) =>
@@ -2388,14 +2528,60 @@ export function EditorApp() {
         onClose={() => setProjectModal(null)}
         onSave={handleSaveNamed}
         onOpen={openProjectById}
-        onRename={(id, name) => {
+        onRename={async (id, name, appDataFiles) => {
+          const primaryAppDataFile = appDataFiles?.[0];
+          if (primaryAppDataFile) {
+            try {
+              const json = await readAppDataProject(primaryAppDataFile);
+              const parsed = parseProjectPack(JSON.parse(json) as unknown);
+              if (!("error" in parsed)) restoreProjectPack(parsed.pack);
+            } catch {
+              /* fall back to browser copy */
+            }
+          }
           renameProject(id, name);
+          if (await isTauriDesktop()) {
+            const pack = exportProjectPack(id);
+            if (pack) {
+              const result = await saveProjectPackToAppData(
+                id,
+                JSON.stringify(pack, null, 2),
+              );
+              if ("error" in result) {
+                setLiveTelemetryNote(
+                  `Rename saved in browser, but app-data sync failed: ${result.error}`,
+                );
+              } else {
+                for (const fileName of appDataFiles ?? []) {
+                  if (fileName !== appDataProjectFileName(id)) {
+                    await deleteAppDataProject(fileName).catch(() => undefined);
+                  }
+                }
+              }
+            }
+          }
         }}
-        onDelete={(id) => {
+        onDelete={async (id, appDataFiles) => {
           deleteProject(id);
           if (projectId === id) setProjectId(null);
+          if (await isTauriDesktop()) {
+            try {
+              const files = appDataFiles?.length
+                ? appDataFiles
+                : [appDataProjectFileName(id)];
+              for (const fileName of files) {
+                await deleteAppDataProject(fileName);
+              }
+            } catch (err) {
+              setLiveTelemetryNote(
+                `Deleted browser copy, but app-data delete failed: ${
+                  err instanceof Error ? err.message : String(err)
+                }`,
+              );
+            }
+          }
         }}
-        onImported={(id) => openProjectById(id)}
+        onImported={(id) => void openProjectById(id)}
       />
 
       {pasteOpen && (

@@ -18,18 +18,45 @@ export function createSseResponse(
 
 export function createSseStream(
   handler: (send: (data: object) => void) => Promise<void>,
+  options?: { signal?: AbortSignal },
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream({
     async start(controller) {
-      const send = (data: object) => {
-        controller.enqueue(encoder.encode(sseEncode(data)));
+      let closed = false;
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
       };
+
+      const send = (data: object) => {
+        if (closed || options?.signal?.aborted) return;
+        try {
+          controller.enqueue(encoder.encode(sseEncode(data)));
+        } catch {
+          closed = true;
+        }
+      };
+
+      const onAbort = () => {
+        close();
+      };
+      options?.signal?.addEventListener("abort", onAbort);
+
       try {
         await handler(send);
       } finally {
-        controller.close();
+        options?.signal?.removeEventListener("abort", onAbort);
+        close();
       }
+    },
+    cancel() {
+      // Client disconnected — request.signal also aborts when applicable.
     },
   });
 }

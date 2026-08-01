@@ -31,6 +31,8 @@ interface InstallWizardProps {
   lcdW?: number;
   lcdH?: number;
   touch?: boolean;
+  /** Known blocking validation errors; direct SD copy must not bypass them. */
+  validationErrorCount?: number;
   /** Persist dirty Layout edits before packaging (returns workspace key). */
   onBeforeDownload?: () => Promise<string | null | undefined>;
   /** Jump to editor validation / first issue when download is blocked. */
@@ -67,6 +69,7 @@ export function InstallWizard({
   lcdW = 480,
   lcdH = 320,
   touch = true,
+  validationErrorCount = 0,
   onBeforeDownload,
   onReviewValidation,
   embedded = false,
@@ -121,19 +124,29 @@ export function InstallWizard({
     }
   }, []);
 
-  const fetchPackageFiles = useCallback(async (): Promise<SdFile[]> => {
-    const params = new URLSearchParams();
-    if (workspaceKey) params.set("workspaceKey", workspaceKey);
-    else if (sessionId) params.set("sessionId", sessionId);
-    else return [];
-    const res = await fetch(`/api/widget-package-files?${params}`);
-    if (!res.ok) return [];
-    const data = (await res.json()) as { files?: SdFile[] };
-    return Array.isArray(data.files) ? data.files : [];
-  }, [workspaceKey, sessionId]);
+  const fetchPackageFiles = useCallback(
+    async (preferredWorkspaceKey?: string | null): Promise<SdFile[]> => {
+      const params = new URLSearchParams();
+      if (preferredWorkspaceKey)
+        params.set("workspaceKey", preferredWorkspaceKey);
+      else if (sessionId) params.set("sessionId", sessionId);
+      else return [];
+      const res = await fetch(`/api/widget-package-files?${params}`);
+      if (!res.ok) return [];
+      const data = (await res.json()) as { files?: SdFile[] };
+      return Array.isArray(data.files) ? data.files : [];
+    },
+    [sessionId],
+  );
 
   const copyToSd = useCallback(async () => {
     if (!sdPath) return;
+    if (validationErrorCount > 0) {
+      setStatus(
+        `Copy blocked — fix ${validationErrorCount} validation error${validationErrorCount === 1 ? "" : "s"} first.`,
+      );
+      return;
+    }
     if (!luaSource || !widgetName) {
       setStatus("No widget Lua loaded to copy.");
       return;
@@ -142,31 +155,37 @@ export function InstallWizard({
     setStatus(null);
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      let files = await fetchPackageFiles();
-      if (files.length === 0) {
-        files = [
-          {
-            path: `WIDGETS/${widgetName}/main.lua`,
-            content: luaSource,
-            encoding: "utf8",
-          },
-        ];
-        if (installMd?.trim()) {
-          files.push({
-            path: `WIDGETS/${widgetName}/INSTALL.md`,
-            content: installMd,
-            encoding: "utf8",
-          });
-        }
-        if (extraFiles?.length) {
-          files = [...files, ...extraFiles];
-        }
-      } else if (extraFiles?.length) {
+      let key = workspaceKey;
+      if (onBeforeDownload) {
+        const savedKey = await onBeforeDownload();
+        if (savedKey) key = savedKey;
+      }
+
+      let files = await fetchPackageFiles(key);
+      if (extraFiles?.length) {
         const existing = new Set(files.map((f) => f.path));
         for (const extra of extraFiles) {
           if (!existing.has(extra.path)) files.push(extra);
         }
       }
+
+      const mainPath = `WIDGETS/${widgetName}/main.lua`;
+      const installPath = `WIDGETS/${widgetName}/INSTALL.md`;
+      files = files.filter((file) => {
+        const path = file.path.replaceAll("\\", "/");
+        return (
+          path !== mainPath && (!installMd?.trim() || path !== installPath)
+        );
+      });
+      files.push({ path: mainPath, content: luaSource, encoding: "utf8" });
+      if (installMd?.trim()) {
+        files.push({
+          path: installPath,
+          content: installMd,
+          encoding: "utf8",
+        });
+      }
+
       const result = await invoke<{ dest: string; files?: string[] }>(
         "install_widget_to_sd",
         {
@@ -189,7 +208,17 @@ export function InstallWizard({
     } finally {
       setBusy(false);
     }
-  }, [sdPath, luaSource, widgetName, installMd, fetchPackageFiles, extraFiles]);
+  }, [
+    sdPath,
+    validationErrorCount,
+    luaSource,
+    widgetName,
+    workspaceKey,
+    onBeforeDownload,
+    fetchPackageFiles,
+    extraFiles,
+    installMd,
+  ]);
 
   const downloadZip = useCallback(async () => {
     setBusy(true);
@@ -217,7 +246,9 @@ export function InstallWizard({
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         if (res.status === 422) {
-          setValidationFailure(parseDownloadValidationFailure(body, res.status));
+          setValidationFailure(
+            parseDownloadValidationFailure(body, res.status),
+          );
           setStatus("Download blocked — see validation details");
           return;
         }
