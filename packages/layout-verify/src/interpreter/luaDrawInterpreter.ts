@@ -38,40 +38,48 @@ export type EdgeColor =
   | "MAGENTA"
   | "DARKGREY";
 
+/**
+ * EdgeTX fixed color constants (radio/src/gui/colorlcd/colors.cpp lcdColorTable).
+ * Keep these aligned with firmware so approximate preview matches WASM/radio panels.
+ */
 export const COLOR_MAP: Record<EdgeColor, string> = {
   WHITE: "#ffffff",
   BLACK: "#000000",
-  GREY: "#808080",
-  LIGHTGREY: "#d3d3d3",
+  GREY: "#606060",
+  LIGHTGREY: "#c0c0c0",
   RED: "#ff0000",
-  LIGHTRED: "#ff6666",
-  DARKRED: "#8b0000",
-  GREEN: "#008000",
-  BRIGHTGREEN: "#00ff00",
-  DARKGREEN: "#006400",
+  LIGHTRED: "#ff9999",
+  DARKRED: "#a00000",
+  GREEN: "#00ff00",
+  BRIGHTGREEN: "#00b43c",
+  DARKGREEN: "#00a000",
   BLUE: "#0000ff",
-  DARKBLUE: "#00008b",
+  DARKBLUE: "#0000a0",
   YELLOW: "#ffff00",
-  ORANGE: "#ffa500",
+  ORANGE: "#e5641e",
   LIME: "#88ff00",
   CYAN: "#00ffff",
-  MAGENTA: "#ff00ff",
+  MAGENTA: "#c000c0",
   DARKGREY: "#404040",
 };
 
-/** EdgeTX theme constants — preview approximations of default dark theme. */
+/**
+ * EdgeTX default theme constants (colors.cpp defaultColors / lcdColorTable).
+ * Theme skins can override these on the radio; defaults match stock firmware.
+ */
 export const THEME_COLOR_MAP: Record<string, string> = {
-  COLOR_THEME_PRIMARY1: "#2a3a5c",
-  COLOR_THEME_PRIMARY2: "#1a1a24",
-  COLOR_THEME_PRIMARY3: "#3a3a48",
-  COLOR_THEME_SECONDARY1: "#e0e0e8",
-  COLOR_THEME_SECONDARY2: "#a0a0b0",
-  COLOR_THEME_SECONDARY3: "#484858",
-  COLOR_THEME_FOCUS: "#4a90d9",
-  COLOR_THEME_ACTIVE: "#5ab0ff",
-  COLOR_THEME_WARNING: "#e8a020",
-  COLOR_THEME_DISABLED: "#606068",
-  CUSTOM_COLOR: "#ff8800",
+  COLOR_THEME_PRIMARY1: "#000000",
+  COLOR_THEME_PRIMARY2: "#ffffff",
+  COLOR_THEME_PRIMARY3: "#0c3f66",
+  COLOR_THEME_SECONDARY1: "#125e99",
+  COLOR_THEME_SECONDARY2: "#b6e0f2",
+  COLOR_THEME_SECONDARY3: "#e4eef2",
+  COLOR_THEME_FOCUS: "#14a1e5",
+  COLOR_THEME_EDIT: "#009909",
+  COLOR_THEME_ACTIVE: "#ffde00",
+  COLOR_THEME_WARNING: "#e00000",
+  COLOR_THEME_DISABLED: "#8c8c8c",
+  CUSTOM_COLOR: "#aa5500",
 };
 
 export type PreviewDrawCommand = DrawRecord;
@@ -965,6 +973,10 @@ function resolveTextTemplate(
     /^tostring\s*\(/.test(t) ||
     /^string\.format\s*\(/.test(t) ||
     /^truncStr\s*\(/.test(t) ||
+    /^fmtNum\s*\(/.test(t) ||
+    /^fmtDuration\s*\(/.test(t) ||
+    /^fmtTimer\s*\(/.test(t) ||
+    /^telem\s*\(/.test(t) ||
     /\band\s+.+\s+or\s+/.test(t)
   ) {
     const value = evalValue(t, ctx, dims, srcMap, mock);
@@ -1629,8 +1641,20 @@ export function applyMockToCommands(
     }
 
     const fillParsed = parseLcdCallWithSource(line, "drawFilledRectangle");
-    if (fillParsed?.args.length === 5) {
+    if (
+      fillParsed &&
+      fillParsed.args.length >= 5 &&
+      fillParsed.args.length <= 6
+    ) {
       const fillArgs = fillParsed.args;
+      const opacityRaw =
+        fillArgs.length >= 6
+          ? evalNumberExpr(fillArgs[5]!, ctx, evalDims)
+          : undefined;
+      const opacity =
+        opacityRaw != null && Number.isFinite(opacityRaw)
+          ? Math.max(0, Math.min(15, Math.round(opacityRaw)))
+          : undefined;
       commands.push(
         attach(
           {
@@ -1640,6 +1664,7 @@ export function applyMockToCommands(
             w: evalNumberExpr(fillArgs[2]!, ctx, evalDims),
             h: evalNumberExpr(fillArgs[3]!, ctx, evalDims),
             color: resolveDrawColor(fillArgs[4]!, rgbMap, ctx),
+            ...(opacity != null ? { opacity } : {}),
           },
           fillParsed,
         ),

@@ -22,6 +22,14 @@ function degToRad(deg: number): number {
 }
 
 /**
+ * EdgeTX arc angles: 0° = up, increasing clockwise.
+ * Canvas2D: 0° = east (positive x), clockwise with y-down.
+ */
+export function edgeTxDegToCanvasRad(deg: number): number {
+  return degToRad(deg - 90);
+}
+
+/**
  * Preview text metrics matching `bold ${fontSize}px monospace` with top baseline.
  * Prefer live measureText when a 2D context is available; otherwise fall back to
  * the EdgeTX advance table (SML=6 / MID=9 / DBL=12).
@@ -72,10 +80,17 @@ export function renderPreviewCommands(
         ctx.fillStyle = cmd.color ?? "#000000";
         ctx.fillRect(0, 0, lcdW, lcdH);
         break;
-      case "filledRect":
+      case "filledRect": {
         ctx.fillStyle = cmd.color ?? "#808080";
+        const prevAlpha = ctx.globalAlpha;
+        if (cmd.opacity != null) {
+          ctx.globalAlpha =
+            prevAlpha * Math.max(0, Math.min(1, cmd.opacity / 15));
+        }
         ctx.fillRect(cmd.x ?? 0, cmd.y ?? 0, cmd.w ?? 0, cmd.h ?? 0);
+        ctx.globalAlpha = prevAlpha;
         break;
+      }
       case "rect":
         ctx.strokeStyle = cmd.color ?? "#ffffff";
         ctx.lineWidth = 1;
@@ -166,8 +181,8 @@ export function renderPreviewCommands(
           cx,
           cy,
           r,
-          degToRad(cmd.startAngle ?? 0),
-          degToRad(cmd.endAngle ?? 360),
+          edgeTxDegToCanvasRad(cmd.startAngle ?? 0),
+          edgeTxDegToCanvasRad(cmd.endAngle ?? 360),
         );
         ctx.stroke();
         break;
@@ -177,20 +192,16 @@ export function renderPreviewCommands(
         const cy = cmd.y ?? 0;
         const rOut = Math.max(0, cmd.rOut ?? 0);
         const rIn = Math.max(0, Math.min(rOut, cmd.rIn ?? 0));
-        const midR = (rOut + rIn) / 2;
-        const width = Math.max(1, rOut - rIn);
-        ctx.strokeStyle = cmd.color ?? "#00ffff";
-        ctx.lineWidth = width;
-        ctx.lineCap = "butt";
+        const start = edgeTxDegToCanvasRad(cmd.startAngle ?? 0);
+        const end = edgeTxDegToCanvasRad(cmd.endAngle ?? 360);
+        ctx.fillStyle = cmd.color ?? "#00ffff";
         ctx.beginPath();
-        ctx.arc(
-          cx,
-          cy,
-          midR,
-          degToRad(cmd.startAngle ?? 0),
-          degToRad(cmd.endAngle ?? 360),
-        );
-        ctx.stroke();
+        ctx.arc(cx, cy, rOut, start, end, false);
+        if (rIn > 0) {
+          ctx.arc(cx, cy, rIn, end, start, true);
+        }
+        ctx.closePath();
+        ctx.fill();
         break;
       }
     }

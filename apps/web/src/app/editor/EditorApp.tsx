@@ -300,7 +300,11 @@ export function EditorApp() {
   const [modelPngName, setModelPngName] = useState<string | null>(null);
   const [showSnapGuides, setShowSnapGuides] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const [inlineSim, setInlineSim] = useState(false);
+  const [inlineSim, setInlineSim] = useState(() =>
+    hasColorWasmSim(searchParams.get("radioId") ?? DEFAULT_RADIO_ID),
+  );
+  /** True once radio WASM pixels actually ran this session (inline or modal). */
+  const [simSeenThisSession, setSimSeenThisSession] = useState(false);
   const elementClipboardRef = useRef<string[]>([]);
   const selectionTextsRef = useRef<string[]>([]);
   const pendingSelectionRematchRef = useRef(false);
@@ -371,6 +375,9 @@ export function EditorApp() {
       warnings: parseMeta.warnings,
     };
   }, [records]);
+
+  const geometryEditsLocked =
+    previewMeta.unreliable && !(inlineSim && hasColorWasmSim(radioId));
 
   const zone = useMemo((): ZoneOffset => {
     const dims = resolvePreviewDimensions(
@@ -1931,6 +1938,7 @@ export function EditorApp() {
       ) {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (geometryEditsLocked) return;
         e.preventDefault();
         if (!nudgeActive.current) {
           nudgeActive.current = true;
@@ -1981,12 +1989,28 @@ export function EditorApp() {
     handleSave,
     saving,
     valid,
+    geometryEditsLocked,
   ]);
 
   const openSim = useCallback(() => {
     setSimReloadKey((k) => k + 1);
     setSimOpen(true);
   }, []);
+
+  const handleSimRunningChange = useCallback((running: boolean) => {
+    if (running) setSimSeenThisSession(true);
+  }, []);
+
+  const handleInlineSimChange = useCallback((enabled: boolean) => {
+    setInlineSim(enabled);
+  }, []);
+
+  const usesBitmap = useMemo(
+    () => /drawBitmap|Bitmap\.open/.test(source),
+    [source],
+  );
+
+  const needsSimVerifyNudge = hasColorWasmSim(radioId) && !simSeenThisSession;
 
   const layoutSelfHref = useMemo(() => {
     const params = new URLSearchParams({ protocol });
@@ -2118,24 +2142,44 @@ export function EditorApp() {
       {(previewMeta.skippedTextCount > 0 || previewMeta.unreliable) && (
         <div className={styles.bannerStack}>
           <div className={styles.warnBanner} role="status">
-            <strong>Canvas preview may differ from the radio</strong>
+            <strong>
+              {inlineSim && hasColorWasmSim(radioId)
+                ? "Layout overlay may miss some draws"
+                : "Approximate preview may differ from the radio"}
+            </strong>
             <ul>
               {previewMeta.skippedTextCount > 0 && (
                 <li>
                   {previewMeta.skippedTextCount} text draw(s) could not be
-                  evaluated statically — use Run in simulator to verify.
+                  evaluated for selection — they still appear in radio preview;
+                  edit those in Source.
                 </li>
               )}
               {previewMeta.unreliable && (
                 <li>
-                  Gauge layout could not be fully resolved — verify in the WASM
-                  simulator.
+                  Gauge/annulus layout could not be fully resolved in the
+                  overlay — trust radio preview pixels.
+                </li>
+              )}
+              {!(inlineSim && hasColorWasmSim(radioId)) && (
+                <li>
+                  Turn on View → Show radio preview (or Simulator) for EdgeTX
+                  pixels.
                 </li>
               )}
             </ul>
           </div>
         </div>
       )}
+
+      {usesBitmap && !modelPngBytes && hasColorWasmSim(radioId) ? (
+        <div className={styles.bannerStack}>
+          <div className={styles.warnBanner} role="status">
+            This widget draws a model bitmap — upload a PNG via View → Upload
+            model PNG… so radio preview matches the radio SD image.
+          </div>
+        </div>
+      ) : null}
 
       <EditorToolbar
         canUndo={canUndo}
@@ -2191,7 +2235,7 @@ export function EditorApp() {
         snapEnabled={snapEnabled}
         onSnapEnabledChange={setSnapEnabled}
         inlineSim={inlineSim}
-        onInlineSimChange={setInlineSim}
+        onInlineSimChange={handleInlineSimChange}
         onAlign={handleAlign}
         onDistribute={handleDistribute}
         canAlign={selectedIds.length >= 1}
@@ -2341,6 +2385,7 @@ export function EditorApp() {
               }
               layoutProfileId={layoutProfileId}
               onContextMenu={openCanvasContextMenu}
+              geometryEditsLocked={geometryEditsLocked}
               inlineSim={
                 inlineSim && hasColorWasmSim(radioId) ? (
                   <RadioSimPreview
@@ -2351,6 +2396,7 @@ export function EditorApp() {
                     active={inlineSim}
                     fillHost
                     modelPng={modelPngBytes}
+                    onRunningChange={handleSimRunningChange}
                   />
                 ) : null
               }
@@ -2490,6 +2536,8 @@ export function EditorApp() {
         validationErrorCount={
           validationIssues.filter((i) => i.severity === "error").length
         }
+        needsSimVerifyNudge={needsSimVerifyNudge}
+        onVerifyInSim={openSim}
         onBeforeDownload={async () => {
           if (dirty || (!workspaceKey && !sessionId)) {
             return handleSave();
@@ -2524,6 +2572,7 @@ export function EditorApp() {
         layoutProfileId={layoutProfileId}
         radioId={radioId}
         modelPng={modelPngBytes}
+        onRunningChange={handleSimRunningChange}
       />
 
       <ProjectLibraryModal

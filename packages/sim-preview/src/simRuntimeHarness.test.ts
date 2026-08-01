@@ -19,6 +19,13 @@ const EXAMPLES = join(ROOT, "examples");
 const GOLD_EXAMPLES = [
   "tx15-minimal-dashboard.lua",
   "tx15-bfdash8f-whoop-dashboard.lua",
+  "tx15-model-hero-dashboard.lua",
+  "tx15-rotorflight-heli.lua",
+  "tx15-rotorflight-sections.lua",
+  "tx15-strip-board.lua",
+  "tx15-quad-overview.lua",
+  "tx15-hero-minimal.lua",
+  "tx15-telemetry-dense.lua",
 ];
 
 /** Stable fingerprint of interpreter draw records for regression goldens. */
@@ -94,8 +101,7 @@ describe("interpreter golden contracts (always run)", () => {
         `${file}: expected visible draw kinds`,
       );
       assert.equal(
-        isInterpretationReliable(records, meta.skippedTextCount) ||
-          meta.skippedTextCount === 0,
+        isInterpretationReliable(records, meta.skippedTextCount),
         true,
         `${file}: unreliable interpretation (skipped=${meta.skippedTextCount})`,
       );
@@ -133,8 +139,7 @@ describe("interpreter↔WASM contract gate", () => {
         const records = parseLuaToDrawCommands(source, EDITOR_PREVIEW_SCENARIO);
         const meta = getLastPreviewParseMeta();
         assert.ok(
-          isInterpretationReliable(records, meta.skippedTextCount) ||
-            meta.skippedTextCount === 0,
+          isInterpretationReliable(records, meta.skippedTextCount),
           `${file}: interpreter must be reliable when WASM is available`,
         );
         assert.ok(records.length > 3);

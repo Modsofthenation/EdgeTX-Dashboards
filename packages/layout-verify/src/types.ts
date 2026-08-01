@@ -48,6 +48,8 @@ export interface DrawRecord {
   textAlign?: "left" | "center" | "right";
   x2?: number;
   y2?: number;
+  /** EdgeTX drawFilledRectangle 6th arg (0=transparent … 15=opaque). */
+  opacity?: number;
   placeholder?: "model";
   /** Original lcd.* line when available (1-based, full file) */
   sourceLine?: number;

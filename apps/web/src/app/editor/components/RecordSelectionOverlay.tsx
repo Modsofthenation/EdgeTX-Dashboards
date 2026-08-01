@@ -47,6 +47,11 @@ interface RecordSelectionOverlayProps {
     clientY: number;
     hitId: string | null;
   }) => void;
+  /**
+   * When true, selection still works but drag/resize are disabled
+   * (approximate overlay is unreliable — edit in Source or enable radio preview).
+   */
+  geometryEditsLocked?: boolean;
 }
 
 function screenToZone(
@@ -97,6 +102,7 @@ export function RecordSelectionOverlay({
   snapEnabled = true,
   onSnapGuidesChange,
   onContextMenu,
+  geometryEditsLocked = false,
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<DragSession | null>(null);
   const [marquee, setMarquee] = useState<BoundingBox | null>(null);
@@ -228,6 +234,8 @@ export function RecordSelectionOverlay({
             : [hit.id!];
         onSelect(nextIds);
 
+        if (geometryEditsLocked) return;
+
         onGestureStart?.();
         dragRef.current = {
           mode: "move",
@@ -244,6 +252,7 @@ export function RecordSelectionOverlay({
       }
 
       if (!event.shiftKey) onSelect([]);
+      if (geometryEditsLocked) return;
       onGestureStart?.();
       dragRef.current = {
         mode: "marquee",
@@ -269,6 +278,7 @@ export function RecordSelectionOverlay({
       zone,
       onGestureStart,
       measureText,
+      geometryEditsLocked,
     ],
   );
 
@@ -402,7 +412,7 @@ export function RecordSelectionOverlay({
       event: React.PointerEvent,
       record: DocumentRecord,
     ) => {
-      if (!layout) return;
+      if (!layout || geometryEditsLocked) return;
       const box = bboxForRecordInZone(record, zone, measureText);
       if (!box) return;
       onGestureStart?.();
@@ -421,7 +431,7 @@ export function RecordSelectionOverlay({
       };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [layout, zone, onGestureStart, measureText],
+    [layout, zone, onGestureStart, measureText, geometryEditsLocked],
   );
 
   const selectedBoxes = useMemo(() => {
@@ -482,7 +492,7 @@ export function RecordSelectionOverlay({
               className={`${styles.selectionBox} ${styles.selectionBoxActive}`}
               style={{ left, top, width, height }}
             />
-            {isRectLike(record) && (
+            {isRectLike(record) && !geometryEditsLocked && (
               <TransformHandles
                 box={box}
                 scale={scale}

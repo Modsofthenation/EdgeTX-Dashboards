@@ -47,6 +47,15 @@ interface RadioSimPreviewProps {
   onInteractiveControls?: (
     controls: { openInteractive: () => void } | null,
   ) => void;
+  /** Fires when the WASM runtime reaches (or leaves) the running phase. */
+  onRunningChange?: (running: boolean) => void;
+}
+
+declare global {
+  interface Window {
+    /** E2E / debug: replay widget fullscreen double-tap for inline radio preview. */
+    __edgetxEnterWidgetFullscreen?: () => void;
+  }
 }
 
 function SimInteractiveOverlay({
@@ -174,6 +183,7 @@ export function RadioSimPreview({
   fillHost = false,
   modelPng = null,
   onInteractiveControls,
+  onRunningChange,
 }: RadioSimPreviewProps) {
   const {
     state,
@@ -285,6 +295,21 @@ export function RadioSimPreview({
   }, [active, state.phase, openInteractive, onInteractiveControls]);
 
   useEffect(() => {
+    onRunningChange?.(active && state.phase === "running");
+    return () => onRunningChange?.(false);
+  }, [active, state.phase, onRunningChange]);
+
+  useEffect(() => {
+    if (!fillHost || !active) return;
+    window.__edgetxEnterWidgetFullscreen = () => {
+      enterWidgetFullscreen();
+    };
+    return () => {
+      delete window.__edgetxEnterWidgetFullscreen;
+    };
+  }, [fillHost, active, enterWidgetFullscreen]);
+
+  useEffect(() => {
     if (!active) setOverlayOpen(false);
   }, [active]);
 
@@ -381,7 +406,7 @@ export function RadioSimPreview({
         .catch(() => {
           // keep desired source; next running/source transition retries.
         });
-    }, 220);
+    }, 350);
 
     return () => window.clearTimeout(timer);
   }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);
@@ -457,6 +482,9 @@ export function RadioSimPreview({
         zone={frameZone}
         allowUpscale={fillHost}
         ignoreChatScrollPause={fillHost}
+        canvasTestId={
+          fillHost ? "editor-radio-preview" : "edgetx-widget-preview"
+        }
       />
 
       {overlayOpen && radioProfile && (

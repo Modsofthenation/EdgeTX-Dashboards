@@ -268,7 +268,6 @@ return {
 }
 `;
 
-
 const MONOLITH_BOARDS: Partial<Record<LayoutTemplateBoardId, string>> = {
   "battery-tool": BATTERY_TOOL_BOARD,
   "flight-logger": FLIGHT_LOGGER_BOARD,
@@ -294,6 +293,10 @@ const BOARD_IDS: Record<LayoutTemplateBoardId, true> = {
   "battery-tool": true,
   "flight-logger": true,
 };
+
+export function getLayoutTemplateBoardIds(): LayoutTemplateBoardId[] {
+  return Object.keys(BOARD_IDS) as LayoutTemplateBoardId[];
+}
 
 /** Resolve Lua source for a non-RF gallery layout prefab. */
 export function getLayoutTemplateBoardSource(

@@ -30,6 +30,9 @@ interface ExportInstallModalProps {
   validationErrorCount?: number;
   onBeforeDownload?: () => Promise<string | null | undefined>;
   onReviewValidation?: () => void;
+  /** Soft nudge when the user has not opened radio WASM this session. */
+  needsSimVerifyNudge?: boolean;
+  onVerifyInSim?: () => void;
 }
 
 export function ExportInstallModal({
@@ -52,6 +55,8 @@ export function ExportInstallModal({
   validationErrorCount = 0,
   onBeforeDownload,
   onReviewValidation,
+  needsSimVerifyNudge = false,
+  onVerifyInSim,
 }: ExportInstallModalProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -104,6 +109,27 @@ export function ExportInstallModal({
           your SD card — download a zip, or copy straight to the card in the
           desktop app.
         </p>
+
+        {needsSimVerifyNudge ? (
+          <div className={styles.exportValidationBanner} role="status">
+            <p>
+              You have not checked radio preview this session. Approximate
+              layout pixels can differ from EdgeTX — verify before flying.
+            </p>
+            {onVerifyInSim ? (
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={() => {
+                  onVerifyInSim();
+                  onClose();
+                }}
+              >
+                Open simulator
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {validationErrorCount > 0 ? (
           <div className={styles.exportValidationBanner} role="status">

@@ -17,7 +17,7 @@ EdgeTX **Lua widgets** run on radio transmitters (e.g. RadioMaster TX15) and dra
 
 1. **Generate** — `POST /api/generate` opens an SSE stream. The generator agent writes `generated/<name>/main.lua`, validates it, and the route emits a single terminal `done` via `emitRunCompletion()`.
 2. **Refine** — `POST /api/refine` continues an existing session with follow-up prompts.
-3. **Preview** — `luaPreviewEngine` parses a subset of Lua and evaluates draw calls against mock telemetry (no radio required).
+3. **Preview** — Home Preview uses EdgeTX WASM when firmware is mapped for the radio; otherwise `luaPreviewEngine` parses a subset of Lua against mock telemetry. The layout editor defaults to radio WASM pixels with a parser overlay for selection.
 4. **Download** — `GET /api/download` returns a zip with `WIDGETS/<name>/main.lua` and generated `INSTALL.md`.
 
 ## Glossary

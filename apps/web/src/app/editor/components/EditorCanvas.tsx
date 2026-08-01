@@ -44,6 +44,8 @@ interface EditorCanvasProps {
   layoutProfileId?: string;
   /** Optional WASM preview layered under the selection overlay. */
   inlineSim?: React.ReactNode;
+  /** Disable drag/resize when approximate overlay is unreliable. */
+  geometryEditsLocked?: boolean;
   onContextMenu?: (info: {
     clientX: number;
     clientY: number;
@@ -67,6 +69,7 @@ export function EditorCanvas({
   scenarioOverride,
   layoutProfileId = "tx15",
   inlineSim = null,
+  geometryEditsLocked = false,
   onContextMenu,
 }: EditorCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -145,7 +148,9 @@ export function EditorCanvas({
     if (!(event.ctrlKey || event.metaKey)) return;
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-    setZoom((z) => Math.min(4, Math.max(0.25, Number((z * factor).toFixed(3)))));
+    setZoom((z) =>
+      Math.min(4, Math.max(0.25, Number((z * factor).toFixed(3)))),
+    );
   }, []);
 
   const onPointerDownPan = useCallback(
@@ -182,22 +187,37 @@ export function EditorCanvas({
   }, []);
 
   const showParserPreview = !inlineSim || liveDrag != null;
+  const hasRadioPreview = Boolean(inlineSim);
 
   return (
-    <div className={styles.canvasStage}>
+    <div className={styles.canvasStage} data-testid="editor-canvas-stage">
       <div
         className={styles.simWrapper}
         ref={frameRef}
+        data-testid="editor-canvas-frame"
+        data-preview-mode={
+          hasRadioPreview
+            ? liveDrag
+              ? "editing-overlay"
+              : "radio"
+            : "approximate"
+        }
         onWheel={onWheel}
         onPointerDown={onPointerDownPan}
         onPointerMove={onPointerMovePan}
         onPointerUp={onPointerUpPan}
         onPointerCancel={onPointerUpPan}
       >
-        {inlineSim ? (
+        {inlineSim && layout ? (
           <div
             className={styles.inlineSimHost}
             data-dimmed={liveDrag ? "true" : undefined}
+            style={{
+              left: layout.offsetX,
+              top: layout.offsetY,
+              width: layout.drawW,
+              height: layout.drawH,
+            }}
           >
             {inlineSim}
           </div>
@@ -267,9 +287,10 @@ export function EditorCanvas({
           snapEnabled={snapEnabled}
           onSnapGuidesChange={setActiveGuides}
           onContextMenu={onContextMenu}
+          geometryEditsLocked={geometryEditsLocked}
         />
       </div>
-      <div className={styles.canvasMeta}>
+      <div className={styles.canvasMeta} data-testid="editor-canvas-meta">
         <span>
           {previewDims.zoneW} × {previewDims.zoneH}
         </span>
@@ -299,18 +320,35 @@ export function EditorCanvas({
           Ctrl+wheel zoom · Space-drag pan · Drag empty to marquee · Drag
           sidebar edges to resize
         </span>
-        {inlineSim ? (
+        {hasRadioPreview ? (
           <>
             <span className={styles.canvasHint}>·</span>
-            <span className={styles.canvasHint}>Inline radio sim</span>
+            <span
+              className={styles.canvasHint}
+              data-testid="editor-preview-mode-label"
+            >
+              {liveDrag ? "Editing overlay" : "Radio preview"}
+            </span>
           </>
-        ) : null}
-        {records.length === 0 && !inlineSim ? (
+        ) : (
+          <>
+            <span className={styles.canvasHint}>·</span>
+            <span
+              className={styles.canvasHint}
+              data-testid="editor-preview-mode-label"
+            >
+              {geometryEditsLocked
+                ? "Approximate preview · geometry locked"
+                : "Approximate preview"}
+            </span>
+          </>
+        )}
+        {records.length === 0 && !hasRadioPreview ? (
           <>
             <span className={styles.canvasHint}>·</span>
             <span className={styles.canvasHint}>
-              Empty board — Insert elements, or View → Inline radio sim / Run in
-              simulator for pixels
+              Empty board — Insert elements, or View → Radio preview for EdgeTX
+              pixels
             </span>
           </>
         ) : null}
