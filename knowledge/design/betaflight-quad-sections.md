@@ -6,16 +6,16 @@ Modular dashboard blocks for **whoop**, **freestyle**, and **dense CRSF** boards
 
 ## Telemetry requirements
 
-| Prefab need   | Catalog name | Notes                                      |
-| ------------- | ------------ | ------------------------------------------ |
-| Link quality  | `RQLY`       | Standard CRSF                              |
-| RSSI          | `1RSS`       | Optional secondary link                    |
-| Pack voltage  | `RxBt`       | Standard                                   |
-| Current       | `Curr`       | Standard                                   |
-| Capacity used | `Capa`       | When FC reports mAh                        |
-| Attitude      | `Ptch`/`Roll`| Needs attitude telemetry via CRSF          |
-| GPS           | `Alt`/`GSpd`/`Sats` | Requires GPS on the model            |
-| Flight mode   | `FM`         | Used for armed / mode footer               |
+| Prefab need   | Catalog name        | Notes                             |
+| ------------- | ------------------- | --------------------------------- |
+| Link quality  | `RQLY`              | Standard CRSF                     |
+| RSSI          | `1RSS`              | Optional secondary link           |
+| Pack voltage  | `RxBt`              | Standard                          |
+| Current       | `Curr`              | Standard                          |
+| Capacity used | `Capa`              | When FC reports mAh               |
+| Attitude      | `Ptch`/`Roll`       | Needs attitude telemetry via CRSF |
+| GPS           | `Alt`/`GSpd`/`Sats` | Requires GPS on the model         |
+| Flight mode   | `FM`                | Used for armed / mode footer      |
 
 Configure model **timer 1** for timer heroes/cards.
 

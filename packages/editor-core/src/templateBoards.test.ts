@@ -31,7 +31,10 @@ describe("templateBoards", () => {
       );
       // More than header-only stub
       const drawCount = (source.match(/lcd\.draw/g) ?? []).length;
-      assert.ok(drawCount >= 6, `${id} expected richer board, got ${drawCount} draws`);
+      assert.ok(
+        drawCount >= 6,
+        `${id} expected richer board, got ${drawCount} draws`,
+      );
     }
   });
 

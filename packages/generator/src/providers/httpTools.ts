@@ -1,10 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, normalize, relative, resolve } from "node:path";
 import type { SDKCustomTool } from "@cursor/sdk";
-import {
-  createCustomTools,
-  type ToolSessionDefaults,
-} from "../agentTools.ts";
+import { createCustomTools, type ToolSessionDefaults } from "../agentTools.ts";
 import { getRepoRoot } from "../knowledge.ts";
 import {
   getWidgetLuaPathForKey,
@@ -96,7 +93,10 @@ function sdkToolsToHttp(
     }) as Record<string, unknown>,
     async execute(args) {
       const raw = await Promise.resolve(
-        tool.execute(args as Record<string, import("@cursor/sdk").SDKJsonValue>, {}),
+        tool.execute(
+          args as Record<string, import("@cursor/sdk").SDKJsonValue>,
+          {},
+        ),
       );
       return normalizeToolResult(raw);
     },
@@ -127,7 +127,8 @@ export function createHttpTools(
           },
           relativePath: {
             type: "string",
-            description: "Path relative to the workspace folder (e.g. main.lua)",
+            description:
+              "Path relative to the workspace folder (e.g. main.lua)",
           },
           contents: {
             type: "string",

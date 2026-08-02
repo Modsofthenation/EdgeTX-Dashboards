@@ -1,7 +1,4 @@
-import type {
-  BoundingBox,
-  LiveDragState,
-} from "@widget-gen/editor-core";
+import type { BoundingBox, LiveDragState } from "@widget-gen/editor-core";
 
 /**
  * Apply in-progress drag transform to a selection box derived from records.

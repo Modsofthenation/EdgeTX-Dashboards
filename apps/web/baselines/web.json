@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "suites": {
+    "unifiedDiff.800capped": {
+      "meanMs": 0.1366,
+      "p95Ms": 0.7066,
+      "opsPerSec": 7318.62,
+      "updatedAt": "2026-08-02T01:42:13.338Z"
+    }
+  }
+}

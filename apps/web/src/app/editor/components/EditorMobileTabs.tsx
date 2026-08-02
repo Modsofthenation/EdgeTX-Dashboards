@@ -29,6 +29,8 @@ export const EditorMobileTabs = memo(function EditorMobileTabs({
           key={id}
           type="button"
           role="tab"
+          id={`editor-tab-${id}`}
+          aria-controls={`editor-panel-${id}`}
           aria-selected={mobileTab === id}
           className={
             mobileTab === id ? styles.mobileTabActive : styles.mobileTab

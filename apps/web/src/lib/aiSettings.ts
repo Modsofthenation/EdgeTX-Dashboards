@@ -58,7 +58,10 @@ export function readStoredProvider(): AiProviderId {
 export function persistProvider(provider: AiProviderId): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(AI_PROVIDER_STORAGE, parseAiProviderId(provider));
+    window.localStorage.setItem(
+      AI_PROVIDER_STORAGE,
+      parseAiProviderId(provider),
+    );
   } catch {
     // ignore
   }

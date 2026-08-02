@@ -1479,7 +1479,14 @@ type StaticParseCacheEntry = {
 let staticParseCache: StaticParseCacheEntry | null = null;
 
 function profileCacheKey(profile: SimulateLayoutProfile): string {
-  return `${profile.radioId}:${profile.lcdW}x${profile.lcdH}`;
+  const sim = profile.defaultSimulate;
+  // Include fields that affect resolvePreviewDimensions / zone lookup.
+  return [
+    profile.radioId,
+    `${profile.lcdW}x${profile.lcdH}`,
+    `${sim.layout}:${sim.zone}`,
+    Object.keys(profile.layouts).sort().join(","),
+  ].join("|");
 }
 
 /** Test helper — clear the one-entry static parse cache. */

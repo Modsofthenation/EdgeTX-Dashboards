@@ -30,10 +30,7 @@ export function parseDownloadValidationFailure(
   };
 
   const issues =
-    data.issues ??
-    data.validationIssues ??
-    data.validation?.issues ??
-    [];
+    data.issues ?? data.validationIssues ?? data.validation?.issues ?? [];
 
   return {
     title: "Download blocked",

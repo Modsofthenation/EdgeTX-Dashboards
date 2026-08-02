@@ -33,10 +33,7 @@ export {
   type InsertPrefabResult,
   type PrefabInsertOptions,
 } from "./insertPrefab.ts";
-export {
-  scaleLcdCoordsInLine,
-  scalePrefabSection,
-} from "./scalePrefab.ts";
+export { scaleLcdCoordsInLine, scalePrefabSection } from "./scalePrefab.ts";
 export {
   getPrefabSensorSlotsForId,
   listPrefabSpans,

@@ -6,6 +6,7 @@
 - Reference
   - [Workspace layout](./reference/workspace-layout.md)
   - [Scripts](./reference/scripts.md)
+  - [Performance harness](./reference/perf-harness.md)
   - [Desktop (Tauri 2)](./reference/desktop-tauri.md)
 - Widget authoring
   - [EdgeTX Lua widget rules](../.cursor/rules/edgetx-lua.md)

@@ -254,7 +254,9 @@ export const ArtifactPanel = memo(function ArtifactPanel({
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         if (res.status === 422) {
-          setValidationFailure(parseDownloadValidationFailure(body, res.status));
+          setValidationFailure(
+            parseDownloadValidationFailure(body, res.status),
+          );
           return;
         }
         const errBody = body as { error?: string; message?: string };

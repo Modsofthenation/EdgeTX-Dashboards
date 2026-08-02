@@ -3,10 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import {
-  TEMPLATE_GALLERY,
-  templatePreviewSrc,
-} from "./templateGallery.ts";
+import { TEMPLATE_GALLERY, templatePreviewSrc } from "./templateGallery.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicTemplates = join(__dirname, "..", "..", "public", "templates");
@@ -63,7 +60,10 @@ describe("TEMPLATE_GALLERY", () => {
       const file = join(publicTemplates, `${item.id}.png`);
       assert.ok(existsSync(file), `missing preview PNG: ${file}`);
       const color272 = join(publicTemplates, `${item.id}-color272.png`);
-      assert.ok(existsSync(color272), `missing color272 preview PNG: ${color272}`);
+      assert.ok(
+        existsSync(color272),
+        `missing color272 preview PNG: ${color272}`,
+      );
     }
   });
 });
