@@ -106,11 +106,17 @@
   background: rgba(248, 113, 113, 0.1);
 }
 
+.errorContext {
+  margin-bottom: 0.65rem;
+}
+
 .errorText {
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
   color: #fecaca;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .retryBtn {

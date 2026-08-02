@@ -2,6 +2,10 @@
 
 import { memo } from "react";
 import type { ChatMessage } from "~/lib/chatTypes";
+import {
+  resolveChatErrorContent,
+  streamLinesForErrorDisplay,
+} from "~/lib/chatErrorMessage";
 import { AssistantStream } from "./AssistantStream";
 import styles from "./ChatMessage.module.css";
 
@@ -43,6 +47,10 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
     );
   }
 
+  const errorContextLines = message.error
+    ? streamLinesForErrorDisplay(message)
+    : null;
+
   return (
     <div
       className={`${styles.row} ${styles.assistantRow} ${
@@ -58,20 +66,30 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
       </div>
       <div className={styles.assistantBody}>
         {message.error ? (
-          <div className={styles.errorBox} role="alert">
-            <p className={styles.errorText}>
-              {message.content || "Something went wrong."}
-            </p>
-            {onRetry ? (
-              <button
-                type="button"
-                className={styles.retryBtn}
-                onClick={onRetry}
-              >
-                Retry
-              </button>
+          <>
+            {errorContextLines && errorContextLines.length > 0 ? (
+              <div className={styles.errorContext}>
+                <AssistantStream
+                  lines={errorContextLines}
+                  isStreaming={false}
+                />
+              </div>
             ) : null}
-          </div>
+            <div className={styles.errorBox} role="alert">
+              <p className={styles.errorText}>
+                {resolveChatErrorContent(message)}
+              </p>
+              {onRetry ? (
+                <button
+                  type="button"
+                  className={styles.retryBtn}
+                  onClick={onRetry}
+                >
+                  Retry
+                </button>
+              ) : null}
+            </div>
+          </>
         ) : message.lines && message.lines.length > 0 ? (
           <AssistantStream
             lines={message.lines}

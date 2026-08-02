@@ -9,6 +9,7 @@ export interface WidgetRunOutcome {
   runId: string;
   status: string;
   success: boolean;
+  result?: string;
   widgetName?: string;
   widgetInstanceId?: string;
   widgetVersion?: number;
@@ -95,6 +96,17 @@ export function emitRunCompletion(
     ? `${result.widgetName}${result.widgetVersion !== undefined ? ` v${result.widgetVersion}` : ""}`
     : undefined;
   const cancelled = result.status === "cancelled";
+  const detail =
+    typeof result.result === "string" && result.result.trim()
+      ? result.result.trim().replace(/\s+/g, " ").slice(0, 280)
+      : "";
+
+  const failureContent =
+    result.validated === false && result.widgetName
+      ? `Widget ${label} failed validation — download blocked`
+      : detail
+        ? `${actionLabel} failed (status: ${result.status}): ${detail}`
+        : `${actionLabel} failed (status: ${result.status})`;
 
   ctx.send({
     type: result.success ? "done" : cancelled ? "status" : "error",
@@ -102,9 +114,7 @@ export function emitRunCompletion(
       ? `Validated and ready: ${label}`
       : cancelled
         ? `${actionLabel} cancelled`
-        : result.validated === false && result.widgetName
-          ? `Widget ${label} failed validation — download blocked`
-          : `${actionLabel} failed (status: ${result.status})`,
+        : failureContent,
     sessionId: ctx.session.id,
     widgetName: result.widgetName,
     widgetInstanceId: result.widgetInstanceId,
