@@ -17,7 +17,9 @@ describe("fullscreen double-tap gesture", () => {
     assert.doesNotMatch(src, /retrying widget fullscreen double-tap/);
     assert.doesNotMatch(src, /attempt:/);
     assert.match(src, /KEY_EXIT_HOLD_FRAMES/);
-    assert.match(src, /simuSetKey\(EDGETX_KEY_EXIT,\s*1\)/);
+    // Press uses a local setKey alias (ex?.simuSetKey); release uses optional call.
+    assert.match(src, /const setKey = ex\?\.simuSetKey/);
+    assert.match(src, /setKey\(EDGETX_KEY_EXIT,\s*1\)/);
     assert.match(src, /simuSetKey\?\.\(EDGETX_KEY_EXIT,\s*0\)/);
   });
 });
