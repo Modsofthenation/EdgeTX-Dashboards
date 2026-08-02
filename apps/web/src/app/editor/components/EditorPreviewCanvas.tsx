@@ -1,6 +1,13 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import {
   getPreviewScenario,
   type LayoutScenario,
@@ -26,6 +33,8 @@ interface EditorPreviewCanvasProps {
   /** In-progress drag/resize geometry (zone space) — does not re-parse Lua. */
   liveDrag?: LiveDragState | null;
   layoutProfileId?: string;
+  /** Notifies parent when worker interpret is pending (stale last-good cmds). */
+  onPendingChange?: (pending: boolean) => void;
 }
 
 export const EditorPreviewCanvas = memo(function EditorPreviewCanvas({
@@ -36,6 +45,7 @@ export const EditorPreviewCanvas = memo(function EditorPreviewCanvas({
   scenarioOverride,
   liveDrag = null,
   layoutProfileId = "tx15",
+  onPendingChange,
 }: EditorPreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -45,11 +55,15 @@ export const EditorPreviewCanvas = memo(function EditorPreviewCanvas({
   );
 
   /** Off-thread applyMock — keeps last-good commands while pending. */
-  const { commands: parsedCommands } = useLuaPreviewCommands(
+  const { commands: parsedCommands, pending } = useLuaPreviewCommands(
     source,
     scenario,
     layoutProfileId,
   );
+
+  useLayoutEffect(() => {
+    onPendingChange?.(pending);
+  }, [pending, onPendingChange]);
 
   const baseCommands = useMemo(
     () =>
