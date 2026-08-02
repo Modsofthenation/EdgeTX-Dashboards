@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   SIM_OPFS_HANDOFF_MS,
+  isModalSimHandoffReady,
   shouldMountInlineRadioSim,
 } from "./simOpfsHandoff.ts";
 
@@ -50,6 +51,50 @@ describe("simOpfsHandoff", () => {
         inlineSimEnabled: true,
         simModalOpen: false,
         hasColorWasm: false,
+      }),
+      false,
+    );
+  });
+
+  it("blocks modal remount until the current reloadKey finishes handoff", () => {
+    assert.equal(
+      isModalSimHandoffReady({
+        open: true,
+        reloadKey: 0,
+        completedReloadKey: 0,
+      }),
+      true,
+    );
+    // Reload bump: previous ready key must not authorize the new instance.
+    assert.equal(
+      isModalSimHandoffReady({
+        open: true,
+        reloadKey: 1,
+        completedReloadKey: 0,
+      }),
+      false,
+    );
+    assert.equal(
+      isModalSimHandoffReady({
+        open: true,
+        reloadKey: 1,
+        completedReloadKey: null,
+      }),
+      false,
+    );
+    assert.equal(
+      isModalSimHandoffReady({
+        open: true,
+        reloadKey: 1,
+        completedReloadKey: 1,
+      }),
+      true,
+    );
+    assert.equal(
+      isModalSimHandoffReady({
+        open: false,
+        reloadKey: 1,
+        completedReloadKey: 1,
       }),
       false,
     );

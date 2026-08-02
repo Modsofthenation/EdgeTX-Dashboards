@@ -7,7 +7,10 @@ import {
   getPreviewScenario,
   type LayoutScenario,
 } from "@widget-gen/layout-verify";
-import { SIM_OPFS_HANDOFF_MS } from "~/lib/radioSim/simOpfsHandoff";
+import {
+  SIM_OPFS_HANDOFF_MS,
+  isModalSimHandoffReady,
+} from "~/lib/radioSim/simOpfsHandoff";
 import styles from "../editor.module.css";
 
 const RadioSimPreview = dynamic(
@@ -47,27 +50,34 @@ export function SimVerifyModal({
   const [interactiveControls, setInteractiveControls] = useState<{
     openInteractive: () => void;
   } | null>(null);
-  /** Defer WASM mount so the inline preview can release OPFS first. */
-  const [runtimeReady, setRuntimeReady] = useState(false);
+  /** reloadKey that finished the OPFS handoff delay (null = not ready). */
+  const [completedReloadKey, setCompletedReloadKey] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!open) {
-      setRuntimeReady(false);
+      setCompletedReloadKey(null);
       return;
     }
-    setRuntimeReady(false);
+    // Matching completedReloadKey === reloadKey already unmounts on the reload
+    // render (stale completed key ≠ new reloadKey). Only schedule the delay.
     const timer = window.setTimeout(() => {
-      setRuntimeReady(true);
+      setCompletedReloadKey(reloadKey);
     }, SIM_OPFS_HANDOFF_MS);
     return () => {
       window.clearTimeout(timer);
-      setRuntimeReady(false);
     };
   }, [open, reloadKey]);
 
   if (!open) return null;
   const scenario = scenarioOverride ?? getPreviewScenario(scenarioId);
   const wasmReady = hasColorWasmSim(radioId);
+  const runtimeReady = isModalSimHandoffReady({
+    open,
+    reloadKey,
+    completedReloadKey,
+  });
 
   return (
     <div className={styles.modalBackdrop} role="presentation" onClick={onClose}>

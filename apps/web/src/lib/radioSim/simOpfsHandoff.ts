@@ -25,3 +25,17 @@ export function shouldMountInlineRadioSim(options: {
     options.hasColorWasm
   );
 }
+
+/**
+ * Modal WASM may mount only after the handoff delay for the *current*
+ * reloadKey completes. Matching on the key (not a boolean) blocks the one
+ * render where reloadKey advanced but the previous ready=true would otherwise
+ * remount RadioSimPreview before the effect clears it.
+ */
+export function isModalSimHandoffReady(options: {
+  open: boolean;
+  reloadKey: number;
+  completedReloadKey: number | null;
+}): boolean {
+  return options.open && options.completedReloadKey === options.reloadKey;
+}
