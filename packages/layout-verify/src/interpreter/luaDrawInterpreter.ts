@@ -1004,13 +1004,13 @@ function isRenderableText(text: string): boolean {
 }
 
 function collectTelemAssignments(
-  body: string,
+  lines: readonly string[],
   ctx: EvalCtx,
   dims: EvalDims,
   srcMap: Map<string, string>,
   mock: MockTelemetry,
 ): void {
-  for (const line of body.split("\n")) {
+  for (const line of lines) {
     const trimmed = line.trim();
     const localMatch = trimmed.match(/^(?:local\s+)?(\w+)\s*=\s*(.+)$/);
     if (!localMatch) continue;
@@ -1031,7 +1031,7 @@ function collectTelemAssignments(
 }
 
 function collectAssignments(
-  body: string,
+  lines: readonly string[],
   ctx: EvalCtx,
   dims: EvalDims,
   srcMap: Map<string, string>,
@@ -1114,7 +1114,7 @@ function collectAssignments(
   for (let pass = 0; pass < 20; pass++) {
     let changed = false;
     let ifDepth = 0;
-    for (const line of body.split("\n")) {
+    for (const line of lines) {
       const trimmed = line.trim();
       if (/^if\s+.+\sthen\s*$/.test(trimmed)) {
         ifDepth++;
@@ -1311,25 +1311,22 @@ function attachSource(
 }
 
 function indentOffsetForLine(
-  source: string,
+  indentBySourceLine: readonly number[],
   sourceLine: number | undefined,
 ): number {
   if (sourceLine === undefined) return 0;
-  // Spans are computed on trimmed draw lines; shift them by the indent on the
-  // real source line (extractRefreshBody may strip leading spaces inconsistently).
-  const line = source.split("\n")[sourceLine - 1]?.replace(/\r$/, "") ?? "";
-  return line.length - line.trimStart().length;
+  return indentBySourceLine[sourceLine - 1] ?? 0;
 }
 
 /** Apply `if cond then name = expr end` on one line without rewriting the refresh body. */
 function applySingleLineConditionalAssignments(
-  body: string,
+  lines: readonly string[],
   ctx: EvalCtx,
   dims: EvalDims,
   srcMap: Map<string, string>,
   mock: MockTelemetry,
 ): void {
-  for (const line of body.split("\n")) {
+  for (const line of lines) {
     const trimmed = line.trim();
     const m = trimmed.match(/^if\s+(.+?)\s+then\s+(.+?)\s+end$/);
     if (!m) continue;
@@ -1434,19 +1431,18 @@ function processIfChain(
 }
 
 function processConditionals(
-  body: string,
+  lines: readonly string[],
   ctx: EvalCtx,
   dims: EvalDims,
-): string {
-  const lines = body.split("\n");
+): string[] {
   const out: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
+    const trimmed = lines[i]!.trim();
     const ifMatch = trimmed.match(/^if\s+(.+)\sthen\s*$/);
     if (ifMatch) {
       const result = processIfChain(
-        lines,
+        lines as string[],
         i + 1,
         ctx,
         dims,
@@ -1456,18 +1452,39 @@ function processConditionals(
       i = result.next - 1;
       continue;
     }
-    out.push(lines[i]);
+    out.push(lines[i]!);
   }
 
-  return out.join("\n");
+  return out;
 }
 
 export interface PreviewStaticParse {
   body: string;
+  rawBodyLines: string[];
+  sourceLines: string[];
+  /** Indent width per 1-based source line (index = lineNum - 1). */
+  indentBySourceLine: number[];
   dims: ReturnType<typeof resolvePreviewDimensions>;
   srcMap: Map<string, string>;
   rgbMap: Record<string, string>;
   evalDims: EvalDims;
+}
+
+type StaticParseCacheEntry = {
+  source: string;
+  profileKey: string;
+  value: PreviewStaticParse;
+};
+
+let staticParseCache: StaticParseCacheEntry | null = null;
+
+function profileCacheKey(profile: SimulateLayoutProfile): string {
+  return `${profile.radioId}:${profile.lcdW}x${profile.lcdH}`;
+}
+
+/** Test helper — clear the one-entry static parse cache. */
+export function clearStaticParseCache(): void {
+  staticParseCache = null;
 }
 
 /** Runs once per Lua source change — extracts refresh body and layout metadata. */
@@ -1475,6 +1492,15 @@ export function parseLuaToDrawCommandsStatic(
   source: string,
   profile: SimulateLayoutProfile = TX15_SIMULATE_PROFILE,
 ): PreviewStaticParse | null {
+  const key = profileCacheKey(profile);
+  if (
+    staticParseCache &&
+    staticParseCache.source === source &&
+    staticParseCache.profileKey === key
+  ) {
+    return staticParseCache.value;
+  }
+
   try {
     const dims = resolvePreviewDimensions(source, profile);
     const srcMap = buildSrcSensorMap(source);
@@ -1488,7 +1514,23 @@ export function parseLuaToDrawCommandsStatic(
       optionIndex,
     };
     const body = extractRefreshBody(source);
-    return { body, dims, srcMap, rgbMap, evalDims };
+    const sourceLines = source.split("\n").map((l) => l.replace(/\r$/, ""));
+    const indentBySourceLine = sourceLines.map(
+      (line) => line.length - line.trimStart().length,
+    );
+    const rawBodyLines = body.split("\n");
+    const value: PreviewStaticParse = {
+      body,
+      rawBodyLines,
+      sourceLines,
+      indentBySourceLine,
+      dims,
+      srcMap,
+      rgbMap,
+      evalDims,
+    };
+    staticParseCache = { source, profileKey: key, value };
+    return value;
   } catch {
     return null;
   }
@@ -1504,7 +1546,15 @@ export function applyMockToCommands(
     "mock" in mockOrScenario
       ? mockOrScenario
       : { id: "default", mock: mockOrScenario };
-  const { body: rawBody, dims, srcMap, rgbMap, evalDims } = staticParse;
+  const {
+    body: rawBody,
+    rawBodyLines,
+    indentBySourceLine,
+    dims,
+    srcMap,
+    rgbMap,
+    evalDims,
+  } = staticParse;
   const mock = scenario.mock;
   const commands: PreviewDrawCommand[] = [];
   const warnings: string[] = [];
@@ -1513,24 +1563,24 @@ export function applyMockToCommands(
   const ctx = buildContext(source, mock);
   seedWidgetContext(source, ctx, scenario);
 
-  let body = rawBody;
+  let lines = rawBodyLines;
   for (let pass = 0; pass < 6; pass++) {
-    collectTelemAssignments(body, ctx, evalDims, srcMap, mock);
-    collectAssignments(body, ctx, evalDims, srcMap, mock);
-    applySingleLineConditionalAssignments(body, ctx, evalDims, srcMap, mock);
-    body = processConditionals(body, ctx, evalDims);
-    collectAssignments(body, ctx, evalDims, srcMap, mock);
-    applySingleLineConditionalAssignments(body, ctx, evalDims, srcMap, mock);
-    collectAssignments(body, ctx, evalDims, srcMap, mock);
+    collectTelemAssignments(lines, ctx, evalDims, srcMap, mock);
+    collectAssignments(lines, ctx, evalDims, srcMap, mock);
+    applySingleLineConditionalAssignments(lines, ctx, evalDims, srcMap, mock);
+    lines = processConditionals(lines, ctx, evalDims);
+    collectAssignments(lines, ctx, evalDims, srcMap, mock);
+    applySingleLineConditionalAssignments(lines, ctx, evalDims, srcMap, mock);
+    collectAssignments(lines, ctx, evalDims, srcMap, mock);
   }
 
   if (scenario.armed !== undefined) {
     ctx.armed = scenario.armed ? 1 : 0;
-    body = processConditionals(rawBody, ctx, evalDims);
+    lines = processConditionals(rawBodyLines, ctx, evalDims);
     for (let pass = 0; pass < 4; pass++) {
-      collectTelemAssignments(body, ctx, evalDims, srcMap, mock);
-      collectAssignments(body, ctx, evalDims, srcMap, mock);
-      applySingleLineConditionalAssignments(body, ctx, evalDims, srcMap, mock);
+      collectTelemAssignments(lines, ctx, evalDims, srcMap, mock);
+      collectAssignments(lines, ctx, evalDims, srcMap, mock);
+      applySingleLineConditionalAssignments(lines, ctx, evalDims, srcMap, mock);
     }
     ctx.armed = scenario.armed ? 1 : 0;
     if (scenario.armed) {
@@ -1544,16 +1594,15 @@ export function applyMockToCommands(
 
   const bodyStartLine = findRefreshBodyStartLine(source);
   const sourceLookup = buildLineSourceLookup(rawBody, bodyStartLine);
-  const lines = body
-    .split("\n")
+  const drawLines = lines
     .map((l) => l.replace(/\r$/, "").trim())
     .filter(Boolean);
 
   let bg = "#000000";
 
-  for (const line of lines) {
+  for (const line of drawLines) {
     const sourceLine = sourceLookup.take(line);
-    const indent = indentOffsetForLine(source, sourceLine);
+    const indent = indentOffsetForLine(indentBySourceLine, sourceLine);
     const attach = (record: DrawRecord, parsed: ParsedLcdCall) =>
       attachSource(record, parsed, sourceLine, indent);
 

@@ -62,7 +62,10 @@ function maxForSide(
   const panelMax = side === "left" ? LEFT_MAX : RIGHT_MAX;
   if (bodyWidth == null || bodyWidth <= 0) return panelMax;
   const maxAllowed = bodyWidth - other - 2 * HANDLE - CANVAS_MIN;
-  return Math.max(side === "left" ? LEFT_MIN : RIGHT_MIN, Math.min(panelMax, maxAllowed));
+  return Math.max(
+    side === "left" ? LEFT_MIN : RIGHT_MIN,
+    Math.min(panelMax, maxAllowed),
+  );
 }
 
 function readStored(): PanelWidths {
@@ -115,6 +118,8 @@ export function useResizableEditorPanels(
   const bodyWidthRef = useRef(bodyWidth);
   bodyWidthRef.current = bodyWidth;
   const detachRef = useRef<(() => void) | null>(null);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bodyElRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setWidths(readStored());
@@ -123,6 +128,7 @@ export function useResizableEditorPanels(
 
   useEffect(() => {
     const el = bodyRef?.current;
+    bodyElRef.current = el ?? null;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width;
@@ -143,17 +149,35 @@ export function useResizableEditorPanels(
     });
   }, [bodyWidth, hydrated]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    writeStored(widths);
-  }, [widths, hydrated]);
+  const schedulePersist = useCallback((next: PanelWidths) => {
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      persistTimerRef.current = null;
+      writeStored(next);
+    }, 200);
+  }, []);
 
   useEffect(() => {
     return () => {
       detachRef.current?.();
       detachRef.current = null;
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
     };
   }, []);
+
+  const applyWidthsLive = useCallback(
+    (next: PanelWidths) => {
+      widthsRef.current = next;
+      const el = bodyElRef.current ?? bodyRef?.current;
+      if (el) {
+        el.style.gridTemplateColumns = `${next.left}px ${HANDLE}px minmax(${CANVAS_MIN}px, 1fr) ${HANDLE}px ${next.right}px`;
+      }
+    },
+    [bodyRef],
+  );
 
   const onHandlePointerDown = useCallback(
     (side: DragSide, event: React.PointerEvent) => {
@@ -183,19 +207,21 @@ export function useResizableEditorPanels(
             ? widthsRef.current.right
             : widthsRef.current.left;
         if (drag.side === "left") {
-          const next = clamp(
+          const nextLeft = clamp(
             drag.origin + dx,
             LEFT_MIN,
             maxForSide("left", other, bw),
           );
-          setWidths((w) => (w.left === next ? w : { ...w, left: next }));
+          if (nextLeft === widthsRef.current.left) return;
+          applyWidthsLive({ ...widthsRef.current, left: nextLeft });
         } else {
-          const next = clamp(
+          const nextRight = clamp(
             drag.origin - dx,
             RIGHT_MIN,
             maxForSide("right", other, bw),
           );
-          setWidths((w) => (w.right === next ? w : { ...w, right: next }));
+          if (nextRight === widthsRef.current.right) return;
+          applyWidthsLive({ ...widthsRef.current, right: nextRight });
         }
       };
 
@@ -204,6 +230,9 @@ export function useResizableEditorPanels(
         setActiveSide(null);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
+        // Commit React state once so memoized children update after the drag.
+        setWidths({ ...widthsRef.current });
+        schedulePersist(widthsRef.current);
         detachRef.current?.();
         detachRef.current = null;
       };
@@ -218,15 +247,18 @@ export function useResizableEditorPanels(
         window.removeEventListener("pointercancel", endDrag);
       };
     },
-    [],
+    [applyWidthsLive, schedulePersist],
   );
 
   const resetWidths = useCallback(() => {
-    setWidths(clampPanelWidths(
+    const next = clampPanelWidths(
       { left: LEFT_DEFAULT, right: RIGHT_DEFAULT },
       bodyWidthRef.current,
-    ));
-  }, []);
+    );
+    setWidths(next);
+    applyWidthsLive(next);
+    schedulePersist(next);
+  }, [applyWidthsLive, schedulePersist]);
 
   const gridTemplateColumns = `${widths.left}px ${HANDLE}px minmax(${CANVAS_MIN}px, 1fr) ${HANDLE}px ${widths.right}px`;
 

@@ -8,6 +8,13 @@ import {
   recordLayerLabel,
 } from "@widget-gen/editor-core";
 import { catalogForDrawKind } from "../elementMeta";
+import {
+  cacheLayerDropRects,
+  resolveLayerDropTarget,
+  sameLayerDropHint,
+  type LayerDropHint,
+  type LayerDropRect,
+} from "../lib/layerDropTarget";
 import styles from "../editor.module.css";
 
 interface RecordLayersPanelProps {
@@ -31,8 +38,6 @@ interface RecordLayersPanelProps {
   onClearAll?: () => void;
 }
 
-type DropHint = { id: string; place: "before" | "after" };
-
 export const RecordLayersPanel = memo(function RecordLayersPanel({
   records,
   source,
@@ -47,10 +52,12 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
 }: RecordLayersPanelProps) {
   const [filter, setFilter] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dropHint, setDropHint] = useState<DropHint | null>(null);
+  const [dropHint, setDropHint] = useState<LayerDropHint | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const dragIdRef = useRef<string | null>(null);
-  const dropHintRef = useRef<DropHint | null>(null);
+  const dropHintRef = useRef<LayerDropHint | null>(null);
+  const dropRectsRef = useRef<LayerDropRect[]>([]);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const prefabSpans = useMemo(
     () => (source ? listPrefabSpans(source) : []),
@@ -69,39 +76,44 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
   const recordSourceLine = (record: DocumentRecord) =>
     record.sourceLine ?? record.sourceRef?.sourceLine;
 
-  const recordIdsInSpan = (startLine: number, endLine: number) =>
-    records
-      .filter((record) => {
-        const line = recordSourceLine(record);
-        return line != null && line >= startLine && line <= endLine;
-      })
-      .map((record) => record.id);
+  const spanRecordIdsByKey = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const span of prefabSpans) {
+      const key = `${span.startLine}:${span.endLine}`;
+      map.set(
+        key,
+        records
+          .filter((record) => {
+            const line = recordSourceLine(record);
+            return (
+              line != null && line >= span.startLine && line <= span.endLine
+            );
+          })
+          .map((record) => record.id),
+      );
+    }
+    return map;
+  }, [prefabSpans, records]);
 
   const clearDrag = () => {
     dragIdRef.current = null;
     dropHintRef.current = null;
+    dropRectsRef.current = [];
     setDraggingId(null);
     setDropHint(null);
   };
 
   const updateDropFromPoint = (clientY: number) => {
-    const list = listRef.current;
     const draggedId = dragIdRef.current;
-    if (!list || !draggedId) return;
-
-    const items = [...list.querySelectorAll<HTMLElement>("[data-layer-id]")];
-    for (const el of items) {
-      const id = el.dataset.layerId;
-      if (!id || id === draggedId) continue;
-      const rect = el.getBoundingClientRect();
-      if (clientY < rect.top || clientY > rect.bottom) continue;
-      const place: "before" | "after" =
-        clientY < rect.top + rect.height / 2 ? "before" : "after";
-      const next = { id, place };
-      dropHintRef.current = next;
-      setDropHint(next);
-      return;
-    }
+    if (!draggedId) return;
+    const next = resolveLayerDropTarget(
+      clientY,
+      dropRectsRef.current,
+      draggedId,
+    );
+    if (sameLayerDropHint(dropHintRef.current, next)) return;
+    dropHintRef.current = next;
+    setDropHint(next);
   };
 
   const onHandlePointerDown = (event: React.PointerEvent, recordId: string) => {
@@ -111,6 +123,9 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     dragIdRef.current = recordId;
     dropHintRef.current = null;
+    dropRectsRef.current = listRef.current
+      ? cacheLayerDropRects(listRef.current)
+      : [];
     setDraggingId(recordId);
     setDropHint(null);
     onSelect(recordId, false);
@@ -206,9 +221,10 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
               !renderedPrefabSpanKeys.has(spanKey);
             if (spanKey) renderedPrefabSpanKeys.add(spanKey);
             const spanRecordIds = span
-              ? recordIdsInSpan(span.startLine, span.endLine)
+              ? (spanRecordIdsByKey.get(`${span.startLine}:${span.endLine}`) ??
+                [])
               : [];
-            const selected = selectedIds.includes(record.id);
+            const selected = selectedSet.has(record.id);
             const meta = catalogForDrawKind(record.kind);
             const isDragging = draggingId === record.id;
             const hint =

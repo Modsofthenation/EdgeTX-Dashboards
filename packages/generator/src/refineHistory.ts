@@ -27,6 +27,8 @@ const MAX_USER_TURN_CHARS = 600;
 const MAX_ASSISTANT_TURN_CHARS = 400;
 const MAX_PRIOR_LUA_LINES = 120;
 const MAX_TOTAL_PRIOR_LUA_CHARS = 12_000;
+/** Soft cap on conversation summary body (newest turns kept first). */
+const MAX_CONVERSATION_CHARS = 12_000;
 
 function truncate(text: string, max: number): string {
   const trimmed = text.trim();
@@ -137,10 +139,21 @@ export function buildConversationSummary(input: RefineHistoryInput): string {
     return "No prior chat turns in this session (first refinement or history unavailable).";
   }
 
+  // Keep newest turns within the conversation budget.
+  const kept: string[] = [];
+  let budget = MAX_CONVERSATION_CHARS;
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const turn = turns[i]!;
+    if (kept.length > 0 && turn.length > budget) break;
+    kept.unshift(turn);
+    budget -= turn.length + 1;
+    if (budget <= 0) break;
+  }
+
   return [
     "Prior conversation in this chat (oldest → newest). Honor cumulative intent — do not undo earlier agreed features unless the latest request says so.",
     "",
-    ...turns,
+    ...kept,
   ].join("\n");
 }
 
@@ -193,7 +206,8 @@ export function buildArtifactContext(input: RefineHistoryInput): string {
   if (prior.length > 0) {
     lines.push("### Prior design snapshots (reference only)", "");
     let budget = MAX_TOTAL_PRIOR_LUA_CHARS;
-    for (const snap of prior) {
+    // Newest prior versions first so recent refine context wins the budget.
+    for (const snap of prior.toReversed()) {
       const source = snap.luaSource!.trim();
       const capped = truncateLua(
         source,

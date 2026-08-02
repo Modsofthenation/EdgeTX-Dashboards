@@ -260,9 +260,7 @@ export function setRecordTextFlags(
   const ref = record.sourceRef;
   const flagsSpan = ref?.args[3];
   const line = ref ? getSourceLine(source, ref.sourceLine) : "";
-  const existing = flagsSpan
-    ? line.slice(flagsSpan.start, flagsSpan.end)
-    : "";
+  const existing = flagsSpan ? line.slice(flagsSpan.start, flagsSpan.end) : "";
 
   const tokens = existing
     .split("+")
@@ -474,6 +472,52 @@ export function reorderRecordLine(
   insertAt = Math.max(bounds.startIdx, Math.min(insertAt, bounds.lastIdx));
   lines.splice(insertAt, 0, row);
   return lines.join("\n");
+}
+
+/**
+ * Move selected draw lines to the front (end of refresh) or back (start)
+ * in one pass, preserving relative source order among the selection.
+ */
+export function moveRecordLinesToEdge(
+  source: string,
+  records: DrawRecord[],
+  edge: "front" | "back",
+): string {
+  const bounds = refreshBodyLineBounds(source);
+  if (!bounds) return source;
+
+  const selectedIdx = new Set(
+    records
+      .map((r) => r.sourceRef?.sourceLine ?? r.sourceLine)
+      .filter(
+        (n): n is number =>
+          typeof n === "number" &&
+          n > 0 &&
+          n - 1 >= bounds.startIdx &&
+          n - 1 <= bounds.lastIdx,
+      )
+      .map((n) => n - 1),
+  );
+  if (selectedIdx.size === 0) return source;
+
+  const lines = source.split("\n");
+  const moving: string[] = [];
+  const rest: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (selectedIdx.has(i)) moving.push(lines[i]!);
+    else rest.push(lines[i]!);
+  }
+
+  const nextBounds = refreshBodyLineBounds(rest.join("\n"));
+  if (!nextBounds) return source;
+
+  if (edge === "back") {
+    rest.splice(nextBounds.startIdx, 0, ...moving);
+  } else {
+    // Insert after the last body content line (still before closing `end`).
+    rest.splice(nextBounds.lastIdx + 1, 0, ...moving);
+  }
+  return rest.join("\n");
 }
 
 function refreshBodyLineBounds(

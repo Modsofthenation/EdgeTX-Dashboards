@@ -5,6 +5,7 @@ import {
   listEnrichOnlyKeys,
   partitionLiveSensorKeys,
   ROTORFLIGHT_ENRICH_KEYS,
+  shallowEqualLiveSensorMaps,
 } from "./liveTelemetryBridge.ts";
 
 describe("enrichRotorflightLiveSensors", () => {
@@ -73,5 +74,16 @@ describe("listEnrichOnlyKeys", () => {
     for (const k of keys) {
       assert.ok((ROTORFLIGHT_ENRICH_KEYS as readonly string[]).includes(k));
     }
+  });
+});
+
+describe("shallowEqualLiveSensorMaps", () => {
+  it("compares keys and primitive values", () => {
+    assert.equal(
+      shallowEqualLiveSensorMaps({ a: 1, b: "x" }, { a: 1, b: "x" }),
+      true,
+    );
+    assert.equal(shallowEqualLiveSensorMaps({ a: 1 }, { a: 1, b: 2 }), false);
+    assert.equal(shallowEqualLiveSensorMaps({ a: 1 }, { a: 2 }), false);
   });
 });

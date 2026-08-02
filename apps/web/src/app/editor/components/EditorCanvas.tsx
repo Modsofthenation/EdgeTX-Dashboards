@@ -87,6 +87,8 @@ export const EditorCanvas = memo(function EditorCanvas({
     originX: number;
     originY: number;
   } | null>(null);
+  const pendingPanRef = useRef<{ x: number; y: number } | null>(null);
+  const panRafRef = useRef<number | null>(null);
 
   // Clear keep-alive live transform once records reflect the committed Lua edit.
   useLayoutEffect(() => {
@@ -172,13 +174,27 @@ export const EditorCanvas = memo(function EditorCanvas({
   const onPointerMovePan = useCallback((event: React.PointerEvent) => {
     const drag = panDragRef.current;
     if (!drag) return;
-    setPan({
+    pendingPanRef.current = {
       x: drag.originX + (event.clientX - drag.startX),
       y: drag.originY + (event.clientY - drag.startY),
+    };
+    if (panRafRef.current != null) return;
+    panRafRef.current = requestAnimationFrame(() => {
+      panRafRef.current = null;
+      const next = pendingPanRef.current;
+      if (next) setPan(next);
     });
   }, []);
 
   const onPointerUpPan = useCallback(() => {
+    if (panRafRef.current != null) {
+      cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = null;
+    }
+    if (pendingPanRef.current) {
+      setPan(pendingPanRef.current);
+      pendingPanRef.current = null;
+    }
     panDragRef.current = null;
   }, []);
 

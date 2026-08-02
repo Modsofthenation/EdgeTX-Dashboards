@@ -36,6 +36,7 @@ import {
   setRecordTextFlags,
   duplicateRecordLine,
   moveRecordLine,
+  moveRecordLinesToEdge,
   reorderRecordLine,
   getSourceLine,
   insertRawRefreshLine,
@@ -587,9 +588,10 @@ export function EditorApp() {
     }
   }, [deferredSource]);
 
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const selectedRecords = useMemo(
-    () => records.filter((r) => selectedIds.includes(r.id)),
-    [records, selectedIds],
+    () => records.filter((r) => selectedIdSet.has(r.id)),
+    [records, selectedIdSet],
   );
 
   const applyToRecords = useCallback(
@@ -1278,24 +1280,20 @@ export function EditorApp() {
   const handleDuplicateSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
     setSource((prev) => {
+      const before = interpretDocument(prev, previewScenario);
+      const byId = new Map(before.map((r) => [r.id, r]));
       let next = prev;
+      const copiedTexts: string[] = [];
       for (const id of selectedIds) {
-        const record = interpretDocument(next, previewScenario).find(
-          (r) => r.id === id,
-        );
+        const record = byId.get(id);
         if (!record) continue;
+        const line = record.sourceRef?.sourceLine ?? record.sourceLine;
+        if (line != null) {
+          const text = getSourceLine(prev, line);
+          if (text) copiedTexts.push(text);
+        }
         next = duplicateRecordLine(next, record);
       }
-      // Prefer selecting the newly inserted copies (last N matching line texts).
-      const copiedTexts = selectedIds
-        .map((id) => {
-          const r = interpretDocument(prev, previewScenario).find(
-            (row) => row.id === id,
-          );
-          const line = r?.sourceRef?.sourceLine ?? r?.sourceLine;
-          return line != null ? getSourceLine(prev, line) : null;
-        })
-        .filter((t): t is string => Boolean(t));
       selectionTextsRef.current = copiedTexts;
       // Match from the end so we prefer the duplicates.
       const after = interpretDocument(next, previewScenario);
@@ -1488,40 +1486,32 @@ export function EditorApp() {
     (ids: string[]) => {
       if (ids.length === 0) return;
       setSource((prev) => {
-        let next = prev;
-        // Back→front so relative order among the selection is preserved.
-        for (const text of lineTextsForIds(ids, next)) {
-          const live = interpretDocument(next, previewScenario);
-          const current = findRecordByLineText(next, text, previewScenario);
-          const last = live[live.length - 1];
-          if (!current || !last || current.id === last.id) continue;
-          next = reorderRecordLine(next, current, last, "after");
-        }
-        return next;
+        const live = interpretDocument(prev, previewScenario);
+        const selected = ids
+          .map((id) => live.find((r) => r.id === id))
+          .filter((r): r is DocumentRecord => Boolean(r));
+        if (selected.length === 0) return prev;
+        return moveRecordLinesToEdge(prev, selected, "front");
       });
       markDirty();
     },
-    [lineTextsForIds, previewScenario, setSource, markDirty],
+    [previewScenario, setSource, markDirty],
   );
 
   const handleSendToBack = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
       setSource((prev) => {
-        let next = prev;
-        // Front→back so relative order among the selection is preserved.
-        for (const text of lineTextsForIds(ids, next).toReversed()) {
-          const live = interpretDocument(next, previewScenario);
-          const current = findRecordByLineText(next, text, previewScenario);
-          const first = live[0];
-          if (!current || !first || current.id === first.id) continue;
-          next = reorderRecordLine(next, current, first, "before");
-        }
-        return next;
+        const live = interpretDocument(prev, previewScenario);
+        const selected = ids
+          .map((id) => live.find((r) => r.id === id))
+          .filter((r): r is DocumentRecord => Boolean(r));
+        if (selected.length === 0) return prev;
+        return moveRecordLinesToEdge(prev, selected, "back");
       });
       markDirty();
     },
-    [lineTextsForIds, previewScenario, setSource, markDirty],
+    [previewScenario, setSource, markDirty],
   );
 
   const handleSelectAll = useCallback(() => {
@@ -2057,25 +2047,121 @@ export function EditorApp() {
     return `/editor?${params.toString()}`;
   }, [protocol, chatId, sessionId, workspaceKey, meta.name]);
 
-  const subtitle = (
-    <>
-      <span>{meta.name || "Untitled"}</span>
-      <span className={styles.dot} aria-hidden>
-        ·
-      </span>
-      <span>
-        {meta.layout} z{meta.zone}
-      </span>
-      {dirty ? (
-        <>
-          <span className={styles.dot} aria-hidden>
-            ·
-          </span>
-          <span className={styles.unsaved}>Unsaved</span>
-        </>
-      ) : null}
-    </>
+  const subtitle = useMemo(
+    () => (
+      <>
+        <span>{meta.name || "Untitled"}</span>
+        <span className={styles.dot} aria-hidden>
+          ·
+        </span>
+        <span>
+          {meta.layout} z{meta.zone}
+        </span>
+        {dirty ? (
+          <>
+            <span className={styles.dot} aria-hidden>
+              ·
+            </span>
+            <span className={styles.unsaved}>Unsaved</span>
+          </>
+        ) : null}
+      </>
+    ),
+    [meta.name, meta.layout, meta.zone, dirty],
   );
+
+  const handleOpenSaveNamed = useCallback(() => setProjectModal("save"), []);
+  const handleToolbarModelPngChange = useCallback(
+    (file: File | null) => {
+      void handleModelPngChange(file);
+    },
+    [handleModelPngChange],
+  );
+  const handleLeftPanelResize = useCallback(
+    (e: React.PointerEvent) => onHandlePointerDown("left", e),
+    [onHandlePointerDown],
+  );
+  const handleRightPanelResize = useCallback(
+    (e: React.PointerEvent) => onHandlePointerDown("right", e),
+    [onHandlePointerDown],
+  );
+
+  const handlePatchName = useCallback(
+    (name: string) => {
+      setSource((prev) => patchWidgetName(prev, name));
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+  const handleTranslateSelected = useCallback(
+    (dx: number, dy: number) => handleTranslate(selectedIds, dx, dy),
+    [handleTranslate, selectedIds],
+  );
+  const handleSetColorSelected = useCallback(
+    (color: EdgeColor) => {
+      applyToRecords(selectedIds, (current, record) =>
+        setRecordColor(current, record, color, zone),
+      );
+    },
+    [applyToRecords, selectedIds, zone],
+  );
+  const handlePatchSelectedRecords = useCallback(
+    (patch: Record<string, string | number>) => {
+      applyToRecords(selectedIds, (current, record) =>
+        patchRecordArgs(current, record, patch, zone),
+      );
+    },
+    [applyToRecords, selectedIds, zone],
+  );
+  const handlePatchSimulate = useCallback(
+    (layout: string, zoneIdx: number) => {
+      setSource((prev) =>
+        prev.replace(
+          /@simulate\s+\S+\s+zone=\d+/,
+          `@simulate ${layout} zone=${zoneIdx}`,
+        ),
+      );
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+  const handleApplyBackground = useCallback(
+    (nextSource: string) => {
+      setSource(nextSource);
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+  const handleBackgroundImageChange = useCallback(
+    async (file: File | null) => {
+      if (!file) {
+        setModelPngBytes(null);
+        setModelPngName(null);
+        return;
+      }
+      if (file.type !== "image/png") {
+        window.alert("Background image must be a PNG.");
+        return;
+      }
+      const buf = new Uint8Array(await file.arrayBuffer());
+      setModelPngBytes(buf);
+      setModelPngName("dashbg.png");
+      void persistModelPngToWorkspace(buf, "dashbg.png");
+      setSource((prev) =>
+        applyDashboardBackground(prev, {
+          mode: "image",
+          imagePath: DEFAULT_BG_IMAGE_PATH,
+        }),
+      );
+      markDirty();
+    },
+    [persistModelPngToWorkspace, setSource, markDirty],
+  );
+  const handleCloseProjectModal = useCallback(() => setProjectModal(null), []);
+  const handleCloseExport = useCallback(() => setExportOpen(false), []);
+  const handleCloseSim = useCallback(() => setSimOpen(false), []);
+  const handleSimReload = useCallback(() => setSimReloadKey((k) => k + 1), []);
+  const handleCloseCanvasMenu = useCallback(() => setCanvasMenu(null), []);
 
   return (
     <div className={styles.editorRoot}>
@@ -2130,7 +2216,7 @@ export function EditorApp() {
         onAddCompanionSuite={handleAddCompanionSuite}
         companionSuiteIds={companions.suites}
         onSave={handleSave}
-        onSaveNamed={() => setProjectModal("save")}
+        onSaveNamed={handleOpenSaveNamed}
         onOpenRecent={handleOpenRecent}
         onOpenLast={handleOpenLast}
         onValidate={handleValidate}
@@ -2147,7 +2233,7 @@ export function EditorApp() {
         onEnrichChange={handleEnrichChange}
         modelPngName={modelPngName}
         modelPngUrl={modelPngUrl}
-        onModelPngChange={(file) => void handleModelPngChange(file)}
+        onModelPngChange={handleToolbarModelPngChange}
         showSnapGuides={showSnapGuides}
         onSnapGuidesChange={setShowSnapGuides}
         snapEnabled={snapEnabled}
@@ -2205,7 +2291,7 @@ export function EditorApp() {
           aria-label="Resize layers panel"
           title="Drag to resize layers · double-click to reset"
           data-active={activeSide === "left" ? "true" : undefined}
-          onPointerDown={(e) => onHandlePointerDown("left", e)}
+          onPointerDown={handleLeftPanelResize}
           onDoubleClick={resetWidths}
         />
 
@@ -2258,7 +2344,7 @@ export function EditorApp() {
           aria-label="Resize properties panel"
           title="Drag to resize properties · double-click to reset"
           data-active={activeSide === "right" ? "true" : undefined}
-          onPointerDown={(e) => onHandlePointerDown("right", e)}
+          onPointerDown={handleRightPanelResize}
           onDoubleClick={resetWidths}
         />
 
@@ -2273,64 +2359,19 @@ export function EditorApp() {
             protocol={protocol}
             discoveredSensors={discoveredSensors}
             enrichOnlySensors={enrichOnlySensors}
-            onPatchName={(name) => {
-              setSource((prev) => patchWidgetName(prev, name));
-              markDirty();
-            }}
+            onPatchName={handlePatchName}
             onPatchRecord={handlePatchRecord}
-            onTranslateSelected={(dx, dy) =>
-              handleTranslate(selectedIds, dx, dy)
-            }
+            onTranslateSelected={handleTranslateSelected}
             onSetColor={handleSetColor}
-            onSetColorSelected={(color) => {
-              applyToRecords(selectedIds, (current, record) =>
-                setRecordColor(current, record, color, zone),
-              );
-            }}
-            onPatchSelectedRecords={(patch) => {
-              applyToRecords(selectedIds, (current, record) =>
-                patchRecordArgs(current, record, patch, zone),
-              );
-            }}
+            onSetColorSelected={handleSetColorSelected}
+            onPatchSelectedRecords={handlePatchSelectedRecords}
             onSetText={handleSetText}
             onSetTextFlags={handleSetTextFlags}
             onBindTelemetry={handleBindTelemetry}
             onRemapSrcSensor={handleRemapSrcSensor}
-            onPatchSimulate={(layout, zoneIdx) => {
-              setSource((prev) =>
-                prev.replace(
-                  /@simulate\s+\S+\s+zone=\d+/,
-                  `@simulate ${layout} zone=${zoneIdx}`,
-                ),
-              );
-              markDirty();
-            }}
-            onApplyBackground={(nextSource) => {
-              setSource(nextSource);
-              markDirty();
-            }}
-            onBackgroundImageChange={async (file) => {
-              if (!file) {
-                setModelPngBytes(null);
-                setModelPngName(null);
-                return;
-              }
-              if (file.type !== "image/png") {
-                window.alert("Background image must be a PNG.");
-                return;
-              }
-              const buf = new Uint8Array(await file.arrayBuffer());
-              setModelPngBytes(buf);
-              setModelPngName("dashbg.png");
-              void persistModelPngToWorkspace(buf, "dashbg.png");
-              setSource((prev) =>
-                applyDashboardBackground(prev, {
-                  mode: "image",
-                  imagePath: DEFAULT_BG_IMAGE_PATH,
-                }),
-              );
-              markDirty();
-            }}
+            onPatchSimulate={handlePatchSimulate}
+            onApplyBackground={handleApplyBackground}
+            onBackgroundImageChange={handleBackgroundImageChange}
             backgroundImageName={modelPngName}
             backgroundImageUrl={modelPngUrl}
           />
@@ -2364,7 +2405,7 @@ export function EditorApp() {
 
       <ExportInstallModal
         open={exportOpen}
-        onClose={() => setExportOpen(false)}
+        onClose={handleCloseExport}
         widgetName={meta.name}
         luaSource={source}
         installMd={installMd}
@@ -2406,15 +2447,15 @@ export function EditorApp() {
         x={canvasMenu?.x ?? 0}
         y={canvasMenu?.y ?? 0}
         items={canvasContextItems}
-        onClose={() => setCanvasMenu(null)}
+        onClose={handleCloseCanvasMenu}
       />
 
       <SimVerifyModal
         source={source}
         open={simOpen}
-        onClose={() => setSimOpen(false)}
+        onClose={handleCloseSim}
         reloadKey={simReloadKey}
-        onReload={() => setSimReloadKey((k) => k + 1)}
+        onReload={handleSimReload}
         scenarioId={previewScenarioId}
         scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
         layoutProfileId={layoutProfileId}
@@ -2428,7 +2469,7 @@ export function EditorApp() {
         mode={projectModal ?? "save"}
         defaultName={meta.name || "Dashboard"}
         projectId={projectId}
-        onClose={() => setProjectModal(null)}
+        onClose={handleCloseProjectModal}
         onSave={handleSaveNamed}
         onOpen={openProjectById}
         onRename={async (id, name, appDataFiles) => {

@@ -20,6 +20,7 @@ import {
   setRecordColor,
   duplicateRecordLine,
   moveRecordLine,
+  moveRecordLinesToEdge,
   reorderRecordLine,
 } from "./luaDocument.ts";
 
@@ -174,6 +175,21 @@ test("duplicateRecordLine copies an anchored draw line into refresh", () => {
     .split("\n")
     .filter((l) => l.includes("drawRectangle")).length;
   assert.equal(after, before + 1);
+});
+
+test("moveRecordLinesToEdge brings selection to front in one pass", () => {
+  let source = insertDrawLine(createStarterSource(), "rect");
+  source = insertDrawLine(source, "circle");
+  source = insertDrawLine(source, "line");
+  const records = interpretDocument(source);
+  const rect = records.find((r) => r.kind === "rect");
+  assert.ok(rect);
+  const moved = moveRecordLinesToEdge(source, [rect!], "front");
+  const draw = moved
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("lcd.draw"));
+  assert.ok(draw.at(-1)?.includes("drawRectangle"));
 });
 
 test("moveRecordLine reorders within refresh body", () => {

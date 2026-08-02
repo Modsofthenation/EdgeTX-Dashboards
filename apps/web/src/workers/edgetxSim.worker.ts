@@ -5,11 +5,19 @@ import {
   type SimWorkerRequest,
   type SimWorkerResponse,
   type MockTelemetryValues,
+  type SimFrameData,
 } from "@widget-gen/sim-preview";
+import {
+  createFrameThrottle,
+  FRAME_MIN_INTERVAL_MS,
+} from "../lib/radioSim/frameThrottle.ts";
 
 let runtime: SimRuntime | null = null;
 let currentMock: MockTelemetryValues | null = null;
 let commandQueue: Promise<void> = Promise.resolve();
+let frameThrottle = createFrameThrottle<SimFrameData>((frame) => {
+  post({ type: "frame", frame }, [frame.buffer]);
+}, FRAME_MIN_INTERVAL_MS);
 
 function post(msg: SimWorkerResponse, transfer?: Transferable[]): void {
   self.postMessage(msg, transfer ?? []);
@@ -39,12 +47,13 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
   try {
     switch (msg.type) {
       case "init": {
+        frameThrottle.reset();
         if (runtime) {
           await runtime.dispose();
         }
         runtime = new SimRuntime(msg.wasmUrl, msg.radioKey, {
           onState: (state) => post({ type: "state", state }),
-          onFrame: (frame) => post({ type: "frame", frame }, [frame.buffer]),
+          onFrame: (frame) => frameThrottle.push(frame),
           onLog: (text) => post({ type: "log", text }),
         });
         if (msg.mock) {
@@ -117,6 +126,7 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         break;
       }
       case "dispose": {
+        frameThrottle.reset();
         await runtime?.dispose();
         runtime = null;
         currentMock = null;

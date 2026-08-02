@@ -49,6 +49,49 @@ export interface OpenLiveTelemetryOptions {
    * Turn off to show only sensors present on the wire (true live CRSF).
    */
   enrichRotorflight?: boolean;
+  /**
+   * Max publish rate for `onValues` (parse still runs every serial chunk).
+   * Default 80ms ≈ 12.5 Hz. Set 0 to emit on every chunk (tests only).
+   */
+  publishIntervalMs?: number;
+  /** Injectable clock for unit tests. */
+  now?: () => number;
+  setTimeout?: (fn: () => void, ms: number) => ReturnType<typeof setTimeout>;
+  clearTimeout?: (id: ReturnType<typeof setTimeout>) => void;
+}
+
+/** Shallow equality for live sensor maps (key count + per-key primitives). */
+export function shallowEqualLiveSensorMaps(
+  a: LiveSensorMap,
+  b: LiveSensorMap,
+): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+}
+
+function sameStringList(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+export function shallowEqualLiveTelemetryMeta(
+  a: LiveTelemetryValuesMeta | undefined,
+  b: LiveTelemetryValuesMeta | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    sameStringList(a.wireKeys, b.wireKeys) &&
+    sameStringList(a.enrichKeys, b.enrichKeys)
+  );
 }
 
 /**
@@ -206,10 +249,7 @@ export function isWebSerialSupported(): boolean {
  * `meta` partitions wire CRSF keys from Rotorflight enrich-only fill keys.
  */
 export async function openLiveTelemetryPort(
-  onValues: (
-    values: LiveSensorMap,
-    meta?: LiveTelemetryValuesMeta,
-  ) => void,
+  onValues: (values: LiveSensorMap, meta?: LiveTelemetryValuesMeta) => void,
   options: OpenLiveTelemetryOptions = {},
 ): Promise<LiveTelemetryHandle> {
   if (!isWebSerialSupported()) {
@@ -219,6 +259,15 @@ export async function openLiveTelemetryPort(
   }
 
   const enrichFlag = { current: options.enrichRotorflight !== false };
+  const publishIntervalMs =
+    options.publishIntervalMs === undefined ? 80 : options.publishIntervalMs;
+  const now = options.now ?? (() => Date.now());
+  const schedule =
+    options.setTimeout ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
+  const cancel =
+    options.clearTimeout ??
+    ((id: ReturnType<typeof setTimeout>) => clearTimeout(id));
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nav = navigator as any;
   const port = await nav.serial.requestPort();
@@ -230,6 +279,63 @@ export async function openLiveTelemetryPort(
   const sensors: LiveSensorMap = {};
   let closed = false;
   let tick = 0;
+  let lastEmitted: LiveSensorMap | null = null;
+  let lastMeta: LiveTelemetryValuesMeta | undefined;
+  let pending: { values: LiveSensorMap; meta: LiveTelemetryValuesMeta } | null =
+    null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let lastPublishAt = 0;
+
+  const emitIfChanged = (
+    values: LiveSensorMap,
+    meta: LiveTelemetryValuesMeta,
+  ) => {
+    if (
+      lastEmitted &&
+      shallowEqualLiveSensorMaps(lastEmitted, values) &&
+      shallowEqualLiveTelemetryMeta(lastMeta, meta)
+    ) {
+      return;
+    }
+    lastEmitted = values;
+    lastMeta = meta;
+    lastPublishAt = now();
+    onValues(values, meta);
+  };
+
+  const flushPending = () => {
+    timer = null;
+    if (!pending || closed) {
+      pending = null;
+      return;
+    }
+    const next = pending;
+    pending = null;
+    emitIfChanged(next.values, next.meta);
+  };
+
+  const queuePublish = (
+    values: LiveSensorMap,
+    meta: LiveTelemetryValuesMeta,
+  ) => {
+    if (publishIntervalMs <= 0) {
+      emitIfChanged(values, meta);
+      return;
+    }
+    pending = { values, meta };
+    const elapsed = now() - lastPublishAt;
+    if (elapsed >= publishIntervalMs) {
+      if (timer != null) {
+        cancel(timer);
+        timer = null;
+      }
+      flushPending();
+      return;
+    }
+    if (timer == null) {
+      timer = schedule(flushPending, Math.max(0, publishIntervalMs - elapsed));
+    }
+  };
 
   const pump = async () => {
     while (!closed) {
@@ -246,7 +352,7 @@ export async function openLiveTelemetryPort(
         ? enrichRotorflightLiveSensors(sensors, tick)
         : { ...sensors };
       const meta = partitionLiveSensorKeys(sensors, out);
-      onValues(out, meta);
+      queuePublish(out, meta);
     }
   };
 
@@ -257,6 +363,11 @@ export async function openLiveTelemetryPort(
   return {
     close: async () => {
       closed = true;
+      if (timer != null) {
+        cancel(timer);
+        timer = null;
+      }
+      pending = null;
       try {
         reader.releaseLock();
       } catch {

@@ -16,6 +16,7 @@ export {
   parseLuaToDrawCommandsStatic,
   applyMockToCommands,
   getLastPreviewParseMeta,
+  clearStaticParseCache,
   parseLcdCallWithSource,
   COLOR_MAP,
   THEME_COLOR_MAP,

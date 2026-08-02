@@ -14,13 +14,28 @@ describe("hotReloadShim", () => {
     assert.equal(paths.genPath, "/WIDGETS/Whoop/gen.lua");
   });
 
-  it("shim loadScripts body with Tx mode and bumps via gen", () => {
+  it("shim polls gen from refresh and caches mod for update/background", () => {
     const shim = buildHotReloadShimSource("Whoop");
+    assert.match(shim, /local function checkReload\(\)/);
     assert.match(shim, /loadScript\(GEN, "Tx"\)/);
     assert.match(shim, /loadScript\(BODY, "Tx"\)/);
     assert.match(shim, /\/WIDGETS\/Whoop\/body\.lua/);
-    assert.match(shim, /local name = "Whoop"/);
-    assert.match(shim, /---@simulate Layout1x1 zone=0/);
+    const updateFn = shim.match(
+      /local function update\(widget, opts\)\n([\s\S]*?)\nend\n\nlocal function refresh/,
+    )?.[1];
+    const backgroundFn = shim.match(
+      /local function background\(widget\)\n([\s\S]*?)\nend\n\nreturn \{/,
+    )?.[1];
+    const refreshFn = shim.match(
+      /local function refresh\(widget, event, touch\)\n([\s\S]*?)\nend\n\nlocal function background/,
+    )?.[1];
+    assert.ok(updateFn);
+    assert.ok(backgroundFn);
+    assert.ok(refreshFn);
+    assert.match(refreshFn!, /checkReload\(\)/);
+    assert.doesNotMatch(updateFn!, /checkReload/);
+    assert.doesNotMatch(backgroundFn!, /checkReload/);
+    assert.match(updateFn!, /mod\.update/);
   });
 
   it("gen source is a numeric return", () => {

@@ -39,6 +39,9 @@ export function buildHotReloadGenSource(generation: number): string {
 /**
  * Stable widget factory. `folderName` must match the WIDGETS folder / name=
  * used by planWidgetDeploy (1–10 chars).
+ *
+ * Gen is polled from refresh() only — update/background use the cached mod
+ * so we do not loadScript(gen.lua) on every EdgeTX callback.
  */
 export function buildHotReloadShimSource(folderName: string): string {
   const safe = sanitizeWidgetFolderName(folderName);
@@ -55,7 +58,7 @@ local GEN = "${gen}"
 local gen = -1
 local mod = nil
 
-local function loadMod()
+local function checkReload()
   local gchunk = loadScript(GEN, "Tx")
   if not gchunk then return mod end
   local ok, g = pcall(gchunk)
@@ -72,7 +75,7 @@ local function loadMod()
 end
 
 local function create(zone, opts)
-  local m = loadMod()
+  local m = checkReload()
   if m and type(m.create) == "function" then
     return m.create(zone, opts)
   end
@@ -80,9 +83,8 @@ local function create(zone, opts)
 end
 
 local function update(widget, opts)
-  local m = loadMod()
-  if m and type(m.update) == "function" then
-    return m.update(widget, opts)
+  if mod and type(mod.update) == "function" then
+    return mod.update(widget, opts)
   end
   widget.options = opts
   return widget
@@ -90,7 +92,7 @@ end
 
 local function refresh(widget, event, touch)
   local prevGen = gen
-  local m = loadMod()
+  local m = checkReload()
   -- When body generation changes, re-run create into the live widget table
   -- so telemetry src caches match the new script (geometry-only edits still
   -- work even without this; structural create() changes need it).
@@ -115,9 +117,8 @@ local function refresh(widget, event, touch)
 end
 
 local function background(widget)
-  local m = loadMod()
-  if m and type(m.background) == "function" then
-    return m.background(widget)
+  if mod and type(mod.background) == "function" then
+    return mod.background(widget)
   end
 end
 

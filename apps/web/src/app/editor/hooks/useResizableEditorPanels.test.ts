@@ -3,10 +3,7 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  CANVAS_MIN,
-  clampPanelWidths,
-} from "./useResizableEditorPanels.ts";
+import { CANVAS_MIN, clampPanelWidths } from "./useResizableEditorPanels.ts";
 
 const hooksDir = dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +22,8 @@ describe("useResizableEditorPanels contract", () => {
     assert.match(src, /minmax\(\$\{CANVAS_MIN\}px, 1fr\)/);
     assert.match(src, /addEventListener\("pointermove"/);
     assert.match(src, /Attach synchronously/);
+    assert.match(src, /schedulePersist/);
+    assert.match(src, /applyWidthsLive/);
   });
 });
 
