@@ -18,12 +18,7 @@ import type {
   TextSizeFlag,
   ZoneOffset,
 } from "@widget-gen/editor-core";
-import {
-  getPrefabSection,
-  getPrefabSensorSlotsForId,
-  listSrcBindings,
-  prefabIdForSourceLine,
-} from "@widget-gen/editor-core";
+import { listSrcBindings } from "@widget-gen/editor-core";
 import type { EdgeColor } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { catalogForDrawKind } from "../elementMeta";
@@ -188,6 +183,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
 }: RecordPropertiesPanelProps) {
   const bgFileRef = useRef<HTMLInputElement>(null);
   const record = selectedRecords.length === 1 ? selectedRecords[0] : null;
+  const showDashboardProps = selectedRecords.length === 0;
   const background = useMemo(() => detectDashboardBackground(source), [source]);
   const kindMeta = record ? catalogForDrawKind(record.kind) : null;
   const sensors = useMemo(() => {
@@ -226,17 +222,6 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
     () => (source ? listSrcBindings(source) : []),
     [source],
   );
-
-  const activePrefabId = useMemo(() => {
-    if (!record?.sourceLine) return null;
-    return prefabIdForSourceLine(source, record.sourceLine);
-  }, [source, record?.sourceLine]);
-
-  const prefabMeta = activePrefabId ? getPrefabSection(activePrefabId) : null;
-  const prefabSlots = useMemo(() => {
-    if (!activePrefabId) return null;
-    return getPrefabSensorSlotsForId(activePrefabId, liveBindings);
-  }, [activePrefabId, liveBindings]);
 
   const zoneX = record?.x != null ? record.x - zone.zoneX : 0;
   const zoneY = record?.y != null ? record.y - zone.zoneY : 0;
@@ -312,78 +297,81 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
         <h2 className={styles.panelTitle}>Properties</h2>
       </div>
 
-      <section className={styles.propSection}>
-        <h3 className={styles.sectionTitle}>Widget</h3>
-        <label className={styles.propField}>
-          <FieldLabel>Name</FieldLabel>
-          <input
-            type="text"
-            className={styles.fieldInput}
-            maxLength={10}
-            value={nameDraft}
-            onChange={(e) => setNameDraft(e.target.value.slice(0, 10))}
-            onBlur={() => {
-              if (nameDraft !== meta.name) onPatchName(nameDraft.slice(0, 10));
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter")
-                (e.currentTarget as HTMLInputElement).blur();
-            }}
-          />
-        </label>
-        <div className={styles.fieldRow}>
+      {showDashboardProps && (
+        <section className={styles.propSection}>
+          <h3 className={styles.sectionTitle}>Widget</h3>
           <label className={styles.propField}>
-            <FieldLabel>Layout</FieldLabel>
-            {onPatchSimulate ? (
-              <select
-                className={styles.fieldInput}
-                value={meta.layout}
-                onChange={(e) => onPatchSimulate(e.target.value, 0)}
-              >
-                {LAYOUT_OPTIONS.map((layout) => (
-                  <option key={layout} value={layout}>
-                    {layout}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                className={styles.fieldInput}
-                value={meta.layout}
-                readOnly
-              />
-            )}
+            <FieldLabel>Name</FieldLabel>
+            <input
+              type="text"
+              className={styles.fieldInput}
+              maxLength={10}
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value.slice(0, 10))}
+              onBlur={() => {
+                if (nameDraft !== meta.name)
+                  onPatchName(nameDraft.slice(0, 10));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter")
+                  (e.currentTarget as HTMLInputElement).blur();
+              }}
+            />
           </label>
-          <label className={styles.propField}>
-            <FieldLabel>Zone</FieldLabel>
-            {onPatchSimulate ? (
-              <select
-                className={styles.fieldInput}
-                value={meta.zone}
-                onChange={(e) =>
-                  onPatchSimulate(meta.layout, Number(e.target.value))
-                }
-              >
-                {Array.from({ length: maxZone + 1 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="number"
-                className={styles.fieldInput}
-                value={meta.zone}
-                readOnly
-              />
-            )}
-          </label>
-        </div>
-      </section>
+          <div className={styles.fieldRow}>
+            <label className={styles.propField}>
+              <FieldLabel>Layout</FieldLabel>
+              {onPatchSimulate ? (
+                <select
+                  className={styles.fieldInput}
+                  value={meta.layout}
+                  onChange={(e) => onPatchSimulate(e.target.value, 0)}
+                >
+                  {LAYOUT_OPTIONS.map((layout) => (
+                    <option key={layout} value={layout}>
+                      {layout}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  className={styles.fieldInput}
+                  value={meta.layout}
+                  readOnly
+                />
+              )}
+            </label>
+            <label className={styles.propField}>
+              <FieldLabel>Zone</FieldLabel>
+              {onPatchSimulate ? (
+                <select
+                  className={styles.fieldInput}
+                  value={meta.zone}
+                  onChange={(e) =>
+                    onPatchSimulate(meta.layout, Number(e.target.value))
+                  }
+                >
+                  {Array.from({ length: maxZone + 1 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {i}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  className={styles.fieldInput}
+                  value={meta.zone}
+                  readOnly
+                />
+              )}
+            </label>
+          </div>
+        </section>
+      )}
 
-      {onApplyBackground && (
+      {showDashboardProps && onApplyBackground && (
         <section className={styles.propSection}>
           <h3 className={styles.sectionTitle}>Background</h3>
           <p className={styles.propEmptyHint}>
@@ -510,95 +498,34 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
         </section>
       )}
 
-      {onRemapSrcSensor && liveBindings.length > 0 && (
+      {showDashboardProps && onRemapSrcSensor && liveBindings.length > 0 && (
         <section className={styles.propSection}>
-          <h3 className={styles.sectionTitle}>
-            {prefabSlots && prefabSlots.length > 0
-              ? `Prefab sensors${prefabMeta ? ` · ${prefabMeta.shortLabel}` : ""}`
-              : "Telemetry sources"}
-          </h3>
+          <h3 className={styles.sectionTitle}>Telemetry sources</h3>
           <p className={styles.propEmptyHint}>
-            {prefabSlots && prefabSlots.length > 0
-              ? "Defaults match the inserted block. Change a sensor to use a different CRSF name (src key stays the same)."
-              : "Cached sensors in create(). Select a prefab draw to focus that block’s slots."}
+            Cached sensors in create(). Select a field on the canvas to edit
+            that element only.
           </p>
-          {(prefabSlots && prefabSlots.length > 0
-            ? prefabSlots
-            : liveBindings.map((b) => ({
-                key: b.key,
-                sensor: b.sensor,
-                label: b.key,
-                defaultSensor: b.sensor,
-              }))
-          ).map((slot) => (
-            <label key={slot.key} className={styles.propField}>
-              <FieldLabel>
-                {slot.label}
-                {"defaultSensor" in slot && slot.sensor !== slot.defaultSensor
-                  ? " *"
-                  : ""}
-              </FieldLabel>
+          {liveBindings.map((binding) => (
+            <label key={binding.key} className={styles.propField}>
+              <FieldLabel>{binding.key}</FieldLabel>
               <select
                 className={styles.fieldInput}
-                value={slot.sensor}
-                title={`src.${slot.key}${
-                  "defaultSensor" in slot
-                    ? ` (default ${slot.defaultSensor})`
-                    : ""
-                }`}
+                value={binding.sensor}
+                title={`src.${binding.key}`}
                 onChange={(e) => {
                   const next = e.target.value;
-                  if (!next || next === slot.sensor) return;
-                  onRemapSrcSensor(slot.key, next);
+                  if (!next || next === binding.sensor) return;
+                  onRemapSrcSensor(binding.key, next);
                 }}
               >
-                {sensorOptions(slot.sensor).map((s) => (
+                {sensorOptions(binding.sensor).map((s) => (
                   <option key={s.label} value={s.label} title={s.hint}>
                     {formatSensorOptionLabel(s)}
-                    {"defaultSensor" in slot && s.label === slot.defaultSensor
-                      ? " (default)"
-                      : ""}
                   </option>
                 ))}
               </select>
             </label>
           ))}
-          {prefabMeta && prefabMeta.telemetryNotes[0] ? (
-            <p className={styles.propEmptyHint}>
-              {prefabMeta.telemetryNotes[0]}
-            </p>
-          ) : null}
-          {prefabSlots &&
-            prefabSlots.length > 0 &&
-            liveBindings.length > prefabSlots.length && (
-              <details className={styles.propDetails}>
-                <summary className={styles.propDetailsSummary}>
-                  All telemetry sources ({liveBindings.length})
-                </summary>
-                <div className={styles.propDetailsBody}>
-                  {liveBindings.map((binding) => (
-                    <label key={binding.key} className={styles.propField}>
-                      <FieldLabel>{binding.key}</FieldLabel>
-                      <select
-                        className={styles.fieldInput}
-                        value={binding.sensor}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          if (!next || next === binding.sensor) return;
-                          onRemapSrcSensor(binding.key, next);
-                        }}
-                      >
-                        {sensorOptions(binding.sensor).map((s) => (
-                          <option key={s.label} value={s.label}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
-                </div>
-              </details>
-            )}
         </section>
       )}
 
@@ -678,16 +605,6 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             </button>
           </div>
         </section>
-      )}
-
-      {!record && selectedRecords.length === 0 && (
-        <div className={styles.propEmpty}>
-          <p className={styles.propEmptyTitle}>Nothing selected</p>
-          <p className={styles.propEmptyHint}>
-            Click a drawable element on the canvas or pick a layer to edit its
-            source line.
-          </p>
-        </div>
       )}
 
       {record && (
