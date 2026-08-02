@@ -1,6 +1,5 @@
 {
   "defaultVersion": "2.11",
-  "generated": "2026-08-02T09:16:15.653Z",
   "versions": {
     "2.10": {
       "version": "2.10",
@@ -3830,38 +3829,6 @@
         },
         {
           "kind": "constant",
-          "label": "FIRST",
-          "insert": "FIRST",
-          "detail": "number",
-          "info": "when a key is pressed a `` event is generated",
-          "name": "FIRST"
-        },
-        {
-          "kind": "constant",
-          "label": "LONG",
-          "insert": "LONG",
-          "detail": "number",
-          "info": "if the key continues to be pressed, then after a while a `` event is generated",
-          "name": "LONG"
-        },
-        {
-          "kind": "constant",
-          "label": "REPEAT",
-          "insert": "REPEAT",
-          "detail": "number",
-          "info": "if the key continues to be pressed, then a `` events are being generated",
-          "name": "REPEAT"
-        },
-        {
-          "kind": "constant",
-          "label": "BREAK",
-          "insert": "BREAK",
-          "detail": "number",
-          "info": "when the key is released a `` event is generated",
-          "name": "BREAK"
-        },
-        {
-          "kind": "constant",
           "label": "EVT_ROT_BREAK",
           "insert": "EVT_ROT_BREAK",
           "detail": "number",
@@ -3878,14 +3845,6 @@
         },
         {
           "kind": "constant",
-          "label": "VIRTUAL",
-          "insert": "VIRTUAL",
-          "detail": "number",
-          "info": "Given the large number of radios supported by OpenTX, and the large difference in keys available on those, a set of KEYS has been defined and are mapped to best fit available hardw",
-          "name": "VIRTUAL"
-        },
-        {
-          "kind": "constant",
           "label": "EVT_VIRTUAL_PREVIOUS_PAGE",
           "insert": "EVT_VIRTUAL_PREVIOUS_PAGE",
           "detail": "number",
@@ -3899,46 +3858,6 @@
           "detail": "number",
           "info": "for FIELDS navigation",
           "name": "EVT_VIRTUAL_PREVIOUS"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___FIRST",
-          "insert": "EVT_TOUCH___FIRST",
-          "detail": "number",
-          "info": "When the finger touches down on the screen",
-          "name": "EVT_TOUCH___FIRST"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___TAP",
-          "insert": "EVT_TOUCH___TAP",
-          "detail": "number",
-          "info": "If the finger leaves the screen after a quick tap",
-          "name": "EVT_TOUCH___TAP"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___BREAK",
-          "insert": "EVT_TOUCH___BREAK",
-          "detail": "number",
-          "info": "If the finger leaves the screen without tap or slide",
-          "name": "EVT_TOUCH___BREAK"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___SLIDE",
-          "insert": "EVT_TOUCH___SLIDE",
-          "detail": "number",
-          "info": "Repeats while the finger is sliding on the screen",
-          "name": "EVT_TOUCH___SLIDE"
-        },
-        {
-          "kind": "constant",
-          "label": "SLIDE",
-          "insert": "SLIDE",
-          "detail": "number",
-          "info": "slideX, SlideY Movement since previous event \\(or start of slide\\)",
-          "name": "SLIDE"
         },
         {
           "kind": "constant",
@@ -7876,38 +7795,6 @@
         },
         {
           "kind": "constant",
-          "label": "FIRST",
-          "insert": "FIRST",
-          "detail": "number",
-          "info": "when a key is pressed a `` event is generated",
-          "name": "FIRST"
-        },
-        {
-          "kind": "constant",
-          "label": "LONG",
-          "insert": "LONG",
-          "detail": "number",
-          "info": "if the key continues to be pressed, then after a while a `` event is generated",
-          "name": "LONG"
-        },
-        {
-          "kind": "constant",
-          "label": "REPEAT",
-          "insert": "REPEAT",
-          "detail": "number",
-          "info": "if the key continues to be pressed, then a `` events are being generated",
-          "name": "REPEAT"
-        },
-        {
-          "kind": "constant",
-          "label": "BREAK",
-          "insert": "BREAK",
-          "detail": "number",
-          "info": "when the key is released a `` event is generated",
-          "name": "BREAK"
-        },
-        {
-          "kind": "constant",
           "label": "EVT_ROT_BREAK",
           "insert": "EVT_ROT_BREAK",
           "detail": "number",
@@ -7924,14 +7811,6 @@
         },
         {
           "kind": "constant",
-          "label": "VIRTUAL",
-          "insert": "VIRTUAL",
-          "detail": "number",
-          "info": "Given the large number of radios supported by OpenTX, and the large difference in keys available on those, a set of KEYS has been defined and are mapped to best fit available hardw",
-          "name": "VIRTUAL"
-        },
-        {
-          "kind": "constant",
           "label": "EVT_VIRTUAL_PREVIOUS_PAGE",
           "insert": "EVT_VIRTUAL_PREVIOUS_PAGE",
           "detail": "number",
@@ -7945,46 +7824,6 @@
           "detail": "number",
           "info": "for FIELDS navigation",
           "name": "EVT_VIRTUAL_PREVIOUS"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___FIRST",
-          "insert": "EVT_TOUCH___FIRST",
-          "detail": "number",
-          "info": "When the finger touches down on the screen",
-          "name": "EVT_TOUCH___FIRST"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___TAP",
-          "insert": "EVT_TOUCH___TAP",
-          "detail": "number",
-          "info": "If the finger leaves the screen after a quick tap",
-          "name": "EVT_TOUCH___TAP"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___BREAK",
-          "insert": "EVT_TOUCH___BREAK",
-          "detail": "number",
-          "info": "If the finger leaves the screen without tap or slide",
-          "name": "EVT_TOUCH___BREAK"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___SLIDE",
-          "insert": "EVT_TOUCH___SLIDE",
-          "detail": "number",
-          "info": "Repeats while the finger is sliding on the screen",
-          "name": "EVT_TOUCH___SLIDE"
-        },
-        {
-          "kind": "constant",
-          "label": "SLIDE",
-          "insert": "SLIDE",
-          "detail": "number",
-          "info": "slideX, SlideY Movement since previous event (or start of slide)",
-          "name": "SLIDE"
         },
         {
           "kind": "constant",
@@ -8933,43 +8772,11 @@
         },
         {
           "kind": "function",
-          "label": "setCFSLedColor",
-          "insert": "setCFSLedColor(id, rvalue, bvalue, cvalue)",
-          "detail": "setCFSLedColor(id, rvalue, bvalue, cvalue)",
-          "info": "Overrides the LED color for a custom function switch - if passed 4 arguments (id, r, g, b) then sets override color - if passed 1 argument (id) then cancels override color",
-          "name": "setCFSLedColor"
-        },
-        {
-          "kind": "function",
           "label": "applyRGBLedColors",
           "insert": "applyRGBLedColors()",
           "detail": "applyRGBLedColors()",
           "info": "Apply RGB led colors previously defined by setRGBLedColor",
           "name": "applyRGBLedColors"
-        },
-        {
-          "kind": "function",
-          "label": "getStickMode",
-          "insert": "getStickMode()",
-          "detail": "getStickMode()",
-          "info": "",
-          "name": "getStickMode"
-        },
-        {
-          "kind": "function",
-          "label": "setIMU_X",
-          "insert": "setIMU_X(offset, range)",
-          "detail": "setIMU_X(offset, range)",
-          "info": "",
-          "name": "setIMU_X"
-        },
-        {
-          "kind": "function",
-          "label": "setIMU_Y",
-          "insert": "setIMU_Y(offset, range)",
-          "detail": "setIMU_Y(offset, range)",
-          "info": "",
-          "name": "setIMU_Y"
         },
         {
           "kind": "function",
@@ -12002,38 +11809,6 @@
         },
         {
           "kind": "constant",
-          "label": "FIRST",
-          "insert": "FIRST",
-          "detail": "number",
-          "info": "when a key is pressed a `` event is generated",
-          "name": "FIRST"
-        },
-        {
-          "kind": "constant",
-          "label": "LONG",
-          "insert": "LONG",
-          "detail": "number",
-          "info": "if the key continues to be pressed, then after a while a `` event is generated",
-          "name": "LONG"
-        },
-        {
-          "kind": "constant",
-          "label": "REPEAT",
-          "insert": "REPEAT",
-          "detail": "number",
-          "info": "if the key continues to be pressed, then a `` events are being generated",
-          "name": "REPEAT"
-        },
-        {
-          "kind": "constant",
-          "label": "BREAK",
-          "insert": "BREAK",
-          "detail": "number",
-          "info": "when the key is released a `` event is generated",
-          "name": "BREAK"
-        },
-        {
-          "kind": "constant",
           "label": "EVT_ROT_BREAK",
           "insert": "EVT_ROT_BREAK",
           "detail": "number",
@@ -12050,14 +11825,6 @@
         },
         {
           "kind": "constant",
-          "label": "VIRTUAL",
-          "insert": "VIRTUAL",
-          "detail": "number",
-          "info": "Given the large number of radios supported by OpenTX, and the large difference in keys available on those, a set of KEYS has been defined and are mapped to best fit available hardw",
-          "name": "VIRTUAL"
-        },
-        {
-          "kind": "constant",
           "label": "EVT_VIRTUAL_PREVIOUS_PAGE",
           "insert": "EVT_VIRTUAL_PREVIOUS_PAGE",
           "detail": "number",
@@ -12071,46 +11838,6 @@
           "detail": "number",
           "info": "for FIELDS navigation",
           "name": "EVT_VIRTUAL_PREVIOUS"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___FIRST",
-          "insert": "EVT_TOUCH___FIRST",
-          "detail": "number",
-          "info": "When the finger touches down on the screen",
-          "name": "EVT_TOUCH___FIRST"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___TAP",
-          "insert": "EVT_TOUCH___TAP",
-          "detail": "number",
-          "info": "If the finger leaves the screen after a quick tap",
-          "name": "EVT_TOUCH___TAP"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___BREAK",
-          "insert": "EVT_TOUCH___BREAK",
-          "detail": "number",
-          "info": "If the finger leaves the screen without tap or slide",
-          "name": "EVT_TOUCH___BREAK"
-        },
-        {
-          "kind": "constant",
-          "label": "EVT_TOUCH___SLIDE",
-          "insert": "EVT_TOUCH___SLIDE",
-          "detail": "number",
-          "info": "Repeats while the finger is sliding on the screen",
-          "name": "EVT_TOUCH___SLIDE"
-        },
-        {
-          "kind": "constant",
-          "label": "SLIDE",
-          "insert": "SLIDE",
-          "detail": "number",
-          "info": "slideX, SlideY Movement since previous event (or start of slide)",
-          "name": "SLIDE"
         },
         {
           "kind": "constant",

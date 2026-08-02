@@ -1,11 +1,10 @@
 import {
   autocompletion,
-  completionKeymap,
   type Completion,
   type CompletionContext,
   type CompletionResult,
 } from "@codemirror/autocomplete";
-import { hoverTooltip, keymap, type Tooltip } from "@codemirror/view";
+import { hoverTooltip, type Tooltip } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
 import {
   DEFAULT_EDGE_TX_VERSION,
@@ -204,55 +203,65 @@ export function edgeTxCompletions(
   return edgeTxCompletionsFor(DEFAULT_EDGE_TX_VERSION)(context);
 }
 
-function tokenAround(pos: number, doc: string): string | null {
+function tokenAround(
+  pos: number,
+  doc: string,
+): { from: number; to: number; text: string } | null {
   let start = pos;
   let end = pos;
   while (start > 0 && /[\w.]/.test(doc[start - 1]!)) start--;
   while (end < doc.length && /[\w.]/.test(doc[end]!)) end++;
   const raw = doc.slice(start, end);
   if (!raw) return null;
-  const parts = raw.match(/[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*/g);
-  if (!parts || parts.length === 0) return null;
-  return parts[parts.length - 1]!;
+  const parts = [...raw.matchAll(/[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*/g)];
+  if (parts.length === 0) return null;
+  const last = parts[parts.length - 1]!;
+  const text = last[0]!;
+  const from = start + (last.index ?? 0);
+  return { from, to: from + text.length, text };
 }
 
 function lookupAt(
   index: CatalogIndex,
   pos: number,
   doc: string,
-): EdgeTxCompletionItem | null {
+): { item: EdgeTxCompletionItem; from: number; to: number } | null {
   const token = tokenAround(pos, doc);
   if (!token) return null;
-  if (index.byLabel.has(token)) return index.byLabel.get(token)!;
-  const bare = token.includes(".") ? token.split(".").pop()! : token;
-  return (
-    index.byName.get(bare)?.find((i) => !i.module) ??
-    index.byName.get(bare)?.[0] ??
-    null
-  );
+  let item = index.byLabel.get(token.text) ?? null;
+  if (!item) {
+    const bare = token.text.includes(".")
+      ? token.text.split(".").pop()!
+      : token.text;
+    item =
+      index.byName.get(bare)?.find((i) => !i.module) ??
+      index.byName.get(bare)?.[0] ??
+      null;
+  }
+  if (!item) return null;
+  return { item, from: token.from, to: token.to };
 }
 
 function edgeTxHoverTooltip(edgeTxVersion: string): Extension {
   const index = resolveCompletionCatalog(edgeTxVersion);
   return hoverTooltip((view, pos): Tooltip | null => {
-    const item = lookupAt(index, pos, view.state.doc.toString());
-    if (!item) return null;
-    const start = Math.max(0, pos - item.label.length);
+    const hit = lookupAt(index, pos, view.state.doc.toString());
+    if (!hit) return null;
     return {
-      pos: start,
-      end: pos + 1,
+      pos: hit.from,
+      end: hit.to,
       above: true,
       create() {
         const dom = document.createElement("div");
         dom.className = "cm-edgetx-hover";
         const title = document.createElement("div");
         title.className = "cm-edgetx-hover-title";
-        title.textContent = item.detail || item.label;
+        title.textContent = hit.item.detail || hit.item.label;
         dom.appendChild(title);
-        if (item.info) {
+        if (hit.item.info) {
           const body = document.createElement("div");
           body.className = "cm-edgetx-hover-body";
-          body.textContent = item.info;
+          body.textContent = hit.item.info;
           dom.appendChild(body);
         }
         return { dom };
@@ -273,7 +282,6 @@ export function edgeTxLuaSupport(
       activateOnTyping: true,
       icons: true,
     }),
-    keymap.of(completionKeymap),
     edgeTxHoverTooltip(edgeTxVersion),
   ];
 }

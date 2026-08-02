@@ -1952,6 +1952,8 @@ export function EditorApp() {
         return;
       }
       if (e.key === "Escape") {
+        // Let CodeMirror (completions / search) own Escape while typing Lua.
+        if (editingText) return;
         // Priority: UI chrome → selection → firmware RTN (one job per press).
         if (pasteOpen || exportOpen || canvasMenu || simOpen || projectModal) {
           setPasteOpen(false);

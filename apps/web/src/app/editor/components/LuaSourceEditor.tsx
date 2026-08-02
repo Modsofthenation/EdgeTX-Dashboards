@@ -15,7 +15,12 @@ import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { EditorSelection, type Extension } from "@codemirror/state";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
+import {
+  linter,
+  lintGutter,
+  setDiagnostics,
+  type Diagnostic,
+} from "@codemirror/lint";
 import { edgeTxLuaSupport } from "../lib/edgetxCompletions";
 import { buildEdgeTxEditorTheme } from "../lib/edgetxEditorTheme";
 import {
@@ -41,13 +46,13 @@ function issuesToDiagnostics(
   doc: string,
   issues: LuaLintIssue[],
 ): Diagnostic[] {
-  const lineCount = doc === "" ? 1 : doc.split("\n").length;
+  const lines = doc === "" ? [""] : doc.split("\n");
+  const lineCount = lines.length;
   const out: Diagnostic[] = [];
   for (const issue of issues) {
     if (issue.line == null || issue.line < 1) continue;
     const line = Math.min(issue.line, lineCount);
     let from = 0;
-    const lines = doc.split("\n");
     for (let i = 0; i < line - 1; i++) {
       from += (lines[i]?.length ?? 0) + 1;
     }
@@ -151,11 +156,16 @@ export const LuaSourceEditor = memo(
       ];
     }, [edgeTxVersion]);
 
-    // Re-run linter when validation issues change.
+    // Push validation diagnostics when the issue list changes.
     useEffect(() => {
       const view = cmRef.current?.view;
       if (!view) return;
-      view.dispatch({});
+      view.dispatch(
+        setDiagnostics(
+          view.state,
+          issuesToDiagnostics(view.state.doc.toString(), issues),
+        ),
+      );
     }, [issues]);
 
     return (

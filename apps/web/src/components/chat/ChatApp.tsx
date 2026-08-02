@@ -334,10 +334,11 @@ function ChatMessageListSection() {
           radioId,
           layoutProfileId,
           chatId,
+          edgeTxVersion,
         }),
       );
     },
-    [router, radioId, layoutProfileId, chatId],
+    [router, radioId, layoutProfileId, chatId, edgeTxVersion],
   );
   const handleGenerateSuggestion = useCallback(
     (item: TemplateGalleryItem) =>

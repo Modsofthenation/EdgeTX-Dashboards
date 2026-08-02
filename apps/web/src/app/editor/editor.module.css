@@ -2077,7 +2077,7 @@
 }
 
 .luaCodeMirror :global(.cm-scroller) {
-  overflow: auto !important;
+  overflow: auto;
 }
 
 .actionLabelFull {

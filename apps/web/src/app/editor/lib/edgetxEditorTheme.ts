@@ -26,6 +26,12 @@ export function buildEdgeTxEditorTheme(): Extension {
     { tag: t.punctuation, color: "var(--text-muted)" },
   ]);
 
+  const appearance =
+    typeof document !== "undefined"
+      ? (document.documentElement.getAttribute("data-theme") ?? "light")
+      : "light";
+  const dark = appearance !== "light";
+
   const theme = EditorView.theme(
     {
       "&": {
@@ -133,7 +139,7 @@ export function buildEdgeTxEditorTheme(): Extension {
           "color-mix(in srgb, var(--accent-bright) 45%, transparent)",
       },
     },
-    { dark: false },
+    { dark },
   );
 
   return [theme, syntaxHighlighting(highlight)];

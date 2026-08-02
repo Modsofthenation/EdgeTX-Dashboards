@@ -3,7 +3,11 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { TEMPLATE_GALLERY, templatePreviewSrc } from "./templateGallery.ts";
+import {
+  TEMPLATE_GALLERY,
+  templatePreviewSrc,
+  buildTemplateEditorHref,
+} from "./templateGallery.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicTemplates = join(__dirname, "..", "..", "public", "templates");
@@ -65,5 +69,18 @@ describe("TEMPLATE_GALLERY", () => {
         `missing color272 preview PNG: ${color272}`,
       );
     }
+  });
+
+  it("preserves edgeTxVersion in template editor links", () => {
+    const href = buildTemplateEditorHref({
+      templateId: "freestyle",
+      protocol: "betaflight",
+      radioId: "tx15",
+      edgeTxVersion: "2.12.0",
+      chatId: "c1",
+    });
+    assert.match(href, /template=freestyle/);
+    assert.match(href, /edgeTxVersion=2\.12\.0/);
+    assert.match(href, /chatId=c1/);
   });
 });

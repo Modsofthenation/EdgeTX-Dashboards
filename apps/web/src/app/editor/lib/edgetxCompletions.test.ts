@@ -104,4 +104,17 @@ describe("edgeTxCompletions", () => {
       assert.equal(apply.includes("["), false, `${opt.label} → ${apply}`);
     }
   });
+
+  it("excludes documentation-artifact constants", () => {
+    const labels = listEdgeTxCompletionLabels("2.12.0");
+    assert.equal(labels.includes("FIRST"), false);
+    assert.equal(labels.includes("EVT_TOUCH___FIRST"), false);
+    assert.ok(labels.includes("WHITE"));
+  });
+
+  it("falls back to a nearby catalog for unknown versions", () => {
+    const catalog = resolveCompletionCatalog("3.0.0");
+    assert.ok(catalog.items.length > 0);
+    assert.equal(catalog.stubVersion, "2.12");
+  });
 });

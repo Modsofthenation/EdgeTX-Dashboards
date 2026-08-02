@@ -15,6 +15,16 @@ const ROOT = join(fileURLToPath(import.meta.url), "..", "..");
 const DEFAULT_VERSIONS = ["2.10", "2.11", "2.12"];
 const DEFAULT_VERSION = "2.11";
 
+/** Doc-only macro fragments / mangled names that are not real Lua globals. */
+const DOC_ARTIFACT_CONSTANTS = new Set([
+  "FIRST",
+  "LONG",
+  "REPEAT",
+  "BREAK",
+  "VIRTUAL",
+  "SLIDE",
+]);
+
 function resolveVersions() {
   const raw =
     process.env.EDGETX_STUB_VERSIONS ?? process.env.EDGETX_STUB_VERSION;
@@ -43,11 +53,29 @@ function slimDesc(d) {
     .slice(0, 180);
 }
 
-function buildItems(api) {
+/** True when sinceVersion is newer than the stub folder major.minor. */
+function sinceNewerThanCatalog(sinceVersion, catalogVersion) {
+  if (!sinceVersion) return false;
+  const since = String(sinceVersion).match(/^(\d+)\.(\d+)/);
+  const catalog = String(catalogVersion).match(/^(\d+)\.(\d+)/);
+  if (!since || !catalog) return false;
+  const s = Number(since[1]) * 1000 + Number(since[2]);
+  const c = Number(catalog[1]) * 1000 + Number(catalog[2]);
+  return s > c;
+}
+
+function isDocArtifactConstant(name) {
+  if (DOC_ARTIFACT_CONSTANTS.has(name)) return true;
+  // Mangled EVT_TOUCH___* fragments from incomplete preprocessor expansion.
+  return /^EVT_TOUCH___/.test(name);
+}
+
+function buildItems(api, catalogVersion) {
   const items = [];
 
   for (const f of api.functions ?? []) {
     if (!f?.name) continue;
+    if (sinceNewerThanCatalog(f.sinceVersion, catalogVersion)) continue;
     const mod = f.module && f.module !== "general" ? f.module : null;
     const label = mod ? `${mod}.${f.name}` : f.name;
     // Only required params in the insert text — optional markers like [flags]
@@ -69,6 +97,8 @@ function buildItems(api) {
 
   for (const c of api.constants ?? []) {
     if (!c?.name) continue;
+    if (isDocArtifactConstant(c.name)) continue;
+    if (sinceNewerThanCatalog(c.sinceVersion, catalogVersion)) continue;
     items.push({
       kind: "constant",
       label: c.name,
@@ -92,7 +122,7 @@ for (const version of versions) {
     continue;
   }
   const api = JSON.parse(readFileSync(apiPath, "utf8"));
-  const items = buildItems(api);
+  const items = buildItems(api, version);
   catalogs[version] = {
     version: api.version ?? version,
     source: `stubs/${version}/edgetx-lua-api.json`,
@@ -113,10 +143,10 @@ const payload = {
   defaultVersion: catalogs[DEFAULT_VERSION]
     ? DEFAULT_VERSION
     : Object.keys(catalogs)[0],
-  generated: new Date().toISOString(),
   versions: catalogs,
 };
-writeFileSync(outPath, `${JSON.stringify(payload)}\n`);
+// Pretty-print so Prettier fmt:check stays clean after regen.
+writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`);
 console.log(
   `Wrote ${Object.keys(catalogs).length} version catalog(s) → apps/web/src/app/editor/lib/edgetxCompletionsData.json`,
 );
