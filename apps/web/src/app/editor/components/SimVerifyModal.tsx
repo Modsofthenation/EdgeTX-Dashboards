@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { hasColorWasmSim } from "@widget-gen/shared";
 import {
   getPreviewScenario,
   type LayoutScenario,
 } from "@widget-gen/layout-verify";
+import {
+  SIM_OPFS_HANDOFF_MS,
+  isModalSimHandoffReady,
+} from "~/lib/radioSim/simOpfsHandoff";
 import styles from "../editor.module.css";
 
 const RadioSimPreview = dynamic(
@@ -46,10 +50,34 @@ export function SimVerifyModal({
   const [interactiveControls, setInteractiveControls] = useState<{
     openInteractive: () => void;
   } | null>(null);
+  /** reloadKey that finished the OPFS handoff delay (null = not ready). */
+  const [completedReloadKey, setCompletedReloadKey] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!open) {
+      setCompletedReloadKey(null);
+      return;
+    }
+    // Matching completedReloadKey === reloadKey already unmounts on the reload
+    // render (stale completed key ≠ new reloadKey). Only schedule the delay.
+    const timer = window.setTimeout(() => {
+      setCompletedReloadKey(reloadKey);
+    }, SIM_OPFS_HANDOFF_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [open, reloadKey]);
 
   if (!open) return null;
   const scenario = scenarioOverride ?? getPreviewScenario(scenarioId);
   const wasmReady = hasColorWasmSim(radioId);
+  const runtimeReady = isModalSimHandoffReady({
+    open,
+    reloadKey,
+    completedReloadKey,
+  });
 
   return (
     <div className={styles.modalBackdrop} role="presentation" onClick={onClose}>
@@ -84,7 +112,7 @@ export function SimVerifyModal({
               : null}
         </p>
         <div className={styles.simModalBody}>
-          {wasmReady ? (
+          {wasmReady && runtimeReady ? (
             <RadioSimPreview
               key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}-${radioId}-${edgeTxVersion}-${modelPng ? modelPng.byteLength : 0}`}
               luaSource={source}
@@ -99,6 +127,10 @@ export function SimVerifyModal({
               onInteractiveControls={setInteractiveControls}
               onRunningChange={onRunningChange}
             />
+          ) : wasmReady ? (
+            <p className={styles.modalHint} data-testid="sim-opfs-handoff">
+              Starting radio preview…
+            </p>
           ) : (
             <p className={styles.modalHint}>
               Close this dialog and use the Layout canvas preview for geometry

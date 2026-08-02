@@ -512,6 +512,9 @@ export function RadioSimPreview({
             ? `${styles.simPreviewRoot} ${styles.simPreviewFill}`
             : styles.simPreviewRoot
         }
+        data-testid="radio-sim-preview"
+        data-sim-phase={state.phase}
+        data-sim-recovering={autoRecovering ? "true" : undefined}
       >
         <div className={styles.radioSimMessage}>
           <p>Radio preview unavailable: {state.error}</p>
@@ -551,6 +554,8 @@ export function RadioSimPreview({
             ? `${styles.simPreviewRoot} ${styles.simPreviewFill}`
             : styles.simPreviewRoot
         }
+        data-testid="radio-sim-preview"
+        data-sim-phase={state.phase}
       >
         <div className={styles.radioSimMessage}>
           <div className={styles.radioSimBrand} aria-hidden>
