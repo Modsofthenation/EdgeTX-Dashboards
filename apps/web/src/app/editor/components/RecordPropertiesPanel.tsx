@@ -27,6 +27,7 @@ import type {
 } from "@widget-gen/editor-core";
 import { listSrcBindings } from "@widget-gen/editor-core";
 import type { EdgeColor } from "@widget-gen/layout-verify";
+import { fontSizeToFlag } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { catalogForDrawKind } from "../elementMeta";
 import { SENSOR_CATALOG, formatSensorOptionLabel } from "../lib/sensorCatalog";
@@ -287,12 +288,12 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
     }
     return first - zone.zoneY;
   }, [selectedRecords, zone.zoneY]);
-  const textSize =
-    record?.fontSize && record.fontSize >= 20
-      ? "DBLSIZE"
-      : record?.fontSize && record.fontSize >= 14
-        ? "MIDSIZE"
-        : "SMLSIZE";
+  const resolvedFlag =
+    record?.fontSize != null ? fontSizeToFlag(record.fontSize) : null;
+  const textSize: TextSizeFlag =
+    resolvedFlag === "MIDSIZE" || resolvedFlag === "DBLSIZE"
+      ? resolvedFlag
+      : "SMLSIZE";
   const textAlign = record?.textAlign ?? "left";
   const detectedBinding = useMemo(
     () => (record ? detectTextBinding(source, record) : null),

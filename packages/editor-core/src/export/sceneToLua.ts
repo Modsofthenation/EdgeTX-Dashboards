@@ -1,3 +1,4 @@
+import { fontSizeToFlag } from "@widget-gen/layout-verify";
 import type { EdgeColor } from "@widget-gen/layout-verify";
 import type {
   EditorElement,
@@ -9,9 +10,7 @@ import { hexToEdgeColor } from "../colors.ts";
 
 function fontFlagsForElement(el: TextElement): string {
   if (el.fontFlags?.length) return el.fontFlags.join(" + ");
-  if (el.fontSize >= 20) return "DBLSIZE";
-  if (el.fontSize >= 14) return "MIDSIZE";
-  return "SMLSIZE";
+  return fontSizeToFlag(el.fontSize) ?? "";
 }
 
 function edgeColorName(color: string): EdgeColor {
@@ -64,7 +63,10 @@ function emitElementDraw(
 
   switch (el.kind) {
     case "text": {
-      const flags = `${fontFlagsForElement(el)} + ${color(el.color)}`;
+      const sizeFlags = fontFlagsForElement(el);
+      const flags = sizeFlags
+        ? `${sizeFlags} + ${color(el.color)}`
+        : color(el.color);
       lines.push(
         `${indent}lcd.drawText(${el.x}, ${el.y}, ${emitTextValue(el, locals)}, ${flags})`,
       );
@@ -313,7 +315,7 @@ export function createDefaultElement(
         x: cx - 40,
         y: cy,
         content: "Label",
-        fontSize: 12,
+        fontSize: 17,
         color: "WHITE",
         fontFlags: ["SMLSIZE"],
       };

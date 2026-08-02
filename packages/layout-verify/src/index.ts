@@ -1,4 +1,5 @@
 export * from "./types.ts";
+export * from "./fontMetrics.ts";
 export * from "./bbox.ts";
 export * from "./overlap.ts";
 export * from "./mockTelemetry.ts";

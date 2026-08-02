@@ -1,35 +1,29 @@
 import type { BoundingBox, DrawRecord } from "./types.ts";
+import { edgeTxTextSize, layoutBudgetTextSize } from "./fontMetrics.ts";
 
-/** TX15 character widths (px/char) — knowledge/design/tx15-text-layout.md */
-const CHAR_W: Record<number, number> = {
-  12: 6,
-  18: 9,
-  26: 12,
-  10: 6,
-  14: 9,
-  20: 12,
-};
+export {
+  edgeTxCharWidth,
+  edgeTxTextSize,
+  layoutBudgetTextSize,
+} from "./fontMetrics.ts";
 
-/** EdgeTX fixed advance for a font size (SML=6, MID=9, DBL=12). */
-export function edgeTxCharWidth(fontSize: number): number {
-  return CHAR_W[fontSize] ?? Math.max(1, Math.round(fontSize * 0.5));
-}
+export type TextMetricsMode = "lcd" | "layout";
 
-/** EdgeTX text footprint used by overlap checks and the editor selection overlay. */
-export function edgeTxTextSize(
+function textSizeForMode(
   text: string,
   fontSize: number,
+  mode: TextMetricsMode,
 ): { w: number; h: number } {
-  return {
-    w: Math.max(1, text.length * edgeTxCharWidth(fontSize)),
-    h: fontSize,
-  };
+  return mode === "layout"
+    ? layoutBudgetTextSize(text, fontSize)
+    : edgeTxTextSize(text, fontSize);
 }
 
 export function bboxForRecord(
   record: DrawRecord,
   lcdW = 480,
   lcdH = 320,
+  textMetrics: TextMetricsMode = "lcd",
 ): BoundingBox | null {
   switch (record.kind) {
     case "clear":
@@ -46,9 +40,9 @@ export function bboxForRecord(
       };
 
     case "text": {
-      const fontSize = record.fontSize ?? 12;
+      const fontSize = record.fontSize ?? 17;
       const text = record.text ?? "";
-      const { w, h } = edgeTxTextSize(text, fontSize);
+      const { w, h } = textSizeForMode(text, fontSize, textMetrics);
       let x = record.x ?? 0;
       const y = record.y ?? 0;
       const align = record.textAlign ?? "left";

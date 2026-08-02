@@ -116,7 +116,7 @@ export function findOverlaps(
   const hits: OverlapHit[] = [];
 
   const boxes: (BoundingBox | null)[] = records.map((r) =>
-    bboxForRecord(r, lcdW, lcdH),
+    bboxForRecord(r, lcdW, lcdH, "layout"),
   );
 
   for (let i = 0; i < records.length - 1; i++) {

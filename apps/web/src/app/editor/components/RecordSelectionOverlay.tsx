@@ -16,7 +16,7 @@ import {
   type SnapGuide,
   type ZoneOffset,
 } from "@widget-gen/editor-core";
-import { measurePreviewText } from "~/lib/luaPreviewEngine";
+import { edgeTxTextSize } from "@widget-gen/layout-verify";
 import { TransformHandles } from "./TransformHandles";
 import type { CanvasLayout } from "../lib/canvasLayout";
 import styles from "../editor.module.css";
@@ -115,7 +115,6 @@ export function RecordSelectionOverlay({
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<DragSession | null>(null);
   const [marquee, setMarquee] = useState<BoundingBox | null>(null);
-  const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const rafRef = useRef<number | null>(null);
   const pendingLiveRef = useRef<LiveDragState | null>(null);
   const pendingPointerRef = useRef<{
@@ -124,16 +123,11 @@ export function RecordSelectionOverlay({
   } | null>(null);
   const marqueeRafRef = useRef<number | null>(null);
 
-  const measureText = useCallback((text: string, fontSize: number) => {
-    if (typeof document === "undefined") {
-      return measurePreviewText(text, fontSize, null);
-    }
-    if (!measureCtxRef.current) {
-      const c = document.createElement("canvas");
-      measureCtxRef.current = c.getContext("2d");
-    }
-    return measurePreviewText(text, fontSize, measureCtxRef.current);
-  }, []);
+  /** EdgeTX color-LCD advances — match WASM glyphs, not browser monospace. */
+  const measureText = useCallback(
+    (text: string, fontSize: number) => edgeTxTextSize(text, fontSize),
+    [],
+  );
 
   const baseBoxById = useMemo(() => {
     const map = new Map<string, BoundingBox>();

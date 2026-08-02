@@ -1,4 +1,5 @@
 import type { DrawRecord } from "@widget-gen/layout-verify";
+import { fontSizeToFlag } from "@widget-gen/layout-verify";
 import { hexToEdgeColor } from "../colors.ts";
 import { newElementId } from "../ids.ts";
 import type { EditorElement, TextBinding, TextFormat } from "../types.ts";
@@ -39,7 +40,7 @@ function inferTextBinding(
 }
 
 function fontSizeFromRecord(record: DrawRecord): number {
-  return record.fontSize ?? 12;
+  return record.fontSize ?? 17;
 }
 
 function mapRecordToElement(
@@ -67,12 +68,8 @@ function mapRecordToElement(
       const binding = inferTextBinding(text, telemetryKeys);
       const color = hexToEdgeColor(record.color);
       const fontSize = fontSizeFromRecord(record);
-      const fontFlags =
-        fontSize >= 20
-          ? ["DBLSIZE"]
-          : fontSize >= 14
-            ? ["MIDSIZE"]
-            : ["SMLSIZE"];
+      const sizeFlag = fontSizeToFlag(fontSize);
+      const fontFlags = sizeFlag ? [sizeFlag] : [];
 
       if (binding) {
         return {
