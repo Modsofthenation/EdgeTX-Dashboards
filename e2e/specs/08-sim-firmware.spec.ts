@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { getJson } from "../helpers/api.ts";
-import { gotoHome, openPreferences } from "../helpers/ui.ts";
+import { gotoSettings } from "../helpers/ui.ts";
 
 test.describe("Simulator firmware", () => {
   test("API reports TX15 wasm presence after sync", async ({ request }) => {
@@ -30,7 +30,7 @@ test.describe("Simulator firmware", () => {
     expect(tx15!.ok).toBe(true);
   });
 
-  test("Preferences Simulator tab reflects API readiness", async ({
+  test("Settings Simulator tab reflects API readiness", async ({
     page,
     request,
   }) => {
@@ -39,15 +39,13 @@ test.describe("Simulator firmware", () => {
       "/api/sim-firmware",
     );
 
-    await gotoHome(page);
-    await openPreferences(page, "Simulator WASM");
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
+    await gotoSettings(page, "simulator");
 
     if (body.ready) {
-      await expect(dialog.getByText(/ready|OK|present/i).first()).toBeVisible();
+      await expect(page.getByText(/ready|OK|present/i).first()).toBeVisible();
     } else {
       await expect(
-        dialog.getByRole("button", { name: /Download WASM/i }),
+        page.getByRole("button", { name: /Download WASM/i }),
       ).toBeVisible();
     }
   });

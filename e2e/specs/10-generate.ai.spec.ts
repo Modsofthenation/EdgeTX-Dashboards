@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { gotoHome } from "../helpers/ui.ts";
+import { gotoStudio } from "../helpers/ui.ts";
 
 /**
  * Optional live AI generation tests.
@@ -53,7 +53,7 @@ test.describe("Live AI generation", () => {
   });
 
   test("generate a minimal dashboard end-to-end", async ({ page }) => {
-    await gotoHome(page);
+    await gotoStudio(page);
 
     await expect(page.getByText("AI not configured")).toHaveCount(0, {
       timeout: 20_000,

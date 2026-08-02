@@ -123,13 +123,11 @@ test.describe("Editor workflow", () => {
     ).toBeVisible({ timeout: 15_000 });
   });
 
-  test("More menu exposes Preferences", async ({ page }) => {
+  test("More menu exposes Settings", async ({ page }) => {
     await gotoEditor(page);
     await page.getByRole("button", { name: "More" }).click();
-    await page.getByRole("menuitem", { name: /Preferences/i }).click();
-    await expect(
-      page.getByRole("dialog", { name: "Preferences" }),
-    ).toBeVisible();
+    await page.getByRole("menuitem", { name: /Settings/i }).click();
+    await expect(page).toHaveURL(/\/settings/);
   });
 
   test("narrow viewport still exposes editor actions", async ({ page }) => {

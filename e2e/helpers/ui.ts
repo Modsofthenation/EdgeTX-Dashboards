@@ -19,6 +19,16 @@ export async function gotoHome(page: Page): Promise<void> {
   await page.getByRole("navigation", { name: "Primary" }).waitFor();
 }
 
+export async function gotoStudio(
+  page: Page,
+  query: Record<string, string> = {},
+): Promise<void> {
+  await dismissFirstRunWizard(page);
+  const qs = new URLSearchParams(query).toString();
+  await page.goto(qs ? `/studio?${qs}` : "/studio");
+  await page.getByRole("navigation", { name: "Primary" }).waitFor();
+}
+
 export async function gotoEditor(
   page: Page,
   query: Record<string, string> = {},
@@ -29,8 +39,27 @@ export async function gotoEditor(
   await page.getByRole("navigation", { name: "Primary" }).waitFor();
 }
 
-/** Primary chrome nav link (exact), not "Open Layout" / "Build in Layout". */
-export function primaryNavLink(page: Page, name: "Generate" | "Layout") {
+export async function gotoTemplates(page: Page): Promise<void> {
+  await dismissFirstRunWizard(page);
+  await page.goto("/templates");
+  await page.getByRole("navigation", { name: "Primary" }).waitFor();
+}
+
+export async function gotoSettings(
+  page: Page,
+  tab?: "appearance" | "ai" | "simulator" | "defaults",
+): Promise<void> {
+  await dismissFirstRunWizard(page);
+  const qs = tab ? `?tab=${tab}` : "?tab=appearance";
+  await page.goto(`/settings${qs}`);
+  await page.getByRole("navigation", { name: "Primary" }).waitFor();
+}
+
+/** Primary chrome nav link (exact). */
+export function primaryNavLink(
+  page: Page,
+  name: "Home" | "Studio" | "Editor" | "Templates" | "Settings",
+) {
   return page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
     name,
     exact: true,
@@ -48,21 +77,43 @@ export async function ensureChatsPanelOpen(page: Page): Promise<void> {
   });
 }
 
+export async function openSettings(
+  page: Page,
+  tab?: "Appearance" | "AI providers" | "Simulator" | "Defaults",
+): Promise<void> {
+  await page
+    .getByRole("link", { name: "Settings", exact: true })
+    .first()
+    .click();
+  await expectSettingsPage(page);
+  if (tab) {
+    await page.getByRole("tab", { name: tab }).click();
+  }
+}
+
+async function expectSettingsPage(page: Page): Promise<void> {
+  await page.waitForURL(/\/settings/);
+  await page
+    .getByRole("heading", { name: /Appearance|AI|Simulator|Defaults/i })
+    .waitFor();
+}
+
+/** @deprecated Use openSettings — Preferences modal was replaced by /settings. */
 export async function openPreferences(
   page: Page,
   tab?: "Appearance" | "AI" | "Simulator WASM",
 ): Promise<void> {
-  await page.getByRole("button", { name: "Preferences" }).click();
-  const dialog = page.getByRole("dialog", { name: "Preferences" });
-  await dialog.waitFor();
-  if (tab) {
-    await dialog.getByRole("tab", { name: tab }).click();
-  }
+  const map = {
+    Appearance: "Appearance",
+    AI: "AI providers",
+    "Simulator WASM": "Simulator",
+  } as const;
+  await openSettings(page, tab ? map[tab] : "Appearance");
 }
 
 export async function closePreferences(page: Page): Promise<void> {
-  const dialog = page.getByRole("dialog", { name: "Preferences" });
-  if (await dialog.isVisible().catch(() => false)) {
-    await dialog.getByRole("button", { name: "Close" }).click();
+  // Settings is a page now — navigate home to leave it.
+  if (page.url().includes("/settings")) {
+    await page.goto("/");
   }
 }

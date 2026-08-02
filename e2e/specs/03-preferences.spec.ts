@@ -2,99 +2,79 @@ import { test, expect } from "@playwright/test";
 import {
   closePreferences,
   gotoHome,
+  gotoSettings,
   openPreferences,
   primaryNavLink,
 } from "../helpers/ui.ts";
 
-test.describe("Preferences", () => {
+test.describe("Settings", () => {
   test.beforeEach(async ({ page }) => {
     await gotoHome(page);
   });
 
   test("opens Appearance tab with theme swatches", async ({ page }) => {
     await openPreferences(page, "Appearance");
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
-    await expect(
-      dialog.getByRole("tab", { name: "Appearance" }),
-    ).toHaveAttribute("aria-selected", "true");
-    await expect(dialog.locator("[data-theme-preview]").first()).toBeVisible();
-    await expect(dialog.getByRole("button", { name: /^Dark\b/ })).toBeVisible();
-    await expect(
-      dialog.getByRole("button", { name: /^Light\b/ }),
-    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Appearance" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator("[data-theme-preview]").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Dark\b/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Light\b/ })).toBeVisible();
   });
 
   test("switching theme updates document attribute", async ({ page }) => {
-    await openPreferences(page, "Appearance");
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
-    const forest = dialog.locator('[data-theme-preview="forest"]');
+    await gotoSettings(page, "appearance");
+    const forest = page.locator('[data-theme-preview="forest"]');
     await forest.click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "forest");
 
-    const midnight = dialog.locator('[data-theme-preview="midnight"]');
+    const midnight = page.locator('[data-theme-preview="midnight"]');
     await midnight.click();
     await expect(page.locator("html")).toHaveAttribute(
       "data-theme",
       "midnight",
     );
-    await closePreferences(page);
   });
 
   test("AI tab shows provider controls and not-configured status", async ({
     page,
   }) => {
-    await openPreferences(page, "AI");
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
-    await expect(dialog.getByText(/AI provider/i)).toBeVisible();
-    await expect(dialog.getByText(/Not configured|Checking/i)).toBeVisible();
-    await expect(dialog.locator("select").first()).toBeVisible();
+    await gotoSettings(page, "ai");
+    await expect(page.getByText(/AI provider/i)).toBeVisible();
+    await expect(page.getByText(/Not configured|Checking/i)).toBeVisible();
+    await expect(page.locator("select").first()).toBeVisible();
   });
 
-  test("AI banner Open AI settings opens Preferences AI tab", async ({
-    page,
-  }) => {
+  test("AI banner Open AI settings opens Settings AI tab", async ({ page }) => {
+    await primaryNavLink(page, "Studio").click();
     await page.getByRole("button", { name: "Open AI settings" }).click();
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("tab", { name: "AI" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    await expect(page).toHaveURL(/\/settings\?tab=ai/);
+    await expect(
+      page.getByRole("tab", { name: "AI providers" }),
+    ).toHaveAttribute("aria-selected", "true");
   });
 
-  test("Simulator WASM tab shows firmware status", async ({ page }) => {
-    await openPreferences(page, "Simulator WASM");
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
+  test("Simulator tab shows firmware status", async ({ page }) => {
+    await gotoSettings(page, "simulator");
     await expect(
-      dialog.getByText(/WASM|firmware|simulator/i).first(),
+      page.getByText(/WASM|firmware|simulator/i).first(),
     ).toBeVisible();
-    // Soft assert ready state when assets synced
-    const ready = dialog.getByText(/ready|present|Download WASM/i).first();
+    const ready = page.getByText(/ready|present|Download WASM/i).first();
     await expect(ready).toBeVisible();
   });
 
-  test("Escape closes preferences", async ({ page }) => {
-    await openPreferences(page);
-    await page.keyboard.press("Escape");
-    await expect(
-      page.getByRole("dialog", { name: "Preferences" }),
-    ).toBeHidden();
-  });
+  test("settings survive navigation to Editor and back", async ({ page }) => {
+    await gotoSettings(page, "appearance");
+    await page.locator('[data-theme-preview="ocean"]').click();
 
-  test("preferences survive navigation to Layout and back", async ({
-    page,
-  }) => {
-    await openPreferences(page, "Appearance");
-    const dialog = page.getByRole("dialog", { name: "Preferences" });
-    await dialog.locator('[data-theme-preview="ocean"]').click();
-    await closePreferences(page);
-
-    await primaryNavLink(page, "Layout").click();
+    await primaryNavLink(page, "Editor").click();
     await expect(page).toHaveURL(/\/editor/);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "ocean");
 
-    await primaryNavLink(page, "Generate").click();
+    await primaryNavLink(page, "Home").click();
     await expect(page).toHaveURL(/\/(\?|$)/);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "ocean");
+    await closePreferences(page);
   });
 });
