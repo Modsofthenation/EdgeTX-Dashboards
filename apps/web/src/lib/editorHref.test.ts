@@ -12,10 +12,11 @@ describe("editorHref", () => {
       protocol: "rotorflight",
       radioId: "tx16",
       layoutProfileId: "color272",
+      edgeTxVersion: "2.12.0",
     });
     assert.equal(
       href,
-      "/editor?protocol=rotorflight&layoutProfile=color272&radioId=tx16",
+      "/editor?protocol=rotorflight&layoutProfile=color272&radioId=tx16&edgeTxVersion=2.12.0",
     );
   });
 
@@ -27,9 +28,11 @@ describe("editorHref", () => {
       instanceId: "i1",
       radioId: "tx15",
       layoutProfileId: "tx15",
+      edgeTxVersion: "2.11.0",
     });
     assert.match(href, /instanceId=i1/);
     assert.match(href, /chatId=c1/);
+    assert.match(href, /edgeTxVersion=2\.11\.0/);
     assert.doesNotMatch(href, /[?&]name=/);
   });
 
@@ -41,10 +44,12 @@ describe("editorHref", () => {
       layoutProfileId: "tx15",
       sessionId: "s1",
       workspaceKey: "wk1",
+      edgeTxVersion: "2.10.0",
     });
     assert.match(href, /projectId=p1/);
     assert.match(href, /instanceId=wk1/);
     assert.match(href, /sessionId=s1/);
     assert.match(href, /radioId=tx15/);
+    assert.match(href, /edgeTxVersion=2\.10\.0/);
   });
 });

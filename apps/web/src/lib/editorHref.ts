@@ -6,6 +6,7 @@ export type EditorHrefOptions = {
   protocol: string;
   radioId?: string | null;
   layoutProfileId?: string | null;
+  edgeTxVersion?: string | null;
   chatId?: string | null;
   sessionId?: string | null;
   instanceId?: string | null;
@@ -17,6 +18,7 @@ export type ProjectEditorHrefOptions = {
   protocol: string;
   radioId?: string | null;
   layoutProfileId?: string | null;
+  edgeTxVersion?: string | null;
   /** Prefer local library restore; include when known so remote fallback can load. */
   sessionId?: string | null;
   workspaceKey?: string | null;
@@ -27,12 +29,14 @@ export function buildBlankEditorHref(options: {
   protocol: string;
   radioId?: string | null;
   layoutProfileId?: string | null;
+  edgeTxVersion?: string | null;
   chatId?: string | null;
 }): string {
   const params = new URLSearchParams({ protocol: options.protocol });
   if (options.layoutProfileId)
     params.set("layoutProfile", options.layoutProfileId);
   if (options.radioId) params.set("radioId", options.radioId);
+  if (options.edgeTxVersion) params.set("edgeTxVersion", options.edgeTxVersion);
   if (options.chatId) params.set("chatId", options.chatId);
   return `/editor?${params.toString()}`;
 }
@@ -47,6 +51,7 @@ export function buildEditorHref(options: EditorHrefOptions): string {
   if (options.layoutProfileId)
     params.set("layoutProfile", options.layoutProfileId);
   if (options.radioId) params.set("radioId", options.radioId);
+  if (options.edgeTxVersion) params.set("edgeTxVersion", options.edgeTxVersion);
   return `/editor?${params.toString()}`;
 }
 
@@ -61,6 +66,7 @@ export function buildProjectEditorHref(
   if (options.layoutProfileId)
     params.set("layoutProfile", options.layoutProfileId);
   if (options.radioId) params.set("radioId", options.radioId);
+  if (options.edgeTxVersion) params.set("edgeTxVersion", options.edgeTxVersion);
   if (options.sessionId) params.set("sessionId", options.sessionId);
   if (options.workspaceKey) params.set("instanceId", options.workspaceKey);
   return `/editor?${params.toString()}`;

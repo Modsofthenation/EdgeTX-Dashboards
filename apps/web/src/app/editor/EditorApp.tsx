@@ -161,6 +161,10 @@ import {
 } from "~/lib/companionSuites";
 import { fetchRadioCatalog } from "~/lib/radioCatalog";
 import {
+  DEFAULT_EDGE_TX_VERSION,
+  normalizeEdgeTxVersion,
+} from "~/lib/edgeTxVersions";
+import {
   buildInstallGuide,
   formatInstallGuideMarkdown,
 } from "~/lib/installGuide";
@@ -303,6 +307,11 @@ export function EditorApp() {
   );
   const [radioId, setRadioId] = useState(
     () => searchParams.get("radioId") ?? initialEditor.layoutProfileId,
+  );
+  const [edgeTxVersion, setEdgeTxVersion] = useState(() =>
+    normalizeEdgeTxVersion(
+      searchParams.get("edgeTxVersion") ?? DEFAULT_EDGE_TX_VERSION,
+    ),
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -2335,6 +2344,8 @@ export function EditorApp() {
               valid={valid}
               protocol={protocol}
               onProtocolChange={setProtocol}
+              edgeTxVersion={edgeTxVersion}
+              onEdgeTxVersionChange={setEdgeTxVersion}
               previewScenarioId={previewScenarioId}
               onPreviewScenarioChange={setPreviewScenarioId}
               liveTelemetryActive={liveTelemetryActive}
@@ -2436,6 +2447,7 @@ export function EditorApp() {
                       onChange={handleLuaSourceChange}
                       onBlur={handleLuaEditorBlur}
                       issues={validationIssues}
+                      edgeTxVersion={edgeTxVersion}
                     />
                   </div>
                 ) : remoteLoadPending ? (
@@ -2468,6 +2480,7 @@ export function EditorApp() {
                           luaSource={source}
                           layoutProfileId={layoutProfileId}
                           radioId={radioId}
+                          edgeTxVersion={edgeTxVersion}
                           mock={previewScenario.mock}
                           active={inlineSim}
                           fillHost
@@ -2607,6 +2620,7 @@ export function EditorApp() {
               }
               layoutProfileId={layoutProfileId}
               radioId={radioId}
+              edgeTxVersion={edgeTxVersion}
               modelPng={modelPngBytes}
               onRunningChange={handleSimRunningChange}
             />

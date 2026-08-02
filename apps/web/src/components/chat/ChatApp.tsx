@@ -143,6 +143,7 @@ function StudioShell({
     protocol,
     radioId,
     layoutProfileId,
+    edgeTxVersion,
   } = useSessionSettings();
   const activeModelLabel = selectedModel?.label ?? modelId;
 
@@ -156,6 +157,7 @@ function StudioShell({
         name: artifact.name,
         layoutProfileId,
         radioId,
+        edgeTxVersion,
       });
     }
     return buildBlankEditorHref({
@@ -163,8 +165,17 @@ function StudioShell({
       radioId,
       layoutProfileId,
       chatId,
+      edgeTxVersion,
     });
-  }, [artifact, chatId, sessionId, protocol, layoutProfileId, radioId]);
+  }, [
+    artifact,
+    chatId,
+    sessionId,
+    protocol,
+    layoutProfileId,
+    radioId,
+    edgeTxVersion,
+  ]);
 
   const subtitle = (
     <>
@@ -213,7 +224,8 @@ function StudioShell({
 
 function AiSetupBanner() {
   const ai = useOptionalAiSettings();
-  const { protocol, radioId, layoutProfileId } = useSessionSettings();
+  const { protocol, radioId, layoutProfileId, edgeTxVersion } =
+    useSessionSettings();
   const { chatId } = useChatSession();
   if (!ai || ai.statusLoading || ai.ready) return null;
 
@@ -222,6 +234,7 @@ function AiSetupBanner() {
     radioId,
     layoutProfileId,
     chatId,
+    edgeTxVersion,
   });
 
   return (
@@ -299,7 +312,8 @@ function ChatMessageListSection() {
   const { running, sendMessage, chatId } = useChatSession();
   const { artifact } = useArtifactPanel();
   const ai = useOptionalAiSettings();
-  const { protocol, radioId, layoutProfileId } = useSessionSettings();
+  const { protocol, radioId, layoutProfileId, edgeTxVersion } =
+    useSessionSettings();
   const blankLayoutHref = useMemo(
     () =>
       buildBlankEditorHref({
@@ -307,8 +321,9 @@ function ChatMessageListSection() {
         radioId,
         layoutProfileId,
         chatId,
+        edgeTxVersion,
       }),
-    [protocol, radioId, layoutProfileId, chatId],
+    [protocol, radioId, layoutProfileId, chatId, edgeTxVersion],
   );
   const handleSuggestion = useCallback(
     (item: TemplateGalleryItem) => {

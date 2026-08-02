@@ -18,6 +18,11 @@ import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import { edgeTxLuaSupport } from "../lib/edgetxCompletions";
 import { buildEdgeTxEditorTheme } from "../lib/edgetxEditorTheme";
+import {
+  DEFAULT_EDGE_TX_VERSION,
+  edgeTxVersionLabel,
+  stubFolderForEdgeTxVersion,
+} from "~/lib/edgeTxVersions";
 import styles from "../editor.module.css";
 
 export type LuaSourceEditorHandle = {
@@ -79,14 +84,24 @@ export const LuaSourceEditor = memo(
       onBlur?: () => void;
       issues?: LuaLintIssue[];
       readOnly?: boolean;
+      /** Firmware target — selects which EdgeTX stub catalog powers autocomplete. */
+      edgeTxVersion?: string;
     }
   >(function LuaSourceEditor(
-    { value, onChange, onBlur, issues = EMPTY_LUA_ISSUES, readOnly = false },
+    {
+      value,
+      onChange,
+      onBlur,
+      issues = EMPTY_LUA_ISSUES,
+      readOnly = false,
+      edgeTxVersion = DEFAULT_EDGE_TX_VERSION,
+    },
     ref,
   ) {
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const issuesRef = useRef(issues);
     issuesRef.current = issues;
+    const stubFolder = stubFolderForEdgeTxVersion(edgeTxVersion);
 
     useImperativeHandle(
       ref,
@@ -118,7 +133,7 @@ export const LuaSourceEditor = memo(
         linter((view) =>
           issuesToDiagnostics(view.state.doc.toString(), issuesRef.current),
         ),
-        edgeTxLuaSupport(),
+        edgeTxLuaSupport(edgeTxVersion),
         buildEdgeTxEditorTheme(),
         keymap.of([
           indentWithTab,
@@ -132,7 +147,7 @@ export const LuaSourceEditor = memo(
           spellcheck: "false",
         }),
       ];
-    }, []);
+    }, [edgeTxVersion]);
 
     // Re-run linter when validation issues change.
     useEffect(() => {
@@ -149,7 +164,7 @@ export const LuaSourceEditor = memo(
             ·
           </span>
           <span className={styles.luaEditorMetaFact}>
-            autocomplete from stubs 2.11
+            stubs {stubFolder} ({edgeTxVersionLabel(edgeTxVersion)})
           </span>
           <span className={styles.luaEditorMetaSep} aria-hidden>
             ·

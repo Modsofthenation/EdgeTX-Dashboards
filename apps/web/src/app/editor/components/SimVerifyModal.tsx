@@ -24,6 +24,7 @@ interface SimVerifyModalProps {
   scenarioOverride?: LayoutScenario;
   layoutProfileId?: string;
   radioId?: string;
+  edgeTxVersion?: string;
   modelPng?: Uint8Array | null;
   onRunningChange?: (running: boolean) => void;
 }
@@ -38,6 +39,7 @@ export function SimVerifyModal({
   scenarioOverride,
   layoutProfileId = "tx15",
   radioId = "tx15",
+  edgeTxVersion = "2.11.0",
   modelPng = null,
   onRunningChange,
 }: SimVerifyModalProps) {
@@ -84,11 +86,12 @@ export function SimVerifyModal({
         <div className={styles.simModalBody}>
           {wasmReady ? (
             <RadioSimPreview
-              key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}-${radioId}-${modelPng ? modelPng.byteLength : 0}`}
+              key={`sim-${reloadKey}-${scenarioId}-${layoutProfileId}-${radioId}-${edgeTxVersion}-${modelPng ? modelPng.byteLength : 0}`}
               luaSource={source}
               mock={scenario.mock}
               layoutProfileId={layoutProfileId}
               radioId={radioId}
+              edgeTxVersion={edgeTxVersion}
               modelPng={modelPng}
               active={open}
               live

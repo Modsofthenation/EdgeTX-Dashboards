@@ -7,7 +7,12 @@ import {
 } from "@codemirror/autocomplete";
 import { hoverTooltip, keymap, type Tooltip } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
-import catalog from "./edgetxCompletionsData.json";
+import {
+  DEFAULT_EDGE_TX_VERSION,
+  stubFolderForEdgeTxVersion,
+  type EdgeTxStubVersion,
+} from "~/lib/edgeTxVersions";
+import catalogFile from "./edgetxCompletionsData.json";
 
 export type EdgeTxCompletionItem = {
   kind: "function" | "constant";
@@ -17,6 +22,20 @@ export type EdgeTxCompletionItem = {
   info: string;
   module?: string;
   name: string;
+};
+
+type CatalogBundle = {
+  version: string;
+  source: string;
+  items: EdgeTxCompletionItem[];
+};
+
+type CatalogIndex = {
+  items: EdgeTxCompletionItem[];
+  byLabel: Map<string, EdgeTxCompletionItem>;
+  byName: Map<string, EdgeTxCompletionItem[]>;
+  source: string;
+  stubVersion: EdgeTxStubVersion;
 };
 
 const LUA_KEYWORDS = [
@@ -44,14 +63,42 @@ const LUA_KEYWORDS = [
   "while",
 ] as const;
 
-const items = catalog.items as EdgeTxCompletionItem[];
+const versions = catalogFile.versions as Record<string, CatalogBundle>;
+const defaultStub = (catalogFile.defaultVersion ?? "2.11") as EdgeTxStubVersion;
 
-const byLabel = new Map(items.map((item) => [item.label, item]));
-const byName = new Map<string, EdgeTxCompletionItem[]>();
-for (const item of items) {
-  const list = byName.get(item.name) ?? [];
-  list.push(item);
-  byName.set(item.name, list);
+const indexCache = new Map<string, CatalogIndex>();
+
+function buildIndex(stubVersion: EdgeTxStubVersion): CatalogIndex {
+  const cached = indexCache.get(stubVersion);
+  if (cached) return cached;
+
+  const bundle =
+    versions[stubVersion] ??
+    versions[defaultStub] ??
+    versions[Object.keys(versions)[0]!]!;
+  const items = bundle.items;
+  const byLabel = new Map(items.map((item) => [item.label, item]));
+  const byName = new Map<string, EdgeTxCompletionItem[]>();
+  for (const item of items) {
+    const list = byName.get(item.name) ?? [];
+    list.push(item);
+    byName.set(item.name, list);
+  }
+  const index: CatalogIndex = {
+    items,
+    byLabel,
+    byName,
+    source: bundle.source,
+    stubVersion,
+  };
+  indexCache.set(stubVersion, index);
+  return index;
+}
+
+export function resolveCompletionCatalog(
+  edgeTxVersion: string = DEFAULT_EDGE_TX_VERSION,
+): CatalogIndex {
+  return buildIndex(stubFolderForEdgeTxVersion(edgeTxVersion));
 }
 
 function completionType(kind: EdgeTxCompletionItem["kind"]): string {
@@ -73,11 +120,12 @@ function toCompletion(
 }
 
 function moduleMemberCompletions(
+  index: CatalogIndex,
   moduleName: string,
   prefix: string,
 ): Completion[] {
   const needle = prefix.toLowerCase();
-  return items
+  return index.items
     .filter(
       (item) =>
         item.module === moduleName &&
@@ -91,53 +139,63 @@ function moduleMemberCompletions(
     );
 }
 
+export function edgeTxCompletionsFor(
+  edgeTxVersion: string,
+): (context: CompletionContext) => CompletionResult | null {
+  const index = resolveCompletionCatalog(edgeTxVersion);
+  return (context: CompletionContext): CompletionResult | null => {
+    const member = context.matchBefore(/([A-Za-z_][\w]*)\.([A-Za-z_][\w]*)?/);
+    if (member) {
+      const [, moduleName, partial = ""] = member.text.match(
+        /^([A-Za-z_][\w]*)\.([A-Za-z_][\w]*)?$/,
+      )!;
+      const options = moduleMemberCompletions(index, moduleName, partial);
+      if (options.length > 0 || context.explicit) {
+        const dot = member.from + moduleName.length + 1;
+        return { from: dot, options, validFor: /^[\w]*$/ };
+      }
+    }
+
+    const word = context.matchBefore(/[A-Za-z_][\w]*/);
+    if (!word || (word.from === word.to && !context.explicit)) return null;
+
+    const needle = word.text.toLowerCase();
+    const options: Completion[] = [];
+
+    for (const kw of LUA_KEYWORDS) {
+      if (kw.startsWith(needle)) {
+        options.push({
+          label: kw,
+          type: "keyword",
+          boost: 3,
+        });
+      }
+    }
+
+    for (const item of index.items) {
+      const labelMatch = item.label.toLowerCase().startsWith(needle);
+      const nameMatch = item.name.toLowerCase().startsWith(needle);
+      if (!labelMatch && !nameMatch) continue;
+      options.push(
+        toCompletion(item, {
+          boost: item.module ? 1 : 2,
+        }),
+      );
+    }
+
+    return {
+      from: word.from,
+      options,
+      validFor: /^[\w.]*$/,
+    };
+  };
+}
+
+/** @deprecated Prefer edgeTxCompletionsFor(version) — defaults to 2.11. */
 export function edgeTxCompletions(
   context: CompletionContext,
 ): CompletionResult | null {
-  const member = context.matchBefore(/([A-Za-z_][\w]*)\.([A-Za-z_][\w]*)?/);
-  if (member) {
-    const [, moduleName, partial = ""] = member.text.match(
-      /^([A-Za-z_][\w]*)\.([A-Za-z_][\w]*)?$/,
-    )!;
-    const options = moduleMemberCompletions(moduleName, partial);
-    if (options.length > 0 || context.explicit) {
-      const dot = member.from + moduleName.length + 1;
-      return { from: dot, options, validFor: /^[\w]*$/ };
-    }
-  }
-
-  const word = context.matchBefore(/[A-Za-z_][\w]*/);
-  if (!word || (word.from === word.to && !context.explicit)) return null;
-
-  const needle = word.text.toLowerCase();
-  const options: Completion[] = [];
-
-  for (const kw of LUA_KEYWORDS) {
-    if (kw.startsWith(needle)) {
-      options.push({
-        label: kw,
-        type: "keyword",
-        boost: 3,
-      });
-    }
-  }
-
-  for (const item of items) {
-    const labelMatch = item.label.toLowerCase().startsWith(needle);
-    const nameMatch = item.name.toLowerCase().startsWith(needle);
-    if (!labelMatch && !nameMatch) continue;
-    options.push(
-      toCompletion(item, {
-        boost: item.module ? 1 : 2,
-      }),
-    );
-  }
-
-  return {
-    from: word.from,
-    options,
-    validFor: /^[\w.]*$/,
-  };
+  return edgeTxCompletionsFor(DEFAULT_EDGE_TX_VERSION)(context);
 }
 
 function tokenAround(pos: number, doc: string): string | null {
@@ -147,25 +205,31 @@ function tokenAround(pos: number, doc: string): string | null {
   while (end < doc.length && /[\w.]/.test(doc[end]!)) end++;
   const raw = doc.slice(start, end);
   if (!raw) return null;
-  // Prefer the qualified identifier under / just before the cursor.
   const parts = raw.match(/[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*/g);
   if (!parts || parts.length === 0) return null;
   return parts[parts.length - 1]!;
 }
 
-function lookupAt(pos: number, doc: string): EdgeTxCompletionItem | null {
+function lookupAt(
+  index: CatalogIndex,
+  pos: number,
+  doc: string,
+): EdgeTxCompletionItem | null {
   const token = tokenAround(pos, doc);
   if (!token) return null;
-  if (byLabel.has(token)) return byLabel.get(token)!;
+  if (index.byLabel.has(token)) return index.byLabel.get(token)!;
   const bare = token.includes(".") ? token.split(".").pop()! : token;
   return (
-    byName.get(bare)?.find((i) => !i.module) ?? byName.get(bare)?.[0] ?? null
+    index.byName.get(bare)?.find((i) => !i.module) ??
+    index.byName.get(bare)?.[0] ??
+    null
   );
 }
 
-function edgeTxHoverTooltip(): Extension {
+function edgeTxHoverTooltip(edgeTxVersion: string): Extension {
+  const index = resolveCompletionCatalog(edgeTxVersion);
   return hoverTooltip((view, pos): Tooltip | null => {
-    const item = lookupAt(pos, view.state.doc.toString());
+    const item = lookupAt(index, pos, view.state.doc.toString());
     if (!item) return null;
     const start = Math.max(0, pos - item.label.length);
     return {
@@ -191,23 +255,31 @@ function edgeTxHoverTooltip(): Extension {
   });
 }
 
-/** EdgeTX-aware autocomplete + hover docs for the Lua source editor. */
-export function edgeTxLuaSupport(): Extension[] {
+/** EdgeTX-aware autocomplete + hover docs for the selected firmware version. */
+export function edgeTxLuaSupport(
+  edgeTxVersion: string = DEFAULT_EDGE_TX_VERSION,
+): Extension[] {
   return [
     autocompletion({
-      override: [edgeTxCompletions],
+      override: [edgeTxCompletionsFor(edgeTxVersion)],
       defaultKeymap: true,
       closeOnBlur: true,
       activateOnTyping: true,
       icons: true,
     }),
     keymap.of(completionKeymap),
-    edgeTxHoverTooltip(),
+    edgeTxHoverTooltip(edgeTxVersion),
   ];
 }
 
-export function listEdgeTxCompletionLabels(): string[] {
-  return items.map((item) => item.label);
+export function listEdgeTxCompletionLabels(
+  edgeTxVersion: string = DEFAULT_EDGE_TX_VERSION,
+): string[] {
+  return resolveCompletionCatalog(edgeTxVersion).items.map(
+    (item) => item.label,
+  );
 }
 
-export { items as edgeTxCompletionItems };
+export function availableCompletionStubVersions(): string[] {
+  return Object.keys(versions);
+}
