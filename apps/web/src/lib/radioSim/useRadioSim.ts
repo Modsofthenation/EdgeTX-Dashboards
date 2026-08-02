@@ -26,8 +26,6 @@ const DEFAULT_STATE: RadioSimState = {
   keyboardMode: "none",
 };
 
-const FRAME_MIN_INTERVAL_MS = 33;
-
 export type FrameSubscriber = (frame: SimFrameData) => void;
 
 export type RadioSimInitOptions = {
@@ -63,7 +61,6 @@ export function useRadioSim() {
   const workerRef = useRef<Worker | null>(null);
   const frameRef = useRef<SimFrameData | null>(null);
   const frameSubscriberRef = useRef<FrameSubscriber | null>(null);
-  const lastFrameCommitRef = useRef(0);
   const nextLoadRequestIdRef = useRef(1);
   const pendingLoadRef = useRef(
     new Map<number, { resolve: () => void; reject: (err: Error) => void }>(),
@@ -80,13 +77,9 @@ export function useRadioSim() {
       const msg = event.data;
       if (msg.type === "state") setState(msg.state);
       if (msg.type === "frame") {
+        // Worker already throttles to ~30 Hz; deliver every transferred frame.
         frameRef.current = msg.frame;
-        const subscriber = frameSubscriberRef.current;
-        if (!subscriber) return;
-        const now = performance.now();
-        if (now - lastFrameCommitRef.current < FRAME_MIN_INTERVAL_MS) return;
-        lastFrameCommitRef.current = now;
-        subscriber(msg.frame);
+        frameSubscriberRef.current?.(msg.frame);
       }
       if (msg.type === "error") {
         setState({
@@ -245,7 +238,6 @@ export function useRadioSim() {
 
   const subscribeFrames = useCallback((subscriber: FrameSubscriber | null) => {
     frameSubscriberRef.current = subscriber;
-    lastFrameCommitRef.current = 0;
     if (subscriber && frameRef.current) {
       subscriber(frameRef.current);
     }
@@ -263,7 +255,6 @@ export function useRadioSim() {
     workerRef.current = null;
     frameRef.current = null;
     frameSubscriberRef.current = null;
-    lastFrameCommitRef.current = 0;
     setFirmware(null);
     setState(DEFAULT_STATE);
   }, []);

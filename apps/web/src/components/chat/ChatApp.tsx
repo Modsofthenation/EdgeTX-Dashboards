@@ -147,8 +147,9 @@ function AiSetupBanner() {
       <div className={styles.aiBannerCopy}>
         <strong>AI not configured</strong>
         <span>
-          Add a Cursor API key to generate, or open Layout to build a dashboard
-          by hand (Insert / prefabs — no AI required).
+          Add an API key for Cursor, Anthropic, OpenAI, or Gemini in Preferences
+          to generate, or open Layout to build a dashboard by hand (no AI
+          required).
         </span>
       </div>
       <div className={styles.aiBannerActions}>
@@ -296,6 +297,7 @@ function ChatMessageListSection() {
   const { messages, scrollRevision } = useChatMessages();
   const { running, sendMessage, chatId } = useChatSession();
   const { artifact } = useArtifactPanel();
+  const ai = useOptionalAiSettings();
   const { protocol, radioId, layoutProfileId } = useSessionSettings();
   const blankLayoutHref = useMemo(
     () =>
@@ -341,6 +343,8 @@ function ChatMessageListSection() {
       messages={messages}
       scrollRevision={scrollRevision}
       running={running}
+      aiReady={Boolean(ai?.ready)}
+      statusLoading={Boolean(ai?.statusLoading)}
       layoutProfileId={layoutProfileId}
       onSuggestion={handleSuggestion}
       onGenerateSuggestion={handleGenerateSuggestion}
@@ -353,6 +357,7 @@ function ChatMessageListSection() {
 
 function ChatComposerSection() {
   const { running, sendMessage, stopGeneration, canRefine } = useChatSession();
+  const ai = useOptionalAiSettings();
   const {
     protocol,
     setProtocol,
@@ -376,6 +381,8 @@ function ChatComposerSection() {
     <ChatComposer
       running={running}
       canRefine={canRefine}
+      aiReady={Boolean(ai?.ready)}
+      statusLoading={Boolean(ai?.statusLoading)}
       protocol={protocol}
       modelId={modelId}
       models={models}

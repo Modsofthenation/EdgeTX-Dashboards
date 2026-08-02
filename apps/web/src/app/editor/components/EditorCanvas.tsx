@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  memo,
 } from "react";
 import {
   getSimulateLayoutProfile,
@@ -53,7 +54,7 @@ interface EditorCanvasProps {
   }) => void;
 }
 
-export function EditorCanvas({
+export const EditorCanvas = memo(function EditorCanvas({
   source,
   records,
   zone,
@@ -86,6 +87,8 @@ export function EditorCanvas({
     originX: number;
     originY: number;
   } | null>(null);
+  const pendingPanRef = useRef<{ x: number; y: number } | null>(null);
+  const panRafRef = useRef<number | null>(null);
 
   // Clear keep-alive live transform once records reflect the committed Lua edit.
   useLayoutEffect(() => {
@@ -171,13 +174,27 @@ export function EditorCanvas({
   const onPointerMovePan = useCallback((event: React.PointerEvent) => {
     const drag = panDragRef.current;
     if (!drag) return;
-    setPan({
+    pendingPanRef.current = {
       x: drag.originX + (event.clientX - drag.startX),
       y: drag.originY + (event.clientY - drag.startY),
+    };
+    if (panRafRef.current != null) return;
+    panRafRef.current = requestAnimationFrame(() => {
+      panRafRef.current = null;
+      const next = pendingPanRef.current;
+      if (next) setPan(next);
     });
   }, []);
 
   const onPointerUpPan = useCallback(() => {
+    if (panRafRef.current != null) {
+      cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = null;
+    }
+    if (pendingPanRef.current) {
+      setPan(pendingPanRef.current);
+      pendingPanRef.current = null;
+    }
     panDragRef.current = null;
   }, []);
 
@@ -186,7 +203,9 @@ export function EditorCanvas({
     setPan({ x: 0, y: 0 });
   }, []);
 
-  const showParserPreview = !inlineSim || liveDrag != null;
+  // Keep WASM visible while dragging — only selection handles follow liveDrag.
+  // Swapping in the approximate parser over a dimmed radio frame caused a harsh jump.
+  const showParserPreview = !inlineSim;
   const hasRadioPreview = Boolean(inlineSim);
 
   return (
@@ -195,13 +214,7 @@ export function EditorCanvas({
         className={styles.simWrapper}
         ref={frameRef}
         data-testid="editor-canvas-frame"
-        data-preview-mode={
-          hasRadioPreview
-            ? liveDrag
-              ? "editing-overlay"
-              : "radio"
-            : "approximate"
-        }
+        data-preview-mode={hasRadioPreview ? "radio" : "approximate"}
         onWheel={onWheel}
         onPointerDown={onPointerDownPan}
         onPointerMove={onPointerMovePan}
@@ -211,7 +224,6 @@ export function EditorCanvas({
         {inlineSim && layout ? (
           <div
             className={styles.inlineSimHost}
-            data-dimmed={liveDrag ? "true" : undefined}
             style={{
               left: layout.offsetX,
               top: layout.offsetY,
@@ -230,6 +242,7 @@ export function EditorCanvas({
             scenarioId={scenarioId}
             scenarioOverride={scenarioOverride}
             liveDrag={liveDrag}
+            layoutProfileId={layoutProfileId}
           />
         ) : null}
         {showSnapGuides && layout ? (
@@ -327,7 +340,7 @@ export function EditorCanvas({
               className={styles.canvasHint}
               data-testid="editor-preview-mode-label"
             >
-              {liveDrag ? "Editing overlay" : "Radio preview"}
+              Radio preview
             </span>
           </>
         ) : (
@@ -355,4 +368,4 @@ export function EditorCanvas({
       </div>
     </div>
   );
-}
+});

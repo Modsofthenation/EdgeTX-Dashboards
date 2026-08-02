@@ -89,6 +89,33 @@ end
 return { name = "Bad" }
 `;
 
+/** Intentionally different palette from VALID_MINIMAL_LUA — for hot-reload E2E. */
+export const HOT_RELOAD_ALT_LUA = `---@type WidgetScript
+---@simulate Layout1x1 zone=0
+-- E2E fixture — hot-reload alternate (solid orange board)
+
+local name = "E2EDash"
+
+local options = {}
+
+local function create(zone, opts)
+  return { zone = zone, options = opts }
+end
+
+local function update(widget, opts)
+  widget.options = opts
+end
+
+local function refresh(widget)
+  lcd.clear(ORANGE)
+  lcd.drawFilledRectangle(24, 24, LCD_W - 48, LCD_H - 48, RED)
+  lcd.drawText(40, 60, "HOT RELOAD", DBLSIZE + WHITE)
+  lcd.drawText(40, 120, "ALT BOARD", MIDSIZE + BLACK)
+end
+
+return { name = name, options = options, create = create, update = update, refresh = refresh }
+`;
+
 /** Valid structure but unknown telemetry sensor (strict catalog should fail). */
 export const INVALID_TELEMETRY_LUA = `---@type WidgetScript
 ---@simulate Layout1x1 zone=0

@@ -36,6 +36,7 @@ npx playwright install chromium
 | `09-generate-gate`        | No-key generate UI + API errors                                                                                                                                   |
 | `10-generate.ai`          | Optional live agent generate (skipped without key)                                                                                                                |
 | `11-editor-wasm-fidelity` | Approximate (parser) vs radio (WASM) dual-preview across all `examples/*.lua` + key template boards; metrics attached; soft pixel gates when radio chrome remains |
+| `12-editor-hot-reload`    | Radio preview loadScript shim: Import Lua / property edits update pixels without soft-restart (`data-sim-phase=running`, canvas mark survives, no Updating badge) |
 
 Default project (`chromium`) clears server AI env keys so “not configured” paths are deterministic. Set `E2E_ALLOW_SERVER_AI=1` only when you intentionally want the webServer to inherit host keys.
 

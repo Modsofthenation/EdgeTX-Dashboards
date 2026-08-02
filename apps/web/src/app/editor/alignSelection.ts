@@ -1,6 +1,5 @@
 import {
   bboxForRecordInZone,
-  interpretDocument,
   translateRecord,
   type DocumentRecord,
   type TextSizeFn,
@@ -8,12 +7,7 @@ import {
 } from "@widget-gen/editor-core";
 
 export type AlignMode =
-  | "left"
-  | "right"
-  | "top"
-  | "bottom"
-  | "center-x"
-  | "center-y";
+  "left" | "right" | "top" | "bottom" | "center-x" | "center-y";
 
 export type DistributeMode = "horizontal" | "vertical";
 
@@ -39,7 +33,14 @@ function boxesForSelection(
 function alignTargets(
   boxes: Box[],
   zone: ZoneOffset,
-): { minX: number; maxR: number; minY: number; maxB: number; midX: number; midY: number } {
+): {
+  minX: number;
+  maxR: number;
+  minY: number;
+  maxB: number;
+  midX: number;
+  midY: number;
+} {
   // One selection → align to the canvas/zone. Two+ → align to the selection bounds.
   if (boxes.length === 1) {
     const minX = 0;
@@ -69,7 +70,11 @@ function alignTargets(
   };
 }
 
-/** Align selected records; 1 item aligns to the zone, 2+ to each other. */
+/**
+ * Align selected records using the supplied interpretation.
+ * Patches apply against original records — each draw call is on its own
+ * source line, so digit-length changes do not invalidate other spans.
+ */
 export function alignSelectedRecords(
   source: string,
   records: DocumentRecord[],
@@ -81,14 +86,12 @@ export function alignSelectedRecords(
   const boxes = boxesForSelection(records, ids, zone, measureText);
   if (boxes.length < 1) return source;
 
+  const byId = new Map(records.map((r) => [r.id, r]));
   const { minX, maxR, minY, maxB, midX, midY } = alignTargets(boxes, zone);
 
   let next = source;
   for (const box of boxes) {
-    // Re-interpret after each patch so sourceRef spans stay valid when
-    // coordinate digit lengths change (e.g. 10 → 100).
-    const liveRecords = interpretDocument(next);
-    const record = liveRecords.find((r) => r.id === box.id);
+    const record = byId.get(box.id);
     if (!record) continue;
 
     let dx = 0;
@@ -133,6 +136,7 @@ export function distributeSelectedRecords(
   const boxes = boxesForSelection(records, ids, zone, measureText);
   if (boxes.length < 3) return source;
 
+  const byId = new Map(records.map((r) => [r.id, r]));
   const sorted =
     mode === "horizontal"
       ? [...boxes].sort((a, b) => a.x - b.x || a.y - b.y)
@@ -151,7 +155,7 @@ export function distributeSelectedRecords(
       const targetX = Math.round(first.x + step * i);
       const dx = targetX - box.x;
       if (dx === 0) continue;
-      const live = interpretDocument(next).find((r) => r.id === box.id);
+      const live = byId.get(box.id);
       if (!live) continue;
       next = translateRecord(next, live, dx, 0, zone);
     }
@@ -163,7 +167,7 @@ export function distributeSelectedRecords(
       const targetY = Math.round(first.y + step * i);
       const dy = targetY - box.y;
       if (dy === 0) continue;
-      const live = interpretDocument(next).find((r) => r.id === box.id);
+      const live = byId.get(box.id);
       if (!live) continue;
       next = translateRecord(next, live, 0, dy, zone);
     }

@@ -1,14 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  applySceneGeometryToSource,
   applyDashboardBackground,
   bindTextRecordToSensorDetailed,
   createStarterSource,
   DEFAULT_BG_IMAGE_PATH,
-  getLayoutTemplateBoardSource,
   interpretDocument,
   insertDrawLineWithId,
   DENSE_CRSF_LAYOUT_ORDER,
@@ -25,19 +30,21 @@ import {
   removeRecordLines,
   remapRecordIdsAfterLineRemoval,
   remapSrcSensor,
+  resizeRecord,
   setRecordColor,
   setRecordText,
   setRecordTextFlags,
   duplicateRecordLine,
   moveRecordLine,
+  moveRecordLinesToEdge,
   reorderRecordLine,
   getSourceLine,
   insertRawRefreshLine,
   luaToScene,
   remapPreviewOnlyColorLiterals,
   sceneToLua,
+  translateRecord,
   type DocumentRecord,
-  type EditorElement,
   type TextAlignFlag,
   type TextFormat,
   type TextSizeFlag,
@@ -61,15 +68,23 @@ import {
   type LayoutProfileId,
 } from "@widget-gen/shared";
 import dynamic from "next/dynamic";
-import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { useResizableEditorPanels } from "./hooks/useResizableEditorPanels";
+import { resolveTemplateEditorBootstrap } from "./lib/templateBootstrap";
+import type { TemplateCompanionSuite } from "./lib/templateBootstrap";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
 import { SceneAssistPanel } from "./components/SceneAssistPanel";
 import { EditorToolbar } from "./components/EditorToolbar";
-import { EditorMenu } from "./components/EditorMenu";
+import { EditorChrome } from "./components/EditorChrome";
+import { EditorBanners } from "./components/EditorBanners";
+import { EditorCallouts } from "./components/EditorCallouts";
+import {
+  EditorMobileTabs,
+  type MobileTab,
+} from "./components/EditorMobileTabs";
+import { ImportLuaModal } from "./components/ImportLuaModal";
 import { SimVerifyModal } from "./components/SimVerifyModal";
 import {
   ProjectLibraryModal,
@@ -128,10 +143,6 @@ import {
   type CompanionSuiteId,
   type EditorCompanionState,
 } from "~/lib/companionSuites";
-import {
-  getTemplateById,
-  type TemplateLayoutPrefab,
-} from "~/lib/templateGallery";
 import { fetchRadioCatalog } from "~/lib/radioCatalog";
 import {
   buildInstallGuide,
@@ -147,8 +158,6 @@ import {
   type DistributeMode,
 } from "./alignSelection";
 import styles from "./editor.module.css";
-
-type MobileTab = "layers" | "canvas" | "properties";
 
 const IS_MAC =
   typeof navigator !== "undefined" &&
@@ -167,37 +176,6 @@ function findRecordByLineText(
     const line = r.sourceRef?.sourceLine ?? r.sourceLine;
     return line != null && getSourceLine(source, line) === lineText;
   });
-}
-
-function translateSceneElement(
-  element: EditorElement,
-  dx: number,
-  dy: number,
-): EditorElement {
-  if (element.kind === "line") {
-    return {
-      ...element,
-      x1: element.x1 + dx,
-      y1: element.y1 + dy,
-      x2: element.x2 + dx,
-      y2: element.y2 + dy,
-    };
-  }
-  return { ...element, x: element.x + dx, y: element.y + dy };
-}
-
-function resizeSceneElement(
-  element: EditorElement,
-  box: { x: number; y: number; w: number; h: number },
-): EditorElement {
-  if (
-    element.kind === "filledRect" ||
-    element.kind === "rect" ||
-    element.kind === "gauge"
-  ) {
-    return { ...element, ...box };
-  }
-  return element;
 }
 
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
@@ -233,6 +211,55 @@ function parseProtocol(raw: string | null): TelemetryProtocol {
   return "betaflight";
 }
 
+function parseLayoutProfileId(raw: string | null): LayoutProfileId {
+  return raw && isLayoutProfileId(raw) ? raw : DEFAULT_RADIO_ID;
+}
+
+/** Sync gallery bootstrap so WASM boots on the template board, not starter. */
+function initialEditorFromSearchParams(searchParams: URLSearchParams): {
+  layoutProfileId: LayoutProfileId;
+  protocol: TelemetryProtocol;
+  source: string;
+  companionSuites: TemplateCompanionSuite[];
+  templateAppliedId: string | null;
+} {
+  const instanceId = searchParams.get("instanceId");
+  const widgetName = searchParams.get("name");
+  const sid = searchParams.get("sessionId");
+  const templateId = searchParams.get("template");
+  const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
+  const layoutProfileId = parseLayoutProfileId(
+    searchParams.get("layoutProfile") ??
+      searchParams.get("radioId") ??
+      DEFAULT_RADIO_ID,
+  );
+
+  if (!hasRemoteWidget && templateId) {
+    const profile = getSimulateLayoutProfile(layoutProfileId);
+    const boot = resolveTemplateEditorBootstrap(templateId, {
+      lcdW: profile.lcdW,
+      lcdH: profile.lcdH,
+    });
+    if (boot) {
+      return {
+        layoutProfileId,
+        protocol: boot.protocol,
+        source: boot.source,
+        companionSuites: boot.companionSuites,
+        templateAppliedId: templateId,
+      };
+    }
+  }
+
+  return {
+    layoutProfileId,
+    protocol: parseProtocol(searchParams.get("protocol")),
+    source: createStarterSource(),
+    companionSuites: [],
+    templateAppliedId: null,
+  };
+}
+
 export function EditorApp() {
   const searchParams = useSearchParams();
   const instanceId = searchParams.get("instanceId");
@@ -242,20 +269,17 @@ export function EditorApp() {
   const templateId = searchParams.get("template");
   const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
 
-  const [protocol, setProtocol] = useState<TelemetryProtocol>(() =>
-    parseProtocol(searchParams.get("protocol")),
+  const [initialEditor] = useState(() =>
+    initialEditorFromSearchParams(searchParams),
   );
   const [layoutProfileId, setLayoutProfileId] = useState<LayoutProfileId>(
-    () => {
-      const raw =
-        searchParams.get("layoutProfile") ??
-        searchParams.get("radioId") ??
-        DEFAULT_RADIO_ID;
-      return isLayoutProfileId(raw) ? raw : DEFAULT_RADIO_ID;
-    },
+    () => initialEditor.layoutProfileId,
+  );
+  const [protocol, setProtocol] = useState<TelemetryProtocol>(
+    () => initialEditor.protocol,
   );
   const [radioId, setRadioId] = useState(
-    () => searchParams.get("radioId") ?? layoutProfileId,
+    () => searchParams.get("radioId") ?? initialEditor.layoutProfileId,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -311,20 +335,27 @@ export function EditorApp() {
   const [enrichRotorflight, setEnrichRotorflight] = useState(
     readEnrichRotorflightPreference,
   );
-  const [companions, setCompanions] = useState<EditorCompanionState>({
-    suites: [],
-    files: [],
+  const [companions, setCompanions] = useState<EditorCompanionState>(() => {
+    let next: EditorCompanionState = { suites: [], files: [] };
+    for (const suite of initialEditor.companionSuites) {
+      next = addCompanionSuite(next, suite);
+    }
+    return next;
   });
   const [radioTouch, setRadioTouch] = useState(true);
   const [radioDisplayName, setRadioDisplayName] = useState<string | null>(null);
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
-  const templateAppliedRef = useRef<string | null>(null);
+  const templateAppliedRef = useRef<string | null>(
+    initialEditor.templateAppliedId,
+  );
   const liveTelemetrySupported = useMemo(
     () => (typeof window !== "undefined" ? isWebSerialSupported() : false),
     [],
   );
   const loadRequestIdRef = useRef(0);
-  const savedSourceRef = useRef<string | null>(null);
+  const savedSourceRef = useRef<string | null>(
+    initialEditor.templateAppliedId ? initialEditor.source : null,
+  );
 
   const {
     source,
@@ -336,7 +367,7 @@ export function EditorApp() {
     redo,
     canUndo,
     canRedo,
-  } = useSourceUndoStack(createStarterSource());
+  } = useSourceUndoStack(initialEditor.source);
 
   const editorBodyRef = useRef<HTMLDivElement>(null);
   const { gridTemplateColumns, activeSide, onHandlePointerDown, resetWidths } =
@@ -528,34 +559,13 @@ export function EditorApp() {
   useEffect(() => {
     if (hasRemoteWidget || !templateId) return;
     if (templateAppliedRef.current === templateId) return;
-    const template = getTemplateById(templateId);
-    if (!template) return;
+    const boot = resolveTemplateEditorBootstrap(templateId, prefabLcd);
+    if (!boot) return;
     templateAppliedRef.current = templateId;
-    const prefab: TemplateLayoutPrefab = template.layoutPrefab ?? "starter";
-    setProtocol(template.protocol);
-    if (prefab === "rf-heli-electric") {
-      const { source: next } = insertPrefabSections(
-        createStarterSource(),
-        [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER],
-        prefabLcd,
-      );
-      loadFromSource(next, true);
-      setCompanions((prev) => addCompanionSuite(prev, "rf-heli-electric"));
-    } else if (prefab === "rf-heli-nitro") {
-      const { source: next } = insertPrefabSections(
-        createStarterSource(),
-        [...ROTORFLIGHT_NITRO_LAYOUT_ORDER],
-        prefabLcd,
-      );
-      loadFromSource(next, true);
-    } else if (prefab === "battery-tool") {
-      loadFromSource(getLayoutTemplateBoardSource("battery-tool"), true);
-      setCompanions((prev) => addCompanionSuite(prev, "batt-select"));
-    } else if (prefab === "flight-logger") {
-      loadFromSource(getLayoutTemplateBoardSource("flight-logger"), true);
-      setCompanions((prev) => addCompanionSuite(prev, "flight-logger"));
-    } else {
-      loadFromSource(getLayoutTemplateBoardSource(prefab, prefabLcd), true);
+    setProtocol(boot.protocol);
+    loadFromSource(boot.source, true);
+    for (const suite of boot.companionSuites) {
+      setCompanions((prev) => addCompanionSuite(prev, suite));
     }
   }, [templateId, hasRemoteWidget, loadFromSource, prefabLcd]);
 
@@ -569,17 +579,19 @@ export function EditorApp() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  const deferredSource = useDeferredValue(source);
   const sceneAssist = useMemo(() => {
     try {
-      return luaToScene(source);
+      return luaToScene(deferredSource);
     } catch {
       return null;
     }
-  }, [source]);
+  }, [deferredSource]);
 
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const selectedRecords = useMemo(
-    () => records.filter((r) => selectedIds.includes(r.id)),
-    [records, selectedIds],
+    () => records.filter((r) => selectedIdSet.has(r.id)),
+    [records, selectedIdSet],
   );
 
   const applyToRecords = useCallback(
@@ -607,74 +619,22 @@ export function EditorApp() {
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
       if (dx === 0 && dy === 0) return;
-      if (!sceneAssist) return;
-      const recordIds = new Set(ids);
-      const elementIds: string[] = [];
-      const scene = {
-        ...sceneAssist.scene,
-        elements: sceneAssist.scene.elements.map((element) => {
-          if (
-            element.sourceLine == null ||
-            !recordIds.has(`L${element.sourceLine}`)
-          ) {
-            return element;
-          }
-          elementIds.push(element.id);
-          return translateSceneElement(element, dx, dy);
-        }),
-      };
-      if (elementIds.length === 0) return;
-      setSource((prev) =>
-        applySceneGeometryToSource(
-          prev,
-          scene,
-          {
-            x: zone.zoneX,
-            y: zone.zoneY,
-            w: zone.zoneW,
-            h: zone.zoneH,
-          },
-          elementIds,
-        ),
+      // Default history recording — transient gestures suppress per-call
+      // entries via beginTransient/endTransient; property-panel nudges need undo.
+      applyToRecords(ids, (current, record) =>
+        translateRecord(current, record, dx, dy, zone),
       );
-      markDirty();
     },
-    [markDirty, sceneAssist, setSource, zone],
+    [applyToRecords, zone],
   );
 
   const handleResize = useCallback(
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
-      if (!sceneAssist) return;
-      const elementIds: string[] = [];
-      const scene = {
-        ...sceneAssist.scene,
-        elements: sceneAssist.scene.elements.map((element) => {
-          if (element.sourceLine == null || id !== `L${element.sourceLine}`) {
-            return element;
-          }
-          elementIds.push(element.id);
-          return resizeSceneElement(element, box);
-        }),
-      };
-      if (elementIds.length === 0) return;
-      setSource(
-        (prev) =>
-          applySceneGeometryToSource(
-            prev,
-            scene,
-            {
-              x: zone.zoneX,
-              y: zone.zoneY,
-              w: zone.zoneW,
-              h: zone.zoneH,
-            },
-            elementIds,
-          ),
-        { history: false },
+      applyToRecords([id], (current, record) =>
+        resizeRecord(current, record, box, zone),
       );
-      markDirty();
     },
-    [setSource, zone, markDirty, sceneAssist],
+    [applyToRecords, zone],
   );
 
   const handleGestureStart = useCallback(() => {
@@ -1318,24 +1278,20 @@ export function EditorApp() {
   const handleDuplicateSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
     setSource((prev) => {
+      const before = interpretDocument(prev, previewScenario);
+      const byId = new Map(before.map((r) => [r.id, r]));
       let next = prev;
+      const copiedTexts: string[] = [];
       for (const id of selectedIds) {
-        const record = interpretDocument(next, previewScenario).find(
-          (r) => r.id === id,
-        );
+        const record = byId.get(id);
         if (!record) continue;
+        const line = record.sourceRef?.sourceLine ?? record.sourceLine;
+        if (line != null) {
+          const text = getSourceLine(prev, line);
+          if (text) copiedTexts.push(text);
+        }
         next = duplicateRecordLine(next, record);
       }
-      // Prefer selecting the newly inserted copies (last N matching line texts).
-      const copiedTexts = selectedIds
-        .map((id) => {
-          const r = interpretDocument(prev, previewScenario).find(
-            (row) => row.id === id,
-          );
-          const line = r?.sourceRef?.sourceLine ?? r?.sourceLine;
-          return line != null ? getSourceLine(prev, line) : null;
-        })
-        .filter((t): t is string => Boolean(t));
       selectionTextsRef.current = copiedTexts;
       // Match from the end so we prefer the duplicates.
       const after = interpretDocument(next, previewScenario);
@@ -1438,6 +1394,8 @@ export function EditorApp() {
 
   const handleRebuildLuaFromScene = useCallback(() => {
     if (!sceneAssist) return;
+    // Deferred sceneAssist can lag source — never rebuild from a stale scene.
+    if (deferredSource !== source) return;
     if (
       !window.confirm(
         "Rebuild the complete Lua file from the current scene? Custom Lua outside the scene model will be replaced.",
@@ -1447,7 +1405,7 @@ export function EditorApp() {
     }
     setSource(sceneToLua(sceneAssist.scene));
     markDirty();
-  }, [markDirty, sceneAssist, setSource]);
+  }, [deferredSource, markDirty, sceneAssist, setSource, source]);
 
   const handleMoveLayer = useCallback(
     (id: string, dir: -1 | 1) => {
@@ -1528,40 +1486,32 @@ export function EditorApp() {
     (ids: string[]) => {
       if (ids.length === 0) return;
       setSource((prev) => {
-        let next = prev;
-        // Back→front so relative order among the selection is preserved.
-        for (const text of lineTextsForIds(ids, next)) {
-          const live = interpretDocument(next, previewScenario);
-          const current = findRecordByLineText(next, text, previewScenario);
-          const last = live[live.length - 1];
-          if (!current || !last || current.id === last.id) continue;
-          next = reorderRecordLine(next, current, last, "after");
-        }
-        return next;
+        const live = interpretDocument(prev, previewScenario);
+        const selected = ids
+          .map((id) => live.find((r) => r.id === id))
+          .filter((r): r is DocumentRecord => Boolean(r));
+        if (selected.length === 0) return prev;
+        return moveRecordLinesToEdge(prev, selected, "front");
       });
       markDirty();
     },
-    [lineTextsForIds, previewScenario, setSource, markDirty],
+    [previewScenario, setSource, markDirty],
   );
 
   const handleSendToBack = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
       setSource((prev) => {
-        let next = prev;
-        // Front→back so relative order among the selection is preserved.
-        for (const text of lineTextsForIds(ids, next).toReversed()) {
-          const live = interpretDocument(next, previewScenario);
-          const current = findRecordByLineText(next, text, previewScenario);
-          const first = live[0];
-          if (!current || !first || current.id === first.id) continue;
-          next = reorderRecordLine(next, current, first, "before");
-        }
-        return next;
+        const live = interpretDocument(prev, previewScenario);
+        const selected = ids
+          .map((id) => live.find((r) => r.id === id))
+          .filter((r): r is DocumentRecord => Boolean(r));
+        if (selected.length === 0) return prev;
+        return moveRecordLinesToEdge(prev, selected, "back");
       });
       markDirty();
     },
-    [lineTextsForIds, previewScenario, setSource, markDirty],
+    [previewScenario, setSource, markDirty],
   );
 
   const handleSelectAll = useCallback(() => {
@@ -2005,6 +1955,89 @@ export function EditorApp() {
     setInlineSim(enabled);
   }, []);
 
+  const handleLayerSelect = useCallback((id: string, additive: boolean) => {
+    setSelectedIds((prev) =>
+      additive
+        ? prev.includes(id)
+          ? prev.filter((x) => x !== id)
+          : [...prev, id]
+        : [id],
+    );
+  }, []);
+
+  const handleLayerSelectMany = useCallback(
+    (ids: string[], additive: boolean) => {
+      setSelectedIds((prev) =>
+        additive ? [...new Set([...prev, ...ids])] : ids,
+      );
+    },
+    [],
+  );
+
+  const handleMoveLayerUp = useCallback(
+    (id: string) => handleMoveLayer(id, 1),
+    [handleMoveLayer],
+  );
+
+  const handleMoveLayerDown = useCallback(
+    (id: string) => handleMoveLayer(id, -1),
+    [handleMoveLayer],
+  );
+
+  const handleSelectSceneRecord = useCallback((id: string) => {
+    setSelectedIds([id]);
+  }, []);
+
+  const handleDismissLoadError = useCallback(() => setLoadError(null), []);
+  const handleOpenExport = useCallback(() => setExportOpen(true), []);
+  const handleOpenImport = useCallback(() => setPasteOpen(true), []);
+  const handleCloseImport = useCallback(() => setPasteOpen(false), []);
+  const handlePasteTextChange = useCallback((text: string) => {
+    setPasteText(text);
+  }, []);
+  const handleImportLua = useCallback(() => {
+    loadFromSource(pasteText);
+    setPasteOpen(false);
+  }, [loadFromSource, pasteText]);
+  const handleNewBoard = useCallback(() => {
+    loadFromSource(createStarterSource(), true);
+    // Detach from the prior save target so Ctrl+S does not overwrite it.
+    setWorkspaceKey(null);
+    setSessionId(null);
+    setProjectId(null);
+    setCompanions({ suites: [], files: [] });
+    setModelPngBytes(null);
+    setModelPngName(null);
+  }, [loadFromSource]);
+  const handleCopyLuaAction = useCallback(() => {
+    void handleCopyLua();
+  }, [handleCopyLua]);
+  const handleOpenPrefs = useCallback(() => openAppPreferences(), []);
+  const handleDismissProjectOffer = useCallback(
+    () => setLastProjectOffer(null),
+    [],
+  );
+  const handleOpenLastProject = useCallback(
+    (id: string) => {
+      void openProjectById(id);
+    },
+    [openProjectById],
+  );
+
+  const handleToolbarUndo = useCallback(() => {
+    captureSelectionTexts();
+    pendingSelectionRematchRef.current = true;
+    undo();
+    markDirty();
+  }, [captureSelectionTexts, undo, markDirty]);
+
+  const handleToolbarRedo = useCallback(() => {
+    captureSelectionTexts();
+    pendingSelectionRematchRef.current = true;
+    redo();
+    markDirty();
+  }, [captureSelectionTexts, redo, markDirty]);
+
   const usesBitmap = useMemo(
     () => /drawBitmap|Bitmap\.open/.test(source),
     [source],
@@ -2021,181 +2054,159 @@ export function EditorApp() {
     return `/editor?${params.toString()}`;
   }, [protocol, chatId, sessionId, workspaceKey, meta.name]);
 
-  const subtitle = (
-    <>
-      <span>{meta.name || "Untitled"}</span>
-      <span className={styles.dot} aria-hidden>
-        ·
-      </span>
-      <span>
-        {meta.layout} z{meta.zone}
-      </span>
-      {dirty ? (
-        <>
-          <span className={styles.dot} aria-hidden>
-            ·
-          </span>
-          <span className={styles.unsaved}>Unsaved</span>
-        </>
-      ) : null}
-    </>
+  const subtitle = useMemo(
+    () => (
+      <>
+        <span>{meta.name || "Untitled"}</span>
+        <span className={styles.dot} aria-hidden>
+          ·
+        </span>
+        <span>
+          {meta.layout} z{meta.zone}
+        </span>
+        {dirty ? (
+          <>
+            <span className={styles.dot} aria-hidden>
+              ·
+            </span>
+            <span className={styles.unsaved}>Unsaved</span>
+          </>
+        ) : null}
+      </>
+    ),
+    [meta.name, meta.layout, meta.zone, dirty],
   );
+
+  const handleOpenSaveNamed = useCallback(() => setProjectModal("save"), []);
+  const handleToolbarModelPngChange = useCallback(
+    (file: File | null) => {
+      void handleModelPngChange(file);
+    },
+    [handleModelPngChange],
+  );
+  const handleLeftPanelResize = useCallback(
+    (e: React.PointerEvent) => onHandlePointerDown("left", e),
+    [onHandlePointerDown],
+  );
+  const handleRightPanelResize = useCallback(
+    (e: React.PointerEvent) => onHandlePointerDown("right", e),
+    [onHandlePointerDown],
+  );
+
+  const handlePatchName = useCallback(
+    (name: string) => {
+      setSource((prev) => patchWidgetName(prev, name));
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+  const handleTranslateSelected = useCallback(
+    (dx: number, dy: number) => handleTranslate(selectedIds, dx, dy),
+    [handleTranslate, selectedIds],
+  );
+  const handleSetColorSelected = useCallback(
+    (color: EdgeColor) => {
+      applyToRecords(selectedIds, (current, record) =>
+        setRecordColor(current, record, color, zone),
+      );
+    },
+    [applyToRecords, selectedIds, zone],
+  );
+  const handlePatchSelectedRecords = useCallback(
+    (patch: Record<string, string | number>) => {
+      applyToRecords(selectedIds, (current, record) =>
+        patchRecordArgs(current, record, patch, zone),
+      );
+    },
+    [applyToRecords, selectedIds, zone],
+  );
+  const handlePatchSimulate = useCallback(
+    (layout: string, zoneIdx: number) => {
+      setSource((prev) =>
+        prev.replace(
+          /@simulate\s+\S+\s+zone=\d+/,
+          `@simulate ${layout} zone=${zoneIdx}`,
+        ),
+      );
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+  const handleApplyBackground = useCallback(
+    (nextSource: string) => {
+      setSource(nextSource);
+      markDirty();
+    },
+    [setSource, markDirty],
+  );
+  const handleBackgroundImageChange = useCallback(
+    async (file: File | null) => {
+      if (!file) {
+        setModelPngBytes(null);
+        setModelPngName(null);
+        return;
+      }
+      if (file.type !== "image/png") {
+        window.alert("Background image must be a PNG.");
+        return;
+      }
+      const buf = new Uint8Array(await file.arrayBuffer());
+      setModelPngBytes(buf);
+      setModelPngName("dashbg.png");
+      void persistModelPngToWorkspace(buf, "dashbg.png");
+      setSource((prev) =>
+        applyDashboardBackground(prev, {
+          mode: "image",
+          imagePath: DEFAULT_BG_IMAGE_PATH,
+        }),
+      );
+      markDirty();
+    },
+    [persistModelPngToWorkspace, setSource, markDirty],
+  );
+  const handleCloseProjectModal = useCallback(() => setProjectModal(null), []);
+  const handleCloseExport = useCallback(() => setExportOpen(false), []);
+  const handleCloseSim = useCallback(() => setSimOpen(false), []);
+  const handleSimReload = useCallback(() => setSimReloadKey((k) => k + 1), []);
+  const handleCloseCanvasMenu = useCallback(() => setCanvasMenu(null), []);
 
   return (
     <div className={styles.editorRoot}>
       <AppPreferencesHost />
-      <AppChrome
-        surface="layout"
+      <EditorChrome
         subtitle={subtitle}
         generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
         layoutHref={layoutSelfHref}
-        actions={
-          <>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={openSim}
-            >
-              <span className={styles.actionLabelFull}>Simulator</span>
-              <span className={styles.actionLabelShort}>Sim</span>
-            </button>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              title={
-                valid === false
-                  ? "Export package — fix validation errors before download"
-                  : "Export zip or copy to SD card"
-              }
-              onClick={() => setExportOpen(true)}
-            >
-              <span className={styles.actionLabelFull}>Export</span>
-              <span className={styles.actionLabelShort}>Export</span>
-            </button>
-            <EditorMenu
-              label="More"
-              variant="ghost"
-              align="right"
-              title="Copy, import, and preferences"
-              items={[
-                {
-                  id: "copy",
-                  label: copyDone ? "Copied" : "Copy Lua",
-                  onClick: () => void handleCopyLua(),
-                },
-                {
-                  id: "import",
-                  label: "Import Lua…",
-                  onClick: () => setPasteOpen(true),
-                },
-                {
-                  id: "rebuild-from-scene",
-                  label: "Rebuild Lua from scene…",
-                  disabled: !sceneAssist,
-                  separatorBefore: true,
-                  onClick: handleRebuildLuaFromScene,
-                },
-                {
-                  id: "new",
-                  label: "New board",
-                  separatorBefore: true,
-                  onClick: () => {
-                    if (dirty && !window.confirm("Discard unsaved changes?"))
-                      return;
-                    loadFromSource(createStarterSource(), true);
-                  },
-                },
-                {
-                  id: "clear-all",
-                  label: "Clear all layers…",
-                  disabled: records.length === 0,
-                  onClick: () => handleClearAllLayers(),
-                },
-                {
-                  id: "prefs",
-                  label: "Preferences…",
-                  separatorBefore: true,
-                  onClick: () => openAppPreferences(),
-                },
-              ]}
-            />
-          </>
-        }
+        copyDone={copyDone}
+        canRebuildFromScene={Boolean(sceneAssist) && deferredSource === source}
+        hasRecords={records.length > 0}
+        dirty={dirty}
+        onOpenSim={openSim}
+        onOpenExport={handleOpenExport}
+        onCopyLua={handleCopyLuaAction}
+        onOpenImport={handleOpenImport}
+        onRebuildFromScene={handleRebuildLuaFromScene}
+        onNewBoard={handleNewBoard}
+        onClearAllLayers={handleClearAllLayers}
+        onOpenPrefs={handleOpenPrefs}
       />
 
-      {loadError && (
-        <div className={styles.bannerStack}>
-          <div className={styles.errorBanner} role="alert">
-            {loadError}
-            <button
-              type="button"
-              className={styles.bannerDismiss}
-              onClick={() => setLoadError(null)}
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {(previewMeta.skippedTextCount > 0 || previewMeta.unreliable) && (
-        <div className={styles.bannerStack}>
-          <div className={styles.warnBanner} role="status">
-            <strong>
-              {inlineSim && hasColorWasmSim(radioId)
-                ? "Layout overlay may miss some draws"
-                : "Approximate preview may differ from the radio"}
-            </strong>
-            <ul>
-              {previewMeta.skippedTextCount > 0 && (
-                <li>
-                  {previewMeta.skippedTextCount} text draw(s) could not be
-                  evaluated for selection — they still appear in radio preview;
-                  edit those in Source.
-                </li>
-              )}
-              {previewMeta.unreliable && (
-                <li>
-                  Gauge/annulus layout could not be fully resolved in the
-                  overlay — trust radio preview pixels.
-                </li>
-              )}
-              {!(inlineSim && hasColorWasmSim(radioId)) && (
-                <li>
-                  Turn on View → Show radio preview (or Simulator) for EdgeTX
-                  pixels.
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {usesBitmap && !modelPngBytes && hasColorWasmSim(radioId) ? (
-        <div className={styles.bannerStack}>
-          <div className={styles.warnBanner} role="status">
-            This widget draws a model bitmap — upload a PNG via View → Upload
-            model PNG… so radio preview matches the radio SD image.
-          </div>
-        </div>
-      ) : null}
+      <EditorBanners
+        loadError={loadError}
+        onDismissError={handleDismissLoadError}
+        skippedTextCount={previewMeta.skippedTextCount}
+        unreliable={previewMeta.unreliable}
+        inlineSim={inlineSim}
+        radioId={radioId}
+        usesBitmap={usesBitmap}
+        hasModelPng={Boolean(modelPngBytes)}
+      />
 
       <EditorToolbar
         canUndo={canUndo}
         canRedo={canRedo}
-        onUndo={() => {
-          captureSelectionTexts();
-          pendingSelectionRematchRef.current = true;
-          undo();
-          markDirty();
-        }}
-        onRedo={() => {
-          captureSelectionTexts();
-          pendingSelectionRematchRef.current = true;
-          redo();
-          markDirty();
-        }}
+        onUndo={handleToolbarUndo}
+        onRedo={handleToolbarRedo}
         onAdd={handleAdd}
         onAddPrefab={handleAddPrefab}
         onAddFullRfHeliElectric={
@@ -2212,7 +2223,7 @@ export function EditorApp() {
         onAddCompanionSuite={handleAddCompanionSuite}
         companionSuiteIds={companions.suites}
         onSave={handleSave}
-        onSaveNamed={() => setProjectModal("save")}
+        onSaveNamed={handleOpenSaveNamed}
         onOpenRecent={handleOpenRecent}
         onOpenLast={handleOpenLast}
         onValidate={handleValidate}
@@ -2229,7 +2240,7 @@ export function EditorApp() {
         onEnrichChange={handleEnrichChange}
         modelPngName={modelPngName}
         modelPngUrl={modelPngUrl}
-        onModelPngChange={(file) => void handleModelPngChange(file)}
+        onModelPngChange={handleToolbarModelPngChange}
         showSnapGuides={showSnapGuides}
         onSnapGuidesChange={setShowSnapGuides}
         snapEnabled={snapEnabled}
@@ -2246,77 +2257,19 @@ export function EditorApp() {
         assist={sceneAssist}
         records={records}
         selectedIds={selectedIds}
-        onSelectRecord={(id) => setSelectedIds([id])}
+        onSelectRecord={handleSelectSceneRecord}
       />
-      {protocol === "rotorflight" ? (
-        <div className={styles.protocolCallout} role="status">
-          Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
-          On), then Telemetry → Discover new for HSpd / EscT / Vbec / Vcel /
-          Gov. Insert → Full RF heli (electric) or RF heli nitro board.
-        </div>
-      ) : null}
-      {lastProjectOffer ? (
-        <div className={styles.protocolCallout} role="status">
-          Resume <strong>{lastProjectOffer.name}</strong>?{" "}
-          <button
-            type="button"
-            className={styles.calloutLink}
-            onClick={() => void openProjectById(lastProjectOffer.id)}
-          >
-            Open last
-          </button>
-          <button
-            type="button"
-            className={styles.calloutLink}
-            onClick={() => setLastProjectOffer(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      ) : null}
-      {liveTelemetryNote ? (
-        <div className={styles.protocolCallout} role="status">
-          {liveTelemetryNote}
-          {liveTelemetryActive && protocol === "rotorflight" ? (
-            <>
-              {" "}
-              <span className={styles.calloutMuted}>
-                Enrich {enrichRotorflight ? "ON" : "OFF"} —{" "}
-                {enrichRotorflight
-                  ? "fills missing HSpd/Gov/Vbec (not true FC sensors until rf2bg + Discover new)."
-                  : "showing wire CRSF sensors only."}
-              </span>
-            </>
-          ) : null}
-        </div>
-      ) : null}
+      <EditorCallouts
+        protocol={protocol}
+        lastProjectOffer={lastProjectOffer}
+        onOpenLastProject={handleOpenLastProject}
+        onDismissProjectOffer={handleDismissProjectOffer}
+        liveTelemetryNote={liveTelemetryNote}
+        liveTelemetryActive={liveTelemetryActive}
+        enrichRotorflight={enrichRotorflight}
+      />
 
-      <div
-        className={styles.mobileTabs}
-        role="tablist"
-        aria-label="Editor panels"
-      >
-        {(
-          [
-            ["layers", "Layers"],
-            ["canvas", "Canvas"],
-            ["properties", "Properties"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === id}
-            className={
-              mobileTab === id ? styles.mobileTabActive : styles.mobileTab
-            }
-            onClick={() => setMobileTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <EditorMobileTabs mobileTab={mobileTab} onChange={setMobileTab} />
 
       <div
         ref={editorBodyRef}
@@ -2329,23 +2282,11 @@ export function EditorApp() {
             records={records}
             source={source}
             selectedIds={selectedIds}
-            onSelect={(id, additive) =>
-              setSelectedIds((prev) =>
-                additive
-                  ? prev.includes(id)
-                    ? prev.filter((x) => x !== id)
-                    : [...prev, id]
-                  : [id],
-              )
-            }
-            onSelectMany={(ids, additive) =>
-              setSelectedIds((prev) =>
-                additive ? [...new Set([...prev, ...ids])] : ids,
-              )
-            }
+            onSelect={handleLayerSelect}
+            onSelectMany={handleLayerSelectMany}
             onDelete={handleDelete}
-            onMoveUp={(id) => handleMoveLayer(id, 1)}
-            onMoveDown={(id) => handleMoveLayer(id, -1)}
+            onMoveUp={handleMoveLayerUp}
+            onMoveDown={handleMoveLayerDown}
             onReorder={handleReorderLayer}
             onClearAll={handleClearAllLayers}
           />
@@ -2357,7 +2298,7 @@ export function EditorApp() {
           aria-label="Resize layers panel"
           title="Drag to resize layers · double-click to reset"
           data-active={activeSide === "left" ? "true" : undefined}
-          onPointerDown={(e) => onHandlePointerDown("left", e)}
+          onPointerDown={handleLeftPanelResize}
           onDoubleClick={resetWidths}
         />
 
@@ -2410,7 +2351,7 @@ export function EditorApp() {
           aria-label="Resize properties panel"
           title="Drag to resize properties · double-click to reset"
           data-active={activeSide === "right" ? "true" : undefined}
-          onPointerDown={(e) => onHandlePointerDown("right", e)}
+          onPointerDown={handleRightPanelResize}
           onDoubleClick={resetWidths}
         />
 
@@ -2425,64 +2366,19 @@ export function EditorApp() {
             protocol={protocol}
             discoveredSensors={discoveredSensors}
             enrichOnlySensors={enrichOnlySensors}
-            onPatchName={(name) => {
-              setSource((prev) => patchWidgetName(prev, name));
-              markDirty();
-            }}
+            onPatchName={handlePatchName}
             onPatchRecord={handlePatchRecord}
-            onTranslateSelected={(dx, dy) =>
-              handleTranslate(selectedIds, dx, dy)
-            }
+            onTranslateSelected={handleTranslateSelected}
             onSetColor={handleSetColor}
-            onSetColorSelected={(color) => {
-              applyToRecords(selectedIds, (current, record) =>
-                setRecordColor(current, record, color, zone),
-              );
-            }}
-            onPatchSelectedRecords={(patch) => {
-              applyToRecords(selectedIds, (current, record) =>
-                patchRecordArgs(current, record, patch, zone),
-              );
-            }}
+            onSetColorSelected={handleSetColorSelected}
+            onPatchSelectedRecords={handlePatchSelectedRecords}
             onSetText={handleSetText}
             onSetTextFlags={handleSetTextFlags}
             onBindTelemetry={handleBindTelemetry}
             onRemapSrcSensor={handleRemapSrcSensor}
-            onPatchSimulate={(layout, zoneIdx) => {
-              setSource((prev) =>
-                prev.replace(
-                  /@simulate\s+\S+\s+zone=\d+/,
-                  `@simulate ${layout} zone=${zoneIdx}`,
-                ),
-              );
-              markDirty();
-            }}
-            onApplyBackground={(nextSource) => {
-              setSource(nextSource);
-              markDirty();
-            }}
-            onBackgroundImageChange={async (file) => {
-              if (!file) {
-                setModelPngBytes(null);
-                setModelPngName(null);
-                return;
-              }
-              if (file.type !== "image/png") {
-                window.alert("Background image must be a PNG.");
-                return;
-              }
-              const buf = new Uint8Array(await file.arrayBuffer());
-              setModelPngBytes(buf);
-              setModelPngName("dashbg.png");
-              void persistModelPngToWorkspace(buf, "dashbg.png");
-              setSource((prev) =>
-                applyDashboardBackground(prev, {
-                  mode: "image",
-                  imagePath: DEFAULT_BG_IMAGE_PATH,
-                }),
-              );
-              markDirty();
-            }}
+            onPatchSimulate={handlePatchSimulate}
+            onApplyBackground={handleApplyBackground}
+            onBackgroundImageChange={handleBackgroundImageChange}
             backgroundImageName={modelPngName}
             backgroundImageUrl={modelPngUrl}
           />
@@ -2516,7 +2412,7 @@ export function EditorApp() {
 
       <ExportInstallModal
         open={exportOpen}
-        onClose={() => setExportOpen(false)}
+        onClose={handleCloseExport}
         widgetName={meta.name}
         luaSource={source}
         installMd={installMd}
@@ -2558,15 +2454,15 @@ export function EditorApp() {
         x={canvasMenu?.x ?? 0}
         y={canvasMenu?.y ?? 0}
         items={canvasContextItems}
-        onClose={() => setCanvasMenu(null)}
+        onClose={handleCloseCanvasMenu}
       />
 
       <SimVerifyModal
         source={source}
         open={simOpen}
-        onClose={() => setSimOpen(false)}
+        onClose={handleCloseSim}
         reloadKey={simReloadKey}
-        onReload={() => setSimReloadKey((k) => k + 1)}
+        onReload={handleSimReload}
         scenarioId={previewScenarioId}
         scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
         layoutProfileId={layoutProfileId}
@@ -2580,7 +2476,7 @@ export function EditorApp() {
         mode={projectModal ?? "save"}
         defaultName={meta.name || "Dashboard"}
         projectId={projectId}
-        onClose={() => setProjectModal(null)}
+        onClose={handleCloseProjectModal}
         onSave={handleSaveNamed}
         onOpen={openProjectById}
         onRename={async (id, name, appDataFiles) => {
@@ -2643,66 +2539,13 @@ export function EditorApp() {
         onImported={(id) => void openProjectById(id)}
       />
 
-      {pasteOpen && (
-        <div
-          className={styles.modalBackdrop}
-          role="presentation"
-          onClick={() => setPasteOpen(false)}
-        >
-          <div
-            className={styles.modal}
-            role="dialog"
-            aria-labelledby="import-title"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHead}>
-              <h2 id="import-title" className={styles.modalTitle}>
-                Import Lua
-              </h2>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={() => setPasteOpen(false)}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <p className={styles.modalHint}>
-              Paste an EdgeTX widget <code>main.lua</code>. The editor patches
-              draw lines in place.
-            </p>
-            <textarea
-              className={styles.modalTextarea}
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder="---@type WidgetScript&#10;---@simulate Layout1x1 zone=0&#10;..."
-              rows={12}
-              autoFocus
-            />
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.ghostBtn}
-                onClick={() => setPasteOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.primaryBtn}
-                onClick={() => {
-                  loadFromSource(pasteText);
-                  setPasteOpen(false);
-                }}
-              >
-                Import
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ImportLuaModal
+        open={pasteOpen}
+        pasteText={pasteText}
+        onPasteTextChange={handlePasteTextChange}
+        onClose={handleCloseImport}
+        onImport={handleImportLua}
+      />
     </div>
   );
 }

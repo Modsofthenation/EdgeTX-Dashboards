@@ -11,6 +11,11 @@ import {
   type SimWidgetLayoutPlan,
 } from "./simModel.ts";
 import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.ts";
+import {
+  buildHotReloadGenSource,
+  buildHotReloadShimSource,
+  hotReloadPaths,
+} from "./hotReloadShim.ts";
 import type {
   ExtendedSimulatorExports,
   MockTelemetryValues,
@@ -77,6 +82,21 @@ export class SimRuntime {
     modelPng?: Uint8Array;
   } | null = null;
   private customModelPng: Uint8Array | null = null;
+  /** Hot-reload: stable shim main.lua + body.lua; bump gen on each deploy. */
+  private hotReloadGen = 0;
+  private hotReloadFolder: string | null = null;
+  /** Skip redundant FS writes when content is unchanged. */
+  private deployCache: {
+    bodySource: string | null;
+    folderName: string | null;
+    modelKey: string | null;
+    pngFingerprint: string | null;
+  } = {
+    bodySource: null,
+    folderName: null,
+    modelKey: null,
+    pngFingerprint: null,
+  };
 
   private wasmUrl: string;
   private radioKey: string;
@@ -249,16 +269,34 @@ export class SimRuntime {
       return;
     }
 
-    await this.deployWidget(source);
-    await deploySimModel(
-      runner,
-      this.layoutPlanFrom(source, zone),
-      this.edgeTxVersion,
-    );
+    const deploy = await this.deployWidget(source);
+    const layoutPlan = this.layoutPlanFrom(source, zone);
+    const modelKey = layoutPlan
+      ? `${layoutPlan.widgetName}|${layoutPlan.layoutId}|${layoutPlan.zoneIndex}|${this.edgeTxVersion}`
+      : null;
+    if (modelKey !== this.deployCache.modelKey) {
+      await deploySimModel(runner, layoutPlan, this.edgeTxVersion);
+      this.deployCache.modelKey = modelKey;
+    }
     this.pendingWidget = { source, zone };
 
-    // Hot reload: firmware is already running — relaunch widget immediately so
-    // refresh() picks up the rewritten main.lua (waiting 12 frames is first-boot only).
+    const zoneChanged =
+      zone != null &&
+      (this.lastLoadedZone == null ||
+        this.lastLoadedZone.layout !== zone.layout ||
+        this.lastLoadedZone.zone !== zone.zone);
+    const needsRelaunch = deploy.needsRelaunch || zoneChanged;
+
+    // Hot path: shim is already registered — body.lua + gen.lua rewrite is
+    // enough; refresh() loadScripts the new body on the next frame.
+    if (runner && this.loopRunning && this.scriptLaunched && !needsRelaunch) {
+      this.callbacks.onLog?.(
+        `Radio sim: hot-reloaded body (gen ${this.hotReloadGen})`,
+      );
+      return;
+    }
+
+    // Cold / folder-rename path: (re)launch the shim widget factory.
     if (runner && this.loopRunning) {
       this.scriptLaunched = true;
       this.widgetLaunchDelayFrames = 0;
@@ -298,6 +336,14 @@ export class SimRuntime {
     this.fullscreenTap = null;
     this.loadWidgetPending = null;
     this.loadWidgetChain = Promise.resolve();
+    this.hotReloadGen = 0;
+    this.hotReloadFolder = null;
+    this.deployCache = {
+      bodySource: null,
+      folderName: null,
+      modelKey: null,
+      pngFingerprint: null,
+    };
     if (this.runner) {
       await this.restoreModels();
       this.runner.stopSim();
@@ -328,26 +374,66 @@ export class SimRuntime {
     return ex;
   }
 
-  private async deployWidget(source: string): Promise<void> {
+  private async deployWidget(
+    source: string,
+  ): Promise<{ needsRelaunch: boolean; folderName: string }> {
     const runner = this.runner;
-    if (!runner) return;
+    if (!runner) return { needsRelaunch: true, folderName: "Widget" };
 
     const plan = planWidgetDeploy(source);
-    await runner.fsWriteFile(
-      plan.paths.luaPath,
-      plan.luaBytes.buffer.slice(
-        plan.luaBytes.byteOffset,
-        plan.luaBytes.byteOffset + plan.luaBytes.byteLength,
-      ) as ArrayBuffer,
-    );
+    const paths = hotReloadPaths(plan.folderName);
+    const folderChanged = this.hotReloadFolder !== plan.folderName;
+    const needsRelaunch = folderChanged || !this.scriptLaunched;
+
+    const encode = (text: string) => {
+      const bytes = new TextEncoder().encode(text);
+      return bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+    };
+
+    const bodyChanged = this.deployCache.bodySource !== source;
+    const folderCacheMiss = this.deployCache.folderName !== plan.folderName;
+
+    // Write first, then commit instance/cache state so a rejected write cannot
+    // leave hotReloadFolder / gen claiming a deploy that never landed.
+    if (bodyChanged) {
+      const nextGen = this.hotReloadGen + 1;
+      await runner.fsWriteFile(paths.bodyPath, encode(source));
+      await runner.fsWriteFile(
+        paths.genPath,
+        encode(buildHotReloadGenSource(nextGen)),
+      );
+      this.hotReloadGen = nextGen;
+      this.deployCache.bodySource = source;
+    }
+
+    // Shim main.lua only needs writing when the factory is (re)registered.
+    if (needsRelaunch || folderCacheMiss) {
+      await runner.fsWriteFile(
+        paths.shimPath,
+        encode(buildHotReloadShimSource(plan.folderName)),
+      );
+      this.deployCache.folderName = plan.folderName;
+    }
+
+    this.hotReloadFolder = plan.folderName;
+
     const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
-    const pngBuf = png.buffer.slice(
-      png.byteOffset,
-      png.byteOffset + png.byteLength,
-    ) as ArrayBuffer;
-    await runner.fsWriteFile(plan.paths.modelPngPath, pngBuf);
-    // Mirror for custom BG_IMG dashboards (`/IMAGES/dashbg.png`).
-    await runner.fsWriteFile("/IMAGES/dashbg.png", pngBuf.slice(0));
+    const pngFingerprint = `${png.byteLength}:${png[0] ?? 0}:${png[png.length >> 1] ?? 0}:${png[png.length - 1] ?? 0}`;
+    if (this.deployCache.pngFingerprint !== pngFingerprint) {
+      const pngBuf = png.buffer.slice(
+        png.byteOffset,
+        png.byteOffset + png.byteLength,
+      ) as ArrayBuffer;
+      await runner.fsWriteFile(plan.paths.modelPngPath, pngBuf);
+      // Mirror for custom BG_IMG dashboards (`/IMAGES/dashbg.png`).
+      await runner.fsWriteFile("/IMAGES/dashbg.png", pngBuf.slice(0));
+      this.deployCache.pngFingerprint = pngFingerprint;
+    }
+
+    return { needsRelaunch, folderName: plan.folderName };
   }
 
   private async backupModels(): Promise<void> {

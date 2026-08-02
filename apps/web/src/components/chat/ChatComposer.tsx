@@ -27,6 +27,10 @@ import styles from "./ChatComposer.module.css";
 interface ChatComposerProps {
   running: boolean;
   canRefine: boolean;
+  /** When false, Send / generate are disabled (no provider key). */
+  aiReady: boolean;
+  /** True while `/api/ai/status` has not resolved yet. */
+  statusLoading?: boolean;
   protocol: TelemetryProtocol;
   modelId: string;
   models: ChatModel[];
@@ -103,6 +107,8 @@ function SendIcon() {
 export const ChatComposer = memo(function ChatComposer({
   running,
   canRefine,
+  aiReady,
+  statusLoading = false,
   protocol,
   modelId,
   models,
@@ -128,7 +134,10 @@ export const ChatComposer = memo(function ChatComposer({
   const selectedRadio = radios.find((r) => r.id === radioId);
   const radioGroups = groupRadiosByLayout(radios);
   const canSend =
-    !running && (input.trim().length > 0 || attachments.length > 0);
+    aiReady &&
+    !statusLoading &&
+    !running &&
+    (input.trim().length > 0 || attachments.length > 0);
   const attachDisabled = running || attachments.length >= maxPromptImages();
 
   const submit = () => {
@@ -461,6 +470,11 @@ export const ChatComposer = memo(function ChatComposer({
               className={`${styles.sendBtn} ${canSend || running ? styles.sendBtnActive : ""}`}
               disabled={running ? !onStop : !canSend}
               aria-label={running ? "Stop generation" : "Send message"}
+              title={
+                !statusLoading && !aiReady && !running
+                  ? "Configure an AI provider in Preferences to generate"
+                  : undefined
+              }
               onClick={
                 running
                   ? (e) => {
@@ -480,8 +494,11 @@ export const ChatComposer = memo(function ChatComposer({
         ) : null}
 
         <p className={styles.hint}>
-          Enter to send · Shift+Enter for new line · Up to {maxPromptImages()}{" "}
-          images · PNG, JPEG, WebP, GIF · 4MB each
+          {statusLoading
+            ? "Checking AI provider…"
+            : !aiReady
+              ? "AI not configured — open Preferences → AI, or use Layout / templates without a key."
+              : `Enter to send · Shift+Enter for new line · Up to ${maxPromptImages()} images · PNG, JPEG, WebP, GIF · 4MB each`}
         </p>
       </div>
     </form>

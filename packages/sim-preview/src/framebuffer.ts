@@ -78,7 +78,8 @@ export function cropZoneFromFramebuffer(
   zoneH: number,
 ): Uint8Array {
   if (zoneX === 0 && zoneY === 0 && zoneW === lcdW && zoneH === lcdH) {
-    return data.slice();
+    // Callers that need an owned buffer should copy; paint path reuses the view.
+    return data;
   }
 
   if (depth === 1) {

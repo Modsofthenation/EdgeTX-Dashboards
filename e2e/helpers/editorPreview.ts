@@ -13,6 +13,10 @@ export type CapturedPreviewPair = {
   gateFailures: string[];
 };
 
+export async function readRadioPreviewBitmap(page: Page): Promise<RgbaBitmap> {
+  return readCanvasBitmap(page, "editor-radio-preview");
+}
+
 async function readCanvasBitmap(
   page: Page,
   testId: string,
@@ -218,4 +222,87 @@ export async function capturePreviewPair(
   });
   const gateFailures = assertFidelityGates(metrics);
   return { radio, approximate, metrics, gateFailures };
+}
+
+const HOT_RELOAD_MARK = "data-e2e-hot-reload-mark";
+
+/** Stamp the radio canvas so we can detect remounts (soft-restart). */
+export async function markRadioPreviewCanvas(page: Page): Promise<string> {
+  const token = `hot-${Date.now()}`;
+  await page.evaluate(
+    ({ mark, token: t }) => {
+      const canvas = document.querySelector(
+        '[data-testid="editor-radio-preview"]',
+      );
+      if (!canvas) throw new Error("editor-radio-preview canvas missing");
+      canvas.setAttribute(mark, t);
+    },
+    { mark: HOT_RELOAD_MARK, token },
+  );
+  return token;
+}
+
+export async function radioPreviewMarkStillPresent(
+  page: Page,
+  token: string,
+): Promise<boolean> {
+  return page.evaluate(
+    ({ mark, token: t }) => {
+      const canvas = document.querySelector(
+        '[data-testid="editor-radio-preview"]',
+      );
+      return canvas?.getAttribute(mark) === t;
+    },
+    { mark: HOT_RELOAD_MARK, token },
+  );
+}
+
+/** True when the inline sim root reports phase=running (no boot flash). */
+export async function radioSimPhaseIsRunning(page: Page): Promise<boolean> {
+  const host = page.getByTestId("radio-sim-preview");
+  if ((await host.count()) === 0) return false;
+  return (await host.getAttribute("data-sim-phase")) === "running";
+}
+
+/**
+ * Wait until the radio preview bitmap differs meaningfully from `baseline`.
+ * Returns the new bitmap + compare metrics.
+ */
+export async function waitForRadioPreviewChange(
+  page: Page,
+  baseline: RgbaBitmap,
+  options: { timeoutMs?: number; minMae?: number } = {},
+): Promise<{ bitmap: RgbaBitmap; metrics: PreviewCompareMetrics }> {
+  const timeoutMs = options.timeoutMs ?? 20_000;
+  const minMae = options.minMae ?? 12;
+  const deadline = Date.now() + timeoutMs;
+  let last: RgbaBitmap = baseline;
+  let lastMetrics: PreviewCompareMetrics | null = null;
+
+  while (Date.now() < deadline) {
+    last = await readRadioPreviewBitmap(page);
+    lastMetrics = compareRgbaBitmaps(baseline, last);
+    if (lastMetrics.mae >= minMae) {
+      return { bitmap: last, metrics: lastMetrics };
+    }
+    await page.waitForTimeout(200);
+  }
+
+  throw new Error(
+    `Radio preview did not change within ${timeoutMs}ms (mae=${lastMetrics?.mae ?? 0}, need >= ${minMae})`,
+  );
+}
+
+/** Import Lua via More → Import Lua… (replaces editor source). */
+export async function importLuaInEditor(
+  page: Page,
+  source: string,
+): Promise<void> {
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("menuitem", { name: /Import Lua/i }).click();
+  const dialog = page.getByRole("dialog", { name: /Import Lua/i });
+  await dialog.waitFor({ state: "visible", timeout: 10_000 });
+  await dialog.locator("textarea").fill(source);
+  await dialog.getByRole("button", { name: /^Import$/i }).click();
+  await dialog.waitFor({ state: "hidden", timeout: 10_000 });
 }

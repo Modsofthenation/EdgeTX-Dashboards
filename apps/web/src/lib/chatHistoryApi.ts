@@ -60,7 +60,9 @@ export async function syncChatRecord(
     widgetVersion: input.widgetVersion,
     messages: input.messages
       ?.filter((message) => !message.isStreaming)
-      .map(({ isStreaming: _, widget: __, ...rest }) => rest),
+      // Drop streaming flags, ephemeral widget blobs, and image data URLs —
+      // SQLite never restores images, and data: URLs bloat the PUT body.
+      .map(({ isStreaming: _, widget: __, images: ___, ...rest }) => rest),
     artifact: input.artifact ?? null,
     artifactVersions: input.artifactVersions,
   };

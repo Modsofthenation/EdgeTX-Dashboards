@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, memo } from "react";
 import {
   DEFAULT_BG_IMAGE_PATH,
   RADIO_SAFE_COLOR_NAMES,
@@ -162,7 +162,7 @@ function TextField({
   );
 }
 
-export function RecordPropertiesPanel({
+export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
   meta,
   source,
   selectedRecords,
@@ -188,10 +188,7 @@ export function RecordPropertiesPanel({
 }: RecordPropertiesPanelProps) {
   const bgFileRef = useRef<HTMLInputElement>(null);
   const record = selectedRecords.length === 1 ? selectedRecords[0] : null;
-  const background = useMemo(
-    () => detectDashboardBackground(source),
-    [source],
-  );
+  const background = useMemo(() => detectDashboardBackground(source), [source]);
   const kindMeta = record ? catalogForDrawKind(record.kind) : null;
   const sensors = useMemo(() => {
     const base = SENSOR_CATALOG[protocol] ?? SENSOR_CATALOG.betaflight;
@@ -390,9 +387,9 @@ export function RecordPropertiesPanel({
         <section className={styles.propSection}>
           <h3 className={styles.sectionTitle}>Background</h3>
           <p className={styles.propEmptyHint}>
-            Full-dashboard fill behind cards. Color uses{" "}
-            <code>lcd.clear</code>; model uses the EdgeTX model bitmap; custom
-            loads a PNG from the SD card.
+            Full-dashboard fill behind cards. Color uses <code>lcd.clear</code>;
+            model uses the EdgeTX model bitmap; custom loads a PNG from the SD
+            card.
           </p>
           <label className={styles.propField}>
             <FieldLabel>Fill</FieldLabel>
@@ -405,8 +402,7 @@ export function RecordPropertiesPanel({
                   applyDashboardBackground(source, {
                     mode,
                     color: background.color,
-                    imagePath:
-                      background.imagePath ?? DEFAULT_BG_IMAGE_PATH,
+                    imagePath: background.imagePath ?? DEFAULT_BG_IMAGE_PATH,
                   }),
                 );
               }}
@@ -470,9 +466,7 @@ export function RecordPropertiesPanel({
                     style={{ cursor: "pointer" }}
                     onClick={() => bgFileRef.current?.click()}
                   >
-                    {backgroundImageName
-                      ? `Replace PNG…`
-                      : "Upload PNG…"}
+                    {backgroundImageName ? `Replace PNG…` : "Upload PNG…"}
                   </button>
                   {backgroundImageName && (
                     <button
@@ -1022,4 +1016,4 @@ export function RecordPropertiesPanel({
       )}
     </aside>
   );
-}
+});

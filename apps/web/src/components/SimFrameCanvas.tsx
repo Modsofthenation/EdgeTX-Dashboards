@@ -33,35 +33,44 @@ export function SimFrameCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
   const lastSizeRef = useRef({ w: 0, h: 0 });
+  const frameRef = useRef(frame);
+  const zoneRef = useRef(zone);
+  const ignorePauseRef = useRef(ignoreChatScrollPause);
+  const allowUpscaleRef = useRef(allowUpscale);
+  const paintRef = useRef<() => void>(() => {});
+
+  frameRef.current = frame;
+  zoneRef.current = zone;
+  ignorePauseRef.current = ignoreChatScrollPause;
+  allowUpscaleRef.current = allowUpscale;
 
   useEffect(() => {
     if (!scratchRef.current) {
       scratchRef.current = document.createElement("canvas");
     }
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    const scratch = scratchRef.current;
-    if (!canvas || !container || !scratch || !frame) return;
 
     const paint = () => {
-      if (!ignoreChatScrollPause && isChatScrolling()) return;
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      const scratch = scratchRef.current;
+      const current = frameRef.current;
+      if (!canvas || !container || !scratch || !current) return;
+      if (!ignorePauseRef.current && isChatScrolling()) return;
 
       const cw = container.clientWidth;
       const ch = container.clientHeight;
       if (cw <= 0 || ch <= 0) return;
 
-      const scaleX = cw / zone.zoneW;
-      const scaleY = ch / zone.zoneH;
+      const z = zoneRef.current;
+      const scaleX = cw / z.zoneW;
+      const scaleY = ch / z.zoneH;
       const scale = Math.min(
         scaleX,
         scaleY,
-        allowUpscale ? Number.POSITIVE_INFINITY : 1,
+        allowUpscaleRef.current ? Number.POSITIVE_INFINITY : 1,
       );
-      const drawW = Math.max(1, Math.floor(zone.zoneW * scale));
-      const drawH = Math.max(1, Math.floor(zone.zoneH * scale));
+      const drawW = Math.max(1, Math.floor(z.zoneW * scale));
+      const drawH = Math.max(1, Math.floor(z.zoneH * scale));
 
       const last = lastSizeRef.current;
       if (last.w !== drawW || last.h !== drawH) {
@@ -76,8 +85,8 @@ export function SimFrameCanvas({
       if (!ctx) return;
 
       paintSimFrame({
-        frame,
-        zone,
+        frame: current,
+        zone: z,
         targetCtx: ctx,
         targetWidth: drawW,
         targetHeight: drawH,
@@ -85,11 +94,16 @@ export function SimFrameCanvas({
       });
     };
 
+    paintRef.current = paint;
     const observer = new ResizeObserver(paint);
-    observer.observe(container);
+    observer.observe(containerRef.current!);
     paint();
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    paintRef.current();
   }, [frame, zone, ignoreChatScrollPause, allowUpscale]);
 
   return (
