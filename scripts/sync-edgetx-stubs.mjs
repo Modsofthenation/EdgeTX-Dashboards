@@ -47,6 +47,17 @@ async function main() {
     console.log("ok");
   }
 
+  // Slim catalog for the in-browser Lua source editor (autocomplete / hover).
+  const { spawnSync } = await import("node:child_process");
+  const gen = spawnSync(
+    process.execPath,
+    [join(ROOT, "scripts/build-edgetx-completions.mjs")],
+    { stdio: "inherit" },
+  );
+  if (gen.status !== 0) {
+    throw new Error("Failed to rebuild EdgeTX completions catalog");
+  }
+
   console.log(`\nSynced EdgeTX ${VERSION} stubs to stubs/${VERSION}/`);
 }
 
