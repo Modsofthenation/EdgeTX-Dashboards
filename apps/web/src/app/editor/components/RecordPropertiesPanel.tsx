@@ -288,9 +288,8 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
     }
     return first - zone.zoneY;
   }, [selectedRecords, zone.zoneY]);
-  const resolvedFlag = record?.fontSize
-    ? fontSizeToFlag(record.fontSize)
-    : "SMLSIZE";
+  const resolvedFlag =
+    record?.fontSize != null ? fontSizeToFlag(record.fontSize) : null;
   const textSize: TextSizeFlag =
     resolvedFlag === "MIDSIZE" || resolvedFlag === "DBLSIZE"
       ? resolvedFlag

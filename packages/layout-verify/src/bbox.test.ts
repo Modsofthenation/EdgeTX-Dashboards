@@ -77,11 +77,30 @@ describe("color LCD font metrics", () => {
     assert.equal(resolveFontSize("WHITE"), 21);
   });
 
-  it("maps pixel heights back to flags", () => {
+  it("maps pixel heights back to flags without collapsing TIN/BOLD/STD", () => {
     assert.equal(fontSizeToFlag(17), "SMLSIZE");
     assert.equal(fontSizeToFlag(29), "MIDSIZE");
     assert.equal(fontSizeToFlag(40), "DBLSIZE");
     assert.equal(fontSizeToFlag(69), "XXLSIZE");
+    assert.equal(fontSizeToFlag(12), "TINSIZE");
+    assert.equal(fontSizeToFlag(20), "BOLD");
+    assert.equal(fontSizeToFlag(21), null);
+  });
+
+  it("round-trips resolveFontSize ↔ fontSizeToFlag for each Lua mode", () => {
+    const cases: Array<{ flags: string; size: number; flag: string | null }> = [
+      { flags: "TINSIZE + WHITE", size: 12, flag: "TINSIZE" },
+      { flags: "SMLSIZE + GREY", size: 17, flag: "SMLSIZE" },
+      { flags: "BOLD + WHITE", size: 20, flag: "BOLD" },
+      { flags: "WHITE", size: 21, flag: null },
+      { flags: "MIDSIZE + GREEN", size: 29, flag: "MIDSIZE" },
+      { flags: "DBLSIZE + YELLOW", size: 40, flag: "DBLSIZE" },
+      { flags: "XXLSIZE + WHITE", size: 69, flag: "XXLSIZE" },
+    ];
+    for (const c of cases) {
+      assert.equal(resolveFontSize(c.flags), c.size, c.flags);
+      assert.equal(fontSizeToFlag(c.size), c.flag, String(c.size));
+    }
   });
 
   it("edgeTxTextSize matches calibrated advances", () => {

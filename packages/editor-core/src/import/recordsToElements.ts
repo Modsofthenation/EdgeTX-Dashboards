@@ -68,7 +68,8 @@ function mapRecordToElement(
       const binding = inferTextBinding(text, telemetryKeys);
       const color = hexToEdgeColor(record.color);
       const fontSize = fontSizeFromRecord(record);
-      const fontFlags = [fontSizeToFlag(fontSize)];
+      const sizeFlag = fontSizeToFlag(fontSize);
+      const fontFlags = sizeFlag ? [sizeFlag] : [];
 
       if (binding) {
         return {

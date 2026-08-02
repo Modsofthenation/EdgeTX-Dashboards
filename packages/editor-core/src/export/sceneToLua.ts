@@ -10,7 +10,7 @@ import { hexToEdgeColor } from "../colors.ts";
 
 function fontFlagsForElement(el: TextElement): string {
   if (el.fontFlags?.length) return el.fontFlags.join(" + ");
-  return fontSizeToFlag(el.fontSize);
+  return fontSizeToFlag(el.fontSize) ?? "";
 }
 
 function edgeColorName(color: string): EdgeColor {
@@ -63,7 +63,10 @@ function emitElementDraw(
 
   switch (el.kind) {
     case "text": {
-      const flags = `${fontFlagsForElement(el)} + ${color(el.color)}`;
+      const sizeFlags = fontFlagsForElement(el);
+      const flags = sizeFlags
+        ? `${sizeFlags} + ${color(el.color)}`
+        : color(el.color);
       lines.push(
         `${indent}lcd.drawText(${el.x}, ${el.y}, ${emitTextValue(el, locals)}, ${flags})`,
       );

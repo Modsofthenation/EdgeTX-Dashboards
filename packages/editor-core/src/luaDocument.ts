@@ -231,17 +231,28 @@ export function setRecordColor(
       .map((p) => p.trim())
       .filter((p) => p && !colorNames.has(p as EdgeColor))
       .join(" + ");
-    const sizeFallback = record.fontSize
-      ? fontSizeToFlag(record.fontSize)
-      : "SMLSIZE";
-    const base = withoutColor || sizeFallback;
-    const flags = base.includes(safeColor) ? base : `${base} + ${safeColor}`;
+    // null = STDSIZE (no size flag). Prefer existing non-color tokens when present.
+    const sizeFallback =
+      record.fontSize != null ? fontSizeToFlag(record.fontSize) : null;
+    const base = withoutColor || sizeFallback || "";
+    const flags = !base
+      ? safeColor
+      : base.includes(safeColor)
+        ? base
+        : `${base} + ${safeColor}`;
     return patchRecordArgs(source, record, { flags }, zone);
   }
   return patchRecordArgs(source, record, { color: safeColor }, zone);
 }
 
-const TEXT_SIZE_FLAGS = new Set(["SMLSIZE", "MIDSIZE", "DBLSIZE", "XXLSIZE"]);
+const TEXT_SIZE_FLAGS = new Set([
+  "SMLSIZE",
+  "MIDSIZE",
+  "DBLSIZE",
+  "XXLSIZE",
+  "TINSIZE",
+  "BOLD",
+]);
 const TEXT_ALIGN_FLAGS = new Set(["LEFT", "CENTER", "RIGHT"]);
 
 export type TextSizeFlag = "SMLSIZE" | "MIDSIZE" | "DBLSIZE";
@@ -268,10 +279,9 @@ export function setRecordTextFlags(
 
   if (opts.size) tokens.unshift(opts.size);
   else {
-    const sizeFallback = record.fontSize
-      ? fontSizeToFlag(record.fontSize)
-      : "SMLSIZE";
-    tokens.unshift(sizeFallback);
+    const sizeFallback =
+      record.fontSize != null ? fontSizeToFlag(record.fontSize) : null;
+    if (sizeFallback) tokens.unshift(sizeFallback);
   }
 
   if (opts.align && opts.align !== "LEFT") tokens.push(opts.align);

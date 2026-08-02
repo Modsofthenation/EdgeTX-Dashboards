@@ -1,4 +1,8 @@
-import { bboxForRecord, type DrawRecord } from "@widget-gen/layout-verify";
+import {
+  bboxForRecord,
+  edgeTxTextSize,
+  type DrawRecord,
+} from "@widget-gen/layout-verify";
 import type { DocumentRecord, ZoneOffset } from "./luaDocument.ts";
 import {
   SNAP_GRID,
@@ -28,9 +32,11 @@ function textBBox(
 ): BoundingBox | null {
   const fontSize = record.fontSize ?? 17;
   const text = record.text ?? "";
+  // Prefer caller measure (selection uses edgeTxTextSize); fall back to the
+  // same LCD metrics so outlines stay aligned with WASM when measure is omitted.
   const size = measureText
     ? measureText(text, fontSize)
-    : { w: Math.max(1, text.length * Math.round(fontSize * 0.5)), h: fontSize };
+    : edgeTxTextSize(text, fontSize);
   let x = record.x ?? 0;
   const y = record.y ?? 0;
   const align = record.textAlign ?? "left";

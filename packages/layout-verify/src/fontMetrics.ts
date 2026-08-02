@@ -88,13 +88,37 @@ export function layoutBudgetTextSize(
 export type TextSizeFlagName =
   "SMLSIZE" | "MIDSIZE" | "DBLSIZE" | "XXLSIZE" | "BOLD" | "TINSIZE";
 
-/** Map a draw-record fontSize (px) back to the nearest Lua size flag. */
-export function fontSizeToFlag(fontSize: number): TextSizeFlagName {
-  // Midpoints between COLOR_LCD_FONT_SIZES entries (ignore BOLD/STD for editor UI).
+/**
+ * Map a draw-record fontSize (px) back to a Lua size flag.
+ * Returns `null` for the default STD font (no size flag in Lua).
+ */
+export function fontSizeToFlag(fontSize: number): TextSizeFlagName | null {
+  // Exact LVGL heights first so TINSIZE / BOLD / STD do not collapse into SMLSIZE.
+  switch (fontSize) {
+    case COLOR_LCD_FONT_SIZES.XXLSIZE:
+      return "XXLSIZE";
+    case COLOR_LCD_FONT_SIZES.DBLSIZE:
+      return "DBLSIZE";
+    case COLOR_LCD_FONT_SIZES.MIDSIZE:
+      return "MIDSIZE";
+    case COLOR_LCD_FONT_SIZES.BOLD:
+      return "BOLD";
+    case COLOR_LCD_FONT_SIZES.SMLSIZE:
+      return "SMLSIZE";
+    case COLOR_LCD_FONT_SIZES.TINSIZE:
+      return "TINSIZE";
+    case COLOR_LCD_FONT_SIZES.STDSIZE:
+      return null;
+    default:
+      break;
+  }
+  // Midpoints for arbitrary / interpolated sizes.
   if (fontSize >= 55) return "XXLSIZE";
   if (fontSize >= 35) return "DBLSIZE";
   if (fontSize >= 23) return "MIDSIZE";
-  return "SMLSIZE";
+  if (fontSize >= 19) return "BOLD";
+  if (fontSize >= 14) return "SMLSIZE";
+  return "TINSIZE";
 }
 
 /** Resolve lcd.drawText size flags to LVGL line height (px). */
