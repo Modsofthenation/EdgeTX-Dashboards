@@ -67,7 +67,7 @@ test.describe("Templates & navigation", () => {
 
   test("templates page filters and opens RF heli", async ({ page }) => {
     await gotoTemplates(page);
-    const filters = page.getByRole("group", { name: "Template variants" });
+    const filters = page.getByRole("group", { name: "Filter by protocol" });
     await expect(filters).toBeVisible();
     await filters.getByRole("button", { name: /Rotorflight/i }).click();
     await page.getByRole("link", { name: "Open in Editor" }).first().click();

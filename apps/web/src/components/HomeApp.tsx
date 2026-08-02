@@ -14,7 +14,7 @@ import {
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { listRecentProjects, type ProjectSummary } from "~/lib/projectLibrary";
-import { buildBlankEditorHref } from "~/lib/editorHref";
+import { buildBlankEditorHref, buildProjectEditorHref } from "~/lib/editorHref";
 import { buildStudioHref } from "~/lib/studioHref";
 import { DEFAULT_RADIO_ID } from "@widget-gen/shared";
 
@@ -106,10 +106,13 @@ export function HomeApp() {
                 {projects.slice(0, 12).map((project) => (
                   <Link
                     key={project.id}
-                    href={buildBlankEditorHref({
+                    href={buildProjectEditorHref({
+                      projectId: project.id,
                       protocol: project.protocol || DEFAULT_PROTOCOL,
                       radioId: project.radioId ?? DEFAULT_RADIO_ID,
                       layoutProfileId: project.layoutProfileId,
+                      sessionId: project.sessionId,
+                      workspaceKey: project.workspaceKey,
                     })}
                     className="group no-underline"
                   >

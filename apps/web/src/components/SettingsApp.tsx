@@ -58,23 +58,24 @@ export function SettingsApp() {
           <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
             Settings
           </p>
-          {TABS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              className={cn(
-                "rounded-[var(--radius-md)] px-3 py-2 text-left text-sm transition-colors",
-                tab === item.id
-                  ? "bg-[var(--surface-hover)] font-semibold text-[var(--text)]"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]",
-              )}
-              onClick={() => setTab(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
+          <nav aria-label="Settings sections" className="flex flex-col gap-1">
+            {TABS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={tab === item.id ? "page" : undefined}
+                className={cn(
+                  "rounded-[var(--radius-md)] px-3 py-2 text-left text-sm transition-colors",
+                  tab === item.id
+                    ? "bg-[var(--surface-hover)] font-semibold text-[var(--text)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]",
+                )}
+                onClick={() => setTab(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
         </aside>
 
         <div className="appScrollbar flex-1 overflow-auto p-6">

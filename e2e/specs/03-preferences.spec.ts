@@ -14,10 +14,11 @@ test.describe("Settings", () => {
 
   test("opens Appearance tab with theme swatches", async ({ page }) => {
     await openPreferences(page, "Appearance");
-    await expect(page.getByRole("tab", { name: "Appearance" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    await expect(
+      page
+        .getByRole("navigation", { name: "Settings sections" })
+        .getByRole("button", { name: "Appearance" }),
+    ).toHaveAttribute("aria-current", "page");
     await expect(page.locator("[data-theme-preview]").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /^Dark\b/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Light\b/ })).toBeVisible();
@@ -50,11 +51,13 @@ test.describe("Settings", () => {
 
   test("AI banner Open AI settings opens Settings AI tab", async ({ page }) => {
     await primaryNavLink(page, "Studio").click();
-    await page.getByRole("button", { name: "Open AI settings" }).click();
+    await page.getByRole("link", { name: "Open AI settings" }).click();
     await expect(page).toHaveURL(/\/settings\?tab=ai/);
     await expect(
-      page.getByRole("tab", { name: "AI providers" }),
-    ).toHaveAttribute("aria-selected", "true");
+      page
+        .getByRole("navigation", { name: "Settings sections" })
+        .getByRole("button", { name: "AI providers" }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
   test("Simulator tab shows firmware status", async ({ page }) => {

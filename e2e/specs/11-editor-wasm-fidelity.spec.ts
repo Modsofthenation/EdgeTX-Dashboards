@@ -50,6 +50,11 @@ test.describe("Editor ↔ WASM preview fidelity", () => {
 
   test.beforeAll(async ({ request }) => {
     const res = await request.get("/api/sim-firmware");
+    if (!res.ok()) {
+      throw new Error(
+        `sim-firmware probe failed (${res.status()}) — is the web app running?`,
+      );
+    }
     const body = (await res.json()) as { ready?: boolean };
     test.skip(
       !body.ready,

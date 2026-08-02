@@ -87,7 +87,10 @@ export async function openSettings(
     .click();
   await expectSettingsPage(page);
   if (tab) {
-    await page.getByRole("tab", { name: tab }).click();
+    await page
+      .getByRole("navigation", { name: "Settings sections" })
+      .getByRole("button", { name: tab })
+      .click();
   }
 }
 

@@ -23,10 +23,7 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { ChatMessageList } from "./ChatMessageList";
 import { CollapsibleAside } from "./CollapsibleAside";
-import {
-  AppPreferencesButton,
-  openAppPreferences,
-} from "~/components/AppPreferences";
+import { AppPreferencesButton } from "~/components/AppPreferences";
 import { useOptionalAiSettings } from "~/components/AiSettingsProvider";
 import { buildStudioHref } from "~/lib/studioHref";
 import styles from "./ChatApp.module.css";
@@ -241,13 +238,9 @@ function AiSetupBanner() {
         <Link href={layoutHref} className={styles.aiBannerBtnSecondary}>
           Open Editor
         </Link>
-        <button
-          type="button"
-          className={styles.aiBannerBtn}
-          onClick={() => openAppPreferences("ai")}
-        >
+        <Link href="/settings?tab=ai" className={styles.aiBannerBtn}>
           Open AI settings
-        </button>
+        </Link>
       </div>
     </div>
   );

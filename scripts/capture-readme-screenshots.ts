@@ -89,7 +89,7 @@ async function main() {
   await page.goto(`${baseURL}/templates`);
   await setTheme(page, "dark");
   await page.reload();
-  await page.getByRole("group", { name: "Template variants" }).waitFor();
+  await page.getByRole("group", { name: "Filter by protocol" }).waitFor();
   await page.screenshot({
     path: path.join(outDir, "readme-templates-dark.png"),
     fullPage: false,
@@ -139,6 +139,18 @@ async function main() {
   await page.waitForTimeout(400);
   await page.screenshot({
     path: path.join(outDir, "readme-insert-prefabs.png"),
+    fullPage: false,
+  });
+
+  // Simulator overlay
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Simulator" }).click();
+  await page
+    .getByRole("heading", { name: "Run in simulator" })
+    .waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(600);
+  await page.screenshot({
+    path: path.join(outDir, "readme-sim.png"),
     fullPage: false,
   });
 

@@ -31,7 +31,7 @@ test.describe("Home boot & empty state", () => {
       page.getByRole("link", { name: "Open Editor" }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Open AI settings" }),
+      page.getByRole("link", { name: "Open AI settings" }),
     ).toBeVisible();
   });
 
@@ -109,7 +109,7 @@ test.describe("Home boot & empty state", () => {
 
   test("studio empty state shows template gallery", async ({ page }) => {
     await gotoStudio(page);
-    const filters = page.getByRole("group", { name: "Template variants" });
+    const filters = page.getByRole("group", { name: "Filter by protocol" });
     await expect(filters).toBeVisible();
 
     await expect(

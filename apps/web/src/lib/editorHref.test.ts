@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildBlankEditorHref, buildEditorHref } from "./editorHref.ts";
+import {
+  buildBlankEditorHref,
+  buildEditorHref,
+  buildProjectEditorHref,
+} from "./editorHref.ts";
 
 describe("editorHref", () => {
   it("builds a blank Layout URL with protocol and radio", () => {
@@ -27,5 +31,20 @@ describe("editorHref", () => {
     assert.match(href, /instanceId=i1/);
     assert.match(href, /chatId=c1/);
     assert.doesNotMatch(href, /[?&]name=/);
+  });
+
+  it("builds a library project URL with projectId and optional workspace", () => {
+    const href = buildProjectEditorHref({
+      projectId: "p1",
+      protocol: "betaflight",
+      radioId: "tx15",
+      layoutProfileId: "tx15",
+      sessionId: "s1",
+      workspaceKey: "wk1",
+    });
+    assert.match(href, /projectId=p1/);
+    assert.match(href, /instanceId=wk1/);
+    assert.match(href, /sessionId=s1/);
+    assert.match(href, /radioId=tx15/);
   });
 });

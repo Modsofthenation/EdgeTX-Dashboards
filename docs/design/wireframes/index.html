@@ -541,6 +541,36 @@
         color: var(--muted);
         line-height: 18px;
       }
+
+      .grid-2-scan {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 800px) {
+        .grid-2-scan {
+          grid-template-columns: 1fr;
+        }
+      }
+      .scan {
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .scan img {
+        display: block;
+        width: 100%;
+        height: auto;
+        vertical-align: top;
+      }
+      .scan figcaption {
+        padding: 6px 8px;
+        font-size: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+      }
     </style>
   </head>
   <body>
@@ -599,37 +629,6 @@
           </div>
         </div>
       </header>
-      <style>
-        .grid-2-scan {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        @media (max-width: 800px) {
-          .grid-2-scan {
-            grid-template-columns: 1fr;
-          }
-        }
-        .scan {
-          margin: 0;
-          border: 1px solid var(--line);
-          border-radius: 6px;
-          overflow: hidden;
-          background: #fff;
-        }
-        .scan img {
-          display: block;
-          width: 100%;
-          height: auto;
-          vertical-align: top;
-        }
-        .scan figcaption {
-          padding: 6px 8px;
-          font-size: 12px;
-          color: var(--muted);
-          border-top: 1px solid var(--line);
-        }
-      </style>
 
       <!-- 00 Decisions -->
       <section class="screen" id="decisions">

@@ -149,9 +149,11 @@ export async function waitForRadioPreviewReady(
         }
         return lit > 8 ? "ready" : false;
       },
+      undefined,
       { timeout: Math.min(timeoutMs, 45_000) },
     )
-    .then((result) => {
+    .then(async (handle) => {
+      const result = await handle.jsonValue();
       if (result === "sim-error") {
         throw new Error(
           "Radio WASM preview failed to boot (firmware/worker error). Run npm run setup:sim / sync-wasm.",

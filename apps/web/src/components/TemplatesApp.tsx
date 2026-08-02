@@ -58,7 +58,7 @@ export function TemplatesApp() {
           <div
             className="flex flex-wrap gap-2"
             role="group"
-            aria-label="Template variants"
+            aria-label="Filter by protocol"
           >
             {FILTERS.map((f) => (
               <Button
@@ -66,6 +66,7 @@ export function TemplatesApp() {
                 type="button"
                 size="sm"
                 variant={filter === f.id ? "default" : "secondary"}
+                aria-pressed={filter === f.id}
                 onClick={() => setFilter(f.id)}
               >
                 {f.label}

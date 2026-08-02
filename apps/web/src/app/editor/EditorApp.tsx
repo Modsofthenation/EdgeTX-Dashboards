@@ -226,6 +226,7 @@ function initialEditorFromSearchParams(searchParams: URLSearchParams): {
   const instanceId = searchParams.get("instanceId");
   const widgetName = searchParams.get("name");
   const sid = searchParams.get("sessionId");
+  const projectId = searchParams.get("projectId");
   const templateId = searchParams.get("template");
   const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
   const layoutProfileId = parseLayoutProfileId(
@@ -234,7 +235,8 @@ function initialEditorFromSearchParams(searchParams: URLSearchParams): {
       DEFAULT_RADIO_ID,
   );
 
-  if (!hasRemoteWidget && templateId) {
+  // Library project restore owns the board; skip template bootstrap.
+  if (!hasRemoteWidget && !projectId && templateId) {
     const profile = getSimulateLayoutProfile(layoutProfileId);
     const boot = resolveTemplateEditorBootstrap(templateId, {
       lcdW: profile.lcdW,
@@ -267,7 +269,11 @@ export function EditorApp() {
   const sid = searchParams.get("sessionId");
   const chatId = searchParams.get("chatId");
   const templateId = searchParams.get("template");
-  const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
+  const projectIdParam = searchParams.get("projectId");
+  // Library projectId owns hydration; do not race a remote widget fetch.
+  const hasRemoteWidget = Boolean(
+    !projectIdParam && (instanceId || widgetName || sid),
+  );
 
   const [initialEditor] = useState(() =>
     initialEditorFromSearchParams(searchParams),
@@ -1086,7 +1092,7 @@ export function EditorApp() {
   );
 
   const openProjectById = useCallback(
-    async (id: string, appDataFile?: string) => {
+    async (id: string, appDataFile?: string): Promise<boolean> => {
       let project = getProject(id);
       let lua = loadProjectSource(id);
       let companionsPack = loadProjectCompanions(id);
@@ -1120,7 +1126,7 @@ export function EditorApp() {
         setLiveTelemetryNote(
           "No saved Lua found for that project in app data or this browser.",
         );
-        return;
+        return false;
       }
       setSource(lua);
       setProjectId(id);
@@ -1155,9 +1161,16 @@ export function EditorApp() {
       setDirty(false);
       setProjectModal(null);
       setLastProjectOffer(null);
+      return true;
     },
     [setSource],
   );
+
+  // Home library deep-link: /editor?projectId=…
+  useEffect(() => {
+    if (!projectIdParam) return;
+    void openProjectById(projectIdParam);
+  }, [projectIdParam, openProjectById]);
 
   const handleOpenRecent = useCallback(() => {
     setProjectModal("recent");
@@ -1232,13 +1245,13 @@ export function EditorApp() {
   }, []);
 
   useEffect(() => {
-    if (hasRemoteWidget) return;
+    if (hasRemoteWidget || projectIdParam) return;
     const id = getLastOpenProjectId();
     if (!id) return;
     const project = getProject(id);
     if (!project || !loadProjectSource(id)) return;
     setLastProjectOffer({ id, name: project.name });
-  }, [hasRemoteWidget]);
+  }, [hasRemoteWidget, projectIdParam]);
 
   useEffect(() => {
     const onQuota = () => {
@@ -2510,7 +2523,9 @@ export function EditorApp() {
             projectId={projectId}
             onClose={handleCloseProjectModal}
             onSave={handleSaveNamed}
-            onOpen={openProjectById}
+            onOpen={(id, appDataFileName) => {
+              void openProjectById(id, appDataFileName);
+            }}
             onRename={async (id, name, appDataFiles) => {
               const primaryAppDataFile = appDataFiles?.[0];
               if (primaryAppDataFile) {

@@ -251,7 +251,7 @@ Failed validation blocks download (HTTP 422). Fix in Studio or the Editor, then 
 
 ## Project layout
 
-```
+```text
 apps/web/               Next.js UI (shadcn + Tailwind v4) and API routes
 apps/desktop/           Tauri 2 desktop shell + standalone sidecar
 packages/generator/     Cursor SDK agent, validation, packaging
