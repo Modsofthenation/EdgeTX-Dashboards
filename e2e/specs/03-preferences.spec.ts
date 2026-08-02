@@ -41,8 +41,10 @@ test.describe("Settings", () => {
     page,
   }) => {
     await gotoSettings(page, "ai");
-    await expect(page.getByText(/AI provider/i)).toBeVisible();
-    await expect(page.getByText(/Not configured|Checking/i)).toBeVisible();
+    await expect(page.getByText("AI provider", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(/Not configured|Checking/i).first(),
+    ).toBeVisible();
     await expect(page.locator("select").first()).toBeVisible();
   });
 

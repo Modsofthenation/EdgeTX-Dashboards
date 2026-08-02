@@ -26,7 +26,7 @@ test.describe("Home boot & empty state", () => {
     page,
   }) => {
     await gotoStudio(page);
-    await expect(page.getByText("AI not configured")).toBeVisible();
+    await expect(page.getByText("AI not configured").first()).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Open Editor" }).first(),
     ).toBeVisible();
