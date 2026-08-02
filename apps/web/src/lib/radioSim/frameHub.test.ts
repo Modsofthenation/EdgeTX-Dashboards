@@ -48,14 +48,15 @@ describe("RadioSimFrameHub", () => {
     const second: number[] = [];
     hub.subscribe((f) => first.push(f.width));
     hub.publish(frame(1));
+    // Replacement receives the replayed latest frame immediately.
     hub.subscribe((f) => second.push(f.width));
     hub.publish(frame(2));
     assert.deepEqual(first, [1]);
-    assert.deepEqual(second, [2]);
+    assert.deepEqual(second, [1, 2]);
     hub.subscribe(null);
     assert.equal(hub.hasSubscriber, false);
     hub.publish(frame(3));
-    assert.deepEqual(second, [2]);
+    assert.deepEqual(second, [1, 2]);
     assert.equal(hub.latestFrame?.width, 3);
   });
 });
