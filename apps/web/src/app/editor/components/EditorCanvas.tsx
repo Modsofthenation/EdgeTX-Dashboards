@@ -308,18 +308,25 @@ export const EditorCanvas = memo(function EditorCanvas({
           <span className={styles.canvasMetaFact}>
             {previewDims.zoneW} × {previewDims.zoneH}
           </span>
+          <span className={styles.canvasMetaSep} aria-hidden>
+            ·
+          </span>
           <span className={styles.canvasMetaFact}>
             {previewDims.layout} z{previewDims.zone}
           </span>
-          <span className={styles.canvasMetaSlot}>
-            <button
-              type="button"
-              className={styles.canvasMetaZoom}
-              onClick={resetView}
-              title="Reset zoom/pan"
-            >
-              {Math.round(zoom * 100)}%
-            </button>
+          <span className={styles.canvasMetaSep} aria-hidden>
+            ·
+          </span>
+          <button
+            type="button"
+            className={styles.canvasMetaZoom}
+            onClick={resetView}
+            title="Reset zoom/pan"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <span className={styles.canvasMetaSep} aria-hidden>
+            ·
           </span>
           <span
             className={styles.canvasMetaMode}
@@ -332,12 +339,17 @@ export const EditorCanvas = memo(function EditorCanvas({
                 : "Approximate preview"}
           </span>
         </div>
-        <div className={styles.canvasMetaHints}>
+        <p className={styles.canvasMetaHints}>
           <span>Ctrl+wheel zoom</span>
+          <span className={styles.canvasMetaSep} aria-hidden>
+            ·
+          </span>
           <span>Space-drag pan</span>
+          <span className={styles.canvasMetaSep} aria-hidden>
+            ·
+          </span>
           <span>Drag empty to marquee</span>
-          <span>Drag sidebar edges to resize</span>
-        </div>
+        </p>
         {records.length === 0 && !hasRadioPreview ? (
           <p className={styles.canvasMetaEmpty}>
             Empty board — Insert elements, or View → Radio preview for EdgeTX
