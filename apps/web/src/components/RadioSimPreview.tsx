@@ -506,15 +506,14 @@ export function RadioSimPreview({
           fillHost ? "editor-radio-preview" : "edgetx-widget-preview"
         }
       />
-      {isSoftRestarting ? (
-        <div
-          className={styles.radioSimUpdating}
-          aria-live="polite"
-          data-testid="radio-sim-updating"
-        >
-          Updating radio preview…
-        </div>
-      ) : null}
+      <div
+        className={styles.radioSimUpdating}
+        aria-live="polite"
+        data-testid="radio-sim-updating"
+        hidden={!isSoftRestarting}
+      >
+        {isSoftRestarting ? "Updating radio preview…" : null}
+      </div>
 
       {overlayOpen && radioProfile && (
         <SimInteractiveOverlay

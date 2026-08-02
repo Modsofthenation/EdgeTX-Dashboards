@@ -619,10 +619,10 @@ export function EditorApp() {
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
       if (dx === 0 && dy === 0) return;
-      applyToRecords(
-        ids,
-        (current, record) => translateRecord(current, record, dx, dy, zone),
-        { history: false },
+      // Default history recording — transient gestures suppress per-call
+      // entries via beginTransient/endTransient; property-panel nudges need undo.
+      applyToRecords(ids, (current, record) =>
+        translateRecord(current, record, dx, dy, zone),
       );
     },
     [applyToRecords, zone],
@@ -630,10 +630,8 @@ export function EditorApp() {
 
   const handleResize = useCallback(
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
-      applyToRecords(
-        [id],
-        (current, record) => resizeRecord(current, record, box, zone),
-        { history: false },
+      applyToRecords([id], (current, record) =>
+        resizeRecord(current, record, box, zone),
       );
     },
     [applyToRecords, zone],
@@ -1396,6 +1394,8 @@ export function EditorApp() {
 
   const handleRebuildLuaFromScene = useCallback(() => {
     if (!sceneAssist) return;
+    // Deferred sceneAssist can lag source — never rebuild from a stale scene.
+    if (deferredSource !== source) return;
     if (
       !window.confirm(
         "Rebuild the complete Lua file from the current scene? Custom Lua outside the scene model will be replaced.",
@@ -1405,7 +1405,7 @@ export function EditorApp() {
     }
     setSource(sceneToLua(sceneAssist.scene));
     markDirty();
-  }, [markDirty, sceneAssist, setSource]);
+  }, [deferredSource, markDirty, sceneAssist, setSource, source]);
 
   const handleMoveLayer = useCallback(
     (id: string, dir: -1 | 1) => {
@@ -2001,6 +2001,13 @@ export function EditorApp() {
   }, [loadFromSource, pasteText]);
   const handleNewBoard = useCallback(() => {
     loadFromSource(createStarterSource(), true);
+    // Detach from the prior save target so Ctrl+S does not overwrite it.
+    setWorkspaceKey(null);
+    setSessionId(null);
+    setProjectId(null);
+    setCompanions({ suites: [], files: [] });
+    setModelPngBytes(null);
+    setModelPngName(null);
   }, [loadFromSource]);
   const handleCopyLuaAction = useCallback(() => {
     void handleCopyLua();
@@ -2171,7 +2178,7 @@ export function EditorApp() {
         generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
         layoutHref={layoutSelfHref}
         copyDone={copyDone}
-        canRebuildFromScene={Boolean(sceneAssist)}
+        canRebuildFromScene={Boolean(sceneAssist) && deferredSource === source}
         hasRecords={records.length > 0}
         dirty={dirty}
         onOpenSim={openSim}

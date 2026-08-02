@@ -280,14 +280,16 @@ export class SimRuntime {
     }
     this.pendingWidget = { source, zone };
 
+    const zoneChanged =
+      zone != null &&
+      (this.lastLoadedZone == null ||
+        this.lastLoadedZone.layout !== zone.layout ||
+        this.lastLoadedZone.zone !== zone.zone);
+    const needsRelaunch = deploy.needsRelaunch || zoneChanged;
+
     // Hot path: shim is already registered — body.lua + gen.lua rewrite is
     // enough; refresh() loadScripts the new body on the next frame.
-    if (
-      runner &&
-      this.loopRunning &&
-      this.scriptLaunched &&
-      !deploy.needsRelaunch
-    ) {
+    if (runner && this.loopRunning && this.scriptLaunched && !needsRelaunch) {
       this.callbacks.onLog?.(
         `Radio sim: hot-reloaded body (gen ${this.hotReloadGen})`,
       );
@@ -382,7 +384,6 @@ export class SimRuntime {
     const paths = hotReloadPaths(plan.folderName);
     const folderChanged = this.hotReloadFolder !== plan.folderName;
     const needsRelaunch = folderChanged || !this.scriptLaunched;
-    this.hotReloadFolder = plan.folderName;
 
     const encode = (text: string) => {
       const bytes = new TextEncoder().encode(text);
@@ -395,13 +396,16 @@ export class SimRuntime {
     const bodyChanged = this.deployCache.bodySource !== source;
     const folderCacheMiss = this.deployCache.folderName !== plan.folderName;
 
+    // Write first, then commit instance/cache state so a rejected write cannot
+    // leave hotReloadFolder / gen claiming a deploy that never landed.
     if (bodyChanged) {
-      this.hotReloadGen += 1;
+      const nextGen = this.hotReloadGen + 1;
       await runner.fsWriteFile(paths.bodyPath, encode(source));
       await runner.fsWriteFile(
         paths.genPath,
-        encode(buildHotReloadGenSource(this.hotReloadGen)),
+        encode(buildHotReloadGenSource(nextGen)),
       );
+      this.hotReloadGen = nextGen;
       this.deployCache.bodySource = source;
     }
 
@@ -413,6 +417,8 @@ export class SimRuntime {
       );
       this.deployCache.folderName = plan.folderName;
     }
+
+    this.hotReloadFolder = plan.folderName;
 
     const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
     const pngFingerprint = `${png.byteLength}:${png[0] ?? 0}:${png[png.length >> 1] ?? 0}:${png[png.length - 1] ?? 0}`;

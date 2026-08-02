@@ -61,19 +61,27 @@ test.describe("Editor radio preview hot-reload", () => {
 
     const mark = await markRadioPreviewCanvas(page);
 
-    // Watch for soft-restart UI while we mutate source.
+    // Watch for soft-restart UI while we mutate source (awaited loop so ticks
+    // cannot overlap or push after the assertion).
     const updatingSeen: string[] = [];
+    const watchState = { active: true };
     const updatingWatcher = page.getByTestId("radio-sim-updating");
-    const phaseWatcher = setInterval(() => {
-      void Promise.all([
-        updatingWatcher.count().then((n) => {
-          if (n > 0) updatingSeen.push("updating-badge");
-        }),
-        radioSimPhaseIsRunning(page).then((running) => {
+    const softRestartWatch = (async () => {
+      while (watchState.active) {
+        try {
+          const [updatingVisible, running] = await Promise.all([
+            updatingWatcher.isVisible(),
+            radioSimPhaseIsRunning(page),
+          ]);
+          if (updatingVisible) updatingSeen.push("updating-badge");
           if (!running) updatingSeen.push("phase-not-running");
-        }),
-      ]);
-    }, 100);
+        } catch {
+          // Page may close at teardown — stop quietly.
+          break;
+        }
+        await page.waitForTimeout(100);
+      }
+    })();
 
     try {
       await importLuaInEditor(page, HOT_RELOAD_ALT_LUA);
@@ -100,9 +108,10 @@ test.describe("Editor radio preview hot-reload", () => {
         "data-sim-phase",
         "running",
       );
-      await expect(page.getByTestId("radio-sim-updating")).toHaveCount(0);
+      await expect(page.getByTestId("radio-sim-updating")).toBeHidden();
     } finally {
-      clearInterval(phaseWatcher);
+      watchState.active = false;
+      await softRestartWatch;
     }
 
     expect(
@@ -130,10 +139,10 @@ test.describe("Editor radio preview hot-reload", () => {
     const baseline = await readRadioPreviewBitmap(page);
     const mark = await markRadioPreviewCanvas(page);
 
-    // Select the title text layer (not the widget background Color field).
+    // Select the title text layer (recordLayerLabel uses the drawText value).
     const textLayer = page
       .locator("[data-layer-id]")
-      .filter({ hasText: /E2E\s*TEXT/i })
+      .filter({ hasText: /E2E\s*Dash/i })
       .first();
     await expect(textLayer).toBeVisible({ timeout: 15_000 });
     await textLayer.click();
@@ -155,7 +164,7 @@ test.describe("Editor radio preview hot-reload", () => {
 
     expect(metrics.mae).toBeGreaterThanOrEqual(1.5);
     expect(await radioPreviewMarkStillPresent(page, mark)).toBe(true);
-    await expect(page.getByTestId("radio-sim-updating")).toHaveCount(0);
+    await expect(page.getByTestId("radio-sim-updating")).toBeHidden();
     await expect(page.getByTestId("radio-sim-preview")).toHaveAttribute(
       "data-sim-phase",
       "running",

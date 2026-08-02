@@ -10,7 +10,7 @@ import { getSimulateLayoutProfile } from "@widget-gen/shared";
 import type {
   LuaPreviewWorkerRequest,
   LuaPreviewWorkerResponse,
-} from "./luaPreviewWorkerProtocol";
+} from "./luaPreviewWorkerProtocol.ts";
 
 export type LuaPreviewResult = {
   commands: PreviewDrawCommand[];
@@ -110,11 +110,12 @@ export class LuaPreviewWorkerClient {
     const pending = this.pending.get(msg.requestId);
     if (!pending) return;
     this.pending.delete(msg.requestId);
-    // Latest-wins + generation guard
+    // Latest-wins + generation guard — always settle so callers are not stuck.
     if (
       msg.requestId !== this.latestRequestId ||
       msg.generation !== this.generation
     ) {
+      pending.reject(new Error("Stale preview request"));
       return;
     }
     if (!msg.ok) {
@@ -262,6 +263,10 @@ export class LuaPreviewWorkerClient {
     this.pending.clear();
     this.worker?.terminate();
     this.worker = null;
+    this.cachedSource = null;
+    this.cachedProfileId = null;
+    this.generation = 0;
+    this.latestRequestId = 0;
   }
 }
 

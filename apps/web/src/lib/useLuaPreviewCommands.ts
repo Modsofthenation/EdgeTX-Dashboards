@@ -10,7 +10,7 @@ import {
   getLuaPreviewWorkerClient,
   interpretPreviewSync,
   type LuaPreviewResult,
-} from "./luaPreviewWorkerClient";
+} from "./luaPreviewWorkerClient.ts";
 
 export type UseLuaPreviewCommandsResult = {
   commands: PreviewDrawCommand[];
