@@ -20,6 +20,18 @@ describe("hotReloadShim", () => {
     assert.match(shim, /loadScript\(GEN, "Tx"\)/);
     assert.match(shim, /loadScript\(BODY, "Tx"\)/);
     assert.match(shim, /\/WIDGETS\/Whoop\/body\.lua/);
+    // Body options are loaded at module scope for EdgeTX registration.
+    assert.match(shim, /options = m\.options/);
+    // gen advances only after a successful body load (retry same gen on fail).
+    const checkReloadFn = shim.match(
+      /local function checkReload\(\)\n([\s\S]*?)\nend\n\nlocal function create/,
+    )?.[1];
+    assert.ok(checkReloadFn);
+    assert.match(checkReloadFn!, /gen = g/);
+    assert.doesNotMatch(
+      checkReloadFn!,
+      /if g == gen and mod ~= nil then return mod end\n\s*gen = g/,
+    );
     const updateFn = shim.match(
       /local function update\(widget, opts\)\n([\s\S]*?)\nend\n\nlocal function refresh/,
     )?.[1];

@@ -42,6 +42,9 @@ export function buildHotReloadGenSource(generation: number): string {
  *
  * Gen is polled from refresh() only — update/background use the cached mod
  * so we do not loadScript(gen.lua) on every EdgeTX callback.
+ *
+ * Body `options` are loaded once at module scope so EdgeTX registers the real
+ * option defaults (ShowLink, etc.) instead of an empty table.
  */
 export function buildHotReloadShimSource(folderName: string): string {
   const safe = sanitizeWidgetFolderName(folderName);
@@ -52,11 +55,32 @@ export function buildHotReloadShimSource(folderName: string): string {
   return `---@type WidgetScript
 ---@simulate Layout1x1 zone=0
 local name = "${safe}"
-local options = {}
 local BODY = "${body}"
 local GEN = "${gen}"
 local gen = -1
 local mod = nil
+local options = {}
+
+-- Load body once for factory options (EdgeTX reads options at registration).
+do
+  local bchunk = loadScript(BODY, "Tx")
+  if bchunk then
+    local ok, m = pcall(bchunk)
+    if ok and type(m) == "table" then
+      mod = m
+      if type(m.options) == "table" then
+        options = m.options
+      end
+      local gchunk = loadScript(GEN, "Tx")
+      if gchunk then
+        local okg, g = pcall(gchunk)
+        if okg and type(g) == "number" then
+          gen = g
+        end
+      end
+    end
+  end
+end
 
 local function checkReload()
   local gchunk = loadScript(GEN, "Tx")
@@ -64,12 +88,12 @@ local function checkReload()
   local ok, g = pcall(gchunk)
   if not ok or type(g) ~= "number" then return mod end
   if g == gen and mod ~= nil then return mod end
-  gen = g
   local bchunk = loadScript(BODY, "Tx")
   if not bchunk then return mod end
   local ok2, m = pcall(bchunk)
   if ok2 and type(m) == "table" then
     mod = m
+    gen = g
   end
   return mod
 end

@@ -10,12 +10,13 @@ import { getSimulateLayoutProfile } from "@widget-gen/shared";
 import type {
   LuaPreviewWorkerRequest,
   LuaPreviewWorkerResponse,
-} from "../lib/luaPreviewWorkerProtocol";
+} from "../lib/luaPreviewWorkerProtocol.ts";
 
 type CachedSource = {
   generation: number;
   source: string;
-  staticParse: PreviewStaticParse;
+  staticParse: PreviewStaticParse | null;
+  parseError: string | null;
 };
 
 let cached: CachedSource | null = null;
@@ -42,10 +43,17 @@ function cacheSource(
     resolveProfile(profileId),
   );
   if (!staticParse) {
-    cached = null;
+    // Keep a per-generation failure entry so applyMock reports parse error
+    // instead of a misleading "cache miss".
+    cached = {
+      generation,
+      source,
+      staticParse: null,
+      parseError: "Could not parse refresh() body",
+    };
     return null;
   }
-  cached = { generation, source, staticParse };
+  cached = { generation, source, staticParse, parseError: null };
   return staticParse;
 }
 
@@ -61,6 +69,16 @@ function applyCached(
       generation,
       ok: false,
       error: "Preview source cache miss — setSource first",
+    });
+    return;
+  }
+  if (!cached.staticParse) {
+    post({
+      type: "applyMockResult",
+      requestId,
+      generation,
+      ok: false,
+      error: cached.parseError ?? "Could not parse refresh() body",
     });
     return;
   }

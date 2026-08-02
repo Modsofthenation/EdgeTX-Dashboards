@@ -344,6 +344,7 @@ function ChatMessageListSection() {
       scrollRevision={scrollRevision}
       running={running}
       aiReady={Boolean(ai?.ready)}
+      statusLoading={Boolean(ai?.statusLoading)}
       layoutProfileId={layoutProfileId}
       onSuggestion={handleSuggestion}
       onGenerateSuggestion={handleGenerateSuggestion}
@@ -381,6 +382,7 @@ function ChatComposerSection() {
       running={running}
       canRefine={canRefine}
       aiReady={Boolean(ai?.ready)}
+      statusLoading={Boolean(ai?.statusLoading)}
       protocol={protocol}
       modelId={modelId}
       models={models}
