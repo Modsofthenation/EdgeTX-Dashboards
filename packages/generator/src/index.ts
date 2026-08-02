@@ -117,3 +117,8 @@ export {
   type CompanionManifest,
 } from "./packageEntries.ts";
 export { autoFixLua, wouldAutoFixLua } from "./autoFixLua.ts";
+export {
+  formatAgentStartupError,
+  redactFilesystemPaths,
+} from "./agentStartupError.ts";
+export { isCursorSandboxEnabled } from "./cursorSandbox.ts";

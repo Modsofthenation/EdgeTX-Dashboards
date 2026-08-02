@@ -233,6 +233,13 @@ mod sidecar {
     let workspace = ensure_writable_workspace(&standalone, &data_dir)?;
 
     let node = find_node(app);
+    let log_path = data_dir.join("sidecar.log");
+    let log_file = std::fs::OpenOptions::new()
+      .create(true)
+      .append(true)
+      .open(&log_path)
+      .map_err(|e| format!("Failed to open sidecar log {}: {e}", log_path.display()))?;
+
     let mut child = Command::new(&node)
       .arg("apps/web/server.js")
       .current_dir(&standalone)
@@ -244,6 +251,9 @@ mod sidecar {
         "WIDGET_GEN_SIM_DIR",
         standalone.join("apps/web/public/sim").to_string_lossy().as_ref(),
       )
+      // Windows Cursor sandbox needs WSL2; packaged desktop uses an app-data
+      // workspace instead. Keep sandbox off unless the user forces it on.
+      .env("CURSOR_SANDBOX_ENABLED", "0")
       .env("NODE_ENV", "production")
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())
@@ -254,16 +264,55 @@ mod sidecar {
         )
       })?;
 
-    if let Some(stderr) = child.stderr.take() {
+    {
+      use std::io::Write;
+      let mut header = log_file
+        .try_clone()
+        .map_err(|e| format!("Failed to clone sidecar log handle: {e}"))?;
+      let _ = writeln!(
+        header,
+        "\n===== sidecar start {} port={} sandbox=off =====",
+        chrono_like_stamp(),
+        port
+      );
+    }
+
+    if let Some(stdout) = child.stdout.take() {
+      let mut out_log = log_file
+        .try_clone()
+        .map_err(|e| format!("Failed to clone sidecar log handle: {e}"))?;
       thread::spawn(move || {
+        use std::io::Write;
+        let reader = BufReader::new(stdout);
+        for line in reader.lines().flatten() {
+          eprintln!("[sidecar:out] {line}");
+          let _ = writeln!(out_log, "[out] {line}");
+        }
+      });
+    }
+
+    if let Some(stderr) = child.stderr.take() {
+      let mut err_log = log_file;
+      thread::spawn(move || {
+        use std::io::Write;
         let reader = BufReader::new(stderr);
         for line in reader.lines().flatten() {
           eprintln!("[sidecar] {line}");
+          let _ = writeln!(err_log, "[err] {line}");
         }
       });
     }
 
     Ok(child)
+  }
+
+  fn chrono_like_stamp() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .map(|d| d.as_secs())
+      .unwrap_or(0);
+    format!("{secs}")
   }
 
   pub fn start_production_sidecar(app: &tauri::AppHandle) -> Result<u16, String> {
@@ -298,7 +347,7 @@ mod sidecar {
         "<!doctype html><html><body style='font-family:system-ui;padding:2rem;background:#eef1f4;color:#0f172a'>\
          <h1>Could not start EdgeTX Dashboards</h1>\
          <p>{}</p>\
-         <p>Release builds embed a portable Node binary plus the Next.js sidecar. If startup still fails, set <code>EDGETX_NODE_PATH</code> or reinstall from a fresh desktop package.</p>\
+         <p>Release builds embed a portable Node binary plus the Next.js sidecar. If startup still fails, set <code>EDGETX_NODE_PATH</code> or reinstall from a fresh desktop package. Sidecar logs are written to <code>sidecar.log</code> in the app data directory.</p>\
          </body></html>",
         html_escape(err)
       );

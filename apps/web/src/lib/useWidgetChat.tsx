@@ -684,6 +684,12 @@ export function useWidgetChatState() {
               patchAssistant(prev, assistantId, {
                 isStreaming: false,
                 error: data.type === "error" && data.success === false,
+                ...(data.type === "error" &&
+                data.success === false &&
+                typeof data.content === "string" &&
+                data.content.trim()
+                  ? { content: data.content.trim() }
+                  : {}),
               }),
             );
           }
