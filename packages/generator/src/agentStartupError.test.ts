@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CursorAgentError } from "@cursor/sdk";
-import { formatAgentStartupError } from "./agentStartupError.ts";
+import {
+  formatAgentStartupError,
+  redactFilesystemPaths,
+} from "./agentStartupError.ts";
 
 describe("formatAgentStartupError", () => {
   it("prefixes CursorAgentError messages", () => {
@@ -30,5 +33,33 @@ describe("formatAgentStartupError", () => {
       new CursorAgentError("sandbox requires WSL"),
     );
     assert.equal(formatAgentStartupError(new Error(once)), once);
+  });
+
+  it("redacts absolute Windows and POSIX paths", () => {
+    const win = formatAgentStartupError(
+      new CursorAgentError(
+        "failed under C:\\Users\\pilot\\AppData\\Roaming\\EdgeTX\\workspace",
+      ),
+    );
+    const posix = formatAgentStartupError(
+      new Error("failed under /home/pilot/.local/share/edgetx/workspace"),
+    );
+    assert.doesNotMatch(win, /C:\\Users/);
+    assert.doesNotMatch(posix, /\/home\/pilot/);
+    assert.match(win, /\[path\]/);
+    assert.match(posix, /\[path\]/);
+  });
+});
+
+describe("redactFilesystemPaths", () => {
+  it("replaces drive and unix absolute paths", () => {
+    assert.match(
+      redactFilesystemPaths("see C:\\Temp\\foo\\bar.lua"),
+      /\[path\]/,
+    );
+    assert.doesNotMatch(
+      redactFilesystemPaths("see /Users/me/proj/main.lua"),
+      /\/Users\/me/,
+    );
   });
 });

@@ -1,10 +1,8 @@
 /**
  * Whether the Cursor local agent sandbox should be enabled.
- *
- * Explicit CURSOR_SANDBOX_ENABLED wins. Otherwise:
- * - Packaged desktop (`WIDGET_GEN_REPO_ROOT` set) defaults OFF — Windows sandbox
- *   needs WSL2 and fights the app-data workspace.
- * - Dev/web defaults ON.
+ * Default ON; set CURSOR_SANDBOX_ENABLED=0|false to disable.
+ * Packaged desktop sidecars set CURSOR_SANDBOX_ENABLED=0 explicitly
+ * (Windows sandbox needs WSL2) — do not infer from WIDGET_GEN_REPO_ROOT.
  */
 export function isCursorSandboxEnabled(
   env: NodeJS.ProcessEnv = process.env,
@@ -15,9 +13,6 @@ export function isCursorSandboxEnabled(
   }
   if (raw === "1" || raw === "true" || raw === "on" || raw === "yes") {
     return true;
-  }
-  if (env.WIDGET_GEN_REPO_ROOT?.trim()) {
-    return false;
   }
   return true;
 }

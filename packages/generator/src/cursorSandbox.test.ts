@@ -8,10 +8,10 @@ describe("isCursorSandboxEnabled", () => {
     assert.equal(isCursorSandboxEnabled({ CURSOR_SANDBOX_ENABLED: "" }), true);
   });
 
-  it("defaults to disabled for packaged desktop workspaces", () => {
+  it("does not infer desktop from WIDGET_GEN_REPO_ROOT alone", () => {
     assert.equal(
       isCursorSandboxEnabled({ WIDGET_GEN_REPO_ROOT: "/app/data/workspace" }),
-      false,
+      true,
     );
   });
 
@@ -26,7 +26,7 @@ describe("isCursorSandboxEnabled", () => {
     );
   });
 
-  it("explicit enable wins over desktop workspace default", () => {
+  it("explicit enable wins even when repo root is set", () => {
     assert.equal(
       isCursorSandboxEnabled({
         WIDGET_GEN_REPO_ROOT: "/app/data/workspace",

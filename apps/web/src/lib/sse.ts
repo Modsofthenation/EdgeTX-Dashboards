@@ -4,9 +4,25 @@ export function sseEncode(data: object): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
+/** Avoid leaking absolute filesystem paths over SSE. */
+export function sanitizeSseErrorMessage(message: string): string {
+  return message
+    .replace(/[A-Za-z]:\\(?:[^\s"'`]+)/g, "[path]")
+    .replace(
+      /\/(?:Users|home|tmp|var|opt|workspace)(?:\/[^\s"'`]+)+/g,
+      "[path]",
+    )
+    .trim()
+    .slice(0, 500);
+}
+
 function errorContent(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  if (typeof error === "string" && error.trim()) return error;
+  if (error instanceof Error && error.message.trim()) {
+    return sanitizeSseErrorMessage(error.message);
+  }
+  if (typeof error === "string" && error.trim()) {
+    return sanitizeSseErrorMessage(error);
+  }
   return "Unknown streaming error";
 }
 

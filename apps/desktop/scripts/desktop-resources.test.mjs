@@ -69,13 +69,13 @@ describe("desktop Tauri standalone resources", () => {
 
   it("disables Cursor sandbox for the packaged sidecar", () => {
     const rust = readFileSync(join(root, "src-tauri", "src", "lib.rs"), "utf8");
-    assert.match(rust, /CURSOR_SANDBOX_ENABLED/);
-    assert.match(rust, /"0"/);
+    assert.match(rust, /\.env\(\s*"CURSOR_SANDBOX_ENABLED"\s*,\s*"0"\s*\)/);
   });
 
   it("writes sidecar stdout/stderr to an app-data log file", () => {
     const rust = readFileSync(join(root, "src-tauri", "src", "lib.rs"), "utf8");
-    assert.match(rust, /sidecar\.log/);
+    assert.match(rust, /data_dir\.join\(\s*"sidecar\.log"\s*\)/);
+    assert.match(rust, /append\(true\)/);
   });
 
   it("allows dialog save for localhost/127.0.0.1 remote webviews", () => {

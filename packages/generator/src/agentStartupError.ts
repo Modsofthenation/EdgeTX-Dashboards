@@ -14,17 +14,31 @@ function looksLikeNetworkFailure(message: string): boolean {
   );
 }
 
+/** Strip absolute filesystem paths before sending errors to the client. */
+export function redactFilesystemPaths(text: string): string {
+  return text
+    .replace(/[A-Za-z]:\\(?:[^\s"'`]+)/g, "[path]")
+    .replace(
+      /\/(?:Users|home|tmp|var|opt|workspace|Users)(?:\/[^\s"'`]+)+/g,
+      "[path]",
+    )
+    .replace(/(?:^|[\s("'=])(\/(?:[A-Za-z0-9._-]+\/)+[A-Za-z0-9._-]+)/g, (m) =>
+      m.replace(/\/(?:[A-Za-z0-9._-]+\/)+[A-Za-z0-9._-]+/, "[path]"),
+    );
+}
+
 /**
  * Turn Cursor/local-agent startup failures into actionable chat/SSE text.
  * Desktop Windows commonly fails when sandbox is on (WSL2 required).
  */
 export function formatAgentStartupError(err: unknown): string {
-  const raw =
+  const raw = redactFilesystemPaths(
     err instanceof Error
       ? err.message
       : typeof err === "string"
         ? err
-        : "Unknown error";
+        : "Unknown error",
+  );
 
   // Already formatted by a previous pass.
   if (raw.startsWith("Startup failed:")) {
