@@ -3,7 +3,7 @@ import { createChat } from "../helpers/api.ts";
 import {
   dismissFirstRunWizard,
   ensureChatsPanelOpen,
-  gotoHome,
+  gotoStudio,
 } from "../helpers/ui.ts";
 
 test.describe("Chat history UI", () => {
@@ -14,7 +14,7 @@ test.describe("Chat history UI", () => {
     const title = `Sidebar chat ${Date.now()}`;
     const chat = await createChat(request, { title });
 
-    await gotoHome(page);
+    await gotoStudio(page);
     await ensureChatsPanelOpen(page);
 
     await expect(page.getByText(title).first()).toBeVisible({
@@ -23,7 +23,9 @@ test.describe("Chat history UI", () => {
 
     await page.getByText(title).first().click();
     await expect(page).toHaveURL(
-      (url) => url.searchParams.get("chatId") === chat.id,
+      (url) =>
+        url.pathname.startsWith("/studio") &&
+        url.searchParams.get("chatId") === chat.id,
     );
   });
 
@@ -32,7 +34,7 @@ test.describe("Chat history UI", () => {
       title: `Clearable ${Date.now()}`,
     });
     await dismissFirstRunWizard(page);
-    await page.goto(`/?chatId=${encodeURIComponent(chat.id)}`);
+    await page.goto(`/studio?chatId=${encodeURIComponent(chat.id)}`);
     await expect(page).toHaveURL(
       (url) => url.searchParams.get("chatId") === chat.id,
     );
@@ -44,13 +46,26 @@ test.describe("Chat history UI", () => {
     ).toBeVisible();
   });
 
+  test("legacy /?chatId= redirects to Studio", async ({ page, request }) => {
+    const chat = await createChat(request, {
+      title: `Legacy redirect ${Date.now()}`,
+    });
+    await dismissFirstRunWizard(page);
+    await page.goto(`/?chatId=${encodeURIComponent(chat.id)}`);
+    await expect(page).toHaveURL(
+      (url) =>
+        url.pathname.startsWith("/studio") &&
+        url.searchParams.get("chatId") === chat.id,
+    );
+  });
+
   test("deleting a chat removes it from the list", async ({
     page,
     request,
   }) => {
     const title = `Delete me ${Date.now()}`;
     await createChat(request, { title });
-    await gotoHome(page);
+    await gotoStudio(page);
     await ensureChatsPanelOpen(page);
 
     await expect(page.getByText(title).first()).toBeVisible();

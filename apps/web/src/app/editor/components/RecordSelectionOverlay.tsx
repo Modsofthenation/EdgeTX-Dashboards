@@ -119,6 +119,9 @@ export function RecordSelectionOverlay({
   const marqueeRafRef = useRef<number | null>(null);
 
   const measureText = useCallback((text: string, fontSize: number) => {
+    if (typeof document === "undefined") {
+      return measurePreviewText(text, fontSize, null);
+    }
     if (!measureCtxRef.current) {
       const c = document.createElement("canvas");
       measureCtxRef.current = c.getContext("2d");

@@ -226,6 +226,7 @@ function initialEditorFromSearchParams(searchParams: URLSearchParams): {
   const instanceId = searchParams.get("instanceId");
   const widgetName = searchParams.get("name");
   const sid = searchParams.get("sessionId");
+  const projectId = searchParams.get("projectId");
   const templateId = searchParams.get("template");
   const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
   const layoutProfileId = parseLayoutProfileId(
@@ -234,7 +235,8 @@ function initialEditorFromSearchParams(searchParams: URLSearchParams): {
       DEFAULT_RADIO_ID,
   );
 
-  if (!hasRemoteWidget && templateId) {
+  // Library project restore owns the board; skip template bootstrap.
+  if (!hasRemoteWidget && !projectId && templateId) {
     const profile = getSimulateLayoutProfile(layoutProfileId);
     const boot = resolveTemplateEditorBootstrap(templateId, {
       lcdW: profile.lcdW,
@@ -267,7 +269,11 @@ export function EditorApp() {
   const sid = searchParams.get("sessionId");
   const chatId = searchParams.get("chatId");
   const templateId = searchParams.get("template");
-  const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
+  const projectIdParam = searchParams.get("projectId");
+  // Library projectId owns hydration; do not race a remote widget fetch.
+  const hasRemoteWidget = Boolean(
+    !projectIdParam && (instanceId || widgetName || sid),
+  );
 
   const [initialEditor] = useState(() =>
     initialEditorFromSearchParams(searchParams),
@@ -1086,7 +1092,7 @@ export function EditorApp() {
   );
 
   const openProjectById = useCallback(
-    async (id: string, appDataFile?: string) => {
+    async (id: string, appDataFile?: string): Promise<boolean> => {
       let project = getProject(id);
       let lua = loadProjectSource(id);
       let companionsPack = loadProjectCompanions(id);
@@ -1120,7 +1126,7 @@ export function EditorApp() {
         setLiveTelemetryNote(
           "No saved Lua found for that project in app data or this browser.",
         );
-        return;
+        return false;
       }
       setSource(lua);
       setProjectId(id);
@@ -1155,9 +1161,16 @@ export function EditorApp() {
       setDirty(false);
       setProjectModal(null);
       setLastProjectOffer(null);
+      return true;
     },
     [setSource],
   );
+
+  // Home library deep-link: /editor?projectId=…
+  useEffect(() => {
+    if (!projectIdParam) return;
+    void openProjectById(projectIdParam);
+  }, [projectIdParam, openProjectById]);
 
   const handleOpenRecent = useCallback(() => {
     setProjectModal("recent");
@@ -1232,13 +1245,13 @@ export function EditorApp() {
   }, []);
 
   useEffect(() => {
-    if (hasRemoteWidget) return;
+    if (hasRemoteWidget || projectIdParam) return;
     const id = getLastOpenProjectId();
     if (!id) return;
     const project = getProject(id);
     if (!project || !loadProjectSource(id)) return;
     setLastProjectOffer({ id, name: project.name });
-  }, [hasRemoteWidget]);
+  }, [hasRemoteWidget, projectIdParam]);
 
   useEffect(() => {
     const onQuota = () => {
@@ -2186,11 +2199,13 @@ export function EditorApp() {
   const handleCloseCanvasMenu = useCallback(() => setCanvasMenu(null), []);
 
   return (
-    <div className={styles.editorRoot}>
+    <>
       <AppPreferencesHost />
       <EditorChrome
         subtitle={subtitle}
-        generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
+        generateHref={
+          chatId ? `/studio?chatId=${encodeURIComponent(chatId)}` : "/studio"
+        }
         layoutHref={layoutSelfHref}
         copyDone={copyDone}
         canRebuildFromScene={Boolean(sceneAssist) && deferredSource === source}
@@ -2204,378 +2219,384 @@ export function EditorApp() {
         onNewBoard={handleNewBoard}
         onClearAllLayers={handleClearAllLayers}
         onOpenPrefs={handleOpenPrefs}
-      />
-
-      <EditorBanners
-        loadError={loadError}
-        onDismissError={handleDismissLoadError}
-        skippedTextCount={previewMeta.skippedTextCount}
-        unreliable={previewMeta.unreliable}
-        inlineSim={inlineSim}
-        radioId={radioId}
-        usesBitmap={usesBitmap}
-        hasModelPng={Boolean(modelPngBytes)}
-      />
-
-      <EditorToolbar
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={handleToolbarUndo}
-        onRedo={handleToolbarRedo}
-        onAdd={handleAdd}
-        onAddPrefab={handleAddPrefab}
-        onAddFullRfHeliElectric={
-          protocol === "rotorflight" ? handleAddFullRfHeliElectric : undefined
-        }
-        onAddRfHeliNitro={
-          protocol === "rotorflight" ? handleAddRfHeliNitro : undefined
-        }
-        onAddQuadBoard={
-          protocol === "betaflight" || protocol === "generic-crsf"
-            ? handleAddQuadBoard
-            : undefined
-        }
-        onAddCompanionSuite={handleAddCompanionSuite}
-        companionSuiteIds={companions.suites}
-        onSave={handleSave}
-        onSaveNamed={handleOpenSaveNamed}
-        onOpenRecent={handleOpenRecent}
-        onOpenLast={handleOpenLast}
-        onValidate={handleValidate}
-        saving={saving}
-        valid={valid}
-        protocol={protocol}
-        onProtocolChange={setProtocol}
-        previewScenarioId={previewScenarioId}
-        onPreviewScenarioChange={setPreviewScenarioId}
-        liveTelemetryActive={liveTelemetryActive}
-        onToggleLiveTelemetry={handleToggleLiveTelemetry}
-        liveTelemetrySupported={liveTelemetrySupported}
-        enrichRotorflight={enrichRotorflight}
-        onEnrichChange={handleEnrichChange}
-        modelPngName={modelPngName}
-        modelPngUrl={modelPngUrl}
-        onModelPngChange={handleToolbarModelPngChange}
-        showSnapGuides={showSnapGuides}
-        onSnapGuidesChange={setShowSnapGuides}
-        snapEnabled={snapEnabled}
-        onSnapEnabledChange={setSnapEnabled}
-        inlineSim={inlineSim}
-        onInlineSimChange={handleInlineSimChange}
-        onAlign={handleAlign}
-        onDistribute={handleDistribute}
-        canAlign={selectedIds.length >= 1}
-        canDistribute={selectedIds.length >= 3}
-      />
-
-      <SceneAssistPanel
-        assist={sceneAssist}
-        records={records}
-        selectedIds={selectedIds}
-        onSelectRecord={handleSelectSceneRecord}
-      />
-      <EditorCallouts
-        protocol={protocol}
-        lastProjectOffer={lastProjectOffer}
-        onOpenLastProject={handleOpenLastProject}
-        onDismissProjectOffer={handleDismissProjectOffer}
-        liveTelemetryNote={liveTelemetryNote}
-        liveTelemetryActive={liveTelemetryActive}
-        enrichRotorflight={enrichRotorflight}
-      />
-
-      <EditorMobileTabs mobileTab={mobileTab} onChange={setMobileTab} />
-
-      <div
-        ref={editorBodyRef}
-        className={`${styles.editorBody} ${styles.editorBodyResizable}`}
-        data-mobile-tab={mobileTab}
-        style={{ gridTemplateColumns }}
       >
-        <div
-          id="editor-panel-layers"
-          role="tabpanel"
-          aria-labelledby="editor-tab-layers"
-          className={`${styles.mobilePane} ${styles.mobilePaneLayers}`}
-        >
-          {" "}
-          <RecordLayersPanel
-            records={records}
-            source={source}
-            selectedIds={selectedIds}
-            onSelect={handleLayerSelect}
-            onSelectMany={handleLayerSelectMany}
-            onDelete={handleDelete}
-            onMoveUp={handleMoveLayerUp}
-            onMoveDown={handleMoveLayerDown}
-            onReorder={handleReorderLayer}
-            onClearAll={handleClearAllLayers}
+        <div className={styles.editorRoot}>
+          <EditorBanners
+            loadError={loadError}
+            onDismissError={handleDismissLoadError}
+            skippedTextCount={previewMeta.skippedTextCount}
+            unreliable={previewMeta.unreliable}
+            inlineSim={inlineSim}
+            radioId={radioId}
+            usesBitmap={usesBitmap}
+            hasModelPng={Boolean(modelPngBytes)}
           />
-        </div>
 
-        <button
-          type="button"
-          className={styles.panelResizeHandle}
-          aria-label="Resize layers panel"
-          title="Drag to resize layers · double-click to reset"
-          data-active={activeSide === "left" ? "true" : undefined}
-          onPointerDown={handleLeftPanelResize}
-          onDoubleClick={resetWidths}
-        />
-
-        <div
-          id="editor-panel-canvas"
-          role="tabpanel"
-          aria-labelledby="editor-tab-canvas"
-          className={`${styles.mobilePane} ${styles.mobilePaneCanvas}`}
-        >
-          {" "}
-          {remoteLoadPending ? (
-            <div className={styles.canvasStage}>
-              <div className={styles.loadingPreview}>Loading widget…</div>
-            </div>
-          ) : (
-            <EditorCanvas
-              source={source}
-              records={records}
-              zone={zone}
-              selectedIds={selectedIds}
-              onSelect={setSelectedIds}
-              onTranslate={handleTranslate}
-              onResize={handleResize}
-              onGestureStart={handleGestureStart}
-              onGestureEnd={handleGestureEnd}
-              showSnapGuides={showSnapGuides}
-              snapEnabled={snapEnabled}
-              scenarioId={previewScenarioId}
-              scenarioOverride={
-                liveTelemetryActive ? previewScenario : undefined
-              }
-              layoutProfileId={layoutProfileId}
-              onContextMenu={openCanvasContextMenu}
-              geometryEditsLocked={geometryEditsLocked}
-              inlineSim={
-                inlineSim && hasColorWasmSim(radioId) ? (
-                  <RadioSimPreview
-                    luaSource={source}
-                    layoutProfileId={layoutProfileId}
-                    radioId={radioId}
-                    mock={previewScenario.mock}
-                    active={inlineSim}
-                    fillHost
-                    modelPng={modelPngBytes}
-                    onRunningChange={handleSimRunningChange}
-                  />
-                ) : null
-              }
-            />
-          )}
-        </div>
-
-        <button
-          type="button"
-          className={styles.panelResizeHandle}
-          aria-label="Resize properties panel"
-          title="Drag to resize properties · double-click to reset"
-          data-active={activeSide === "right" ? "true" : undefined}
-          onPointerDown={handleRightPanelResize}
-          onDoubleClick={resetWidths}
-        />
-
-        <div
-          id="editor-panel-properties"
-          role="tabpanel"
-          aria-labelledby="editor-tab-properties"
-          className={`${styles.rightColumn} ${styles.mobilePane} ${styles.mobilePaneProperties}`}
-        >
-          <RecordPropertiesPanel
-            meta={meta}
-            source={source}
-            selectedRecords={selectedRecords}
-            zone={zone}
-            protocol={protocol}
-            discoveredSensors={discoveredSensors}
-            enrichOnlySensors={enrichOnlySensors}
-            onPatchName={handlePatchName}
-            onPatchRecord={handlePatchRecord}
-            onTranslateSelected={handleTranslateSelected}
-            onSetColor={handleSetColor}
-            onSetColorSelected={handleSetColorSelected}
-            onPatchSelectedRecords={handlePatchSelectedRecords}
-            onSetText={handleSetText}
-            onSetTextFlags={handleSetTextFlags}
-            onBindTelemetry={handleBindTelemetry}
-            onRemapSrcSensor={handleRemapSrcSensor}
-            onPatchSimulate={handlePatchSimulate}
-            onApplyBackground={handleApplyBackground}
-            onBackgroundImageChange={handleBackgroundImageChange}
-            backgroundImageName={modelPngName}
-            backgroundImageUrl={modelPngUrl}
-          />
-          {validationIssues.length > 0 && (
-            <div className={styles.validationPanel}>
-              <h3 className={styles.sectionTitle}>Validation</h3>
-              <ul className={styles.validationList}>
-                {validationIssues.map((issue, i) => (
-                  <li
-                    key={`${issue.message}-${i}`}
-                    data-severity={issue.severity}
-                  >
-                    {issue.line != null ? (
-                      <button
-                        type="button"
-                        className={styles.issueLink}
-                        onClick={() => selectIssue(issue)}
-                      >
-                        L{issue.line}: {issue.message}
-                      </button>
-                    ) : (
-                      issue.message
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <ExportInstallModal
-        open={exportOpen}
-        onClose={handleCloseExport}
-        widgetName={meta.name}
-        luaSource={source}
-        installMd={installMd}
-        workspaceKey={workspaceKey}
-        sessionId={sessionId}
-        protocol={protocol}
-        radioId={radioId}
-        extraFiles={installExtraFiles}
-        companionLabels={companionLabels}
-        hasModelImage={
-          Boolean(modelPngBytes) || /drawBitmap|Bitmap\.open/.test(source)
-        }
-        radioName={radioDisplayName ?? undefined}
-        lcdW={getSimulateLayoutProfile(layoutProfileId).lcdW}
-        lcdH={getSimulateLayoutProfile(layoutProfileId).lcdH}
-        touch={radioTouch}
-        validationErrorCount={
-          validationIssues.filter((i) => i.severity === "error").length
-        }
-        needsSimVerifyNudge={needsSimVerifyNudge}
-        onVerifyInSim={openSim}
-        onBeforeDownload={async () => {
-          if (dirty || (!workspaceKey && !sessionId)) {
-            return handleSave();
-          }
-          return workspaceKey;
-        }}
-        onReviewValidation={() => {
-          setMobileTab("properties");
-          const first = validationIssues.find(
-            (i) => i.severity === "error" && i.line != null,
-          );
-          if (first) selectIssue(first);
-        }}
-      />
-
-      <CanvasContextMenu
-        open={canvasMenu != null}
-        x={canvasMenu?.x ?? 0}
-        y={canvasMenu?.y ?? 0}
-        items={canvasContextItems}
-        onClose={handleCloseCanvasMenu}
-      />
-
-      <SimVerifyModal
-        source={source}
-        open={simOpen}
-        onClose={handleCloseSim}
-        reloadKey={simReloadKey}
-        onReload={handleSimReload}
-        scenarioId={previewScenarioId}
-        scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
-        layoutProfileId={layoutProfileId}
-        radioId={radioId}
-        modelPng={modelPngBytes}
-        onRunningChange={handleSimRunningChange}
-      />
-
-      <ProjectLibraryModal
-        open={projectModal != null}
-        mode={projectModal ?? "save"}
-        defaultName={meta.name || "Dashboard"}
-        projectId={projectId}
-        onClose={handleCloseProjectModal}
-        onSave={handleSaveNamed}
-        onOpen={openProjectById}
-        onRename={async (id, name, appDataFiles) => {
-          const primaryAppDataFile = appDataFiles?.[0];
-          if (primaryAppDataFile) {
-            try {
-              const json = await readAppDataProject(primaryAppDataFile);
-              const parsed = parseProjectPack(JSON.parse(json) as unknown);
-              if (!("error" in parsed)) restoreProjectPack(parsed.pack);
-            } catch {
-              /* fall back to browser copy */
+          <EditorToolbar
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={handleToolbarUndo}
+            onRedo={handleToolbarRedo}
+            onAdd={handleAdd}
+            onAddPrefab={handleAddPrefab}
+            onAddFullRfHeliElectric={
+              protocol === "rotorflight"
+                ? handleAddFullRfHeliElectric
+                : undefined
             }
-          }
-          renameProject(id, name);
-          if (await isTauriDesktop()) {
-            const pack = exportProjectPack(id);
-            if (pack) {
-              const result = await saveProjectPackToAppData(
-                id,
-                JSON.stringify(pack, null, 2),
-              );
-              if ("error" in result) {
-                setLiveTelemetryNote(
-                  `Rename saved in browser, but app-data sync failed: ${result.error}`,
-                );
-              } else {
-                for (const fileName of appDataFiles ?? []) {
-                  if (fileName !== appDataProjectFileName(id)) {
-                    await deleteAppDataProject(fileName).catch(() => undefined);
+            onAddRfHeliNitro={
+              protocol === "rotorflight" ? handleAddRfHeliNitro : undefined
+            }
+            onAddQuadBoard={
+              protocol === "betaflight" || protocol === "generic-crsf"
+                ? handleAddQuadBoard
+                : undefined
+            }
+            onAddCompanionSuite={handleAddCompanionSuite}
+            companionSuiteIds={companions.suites}
+            onSave={handleSave}
+            onSaveNamed={handleOpenSaveNamed}
+            onOpenRecent={handleOpenRecent}
+            onOpenLast={handleOpenLast}
+            onValidate={handleValidate}
+            saving={saving}
+            valid={valid}
+            protocol={protocol}
+            onProtocolChange={setProtocol}
+            previewScenarioId={previewScenarioId}
+            onPreviewScenarioChange={setPreviewScenarioId}
+            liveTelemetryActive={liveTelemetryActive}
+            onToggleLiveTelemetry={handleToggleLiveTelemetry}
+            liveTelemetrySupported={liveTelemetrySupported}
+            enrichRotorflight={enrichRotorflight}
+            onEnrichChange={handleEnrichChange}
+            modelPngName={modelPngName}
+            modelPngUrl={modelPngUrl}
+            onModelPngChange={handleToolbarModelPngChange}
+            showSnapGuides={showSnapGuides}
+            onSnapGuidesChange={setShowSnapGuides}
+            snapEnabled={snapEnabled}
+            onSnapEnabledChange={setSnapEnabled}
+            inlineSim={inlineSim}
+            onInlineSimChange={handleInlineSimChange}
+            onAlign={handleAlign}
+            onDistribute={handleDistribute}
+            canAlign={selectedIds.length >= 1}
+            canDistribute={selectedIds.length >= 3}
+          />
+
+          <SceneAssistPanel
+            assist={sceneAssist}
+            records={records}
+            selectedIds={selectedIds}
+            onSelectRecord={handleSelectSceneRecord}
+          />
+          <EditorCallouts
+            protocol={protocol}
+            lastProjectOffer={lastProjectOffer}
+            onOpenLastProject={handleOpenLastProject}
+            onDismissProjectOffer={handleDismissProjectOffer}
+            liveTelemetryNote={liveTelemetryNote}
+            liveTelemetryActive={liveTelemetryActive}
+            enrichRotorflight={enrichRotorflight}
+          />
+
+          <EditorMobileTabs mobileTab={mobileTab} onChange={setMobileTab} />
+
+          <div
+            ref={editorBodyRef}
+            className={`${styles.editorBody} ${styles.editorBodyResizable}`}
+            data-mobile-tab={mobileTab}
+            style={{ gridTemplateColumns }}
+          >
+            <div
+              id="editor-panel-layers"
+              role="tabpanel"
+              aria-labelledby="editor-tab-layers"
+              className={`${styles.mobilePane} ${styles.mobilePaneLayers}`}
+            >
+              <RecordLayersPanel
+                records={records}
+                source={source}
+                selectedIds={selectedIds}
+                onSelect={handleLayerSelect}
+                onSelectMany={handleLayerSelectMany}
+                onDelete={handleDelete}
+                onMoveUp={handleMoveLayerUp}
+                onMoveDown={handleMoveLayerDown}
+                onReorder={handleReorderLayer}
+                onClearAll={handleClearAllLayers}
+              />
+            </div>
+
+            <button
+              type="button"
+              className={styles.panelResizeHandle}
+              aria-label="Resize layers panel"
+              title="Drag to resize layers · double-click to reset"
+              data-active={activeSide === "left" ? "true" : undefined}
+              onPointerDown={handleLeftPanelResize}
+              onDoubleClick={resetWidths}
+            />
+
+            <div
+              id="editor-panel-canvas"
+              role="tabpanel"
+              aria-labelledby="editor-tab-canvas"
+              className={`${styles.mobilePane} ${styles.mobilePaneCanvas}`}
+            >
+              {remoteLoadPending ? (
+                <div className={styles.canvasStage}>
+                  <div className={styles.loadingPreview}>Loading widget…</div>
+                </div>
+              ) : (
+                <EditorCanvas
+                  source={source}
+                  records={records}
+                  zone={zone}
+                  selectedIds={selectedIds}
+                  onSelect={setSelectedIds}
+                  onTranslate={handleTranslate}
+                  onResize={handleResize}
+                  onGestureStart={handleGestureStart}
+                  onGestureEnd={handleGestureEnd}
+                  showSnapGuides={showSnapGuides}
+                  snapEnabled={snapEnabled}
+                  scenarioId={previewScenarioId}
+                  scenarioOverride={
+                    liveTelemetryActive ? previewScenario : undefined
                   }
+                  layoutProfileId={layoutProfileId}
+                  onContextMenu={openCanvasContextMenu}
+                  geometryEditsLocked={geometryEditsLocked}
+                  inlineSim={
+                    inlineSim && hasColorWasmSim(radioId) ? (
+                      <RadioSimPreview
+                        luaSource={source}
+                        layoutProfileId={layoutProfileId}
+                        radioId={radioId}
+                        mock={previewScenario.mock}
+                        active={inlineSim}
+                        fillHost
+                        modelPng={modelPngBytes}
+                        onRunningChange={handleSimRunningChange}
+                      />
+                    ) : null
+                  }
+                />
+              )}
+            </div>
+
+            <button
+              type="button"
+              className={styles.panelResizeHandle}
+              aria-label="Resize properties panel"
+              title="Drag to resize properties · double-click to reset"
+              data-active={activeSide === "right" ? "true" : undefined}
+              onPointerDown={handleRightPanelResize}
+              onDoubleClick={resetWidths}
+            />
+
+            <div
+              id="editor-panel-properties"
+              role="tabpanel"
+              aria-labelledby="editor-tab-properties"
+              className={`${styles.rightColumn} ${styles.mobilePane} ${styles.mobilePaneProperties}`}
+            >
+              <RecordPropertiesPanel
+                meta={meta}
+                source={source}
+                selectedRecords={selectedRecords}
+                zone={zone}
+                protocol={protocol}
+                discoveredSensors={discoveredSensors}
+                enrichOnlySensors={enrichOnlySensors}
+                onPatchName={handlePatchName}
+                onPatchRecord={handlePatchRecord}
+                onTranslateSelected={handleTranslateSelected}
+                onSetColor={handleSetColor}
+                onSetColorSelected={handleSetColorSelected}
+                onPatchSelectedRecords={handlePatchSelectedRecords}
+                onSetText={handleSetText}
+                onSetTextFlags={handleSetTextFlags}
+                onBindTelemetry={handleBindTelemetry}
+                onRemapSrcSensor={handleRemapSrcSensor}
+                onPatchSimulate={handlePatchSimulate}
+                onApplyBackground={handleApplyBackground}
+                onBackgroundImageChange={handleBackgroundImageChange}
+                backgroundImageName={modelPngName}
+                backgroundImageUrl={modelPngUrl}
+              />
+              {validationIssues.length > 0 && (
+                <div className={styles.validationPanel}>
+                  <h3 className={styles.sectionTitle}>Validation</h3>
+                  <ul className={styles.validationList}>
+                    {validationIssues.map((issue, i) => (
+                      <li
+                        key={`${issue.message}-${i}`}
+                        data-severity={issue.severity}
+                      >
+                        {issue.line != null ? (
+                          <button
+                            type="button"
+                            className={styles.issueLink}
+                            onClick={() => selectIssue(issue)}
+                          >
+                            L{issue.line}: {issue.message}
+                          </button>
+                        ) : (
+                          issue.message
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <ExportInstallModal
+            open={exportOpen}
+            onClose={handleCloseExport}
+            widgetName={meta.name}
+            luaSource={source}
+            installMd={installMd}
+            workspaceKey={workspaceKey}
+            sessionId={sessionId}
+            protocol={protocol}
+            radioId={radioId}
+            extraFiles={installExtraFiles}
+            companionLabels={companionLabels}
+            hasModelImage={
+              Boolean(modelPngBytes) || /drawBitmap|Bitmap\.open/.test(source)
+            }
+            radioName={radioDisplayName ?? undefined}
+            lcdW={getSimulateLayoutProfile(layoutProfileId).lcdW}
+            lcdH={getSimulateLayoutProfile(layoutProfileId).lcdH}
+            touch={radioTouch}
+            validationErrorCount={
+              validationIssues.filter((i) => i.severity === "error").length
+            }
+            needsSimVerifyNudge={needsSimVerifyNudge}
+            onVerifyInSim={openSim}
+            onBeforeDownload={async () => {
+              if (dirty || (!workspaceKey && !sessionId)) {
+                return handleSave();
+              }
+              return workspaceKey;
+            }}
+            onReviewValidation={() => {
+              setMobileTab("properties");
+              const first = validationIssues.find(
+                (i) => i.severity === "error" && i.line != null,
+              );
+              if (first) selectIssue(first);
+            }}
+          />
+
+          <CanvasContextMenu
+            open={canvasMenu != null}
+            x={canvasMenu?.x ?? 0}
+            y={canvasMenu?.y ?? 0}
+            items={canvasContextItems}
+            onClose={handleCloseCanvasMenu}
+          />
+
+          <SimVerifyModal
+            source={source}
+            open={simOpen}
+            onClose={handleCloseSim}
+            reloadKey={simReloadKey}
+            onReload={handleSimReload}
+            scenarioId={previewScenarioId}
+            scenarioOverride={liveTelemetryActive ? previewScenario : undefined}
+            layoutProfileId={layoutProfileId}
+            radioId={radioId}
+            modelPng={modelPngBytes}
+            onRunningChange={handleSimRunningChange}
+          />
+
+          <ProjectLibraryModal
+            open={projectModal != null}
+            mode={projectModal ?? "save"}
+            defaultName={meta.name || "Dashboard"}
+            projectId={projectId}
+            onClose={handleCloseProjectModal}
+            onSave={handleSaveNamed}
+            onOpen={(id, appDataFileName) => {
+              void openProjectById(id, appDataFileName);
+            }}
+            onRename={async (id, name, appDataFiles) => {
+              const primaryAppDataFile = appDataFiles?.[0];
+              if (primaryAppDataFile) {
+                try {
+                  const json = await readAppDataProject(primaryAppDataFile);
+                  const parsed = parseProjectPack(JSON.parse(json) as unknown);
+                  if (!("error" in parsed)) restoreProjectPack(parsed.pack);
+                } catch {
+                  /* fall back to browser copy */
                 }
               }
-            } else {
-              setLiveTelemetryNote(
-                "Rename saved in browser, but app-data sync failed: project source is unavailable.",
-              );
-            }
-          }
-        }}
-        onDelete={async (id, appDataFiles) => {
-          deleteProject(id);
-          if (projectId === id) setProjectId(null);
-          if (await isTauriDesktop()) {
-            try {
-              const files = appDataFiles?.length
-                ? appDataFiles
-                : [appDataProjectFileName(id)];
-              for (const fileName of files) {
-                await deleteAppDataProject(fileName);
+              renameProject(id, name);
+              if (await isTauriDesktop()) {
+                const pack = exportProjectPack(id);
+                if (pack) {
+                  const result = await saveProjectPackToAppData(
+                    id,
+                    JSON.stringify(pack, null, 2),
+                  );
+                  if ("error" in result) {
+                    setLiveTelemetryNote(
+                      `Rename saved in browser, but app-data sync failed: ${result.error}`,
+                    );
+                  } else {
+                    for (const fileName of appDataFiles ?? []) {
+                      if (fileName !== appDataProjectFileName(id)) {
+                        await deleteAppDataProject(fileName).catch(
+                          () => undefined,
+                        );
+                      }
+                    }
+                  }
+                } else {
+                  setLiveTelemetryNote(
+                    "Rename saved in browser, but app-data sync failed: project source is unavailable.",
+                  );
+                }
               }
-            } catch (err) {
-              setLiveTelemetryNote(
-                `Deleted browser copy, but app-data delete failed: ${
-                  err instanceof Error ? err.message : String(err)
-                }`,
-              );
-            }
-          }
-        }}
-        onImported={(id) => void openProjectById(id)}
-      />
+            }}
+            onDelete={async (id, appDataFiles) => {
+              deleteProject(id);
+              if (projectId === id) setProjectId(null);
+              if (await isTauriDesktop()) {
+                try {
+                  const files = appDataFiles?.length
+                    ? appDataFiles
+                    : [appDataProjectFileName(id)];
+                  for (const fileName of files) {
+                    await deleteAppDataProject(fileName);
+                  }
+                } catch (err) {
+                  setLiveTelemetryNote(
+                    `Deleted browser copy, but app-data delete failed: ${
+                      err instanceof Error ? err.message : String(err)
+                    }`,
+                  );
+                }
+              }
+            }}
+            onImported={(id) => void openProjectById(id)}
+          />
 
-      <ImportLuaModal
-        open={pasteOpen}
-        pasteText={pasteText}
-        onPasteTextChange={handlePasteTextChange}
-        onClose={handleCloseImport}
-        onImport={handleImportLua}
-      />
-    </div>
+          <ImportLuaModal
+            open={pasteOpen}
+            pasteText={pasteText}
+            onPasteTextChange={handlePasteTextChange}
+            onClose={handleCloseImport}
+            onImport={handleImportLua}
+          />
+        </div>
+      </EditorChrome>
+    </>
   );
 }

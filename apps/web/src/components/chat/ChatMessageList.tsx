@@ -102,12 +102,12 @@ export function ChatMessageList({
           <p className={styles.emptyText}>
             Describe a full-screen dashboard for your radio — the agent writes
             Lua, validates it, and shows the preview on the right. Or skip AI
-            and build visually in Layout with Insert / prefabs.
+            and build visually in Editor with Insert / prefabs.
           </p>
           {blankLayoutHref ? (
             <div className={styles.emptyActions}>
               <Link href={blankLayoutHref} className={styles.buildManualBtn}>
-                Build in Layout (no AI)
+                Build in Editor (no AI)
               </Link>
             </div>
           ) : null}
@@ -115,7 +115,7 @@ export function ChatMessageList({
             <li>
               <span className={styles.stepNum}>1</span>
               <span>
-                <strong>Describe</strong> or open Layout to place elements
+                <strong>Describe</strong> or open Editor to place elements
               </span>
             </li>
             <li>
@@ -127,7 +127,7 @@ export function ChatMessageList({
             <li>
               <span className={styles.stepNum}>3</span>
               <span>
-                <strong>Layout</strong> to tweak placement visually (optional)
+                <strong>Editor</strong> to tweak placement visually (optional)
               </span>
             </li>
             <li>
@@ -142,12 +142,13 @@ export function ChatMessageList({
           <div
             className={styles.galleryFilters}
             role="group"
-            aria-label="Template variants"
+            aria-label="Filter by protocol"
           >
             {VARIANT_FILTERS.map((f) => (
               <button
                 key={f.id}
                 type="button"
+                aria-pressed={variantFilter === f.id}
                 className={
                   variantFilter === f.id
                     ? styles.galleryFilterActive
@@ -187,7 +188,7 @@ export function ChatMessageList({
                     {` · ${item.protocol}`}
                   </span>
                   <span className={styles.galleryCardAction}>
-                    Open in Layout
+                    Open in Editor
                   </span>
                 </button>
                 {onGenerateSuggestion ? (
@@ -198,7 +199,7 @@ export function ChatMessageList({
                     onClick={() => onGenerateSuggestion(item)}
                     title={
                       !statusLoading && !aiReady
-                        ? "Configure an AI provider in Preferences to generate"
+                        ? "Configure an AI provider in Settings to generate"
                         : item.prompt
                     }
                   >
@@ -222,7 +223,7 @@ export function ChatMessageList({
       {dashboardReadyCue && messages.length > 0 && (
         <div className={styles.readyCue} role="status">
           Preview ready — open the <strong>Preview</strong> panel to download,
-          or switch to <strong>Layout</strong> to edit visually.
+          or switch to <strong>Editor</strong> to edit visually.
         </div>
       )}
     </div>

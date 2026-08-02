@@ -44,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
     const meta = providerMeta(provider);
     return Response.json(
       {
-        error: `No ${meta.label} API key configured. Add one in Preferences → AI, or set ${meta.envVar} on the server.`,
+        error: `No ${meta.label} API key configured. Add one in Settings → AI, or set ${meta.envVar} on the server.`,
       },
       { status: 503 },
     );

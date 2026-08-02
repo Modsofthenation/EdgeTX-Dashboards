@@ -1,13 +1,14 @@
 .shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
+  min-height: 0;
   width: 100%;
   max-width: none;
   margin: 0;
   border: none;
   background: transparent;
+  overflow: hidden;
 }
 
 .header {

@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
 import { InstallWizard } from "~/components/InstallWizard";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "~/components/ui/sheet";
 import styles from "../editor.module.css";
 
 export type ExportInstallFile = {
@@ -58,57 +64,26 @@ export function ExportInstallModal({
   needsSimVerifyNudge = false,
   onVerifyInSim,
 }: ExportInstallModalProps) {
-  const titleId = useId();
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   return (
-    <div
-      className={styles.modalBackdrop}
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
       }}
     >
-      <div
-        className={`${styles.modal} ${styles.exportModal}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onMouseDown={(e) => e.stopPropagation()}
+      <SheetContent
+        side="right"
+        className="w-full gap-3 overflow-y-auto sm:max-w-lg"
       >
-        <div className={styles.modalHead}>
-          <h2 id={titleId} className={styles.modalTitle}>
-            Export to radio
-          </h2>
-          <button
-            ref={closeRef}
-            type="button"
-            className={styles.modalClose}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        <p className={styles.modalHint}>
-          Package{" "}
-          {widgetName ? <strong>{widgetName}</strong> : "this dashboard"} for
-          your SD card — download a zip, or copy straight to the card in the
-          desktop app.
-        </p>
+        <SheetHeader>
+          <SheetTitle>Export to radio</SheetTitle>
+          <SheetDescription>
+            Package{" "}
+            {widgetName ? <strong>{widgetName}</strong> : "this dashboard"} for
+            your SD card — download a zip, or copy straight to the card in the
+            desktop app.
+          </SheetDescription>
+        </SheetHeader>
 
         {needsSimVerifyNudge ? (
           <div className={styles.exportValidationBanner} role="status">
@@ -182,7 +157,7 @@ export function ExportInstallModal({
             }
           />
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

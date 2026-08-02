@@ -1,46 +1,56 @@
 import { test, expect } from "@playwright/test";
-import { gotoEditor, gotoHome, primaryNavLink } from "../helpers/ui.ts";
+import {
+  gotoEditor,
+  gotoHome,
+  gotoStudio,
+  gotoTemplates,
+  primaryNavLink,
+} from "../helpers/ui.ts";
 
 test.describe("Templates & navigation", () => {
-  test("Build in Layout navigates to blank editor", async ({ page }) => {
-    await gotoHome(page);
-    await page.getByRole("link", { name: "Build in Layout (no AI)" }).click();
+  test("Build in Editor from Studio navigates to blank editor", async ({
+    page,
+  }) => {
+    await gotoStudio(page);
+    await page.getByRole("link", { name: "Build in Editor (no AI)" }).click();
     await expect(page).toHaveURL(/\/editor/);
     await expect(page.getByRole("button", { name: "Insert" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Validate" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
   });
 
-  test("Open in Layout for Minimal quad loads editor with template query", async ({
+  test("Open in Editor for Minimal quad loads editor with template query", async ({
     page,
   }) => {
-    await gotoHome(page);
+    await gotoStudio(page);
     await page
-      .getByRole("button", { name: /Minimal quad[\s\S]*Open in Layout/i })
+      .getByRole("button", { name: /Minimal quad[\s\S]*Open in Editor/i })
       .click();
     await expect(page).toHaveURL(/\/editor\?/);
     await expect(page).toHaveURL(/template=/);
     await expect(page.getByRole("button", { name: "Insert" })).toBeVisible();
   });
 
-  test("Layout suggestion chip opens editor", async ({ page }) => {
-    await gotoHome(page);
-    await page.getByRole("button", { name: /Layout: Minimal quad/i }).click();
+  test("Editor suggestion chip opens editor", async ({ page }) => {
+    await gotoStudio(page);
+    await page
+      .getByRole("button", { name: /Minimal quad[\s\S]*Open in Editor/i })
+      .click();
     await expect(page).toHaveURL(/\/editor/);
   });
 
-  test("chrome Layout and Generate round-trip", async ({ page }) => {
+  test("chrome Editor and Studio round-trip", async ({ page }) => {
     await gotoHome(page);
-    await primaryNavLink(page, "Layout").click();
+    await primaryNavLink(page, "Editor").click();
     await expect(page).toHaveURL(/\/editor/);
-    await expect(primaryNavLink(page, "Layout")).toHaveAttribute(
+    await expect(primaryNavLink(page, "Editor")).toHaveAttribute(
       "aria-current",
       "page",
     );
 
-    await primaryNavLink(page, "Generate").click();
-    await expect(page).toHaveURL(/\/(\?|$)/);
-    await expect(primaryNavLink(page, "Generate")).toHaveAttribute(
+    await primaryNavLink(page, "Studio").click();
+    await expect(page).toHaveURL(/\/studio/);
+    await expect(primaryNavLink(page, "Studio")).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -52,23 +62,16 @@ test.describe("Templates & navigation", () => {
       .getByRole("link", { name: "EdgeTX Dashboard Generator home" })
       .click();
     await expect(page).toHaveURL(/\/(\?|$)/);
-    await expect(
-      page.getByRole("heading", { name: "What should your dashboard show?" }),
-    ).toBeVisible();
+    await expect(page.getByText("Recent projects")).toBeVisible();
   });
 
-  test("RF heli template opens with rotorflight protocol", async ({ page }) => {
-    await gotoHome(page);
-    const filters = page.getByRole("group", { name: "Template variants" });
-    const rf = filters.getByRole("button", { name: /RF electric/i });
-    if (await rf.isVisible()) {
-      await rf.click();
-    }
-    await page
-      .getByRole("button", {
-        name: /RF heli \(electric\)[\s\S]*Open in Layout/i,
-      })
-      .click();
+  test("templates page filters and opens RF heli", async ({ page }) => {
+    await gotoTemplates(page);
+    const filters = page.getByRole("group", { name: "Filter by protocol" });
+    await expect(filters).toBeVisible();
+    await filters.getByRole("button", { name: /Rotorflight/i }).click();
+    await page.getByRole("link", { name: "Open in Editor" }).first().click();
+    await expect(page).toHaveURL(/\/editor/);
     await expect(page).toHaveURL(/protocol=rotorflight/);
   });
 

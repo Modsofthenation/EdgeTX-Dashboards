@@ -29,6 +29,7 @@
     "test:e2e:ai": "playwright test -c e2e/playwright.config.ts --project=ai",
     "test:e2e:ui": "playwright test -c e2e/playwright.config.ts --project=chromium --ui",
     "test:e2e:report": "playwright show-report e2e/playwright-report",
+    "capture:readme": "node --experimental-strip-types scripts/capture-readme-screenshots.ts",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "desktop:dev": "npm run tauri --workspace=@widget-gen/desktop -- dev",
     "desktop:build": "npm run tauri --workspace=@widget-gen/desktop -- build",

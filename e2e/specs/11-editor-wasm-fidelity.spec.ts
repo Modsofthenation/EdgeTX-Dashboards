@@ -48,6 +48,20 @@ function softFidelityExpectors(testInfo: {
 test.describe("Editor ↔ WASM preview fidelity", () => {
   test.describe.configure({ timeout: 180_000 });
 
+  test.beforeAll(async ({ request }) => {
+    const res = await request.get("/api/sim-firmware");
+    if (!res.ok()) {
+      throw new Error(
+        `sim-firmware probe failed (${res.status()}) — is the web app running?`,
+      );
+    }
+    const body = (await res.json()) as { ready?: boolean };
+    test.skip(
+      !body.ready,
+      "WASM firmware not synced — run npm run sync-wasm first",
+    );
+  });
+
   test("defaults to radio preview on TX15", async ({ page }) => {
     await gotoEditor(page, { protocol: "betaflight", radioId: "tx15" });
     await expect(page.getByTestId("editor-preview-mode-label")).toHaveText(

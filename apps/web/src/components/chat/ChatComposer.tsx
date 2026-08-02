@@ -472,7 +472,7 @@ export const ChatComposer = memo(function ChatComposer({
               aria-label={running ? "Stop generation" : "Send message"}
               title={
                 !statusLoading && !aiReady && !running
-                  ? "Configure an AI provider in Preferences to generate"
+                  ? "Configure an AI provider in Settings to generate"
                   : undefined
               }
               onClick={
@@ -497,7 +497,7 @@ export const ChatComposer = memo(function ChatComposer({
           {statusLoading
             ? "Checking AI provider…"
             : !aiReady
-              ? "AI not configured — open Preferences → AI, or use Layout / templates without a key."
+              ? "AI not configured — open Settings → AI, or use Editor / templates without a key."
               : `Enter to send · Shift+Enter for new line · Up to ${maxPromptImages()} images · PNG, JPEG, WebP, GIF · 4MB each`}
         </p>
       </div>

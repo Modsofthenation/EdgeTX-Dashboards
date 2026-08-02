@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { postJson } from "../helpers/api.ts";
-import { gotoHome } from "../helpers/ui.ts";
+import { gotoStudio } from "../helpers/ui.ts";
 
 /**
  * Generation gating without AI keys.
@@ -24,13 +24,13 @@ test.describe("Generate gate (no AI key)", () => {
       },
     );
     expect(status).toBe(503);
-    expect(body.error).toMatch(/API key|configured|Preferences/i);
+    expect(body.error).toMatch(/API key|configured|Settings|Preferences/i);
   });
 
   test("sending a prompt is blocked until AI is configured", async ({
     page,
   }) => {
-    await gotoHome(page);
+    await gotoStudio(page);
 
     await expect(page.getByText(/AI not configured/i).first()).toBeVisible({
       timeout: 15_000,
@@ -45,7 +45,7 @@ test.describe("Generate gate (no AI key)", () => {
   test("Generate with AI on template is disabled without a key", async ({
     page,
   }) => {
-    await gotoHome(page);
+    await gotoStudio(page);
     await expect(page.getByText(/AI not configured/i).first()).toBeVisible({
       timeout: 15_000,
     });

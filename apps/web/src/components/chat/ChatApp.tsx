@@ -17,17 +17,15 @@ import {
 } from "~/lib/templateGallery";
 import { buildBlankEditorHref, buildEditorHref } from "~/lib/editorHref";
 import { usePanelCollapse } from "~/lib/usePanelCollapse";
-import { AppChrome } from "../AppChrome";
+import { AppShell } from "../AppShell";
 import { ArtifactPanel } from "./ArtifactPanel";
 import { ChatComposer } from "./ChatComposer";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { ChatMessageList } from "./ChatMessageList";
 import { CollapsibleAside } from "./CollapsibleAside";
-import {
-  AppPreferencesButton,
-  openAppPreferences,
-} from "~/components/AppPreferences";
+import { AppPreferencesButton } from "~/components/AppPreferences";
 import { useOptionalAiSettings } from "~/components/AiSettingsProvider";
+import { buildStudioHref } from "~/lib/studioHref";
 import styles from "./ChatApp.module.css";
 
 export function ChatApp() {
@@ -72,16 +70,16 @@ function ChatAppLayout() {
     void loadChat(urlChatId);
   }, [urlChatId, chatId, loadChat]);
 
-  // Keep the URL in sync with the active chat so Layout ↔ Generate round-trips.
+  // Keep the URL in sync with the active chat so Editor ↔ Studio round-trips.
   useEffect(() => {
     if (chatId && urlChatId === chatId) return;
     if (!chatId && !urlChatId) return;
     if (chatId) {
-      router.replace(`/?chatId=${encodeURIComponent(chatId)}`, {
+      router.replace(buildStudioHref({ chatId }), {
         scroll: false,
       });
     } else {
-      router.replace("/", { scroll: false });
+      router.replace("/studio", { scroll: false });
     }
   }, [chatId, urlChatId, router]);
 
@@ -103,12 +101,11 @@ function ChatAppLayout() {
 
   const handleNewChat = useCallback(() => {
     startNewChat();
-    router.replace("/", { scroll: false });
+    router.replace("/studio", { scroll: false });
   }, [startNewChat, router]);
 
   return (
-    <div className={styles.shell}>
-      <ChatAppHeader onNewChat={handleNewChat} />
+    <StudioShell onNewChat={handleNewChat}>
       <AiSetupBanner />
       <div className={styles.body}>
         <ChatHistoryAside
@@ -125,50 +122,17 @@ function ChatAppLayout() {
           onToggleArtifact={toggleArtifact}
         />
       </div>
-    </div>
+    </StudioShell>
   );
 }
 
-function AiSetupBanner() {
-  const ai = useOptionalAiSettings();
-  const { protocol, radioId, layoutProfileId } = useSessionSettings();
-  const { chatId } = useChatSession();
-  if (!ai || ai.statusLoading || ai.ready) return null;
-
-  const layoutHref = buildBlankEditorHref({
-    protocol,
-    radioId,
-    layoutProfileId,
-    chatId,
-  });
-
-  return (
-    <div className={styles.aiBanner} role="status">
-      <div className={styles.aiBannerCopy}>
-        <strong>AI not configured</strong>
-        <span>
-          Add an API key for Cursor, Anthropic, OpenAI, or Gemini in Preferences
-          to generate, or open Layout to build a dashboard by hand (no AI
-          required).
-        </span>
-      </div>
-      <div className={styles.aiBannerActions}>
-        <Link href={layoutHref} className={styles.aiBannerBtnSecondary}>
-          Open Layout
-        </Link>
-        <button
-          type="button"
-          className={styles.aiBannerBtn}
-          onClick={() => openAppPreferences("ai")}
-        >
-          Open AI settings
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
+function StudioShell({
+  onNewChat,
+  children,
+}: {
+  onNewChat: () => void;
+  children: React.ReactNode;
+}) {
   const { running, chatId } = useChatSession();
   const { artifact, sessionId } = useArtifactPanel();
   const {
@@ -217,11 +181,11 @@ function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
   );
 
   return (
-    <AppChrome
-      surface="generate"
+    <AppShell
+      surface="studio"
       subtitle={subtitle}
-      generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
-      layoutHref={layoutHref}
+      studioHref={buildStudioHref({ chatId })}
+      editorHref={layoutHref}
       actions={
         <>
           {running && (
@@ -241,7 +205,44 @@ function ChatAppHeader({ onNewChat }: { onNewChat: () => void }) {
           </button>
         </>
       }
-    />
+    >
+      <div className={styles.shell}>{children}</div>
+    </AppShell>
+  );
+}
+
+function AiSetupBanner() {
+  const ai = useOptionalAiSettings();
+  const { protocol, radioId, layoutProfileId } = useSessionSettings();
+  const { chatId } = useChatSession();
+  if (!ai || ai.statusLoading || ai.ready) return null;
+
+  const layoutHref = buildBlankEditorHref({
+    protocol,
+    radioId,
+    layoutProfileId,
+    chatId,
+  });
+
+  return (
+    <div className={styles.aiBanner} role="status">
+      <div className={styles.aiBannerCopy}>
+        <strong>AI not configured</strong>
+        <span>
+          Add an API key for Cursor, Anthropic, OpenAI, or Gemini in Settings to
+          generate, or open Editor to build a dashboard by hand (no AI
+          required).
+        </span>
+      </div>
+      <div className={styles.aiBannerActions}>
+        <Link href={layoutHref} className={styles.aiBannerBtnSecondary}>
+          Open Editor
+        </Link>
+        <Link href="/settings?tab=ai" className={styles.aiBannerBtn}>
+          Open AI settings
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -261,7 +262,7 @@ function ChatHistoryAside({
   const handleSelect = useCallback(
     (id: string) => {
       void loadChat(id);
-      router.replace(`/?chatId=${encodeURIComponent(id)}`, { scroll: false });
+      router.replace(buildStudioHref({ chatId: id }), { scroll: false });
     },
     [loadChat, router],
   );

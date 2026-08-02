@@ -112,36 +112,54 @@ export async function waitForRadioPreviewReady(
     await clickViewMenuItem(page, /Show radio preview/i);
   }
 
-  await page.waitForFunction(
-    () => {
-      const mode = document
-        .querySelector('[data-testid="editor-canvas-frame"]')
-        ?.getAttribute("data-preview-mode");
-      if (mode !== "radio") return false;
-      const canvas = document.querySelector(
-        '[data-testid="editor-radio-preview"]',
-      ) as HTMLCanvasElement | null;
-      if (!canvas || canvas.width < 8 || canvas.height < 8) return false;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return false;
-      const { data, width, height } = ctx.getImageData(
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-      );
-      let lit = 0;
-      const step = 16;
-      for (let y = 0; y < height; y += step) {
-        for (let x = 0; x < width; x += step) {
-          const i = (y * width + x) * 4;
-          if (data[i]! > 20 || data[i + 1]! > 20 || data[i + 2]! > 20) lit++;
+  await page
+    .waitForFunction(
+      () => {
+        const bodyText = document.body?.innerText ?? "";
+        if (
+          /WebAssembly\.instantiate|simuAuxSerialStart|worker crashed|firmware may still be downloading/i.test(
+            bodyText,
+          )
+        ) {
+          return "sim-error";
         }
+        const mode = document
+          .querySelector('[data-testid="editor-canvas-frame"]')
+          ?.getAttribute("data-preview-mode");
+        if (mode !== "radio") return false;
+        const canvas = document.querySelector(
+          '[data-testid="editor-radio-preview"]',
+        ) as HTMLCanvasElement | null;
+        if (!canvas || canvas.width < 8 || canvas.height < 8) return false;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return false;
+        const { data, width, height } = ctx.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        let lit = 0;
+        const step = 16;
+        for (let y = 0; y < height; y += step) {
+          for (let x = 0; x < width; x += step) {
+            const i = (y * width + x) * 4;
+            if (data[i]! > 20 || data[i + 1]! > 20 || data[i + 2]! > 20) lit++;
+          }
+        }
+        return lit > 8 ? "ready" : false;
+      },
+      undefined,
+      { timeout: Math.min(timeoutMs, 45_000) },
+    )
+    .then(async (handle) => {
+      const result = await handle.jsonValue();
+      if (result === "sim-error") {
+        throw new Error(
+          "Radio WASM preview failed to boot (firmware/worker error). Run npm run setup:sim / sync-wasm.",
+        );
       }
-      return lit > 8;
-    },
-    { timeout: timeoutMs },
-  );
+    });
 
   // Replay fullscreen until top chrome disappears (or attempts exhausted).
   const deadline = Date.now() + 20_000;
