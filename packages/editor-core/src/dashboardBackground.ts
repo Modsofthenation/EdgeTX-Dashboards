@@ -53,6 +53,36 @@ function findFirstClearLine(source: string): number | null {
   return null;
 }
 
+/** Read BgColor option default when lcd.clear uses `bg` / widget.options.BgColor. */
+export function resolveBgColorOption(source: string): string | null {
+  const m = source.match(
+    /\{\s*"BgColor"\s*,\s*COLOR\s*,\s*([A-Za-z0-9_]+)\s*\}/,
+  );
+  if (!m) return null;
+  const color = m[1]!;
+  return SAFE_COLOR_SET.has(color) ? color : null;
+}
+
+/** True when lcd.clear arg is bg / widget.options.BgColor or a proven alias. */
+export function isBgColorClearAlias(clearArg: string, source: string): boolean {
+  const arg = clearArg.trim();
+  if (arg === "bg" || arg === "widget.options.BgColor") return true;
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(arg)) return false;
+  // Proven local alias: `local dashboardBg = widget.options.BgColor`
+  const assign = new RegExp(
+    `(?:local\\s+)?\\b${arg}\\s*=\\s*widget\\.options\\.BgColor\\b`,
+  );
+  return assign.test(source);
+}
+
+function resolvePickerColor(clearArg: string, source: string): string {
+  if (SAFE_COLOR_SET.has(clearArg)) return clearArg;
+  if (isBgColorClearAlias(clearArg, source)) {
+    return resolveBgColorOption(source) ?? "BLACK";
+  }
+  return "BLACK";
+}
+
 /** Read current background mode from widget Lua. */
 export function detectDashboardBackground(
   source: string,
@@ -60,7 +90,7 @@ export function detectDashboardBackground(
   const body = extractRefreshBody(source);
   const clearMatch = body.match(CLEAR_RE);
   const clearArg = (clearMatch?.[1] ?? "BLACK").trim();
-  const color = SAFE_COLOR_SET.has(clearArg) ? clearArg : "BLACK";
+  const color = resolvePickerColor(clearArg, source);
 
   const imagePath = source.match(BG_IMG_RE)?.[1] ?? null;
   const hasModelDraw =
@@ -264,11 +294,7 @@ export function applyDashboardBackground(
   if (input.mode === "color") {
     next = removeBgImage(next);
     const current = detectDashboardBackground(source);
-    const usesBgOption =
-      current.clearArg === "bg" ||
-      current.clearArg === "widget.options.BgColor" ||
-      /BgColor/.test(current.clearArg) ||
-      /\bbg\s*=\s*widget\.options\.BgColor/.test(source);
+    const usesBgOption = isBgColorClearAlias(current.clearArg, source);
 
     if (usesBgOption) {
       next = patchBgColorOption(next, color);

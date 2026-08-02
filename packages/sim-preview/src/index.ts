@@ -31,6 +31,12 @@ export {
 } from "./framebuffer.ts";
 export { WIDGET_LAUNCH_DELAY_FRAMES } from "./SimRuntime.ts";
 export {
+  EDGETX_KEY_EXIT,
+  SIM_KEY_PULSE_MS,
+  pulseSimKey,
+  pulseSimKeyExit,
+} from "./simKeys.ts";
+export {
   buildHotReloadShimSource,
   buildHotReloadGenSource,
   hotReloadPaths,

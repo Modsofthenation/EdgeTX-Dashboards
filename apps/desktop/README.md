@@ -12,7 +12,7 @@ EdgeTX Dashboards can run as a native desktop window on Linux, Windows, and macO
 
 First launch without a Cursor API key shows a one-time Preferences wizard (`FirstRunWizard`). Stable desktop cuts use `desktop-v*` tags after smoke passes on `main`.
 
-Release builds spawn `node apps/web/server.js` from bundled resources, wait for `/api/health`, then navigate the webview to `http://127.0.0.1:<port>/`. Chat SQLite data goes under the OS app-data dir (`WIDGET_GEN_DATA_DIR`). Generator assets (`knowledge/`, templates, stubs, …) are staged into the standalone bundle and copied on launch into a writable `WIDGET_GEN_REPO_ROOT` workspace so AI generate can run offline from installer resources.
+Release builds spawn `node apps/web/server.js` from bundled resources, wait for `/api/health`, then navigate the webview to `http://127.0.0.1:<port>/`. Chat SQLite data goes under the OS app-data dir (`WIDGET_GEN_DATA_DIR`). Generator assets (`knowledge/`, templates, stubs, …) are staged into the standalone bundle and copied on launch into a writable `WIDGET_GEN_REPO_ROOT` workspace so AI generate can run offline from installer resources. The sidecar forces `CURSOR_SANDBOX_ENABLED=0` (Windows Cursor sandbox needs WSL2) and appends Node logs to `sidecar.log` in the app data directory.
 
 ## Prerequisites
 

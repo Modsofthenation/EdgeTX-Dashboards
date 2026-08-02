@@ -93,6 +93,7 @@ export interface ExtendedSimulatorExports {
   ) => void;
   simuTouchDown?: (x: number, y: number) => void;
   simuTouchUp?: () => void;
+  simuSetKey?: (key: number, state: number) => void;
   simuCreateDefaults?: () => void;
   simuLcdGetWidth?: () => number;
   simuLcdGetHeight?: () => number;

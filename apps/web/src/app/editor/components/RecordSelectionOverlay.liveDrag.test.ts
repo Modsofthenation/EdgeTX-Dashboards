@@ -7,14 +7,16 @@ import { fileURLToPath } from "node:url";
 const componentsDir = dirname(fileURLToPath(import.meta.url));
 
 describe("liveDrag single ownership", () => {
-  it("EditorCanvas owns liveDrag and clears on records", () => {
+  it("EditorCanvas owns liveDrag and clears overlay drag on source commit", () => {
     const src = readFileSync(join(componentsDir, "EditorCanvas.tsx"), "utf8");
-    assert.match(
-      src,
-      /useLayoutEffect\(\(\) => \{\s*setLiveDrag\(null\);\s*\}, \[records\]\)/s,
-    );
+    assert.match(src, /setLiveDrag\(null\)/);
+    assert.match(src, /setPreviewDragHold/);
+    assert.match(src, /resolveCanvasLiveDrag/);
     assert.match(src, /liveDrag=\{liveDrag\}/);
+    assert.match(src, /liveDrag=\{canvasLiveDrag\}/);
     assert.match(src, /onLiveDragChange=\{setLiveDrag\}/);
+    assert.match(src, /onPendingChange=\{onSourcePendingChange\}/);
+    assert.match(src, /}, \[source, showParserPreview\]\)/);
   });
 
   it("RecordSelectionOverlay is controlled (no local liveDrag state)", () => {

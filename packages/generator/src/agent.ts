@@ -394,6 +394,7 @@ export class WidgetGenerator {
     runId: string;
     status: string;
     success: boolean;
+    result?: string;
     widgetName?: string;
     widgetInstanceId?: string;
     widgetVersion?: number;
@@ -607,6 +608,7 @@ export class WidgetGenerator {
       runId: streamed.runId,
       status: streamed.status,
       success,
+      result: streamed.result,
       widgetName: displayName ?? streamed.widgetName,
       widgetInstanceId,
       widgetVersion: session?.widgetVersion,

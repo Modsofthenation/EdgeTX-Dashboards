@@ -16,6 +16,7 @@ import {
   DEFAULT_MODEL_ID,
   FALLBACK_MODELS,
   findLatestWidgetName,
+  formatAgentStartupError,
   getDefaultModelId,
   getGeneratedDirForKey,
   getLayoutProfileId,
@@ -42,6 +43,7 @@ import {
   WidgetValidationError,
   listWidgetPackageEntries,
   autoFixLua,
+  isCursorSandboxEnabled,
 } from "@widget-gen/generator";
 import type { AiProviderId } from "@widget-gen/shared";
 
@@ -50,6 +52,7 @@ export {
   DEFAULT_MODEL_ID,
   FALLBACK_MODELS,
   getDefaultModelId,
+  getRepoRoot,
   getSessionStore,
   MAX_ACTIVE_SESSIONS,
   validateGenerateRequest,
@@ -61,6 +64,8 @@ export {
   validateWidgetSource,
   ensureWidgetInstanceDir,
   autoFixLua,
+  formatAgentStartupError,
+  isCursorSandboxEnabled,
 };
 
 export function getDataDirectory(): string {
