@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, memo } from "react";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { InsertDrawKind } from "../elementMeta";
 import { EditorMenu, type EditorMenuItem } from "./EditorMenu";
@@ -58,7 +58,7 @@ interface EditorToolbarProps {
   canDistribute?: boolean;
 }
 
-export function EditorToolbar({
+export const EditorToolbar = memo(function EditorToolbar({
   canUndo,
   canRedo,
   onUndo,
@@ -486,4 +486,4 @@ export function EditorToolbar({
       </div>
     </div>
   );
-}
+});

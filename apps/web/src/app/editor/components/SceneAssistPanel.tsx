@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import type { DocumentRecord, LuaToSceneResult } from "@widget-gen/editor-core";
 import styles from "../editor.module.css";
 
@@ -21,7 +21,7 @@ function elementLabel(
   return el.kind;
 }
 
-export function SceneAssistPanel({
+export const SceneAssistPanel = memo(function SceneAssistPanel({
   assist,
   records,
   selectedIds,
@@ -128,4 +128,4 @@ export function SceneAssistPanel({
       ) : null}
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useMemo, useRef, useState } from "react";
 import type { DocumentRecord } from "@widget-gen/editor-core";
 import {
   getPrefabSection,
@@ -33,7 +33,7 @@ interface RecordLayersPanelProps {
 
 type DropHint = { id: string; place: "before" | "after" };
 
-export function RecordLayersPanel({
+export const RecordLayersPanel = memo(function RecordLayersPanel({
   records,
   source,
   selectedIds,
@@ -89,9 +89,7 @@ export function RecordLayersPanel({
     const draggedId = dragIdRef.current;
     if (!list || !draggedId) return;
 
-    const items = [
-      ...list.querySelectorAll<HTMLElement>("[data-layer-id]"),
-    ];
+    const items = [...list.querySelectorAll<HTMLElement>("[data-layer-id]")];
     for (const el of items) {
       const id = el.dataset.layerId;
       if (!id || id === draggedId) continue;
@@ -106,10 +104,7 @@ export function RecordLayersPanel({
     }
   };
 
-  const onHandlePointerDown = (
-    event: React.PointerEvent,
-    recordId: string,
-  ) => {
+  const onHandlePointerDown = (event: React.PointerEvent, recordId: string) => {
     if (!canDragReorder || event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
@@ -318,4 +313,4 @@ export function RecordLayersPanel({
       )}
     </aside>
   );
-}
+});

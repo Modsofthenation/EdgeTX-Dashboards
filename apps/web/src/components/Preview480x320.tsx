@@ -3,12 +3,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   EDITOR_PREVIEW_SCENARIO,
-  getLastPreviewParseMeta,
   isInterpretationReliable,
   mergeLiveIntoMock,
-  parseLuaToDrawCommands,
   tickMock,
   type MockTelemetry,
+  type PreviewDrawCommand,
 } from "@widget-gen/layout-verify";
 import {
   resolvePreviewDimensions,
@@ -18,6 +17,7 @@ import {
 import { isChatScrolling } from "~/lib/chatScrollPause";
 import { RadioSimPreview } from "~/components/RadioSimPreview";
 import { renderPreviewCommands } from "~/lib/luaPreviewEngine";
+import { useLuaPreviewCommands } from "~/lib/useLuaPreviewCommands";
 import styles from "./Preview480x320.module.css";
 
 interface Preview480x320Props {
@@ -37,36 +37,32 @@ interface Preview480x320Props {
 }
 
 function ParserPreviewCanvas({
-  luaSource,
+  commands,
   zoneW,
   zoneH,
   zoneX,
   zoneY,
-  mock,
 }: {
-  luaSource: string;
+  commands: PreviewDrawCommand[];
   zoneW: number;
   zoneH: number;
   zoneX: number;
   zoneY: number;
-  mock: typeof EDITOR_PREVIEW_SCENARIO.mock;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
 
-  const commands = useMemo(() => {
-    const records = parseLuaToDrawCommands(luaSource, {
-      ...EDITOR_PREVIEW_SCENARIO,
-      mock,
-    });
-    return records.map((r) => ({
-      ...r,
-      x: r.x != null ? r.x - zoneX : r.x,
-      y: r.y != null ? r.y - zoneY : r.y,
-      x2: r.x2 != null ? r.x2 - zoneX : r.x2,
-      y2: r.y2 != null ? r.y2 - zoneY : r.y2,
-    }));
-  }, [luaSource, mock, zoneX, zoneY]);
+  const zoneCommands = useMemo(
+    () =>
+      commands.map((r) => ({
+        ...r,
+        x: r.x != null ? r.x - zoneX : r.x,
+        y: r.y != null ? r.y - zoneY : r.y,
+        x2: r.x2 != null ? r.x2 - zoneX : r.x2,
+        y2: r.y2 != null ? r.y2 - zoneY : r.y2,
+      })),
+    [commands, zoneX, zoneY],
+  );
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -82,9 +78,9 @@ function ParserPreviewCanvas({
     ctx.clearRect(0, 0, cw, ch);
     ctx.save();
     ctx.translate((cw - zoneW * scale) / 2, (ch - zoneH * scale) / 2);
-    renderPreviewCommands(ctx, commands, scale, zoneW, zoneH);
+    renderPreviewCommands(ctx, zoneCommands, scale, zoneW, zoneH);
     ctx.restore();
-  }, [commands, zoneW, zoneH]);
+  }, [zoneCommands, zoneW, zoneH]);
 
   useEffect(() => {
     paint();
@@ -154,18 +150,28 @@ export const Preview480x320 = memo(function Preview480x320({
   const zoneX = previewDims?.zoneX ?? 0;
   const zoneY = previewDims?.zoneY ?? 0;
 
+  const previewScenario = useMemo(
+    () => ({ ...EDITOR_PREVIEW_SCENARIO, mock }),
+    [mock],
+  );
+  const useWasmSim = hasColorWasmSim(radioId);
+  // Skip applyMock on WASM radios — pixels come from the sim; only the
+  // approximate parser canvas needs commands.
+  const { commands: previewCommands, meta: workerMeta } = useLuaPreviewCommands(
+    useWasmSim ? null : luaSource,
+    previewScenario,
+    layoutProfileId,
+  );
   const parseMeta = useMemo(() => {
-    if (!luaSource) return null;
-    const cmds = parseLuaToDrawCommands(luaSource, {
-      ...EDITOR_PREVIEW_SCENARIO,
-      mock,
-    });
-    const meta = getLastPreviewParseMeta();
+    if (!luaSource || !workerMeta) return null;
     return {
-      skippedTextCount: meta.skippedTextCount,
-      unreliable: !isInterpretationReliable(cmds, meta.skippedTextCount),
+      skippedTextCount: workerMeta.skippedTextCount,
+      unreliable: !isInterpretationReliable(
+        previewCommands,
+        workerMeta.skippedTextCount,
+      ),
     };
-  }, [luaSource, mock]);
+  }, [luaSource, workerMeta, previewCommands]);
 
   useEffect(() => {
     if (!live || !luaSource) return;
@@ -187,7 +193,6 @@ export const Preview480x320 = memo(function Preview480x320({
 
   const simActive = !!luaSource && tab !== "source";
   const firmwareLabel = edgeTxVersion.replace(/\.0$/, "");
-  const useWasmSim = hasColorWasmSim(radioId);
 
   const handleCopySource = async () => {
     if (!luaSource) return;
@@ -354,12 +359,11 @@ export const Preview480x320 = memo(function Preview480x320({
                 />
               ) : (
                 <ParserPreviewCanvas
-                  luaSource={luaSource}
+                  commands={previewCommands}
                   zoneW={displayW}
                   zoneH={displayH}
                   zoneX={zoneX}
                   zoneY={zoneY}
-                  mock={mock}
                 />
               )}
             </div>
@@ -376,11 +380,7 @@ export const Preview480x320 = memo(function Preview480x320({
             {luaSource && useWasmSim && (
               <span className={styles.liveBadge}>
                 EdgeTX {firmwareLabel} WASM
-                {liveSensors
-                  ? " · Live CRSF"
-                  : live
-                    ? " · mock telemetry"
-                    : ""}
+                {liveSensors ? " · Live CRSF" : live ? " · mock telemetry" : ""}
               </span>
             )}
             {luaSource && !useWasmSim && (

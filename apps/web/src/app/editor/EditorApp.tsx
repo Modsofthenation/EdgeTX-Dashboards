@@ -67,7 +67,6 @@ import {
   type LayoutProfileId,
 } from "@widget-gen/shared";
 import dynamic from "next/dynamic";
-import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { useResizableEditorPanels } from "./hooks/useResizableEditorPanels";
 import { resolveTemplateEditorBootstrap } from "./lib/templateBootstrap";
@@ -77,7 +76,14 @@ import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
 import { SceneAssistPanel } from "./components/SceneAssistPanel";
 import { EditorToolbar } from "./components/EditorToolbar";
-import { EditorMenu } from "./components/EditorMenu";
+import { EditorChrome } from "./components/EditorChrome";
+import { EditorBanners } from "./components/EditorBanners";
+import { EditorCallouts } from "./components/EditorCallouts";
+import {
+  EditorMobileTabs,
+  type MobileTab,
+} from "./components/EditorMobileTabs";
+import { ImportLuaModal } from "./components/ImportLuaModal";
 import { SimVerifyModal } from "./components/SimVerifyModal";
 import {
   ProjectLibraryModal,
@@ -151,8 +157,6 @@ import {
   type DistributeMode,
 } from "./alignSelection";
 import styles from "./editor.module.css";
-
-type MobileTab = "layers" | "canvas" | "properties";
 
 const IS_MAC =
   typeof navigator !== "undefined" &&
@@ -1961,6 +1965,82 @@ export function EditorApp() {
     setInlineSim(enabled);
   }, []);
 
+  const handleLayerSelect = useCallback((id: string, additive: boolean) => {
+    setSelectedIds((prev) =>
+      additive
+        ? prev.includes(id)
+          ? prev.filter((x) => x !== id)
+          : [...prev, id]
+        : [id],
+    );
+  }, []);
+
+  const handleLayerSelectMany = useCallback(
+    (ids: string[], additive: boolean) => {
+      setSelectedIds((prev) =>
+        additive ? [...new Set([...prev, ...ids])] : ids,
+      );
+    },
+    [],
+  );
+
+  const handleMoveLayerUp = useCallback(
+    (id: string) => handleMoveLayer(id, 1),
+    [handleMoveLayer],
+  );
+
+  const handleMoveLayerDown = useCallback(
+    (id: string) => handleMoveLayer(id, -1),
+    [handleMoveLayer],
+  );
+
+  const handleSelectSceneRecord = useCallback((id: string) => {
+    setSelectedIds([id]);
+  }, []);
+
+  const handleDismissLoadError = useCallback(() => setLoadError(null), []);
+  const handleOpenExport = useCallback(() => setExportOpen(true), []);
+  const handleOpenImport = useCallback(() => setPasteOpen(true), []);
+  const handleCloseImport = useCallback(() => setPasteOpen(false), []);
+  const handlePasteTextChange = useCallback((text: string) => {
+    setPasteText(text);
+  }, []);
+  const handleImportLua = useCallback(() => {
+    loadFromSource(pasteText);
+    setPasteOpen(false);
+  }, [loadFromSource, pasteText]);
+  const handleNewBoard = useCallback(() => {
+    loadFromSource(createStarterSource(), true);
+  }, [loadFromSource]);
+  const handleCopyLuaAction = useCallback(() => {
+    void handleCopyLua();
+  }, [handleCopyLua]);
+  const handleOpenPrefs = useCallback(() => openAppPreferences(), []);
+  const handleDismissProjectOffer = useCallback(
+    () => setLastProjectOffer(null),
+    [],
+  );
+  const handleOpenLastProject = useCallback(
+    (id: string) => {
+      void openProjectById(id);
+    },
+    [openProjectById],
+  );
+
+  const handleToolbarUndo = useCallback(() => {
+    captureSelectionTexts();
+    pendingSelectionRematchRef.current = true;
+    undo();
+    markDirty();
+  }, [captureSelectionTexts, undo, markDirty]);
+
+  const handleToolbarRedo = useCallback(() => {
+    captureSelectionTexts();
+    pendingSelectionRematchRef.current = true;
+    redo();
+    markDirty();
+  }, [captureSelectionTexts, redo, markDirty]);
+
   const usesBitmap = useMemo(
     () => /drawBitmap|Bitmap\.open/.test(source),
     [source],
@@ -2000,158 +2080,40 @@ export function EditorApp() {
   return (
     <div className={styles.editorRoot}>
       <AppPreferencesHost />
-      <AppChrome
-        surface="layout"
+      <EditorChrome
         subtitle={subtitle}
         generateHref={chatId ? `/?chatId=${encodeURIComponent(chatId)}` : "/"}
         layoutHref={layoutSelfHref}
-        actions={
-          <>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={openSim}
-            >
-              <span className={styles.actionLabelFull}>Simulator</span>
-              <span className={styles.actionLabelShort}>Sim</span>
-            </button>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              title={
-                valid === false
-                  ? "Export package — fix validation errors before download"
-                  : "Export zip or copy to SD card"
-              }
-              onClick={() => setExportOpen(true)}
-            >
-              <span className={styles.actionLabelFull}>Export</span>
-              <span className={styles.actionLabelShort}>Export</span>
-            </button>
-            <EditorMenu
-              label="More"
-              variant="ghost"
-              align="right"
-              title="Copy, import, and preferences"
-              items={[
-                {
-                  id: "copy",
-                  label: copyDone ? "Copied" : "Copy Lua",
-                  onClick: () => void handleCopyLua(),
-                },
-                {
-                  id: "import",
-                  label: "Import Lua…",
-                  onClick: () => setPasteOpen(true),
-                },
-                {
-                  id: "rebuild-from-scene",
-                  label: "Rebuild Lua from scene…",
-                  disabled: !sceneAssist,
-                  separatorBefore: true,
-                  onClick: handleRebuildLuaFromScene,
-                },
-                {
-                  id: "new",
-                  label: "New board",
-                  separatorBefore: true,
-                  onClick: () => {
-                    if (dirty && !window.confirm("Discard unsaved changes?"))
-                      return;
-                    loadFromSource(createStarterSource(), true);
-                  },
-                },
-                {
-                  id: "clear-all",
-                  label: "Clear all layers…",
-                  disabled: records.length === 0,
-                  onClick: () => handleClearAllLayers(),
-                },
-                {
-                  id: "prefs",
-                  label: "Preferences…",
-                  separatorBefore: true,
-                  onClick: () => openAppPreferences(),
-                },
-              ]}
-            />
-          </>
-        }
+        copyDone={copyDone}
+        canRebuildFromScene={Boolean(sceneAssist)}
+        hasRecords={records.length > 0}
+        dirty={dirty}
+        onOpenSim={openSim}
+        onOpenExport={handleOpenExport}
+        onCopyLua={handleCopyLuaAction}
+        onOpenImport={handleOpenImport}
+        onRebuildFromScene={handleRebuildLuaFromScene}
+        onNewBoard={handleNewBoard}
+        onClearAllLayers={handleClearAllLayers}
+        onOpenPrefs={handleOpenPrefs}
       />
 
-      {loadError && (
-        <div className={styles.bannerStack}>
-          <div className={styles.errorBanner} role="alert">
-            {loadError}
-            <button
-              type="button"
-              className={styles.bannerDismiss}
-              onClick={() => setLoadError(null)}
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {(previewMeta.skippedTextCount > 0 || previewMeta.unreliable) && (
-        <div className={styles.bannerStack}>
-          <div className={styles.warnBanner} role="status">
-            <strong>
-              {inlineSim && hasColorWasmSim(radioId)
-                ? "Layout overlay may miss some draws"
-                : "Approximate preview may differ from the radio"}
-            </strong>
-            <ul>
-              {previewMeta.skippedTextCount > 0 && (
-                <li>
-                  {previewMeta.skippedTextCount} text draw(s) could not be
-                  evaluated for selection — they still appear in radio preview;
-                  edit those in Source.
-                </li>
-              )}
-              {previewMeta.unreliable && (
-                <li>
-                  Gauge/annulus layout could not be fully resolved in the
-                  overlay — trust radio preview pixels.
-                </li>
-              )}
-              {!(inlineSim && hasColorWasmSim(radioId)) && (
-                <li>
-                  Turn on View → Show radio preview (or Simulator) for EdgeTX
-                  pixels.
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {usesBitmap && !modelPngBytes && hasColorWasmSim(radioId) ? (
-        <div className={styles.bannerStack}>
-          <div className={styles.warnBanner} role="status">
-            This widget draws a model bitmap — upload a PNG via View → Upload
-            model PNG… so radio preview matches the radio SD image.
-          </div>
-        </div>
-      ) : null}
+      <EditorBanners
+        loadError={loadError}
+        onDismissError={handleDismissLoadError}
+        skippedTextCount={previewMeta.skippedTextCount}
+        unreliable={previewMeta.unreliable}
+        inlineSim={inlineSim}
+        radioId={radioId}
+        usesBitmap={usesBitmap}
+        hasModelPng={Boolean(modelPngBytes)}
+      />
 
       <EditorToolbar
         canUndo={canUndo}
         canRedo={canRedo}
-        onUndo={() => {
-          captureSelectionTexts();
-          pendingSelectionRematchRef.current = true;
-          undo();
-          markDirty();
-        }}
-        onRedo={() => {
-          captureSelectionTexts();
-          pendingSelectionRematchRef.current = true;
-          redo();
-          markDirty();
-        }}
+        onUndo={handleToolbarUndo}
+        onRedo={handleToolbarRedo}
         onAdd={handleAdd}
         onAddPrefab={handleAddPrefab}
         onAddFullRfHeliElectric={
@@ -2202,77 +2164,19 @@ export function EditorApp() {
         assist={sceneAssist}
         records={records}
         selectedIds={selectedIds}
-        onSelectRecord={(id) => setSelectedIds([id])}
+        onSelectRecord={handleSelectSceneRecord}
       />
-      {protocol === "rotorflight" ? (
-        <div className={styles.protocolCallout} role="status">
-          Rotorflight: enable <strong>rf2bg</strong> (Special Function, Repeat
-          On), then Telemetry → Discover new for HSpd / EscT / Vbec / Vcel /
-          Gov. Insert → Full RF heli (electric) or RF heli nitro board.
-        </div>
-      ) : null}
-      {lastProjectOffer ? (
-        <div className={styles.protocolCallout} role="status">
-          Resume <strong>{lastProjectOffer.name}</strong>?{" "}
-          <button
-            type="button"
-            className={styles.calloutLink}
-            onClick={() => void openProjectById(lastProjectOffer.id)}
-          >
-            Open last
-          </button>
-          <button
-            type="button"
-            className={styles.calloutLink}
-            onClick={() => setLastProjectOffer(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      ) : null}
-      {liveTelemetryNote ? (
-        <div className={styles.protocolCallout} role="status">
-          {liveTelemetryNote}
-          {liveTelemetryActive && protocol === "rotorflight" ? (
-            <>
-              {" "}
-              <span className={styles.calloutMuted}>
-                Enrich {enrichRotorflight ? "ON" : "OFF"} —{" "}
-                {enrichRotorflight
-                  ? "fills missing HSpd/Gov/Vbec (not true FC sensors until rf2bg + Discover new)."
-                  : "showing wire CRSF sensors only."}
-              </span>
-            </>
-          ) : null}
-        </div>
-      ) : null}
+      <EditorCallouts
+        protocol={protocol}
+        lastProjectOffer={lastProjectOffer}
+        onOpenLastProject={handleOpenLastProject}
+        onDismissProjectOffer={handleDismissProjectOffer}
+        liveTelemetryNote={liveTelemetryNote}
+        liveTelemetryActive={liveTelemetryActive}
+        enrichRotorflight={enrichRotorflight}
+      />
 
-      <div
-        className={styles.mobileTabs}
-        role="tablist"
-        aria-label="Editor panels"
-      >
-        {(
-          [
-            ["layers", "Layers"],
-            ["canvas", "Canvas"],
-            ["properties", "Properties"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === id}
-            className={
-              mobileTab === id ? styles.mobileTabActive : styles.mobileTab
-            }
-            onClick={() => setMobileTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <EditorMobileTabs mobileTab={mobileTab} onChange={setMobileTab} />
 
       <div
         ref={editorBodyRef}
@@ -2285,23 +2189,11 @@ export function EditorApp() {
             records={records}
             source={source}
             selectedIds={selectedIds}
-            onSelect={(id, additive) =>
-              setSelectedIds((prev) =>
-                additive
-                  ? prev.includes(id)
-                    ? prev.filter((x) => x !== id)
-                    : [...prev, id]
-                  : [id],
-              )
-            }
-            onSelectMany={(ids, additive) =>
-              setSelectedIds((prev) =>
-                additive ? [...new Set([...prev, ...ids])] : ids,
-              )
-            }
+            onSelect={handleLayerSelect}
+            onSelectMany={handleLayerSelectMany}
             onDelete={handleDelete}
-            onMoveUp={(id) => handleMoveLayer(id, 1)}
-            onMoveDown={(id) => handleMoveLayer(id, -1)}
+            onMoveUp={handleMoveLayerUp}
+            onMoveDown={handleMoveLayerDown}
             onReorder={handleReorderLayer}
             onClearAll={handleClearAllLayers}
           />
@@ -2599,66 +2491,13 @@ export function EditorApp() {
         onImported={(id) => void openProjectById(id)}
       />
 
-      {pasteOpen && (
-        <div
-          className={styles.modalBackdrop}
-          role="presentation"
-          onClick={() => setPasteOpen(false)}
-        >
-          <div
-            className={styles.modal}
-            role="dialog"
-            aria-labelledby="import-title"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHead}>
-              <h2 id="import-title" className={styles.modalTitle}>
-                Import Lua
-              </h2>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={() => setPasteOpen(false)}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <p className={styles.modalHint}>
-              Paste an EdgeTX widget <code>main.lua</code>. The editor patches
-              draw lines in place.
-            </p>
-            <textarea
-              className={styles.modalTextarea}
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder="---@type WidgetScript&#10;---@simulate Layout1x1 zone=0&#10;..."
-              rows={12}
-              autoFocus
-            />
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.ghostBtn}
-                onClick={() => setPasteOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.primaryBtn}
-                onClick={() => {
-                  loadFromSource(pasteText);
-                  setPasteOpen(false);
-                }}
-              >
-                Import
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ImportLuaModal
+        open={pasteOpen}
+        pasteText={pasteText}
+        onPasteTextChange={handlePasteTextChange}
+        onClose={handleCloseImport}
+        onImport={handleImportLua}
+      />
     </div>
   );
 }

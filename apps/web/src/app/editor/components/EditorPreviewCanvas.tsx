@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   getPreviewScenario,
   type LayoutScenario,
@@ -11,10 +11,8 @@ import {
   type LiveDragState,
   type ZoneOffset,
 } from "@widget-gen/editor-core";
-import {
-  parseLuaToDrawCommands,
-  renderPreviewCommands,
-} from "~/lib/luaPreviewEngine";
+import { renderPreviewCommands } from "~/lib/luaPreviewEngine";
+import { useLuaPreviewCommands } from "~/lib/useLuaPreviewCommands";
 import type { CanvasLayout } from "../lib/canvasLayout";
 import styles from "../editor.module.css";
 
@@ -27,15 +25,17 @@ interface EditorPreviewCanvasProps {
   scenarioOverride?: LayoutScenario;
   /** In-progress drag/resize geometry (zone space) — does not re-parse Lua. */
   liveDrag?: LiveDragState | null;
+  layoutProfileId?: string;
 }
 
-export function EditorPreviewCanvas({
+export const EditorPreviewCanvas = memo(function EditorPreviewCanvas({
   source,
   zone,
   layout,
   scenarioId = "editor-preview",
   scenarioOverride,
   liveDrag = null,
+  layoutProfileId = "tx15",
 }: EditorPreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -44,14 +44,21 @@ export function EditorPreviewCanvas({
     [scenarioId, scenarioOverride],
   );
 
-  /** Parse only when source/scenario change — never on live drag. */
-  const baseCommands = useMemo(() => {
-    const parsed = parseLuaToDrawCommands(source, scenario);
-    return parsed.map((cmd) => ({
-      ...cmd,
-      id: cmd.sourceLine != null ? `L${cmd.sourceLine}` : undefined,
-    }));
-  }, [source, scenario]);
+  /** Off-thread applyMock — keeps last-good commands while pending. */
+  const { commands: parsedCommands } = useLuaPreviewCommands(
+    source,
+    scenario,
+    layoutProfileId,
+  );
+
+  const baseCommands = useMemo(
+    () =>
+      parsedCommands.map((cmd) => ({
+        ...cmd,
+        id: cmd.sourceLine != null ? `L${cmd.sourceLine}` : undefined,
+      })),
+    [parsedCommands],
+  );
 
   const commands = useMemo(() => {
     const zoneCmds = recordsForDisplay(baseCommands, zone);
@@ -107,6 +114,6 @@ export function EditorPreviewCanvas({
       />
     </div>
   );
-}
+});
 
 export type { ZoneOffset };

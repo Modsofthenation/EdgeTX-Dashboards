@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  memo,
 } from "react";
 import {
   getSimulateLayoutProfile,
@@ -53,7 +54,7 @@ interface EditorCanvasProps {
   }) => void;
 }
 
-export function EditorCanvas({
+export const EditorCanvas = memo(function EditorCanvas({
   source,
   records,
   zone,
@@ -225,6 +226,7 @@ export function EditorCanvas({
             scenarioId={scenarioId}
             scenarioOverride={scenarioOverride}
             liveDrag={liveDrag}
+            layoutProfileId={layoutProfileId}
           />
         ) : null}
         {showSnapGuides && layout ? (
@@ -350,4 +352,4 @@ export function EditorCanvas({
       </div>
     </div>
   );
-}
+});
