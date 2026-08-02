@@ -72,9 +72,8 @@ describe("createLoadWidgetCoalescer", () => {
     assert.equal(results[1]?.ok, true);
   });
 
-  it("reset settles a waiting coalesced job without running it", async () => {
+  it("whenIdle resolves after an in-flight job finishes past reset", async () => {
     const ran: number[] = [];
-    const results: Array<{ id: number; ok: boolean; error?: string }> = [];
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -85,27 +84,23 @@ describe("createLoadWidgetCoalescer", () => {
         ran.push(job.requestId);
         if (job.requestId === 1) await gate;
       },
-      onResult: (requestId, result) => {
-        results.push(
-          result.ok
-            ? { id: requestId, ok: true }
-            : { id: requestId, ok: false, error: result.error },
-        );
-      },
+      onResult: () => {},
     });
 
     coalescer.enqueue({ source: "a", requestId: 1 });
     coalescer.enqueue({ source: "b", requestId: 2 });
     coalescer.reset("disposed");
-    release();
-    for (let i = 0; i < 5; i++) {
-      await new Promise((r) => setTimeout(r, 0));
-    }
 
+    let idle = false;
+    const idlePromise = coalescer.whenIdle().then(() => {
+      idle = true;
+    });
+
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(idle, false);
+    release();
+    await idlePromise;
+    assert.equal(idle, true);
     assert.deepEqual(ran, [1]);
-    assert.ok(
-      results.some((r) => r.id === 2 && !r.ok && r.error === "disposed"),
-    );
-    assert.ok(results.some((r) => r.id === 1 && r.ok));
   });
 });

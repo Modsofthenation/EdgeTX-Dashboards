@@ -5,6 +5,10 @@
  * `fsWriteFile` from the JS side can tear those reads and abort the worker.
  * Single-threaded JS makes the lock reliable as long as we never await
  * between the busy-check and the flag flip.
+ *
+ * Overlapping `beginFsExclusive` callers share one gate via a hold count —
+ * the first `endFsExclusive` must not release ticks while another holder
+ * is still writing.
  */
 
 export type FsTickGate = {
@@ -23,6 +27,7 @@ export type FsTickGate = {
 
 export function createFsTickGate(): FsTickGate {
   let tickBusy = false;
+  let holders = 0;
   let gate: Promise<void> | null = null;
   let releaseGate: (() => void) | null = null;
 
@@ -35,17 +40,20 @@ export function createFsTickGate(): FsTickGate {
 
   return {
     async beginFsExclusive() {
-      await waitWhileTickBusy();
-      if (!gate) {
+      // Increment before any await so overlapping callers keep the gate up
+      // even if the first endFsExclusive runs during our waitWhileTickBusy.
+      holders += 1;
+      if (holders === 1) {
         gate = new Promise<void>((resolve) => {
           releaseGate = resolve;
         });
       }
-      // A tick cannot have started without an await — we are still sync since
-      // waitWhileTickBusy returned — but re-check after nested waiters.
       await waitWhileTickBusy();
     },
     endFsExclusive() {
+      if (holders <= 0) return;
+      holders -= 1;
+      if (holders > 0) return;
       const release = releaseGate;
       gate = null;
       releaseGate = null;
@@ -63,6 +71,7 @@ export function createFsTickGate(): FsTickGate {
     isTickBusy: () => tickBusy,
     reset() {
       tickBusy = false;
+      holders = 0;
       const release = releaseGate;
       gate = null;
       releaseGate = null;

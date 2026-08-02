@@ -209,6 +209,7 @@ export function RadioSimPreview({
   const loadedFirmwareRef = useRef<string | null>(null);
   const loadedRadioRef = useRef<string | null>(null);
   const crashRetryCountRef = useRef(0);
+  const hotReloadAttemptRef = useRef(0);
   const sendInputRef = useRef(sendInput);
   const [bootNonce, setBootNonce] = useState(0);
   const [autoRecovering, setAutoRecovering] = useState(false);
@@ -455,6 +456,7 @@ export function RadioSimPreview({
       if (nextSourceSame && nextPngSame) {
         return;
       }
+      const attemptId = ++hotReloadAttemptRef.current;
       // Skip PNG transfer when only Lua changed — avoids worker memory churn.
       void loadWidget(
         nextSource,
@@ -462,6 +464,7 @@ export function RadioSimPreview({
         nextPngSame ? undefined : (nextPng ?? undefined),
       )
         .then(() => {
+          if (hotReloadAttemptRef.current !== attemptId) return;
           appliedSourceRef.current = nextSource;
           appliedModelPngRef.current = nextPng;
         })

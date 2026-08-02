@@ -51,4 +51,29 @@ describe("createFsTickGate", () => {
     await loop;
     assert.equal(proceeded, true);
   });
+
+  it("reset releases a pending gate and clears tick state", async () => {
+    const gate = createFsTickGate();
+    await gate.beginFsExclusive();
+    const pending = gate.fsGate();
+    assert.ok(pending);
+    gate.reset();
+    await pending;
+    assert.equal(gate.fsGate(), null);
+    assert.equal(gate.isTickBusy(), false);
+    assert.equal(gate.tryBeginTick(), true);
+    gate.endTick();
+  });
+
+  it("keeps ticks blocked until every FS holder releases", async () => {
+    const gate = createFsTickGate();
+    await gate.beginFsExclusive();
+    const second = gate.beginFsExclusive();
+    gate.endFsExclusive();
+    assert.equal(gate.tryBeginTick(), false);
+    await second;
+    gate.endFsExclusive();
+    assert.equal(gate.tryBeginTick(), true);
+    gate.endTick();
+  });
 });

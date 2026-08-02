@@ -49,6 +49,16 @@ const FULLSCREEN_RETRY_WAIT_FRAMES = 20;
 const FULLSCREEN_TAP_GAP_FRAMES = 4;
 const FULLSCREEN_MAX_ATTEMPTS = 4;
 
+/** Cheap full-buffer fingerprint — PNG magic/IEND bytes are constant. */
+function fnv1a32(bytes: Uint8Array): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i += 1) {
+    hash ^= bytes[i]!;
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
+
 type FullscreenTapGesture = {
   x: number;
   y: number;
@@ -408,7 +418,7 @@ export class SimRuntime {
     const bodyChanged = this.deployCache.bodySource !== source;
     const folderCacheMiss = this.deployCache.folderName !== plan.folderName;
     const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
-    const pngFingerprint = `${png.byteLength}:${png[0] ?? 0}:${png[png.length >> 1] ?? 0}:${png[png.length - 1] ?? 0}`;
+    const pngFingerprint = `${png.byteLength}:${fnv1a32(png)}`;
     const pngChanged = this.deployCache.pngFingerprint !== pngFingerprint;
     const needsFsWrite =
       bodyChanged || needsRelaunch || folderCacheMiss || pngChanged;
@@ -665,20 +675,24 @@ export class SimRuntime {
         continue;
       }
 
+      const runner = this.runner;
+      if (!runner.exports) break;
+
+      // Wait for LCD outside the tick lock so hot-reload deploys are not
+      // blocked for the full waitForLcdFrame timeout.
+      const ready = await runner.waitForLcdFrame(100);
+      if (!this.loopRunning || !runner.exports) break;
+      if (!ready) continue;
+
       if (!this.tickGate.tryBeginTick()) {
+        // Deploy grabbed the gate while we awaited LCD — yield before retry.
+        await new Promise((resolve) => setTimeout(resolve, 0));
         continue;
       }
 
       try {
-        const runner = this.runner;
         const ex = runner.exports;
         if (!ex) break;
-
-        const ready = await runner.waitForLcdFrame(100);
-        if (!this.loopRunning || !runner.exports) break;
-        // Deploy may have started while we awaited the LCD — yield cleanly.
-        if (this.tickGate.fsGate()) continue;
-        if (!ready) continue;
 
         const now = Date.now();
         this.maybeInjectTelemetry(now);
