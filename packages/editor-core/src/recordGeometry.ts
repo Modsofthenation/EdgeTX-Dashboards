@@ -26,7 +26,7 @@ function textBBox(
   record: DrawRecord,
   measureText?: TextSizeFn,
 ): BoundingBox | null {
-  const fontSize = record.fontSize ?? 12;
+  const fontSize = record.fontSize ?? 17;
   const text = record.text ?? "";
   const size = measureText
     ? measureText(text, fontSize)

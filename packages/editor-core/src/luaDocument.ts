@@ -1,5 +1,6 @@
 import {
   EDITOR_PREVIEW_SCENARIO,
+  fontSizeToFlag,
   parseLuaToDrawCommands,
   type DrawRecord,
   type EdgeColor,
@@ -230,12 +231,9 @@ export function setRecordColor(
       .map((p) => p.trim())
       .filter((p) => p && !colorNames.has(p as EdgeColor))
       .join(" + ");
-    const sizeFallback =
-      record.fontSize && record.fontSize >= 20
-        ? "DBLSIZE"
-        : record.fontSize && record.fontSize >= 14
-          ? "MIDSIZE"
-          : "SMLSIZE";
+    const sizeFallback = record.fontSize
+      ? fontSizeToFlag(record.fontSize)
+      : "SMLSIZE";
     const base = withoutColor || sizeFallback;
     const flags = base.includes(safeColor) ? base : `${base} + ${safeColor}`;
     return patchRecordArgs(source, record, { flags }, zone);
@@ -270,12 +268,9 @@ export function setRecordTextFlags(
 
   if (opts.size) tokens.unshift(opts.size);
   else {
-    const sizeFallback =
-      record.fontSize && record.fontSize >= 20
-        ? "DBLSIZE"
-        : record.fontSize && record.fontSize >= 14
-          ? "MIDSIZE"
-          : "SMLSIZE";
+    const sizeFallback = record.fontSize
+      ? fontSizeToFlag(record.fontSize)
+      : "SMLSIZE";
     tokens.unshift(sizeFallback);
   }
 

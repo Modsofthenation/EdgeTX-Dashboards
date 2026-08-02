@@ -1,6 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { bboxForRecord, boxesOverlap } from "./bbox.ts";
+import {
+  COLOR_LCD_FONT_SIZES,
+  edgeTxTextSize,
+  fontSizeToFlag,
+  resolveFontSize,
+} from "./fontMetrics.ts";
 
 describe("bboxForRecord", () => {
   it("computes annulus outer circle bbox from rIn/rOut", () => {
@@ -18,31 +24,34 @@ describe("bboxForRecord", () => {
     assert.equal(box!.h, 104);
   });
 
-  it("computes right-aligned text bbox", () => {
+  it("computes right-aligned text bbox with color-LCD advances", () => {
     const box = bboxForRecord({
       kind: "text",
       x: 100,
       y: 50,
       text: "78%",
-      fontSize: 10,
+      fontSize: COLOR_LCD_FONT_SIZES.SMLSIZE,
       textAlign: "right",
     });
     assert.ok(box);
-    assert.equal(box!.w, 18);
-    assert.equal(box!.x, 82);
+    // SMLSIZE cw=8 → 3*8=24
+    assert.equal(box!.w, 24);
+    assert.equal(box!.h, 17);
+    assert.equal(box!.x, 76);
   });
 
-  it("sizes MIDSIZE text with EdgeTX char advances", () => {
+  it("sizes MIDSIZE text close to WASM lcd.sizeText footprint", () => {
     const box = bboxForRecord({
       kind: "text",
       x: 12,
       y: 10,
-      text: "name",
-      fontSize: 18,
+      text: "98%",
+      fontSize: COLOR_LCD_FONT_SIZES.MIDSIZE,
     });
     assert.ok(box);
-    assert.equal(box!.w, 36);
-    assert.equal(box!.h, 18);
+    // Color MIDSIZE: h=29, cw=15 → 45×29 (firmware "98%" ≈ 44.6×29)
+    assert.equal(box!.w, 45);
+    assert.equal(box!.h, 29);
   });
 
   it("detects overlapping rects", () => {
@@ -55,5 +64,28 @@ describe("bboxForRecord", () => {
       h: 50,
     })!;
     assert.equal(boxesOverlap(a, b), true);
+  });
+});
+
+describe("color LCD font metrics", () => {
+  it("resolves Lua size flags to LVGL line heights", () => {
+    assert.equal(resolveFontSize("SMLSIZE + GREY"), 17);
+    assert.equal(resolveFontSize("MIDSIZE + GREEN"), 29);
+    assert.equal(resolveFontSize("DBLSIZE + YELLOW"), 40);
+    assert.equal(resolveFontSize("XXLSIZE + WHITE"), 69);
+    assert.equal(resolveFontSize("BOLD + WHITE"), 20);
+    assert.equal(resolveFontSize("WHITE"), 21);
+  });
+
+  it("maps pixel heights back to flags", () => {
+    assert.equal(fontSizeToFlag(17), "SMLSIZE");
+    assert.equal(fontSizeToFlag(29), "MIDSIZE");
+    assert.equal(fontSizeToFlag(40), "DBLSIZE");
+    assert.equal(fontSizeToFlag(69), "XXLSIZE");
+  });
+
+  it("edgeTxTextSize matches calibrated advances", () => {
+    assert.deepEqual(edgeTxTextSize("98%", 29), { w: 45, h: 29 });
+    assert.deepEqual(edgeTxTextSize("LINK", 17), { w: 32, h: 17 });
   });
 });

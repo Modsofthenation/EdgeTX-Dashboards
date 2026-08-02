@@ -30,9 +30,12 @@ export function edgeTxDegToCanvasRad(deg: number): number {
 }
 
 /**
- * Preview text metrics matching `bold ${fontSize}px monospace` with top baseline.
- * Prefer live measureText when a 2D context is available; otherwise fall back to
- * the EdgeTX advance table (SML=6 / MID=9 / DBL=12).
+ * Preview text metrics for the approximate (non-WASM) canvas painter.
+ * Prefer live measureText when a 2D context is available; otherwise fall back
+ * to the EdgeTX color-LCD advance table (see fontMetrics.ts).
+ *
+ * Editor selection outlines use `edgeTxTextSize` directly so they track WASM
+ * glyphs rather than browser monospace.
  */
 export function measurePreviewText(
   text: string,

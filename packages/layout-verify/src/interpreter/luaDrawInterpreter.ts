@@ -10,6 +10,7 @@ import {
   getMockForSensor,
   type MockTelemetry,
 } from "../mockTelemetry.ts";
+import { resolveFontSize } from "../fontMetrics.ts";
 import type {
   ArgSpan,
   DrawRecord,
@@ -83,12 +84,6 @@ export const THEME_COLOR_MAP: Record<string, string> = {
 };
 
 export type PreviewDrawCommand = DrawRecord;
-
-const FONT_SIZES: Record<string, number> = {
-  SMLSIZE: 12,
-  MIDSIZE: 18,
-  DBLSIZE: 26,
-};
 
 export interface RectValue {
   x: number;
@@ -377,13 +372,6 @@ function seedWidgetContext(
   if (/model\.getTimer\s*\(\s*0\s*\)/.test(source)) {
     ctx.tInfo = 1;
   }
-}
-
-function resolveFontSize(flags: string): number {
-  if (flags.includes("DBLSIZE")) return FONT_SIZES.DBLSIZE;
-  if (flags.includes("MIDSIZE")) return FONT_SIZES.MIDSIZE;
-  if (flags.includes("SMLSIZE")) return FONT_SIZES.SMLSIZE;
-  return 12;
 }
 
 function hasTopLevelConcat(expr: string): boolean {
