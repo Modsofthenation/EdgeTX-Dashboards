@@ -4,6 +4,12 @@ export function sseEncode(data: object): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
+function errorContent(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  return "Unknown streaming error";
+}
+
 export function createSseResponse(
   stream: ReadableStream<Uint8Array>,
 ): Response {
@@ -52,6 +58,13 @@ export function createSseStream(
         await handler(send);
       } catch (error) {
         console.error("[sse] handler failed:", error);
+        if (!options?.signal?.aborted) {
+          send({
+            type: "error",
+            content: errorContent(error),
+            success: false,
+          });
+        }
       } finally {
         options?.signal?.removeEventListener("abort", onAbort);
         close();

@@ -13,7 +13,15 @@ test("closes the stream cleanly when the handler rejects", async (t) => {
     throw failure;
   });
 
-  assert.deepEqual(await stream.getReader().read(), {
+  const reader = stream.getReader();
+  const first = await reader.read();
+  assert.equal(first.done, false);
+  const text = new TextDecoder().decode(first.value);
+  assert.match(text, /"type":"error"/);
+  assert.match(text, /handler failed/);
+  assert.match(text, /"success":false/);
+
+  assert.deepEqual(await reader.read(), {
     value: undefined,
     done: true,
   });
