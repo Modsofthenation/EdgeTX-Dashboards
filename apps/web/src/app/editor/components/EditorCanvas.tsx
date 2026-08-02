@@ -301,6 +301,7 @@ export const EditorCanvas = memo(function EditorCanvas({
           onSnapGuidesChange={setActiveGuides}
           onContextMenu={onContextMenu}
           geometryEditsLocked={geometryEditsLocked}
+          spacePanActiveRef={spaceDownRef}
         />
       </div>
       <div className={styles.canvasMeta} data-testid="editor-canvas-meta">
