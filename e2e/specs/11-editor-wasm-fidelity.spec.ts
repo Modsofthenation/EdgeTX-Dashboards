@@ -250,11 +250,27 @@ test.describe("Editor ↔ WASM preview fidelity", () => {
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+    // Only one WASM runtime may own the OPFS radio SD at a time — opening the
+    // modal must release the inline preview rather than boot a second worker.
+    await expect(page.getByTestId("radio-sim-preview")).toHaveCount(1, {
+      timeout: 90_000,
+    });
+    await expect(dialog.getByTestId("radio-sim-preview")).not.toHaveAttribute(
+      "data-sim-phase",
+      "error",
+      { timeout: 90_000 },
+    );
     await expect(
       dialog
         .getByTestId("edgetx-widget-preview")
         .or(dialog.getByTestId("editor-radio-preview"))
         .or(dialog.getByLabel("EdgeTX widget preview")),
     ).toBeVisible({ timeout: 90_000 });
+    await expect(dialog.getByTestId("radio-sim-preview")).toHaveAttribute(
+      "data-sim-phase",
+      "running",
+      { timeout: 90_000 },
+    );
   });
 });

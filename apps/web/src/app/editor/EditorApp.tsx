@@ -92,6 +92,10 @@ import {
   type ProjectLibraryMode,
 } from "./components/ProjectLibraryModal";
 import type { LuaSourceEditorHandle } from "./components/LuaSourceEditor";
+import {
+  SIM_OPFS_HANDOFF_MS,
+  shouldMountInlineRadioSim,
+} from "~/lib/radioSim/simOpfsHandoff";
 
 const RadioSimPreview = dynamic(
   () => import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
@@ -332,6 +336,8 @@ export function EditorApp() {
   } | null>(null);
   const [simOpen, setSimOpen] = useState(false);
   const [simReloadKey, setSimReloadKey] = useState(0);
+  /** After closing the modal, wait before remounting inline WASM (OPFS handoff). */
+  const [inlineSimRuntimeReady, setInlineSimRuntimeReady] = useState(true);
   const [remoteLoadPending, setRemoteLoadPending] = useState(hasRemoteWidget);
   const [dirty, setDirty] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("canvas");
@@ -2088,9 +2094,24 @@ export function EditorApp() {
   ]);
 
   const openSim = useCallback(() => {
-    setSimReloadKey((k) => k + 1);
+    // Do not bump reloadKey here — that remounts WASM. Opening already mounts
+    // a fresh modal instance after the inline preview releases OPFS.
+    setInlineSimRuntimeReady(false);
     setSimOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (simOpen) {
+      setInlineSimRuntimeReady(false);
+      return;
+    }
+    // Modal unmount disposes its worker in the same commit; defer inline remount
+    // so initFs does not race the previous SyncAccessHandle.
+    const timer = window.setTimeout(() => {
+      setInlineSimRuntimeReady(true);
+    }, SIM_OPFS_HANDOFF_MS);
+    return () => window.clearTimeout(timer);
+  }, [simOpen]);
 
   const handleSimRunningChange = useCallback((running: boolean) => {
     if (running) setSimSeenThisSession(true);
@@ -2561,7 +2582,12 @@ export function EditorApp() {
                       onContextMenu={openCanvasContextMenu}
                       geometryEditsLocked={geometryEditsLocked}
                       inlineSim={
-                        inlineSim && hasColorWasmSim(radioId) ? (
+                        shouldMountInlineRadioSim({
+                          inlineSimEnabled: inlineSim,
+                          simModalOpen: simOpen,
+                          inlineRuntimeReady: inlineSimRuntimeReady,
+                          hasColorWasm: hasColorWasmSim(radioId),
+                        }) ? (
                           <RadioSimPreview
                             luaSource={source}
                             layoutProfileId={layoutProfileId}
