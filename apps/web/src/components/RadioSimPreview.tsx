@@ -191,6 +191,7 @@ export function RadioSimPreview({
     wasmSizeMb,
     keyboardMode,
     init,
+    loadWidget,
     setMock,
     sendInput,
     pause,
@@ -396,9 +397,9 @@ export function RadioSimPreview({
     const pngSame = appliedModelPngRef.current === modelPng;
     if (sourceSame && pngSame) return;
 
-    // EdgeTX caches Lua widget factories at boot — FS rewrite + simuLoadWidget
-    // does not re-parse main.lua (see EdgeTX #7216). Soft-restart via init()
-    // (worker disposes + reinits without terminating) so edits actually paint.
+    // Hot-reload: SimRuntime deploys a stable shim main.lua that loadScript()s
+    // body.lua whenever gen.lua bumps — so FS rewrite alone updates pixels
+    // without soft-restarting WASM (EdgeTX caches widget factories, #7216).
     const timer = window.setTimeout(() => {
       const nextSource = desiredSourceRef.current;
       if (
@@ -407,36 +408,25 @@ export function RadioSimPreview({
       ) {
         return;
       }
-      appliedSourceRef.current = nextSource;
-      appliedModelPngRef.current = modelPng;
-      void init({
-        source: nextSource,
-        zone: simZone,
-        mock: mockRef.current,
-        edgeTxVersion,
-        radioId,
-        modelPng: modelPng ?? undefined,
-      });
-    }, 450);
+      void loadWidget(nextSource, simZone, modelPng ?? undefined)
+        .then(() => {
+          appliedSourceRef.current = nextSource;
+          appliedModelPngRef.current = modelPng;
+        })
+        .catch(() => {
+          // keep desired source; next running/source transition retries.
+        });
+    }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [
-    active,
-    state.phase,
-    luaSource,
-    init,
-    simZone,
-    modelPng,
-    edgeTxVersion,
-    radioId,
-  ]);
+  }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);
 
   const displayFrame = frame ?? lastGoodFrameRef.current;
+  // Only flash "Updating…" during real WASM reboot (firmware/radio change),
+  // not during body.lua hot-reloads which keep phase === "running".
   const isSoftRestarting =
     displayFrame != null &&
-    (state.phase === "idle" ||
-      state.phase === "loading-wasm" ||
-      state.phase === "booting");
+    (state.phase === "loading-wasm" || state.phase === "booting");
 
   if (state.phase === "error") {
     return (

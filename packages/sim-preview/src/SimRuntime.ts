@@ -11,6 +11,11 @@ import {
   type SimWidgetLayoutPlan,
 } from "./simModel.ts";
 import { planWidgetDeploy, PLACEHOLDER_MODEL_PNG } from "./virtualSd.ts";
+import {
+  buildHotReloadGenSource,
+  buildHotReloadShimSource,
+  hotReloadPaths,
+} from "./hotReloadShim.ts";
 import type {
   ExtendedSimulatorExports,
   MockTelemetryValues,
@@ -77,6 +82,9 @@ export class SimRuntime {
     modelPng?: Uint8Array;
   } | null = null;
   private customModelPng: Uint8Array | null = null;
+  /** Hot-reload: stable shim main.lua + body.lua; bump gen on each deploy. */
+  private hotReloadGen = 0;
+  private hotReloadFolder: string | null = null;
 
   private wasmUrl: string;
   private radioKey: string;
@@ -249,7 +257,7 @@ export class SimRuntime {
       return;
     }
 
-    await this.deployWidget(source);
+    const deploy = await this.deployWidget(source);
     await deploySimModel(
       runner,
       this.layoutPlanFrom(source, zone),
@@ -257,8 +265,21 @@ export class SimRuntime {
     );
     this.pendingWidget = { source, zone };
 
-    // Hot reload: firmware is already running — relaunch widget immediately so
-    // refresh() picks up the rewritten main.lua (waiting 12 frames is first-boot only).
+    // Hot path: shim is already registered — body.lua + gen.lua rewrite is
+    // enough; refresh() loadScripts the new body on the next frame.
+    if (
+      runner &&
+      this.loopRunning &&
+      this.scriptLaunched &&
+      !deploy.needsRelaunch
+    ) {
+      this.callbacks.onLog?.(
+        `Radio sim: hot-reloaded body (gen ${this.hotReloadGen})`,
+      );
+      return;
+    }
+
+    // Cold / folder-rename path: (re)launch the shim widget factory.
     if (runner && this.loopRunning) {
       this.scriptLaunched = true;
       this.widgetLaunchDelayFrames = 0;
@@ -298,6 +319,8 @@ export class SimRuntime {
     this.fullscreenTap = null;
     this.loadWidgetPending = null;
     this.loadWidgetChain = Promise.resolve();
+    this.hotReloadGen = 0;
+    this.hotReloadFolder = null;
     if (this.runner) {
       await this.restoreModels();
       this.runner.stopSim();
@@ -328,18 +351,42 @@ export class SimRuntime {
     return ex;
   }
 
-  private async deployWidget(source: string): Promise<void> {
+  private async deployWidget(
+    source: string,
+  ): Promise<{ needsRelaunch: boolean; folderName: string }> {
     const runner = this.runner;
-    if (!runner) return;
+    if (!runner) return { needsRelaunch: true, folderName: "Widget" };
 
     const plan = planWidgetDeploy(source);
+    const paths = hotReloadPaths(plan.folderName);
+    this.hotReloadGen += 1;
+    const folderChanged = this.hotReloadFolder !== plan.folderName;
+    const needsRelaunch = folderChanged || !this.scriptLaunched;
+    this.hotReloadFolder = plan.folderName;
+
+    const encode = (text: string) => {
+      const bytes = new TextEncoder().encode(text);
+      return bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+    };
+
+    // Always rewrite body + gen so the shim's next refresh() picks up edits.
+    await runner.fsWriteFile(paths.bodyPath, encode(source));
     await runner.fsWriteFile(
-      plan.paths.luaPath,
-      plan.luaBytes.buffer.slice(
-        plan.luaBytes.byteOffset,
-        plan.luaBytes.byteOffset + plan.luaBytes.byteLength,
-      ) as ArrayBuffer,
+      paths.genPath,
+      encode(buildHotReloadGenSource(this.hotReloadGen)),
     );
+
+    // Shim main.lua only needs writing when the factory is (re)registered.
+    if (needsRelaunch) {
+      await runner.fsWriteFile(
+        paths.shimPath,
+        encode(buildHotReloadShimSource(plan.folderName)),
+      );
+    }
+
     const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
     const pngBuf = png.buffer.slice(
       png.byteOffset,
@@ -348,6 +395,8 @@ export class SimRuntime {
     await runner.fsWriteFile(plan.paths.modelPngPath, pngBuf);
     // Mirror for custom BG_IMG dashboards (`/IMAGES/dashbg.png`).
     await runner.fsWriteFile("/IMAGES/dashbg.png", pngBuf.slice(0));
+
+    return { needsRelaunch, folderName: plan.folderName };
   }
 
   private async backupModels(): Promise<void> {
