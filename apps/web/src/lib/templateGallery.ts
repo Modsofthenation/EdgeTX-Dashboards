@@ -131,6 +131,7 @@ export function buildTemplateEditorHref(options: {
   protocol: string;
   radioId?: string | null;
   layoutProfileId?: string | null;
+  edgeTxVersion?: string | null;
   chatId?: string | null;
 }): string {
   const params = new URLSearchParams({
@@ -140,6 +141,7 @@ export function buildTemplateEditorHref(options: {
   if (options.layoutProfileId)
     params.set("layoutProfile", options.layoutProfileId);
   if (options.radioId) params.set("radioId", options.radioId);
+  if (options.edgeTxVersion) params.set("edgeTxVersion", options.edgeTxVersion);
   if (options.chatId) params.set("chatId", options.chatId);
   return `/editor?${params.toString()}`;
 }

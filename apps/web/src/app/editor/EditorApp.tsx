@@ -84,17 +84,33 @@ import {
   EditorMobileTabs,
   type MobileTab,
 } from "./components/EditorMobileTabs";
+import { CenterViewTabs, type CenterView } from "./components/CenterViewTabs";
 import { ImportLuaModal } from "./components/ImportLuaModal";
 import { SimVerifyModal } from "./components/SimVerifyModal";
 import {
   ProjectLibraryModal,
   type ProjectLibraryMode,
 } from "./components/ProjectLibraryModal";
+import type { LuaSourceEditorHandle } from "./components/LuaSourceEditor";
 
 const RadioSimPreview = dynamic(
   () => import("~/components/RadioSimPreview").then((m) => m.RadioSimPreview),
   { ssr: false },
 );
+
+const LuaSourceEditor = dynamic(
+  () => import("./components/LuaSourceEditor").then((m) => m.LuaSourceEditor),
+  { ssr: false },
+);
+
+function isTextEditingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (el.isContentEditable) return true;
+  return Boolean(el.closest?.(".cm-editor"));
+}
 import type { InsertDrawKind } from "./elementMeta";
 import {
   openAppPreferences,
@@ -144,6 +160,10 @@ import {
   type EditorCompanionState,
 } from "~/lib/companionSuites";
 import { fetchRadioCatalog } from "~/lib/radioCatalog";
+import {
+  DEFAULT_EDGE_TX_VERSION,
+  normalizeEdgeTxVersion,
+} from "~/lib/edgeTxVersions";
 import {
   buildInstallGuide,
   formatInstallGuideMarkdown,
@@ -288,6 +308,11 @@ export function EditorApp() {
   const [radioId, setRadioId] = useState(
     () => searchParams.get("radioId") ?? initialEditor.layoutProfileId,
   );
+  const [edgeTxVersion, setEdgeTxVersion] = useState(() =>
+    normalizeEdgeTxVersion(
+      searchParams.get("edgeTxVersion") ?? DEFAULT_EDGE_TX_VERSION,
+    ),
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [valid, setValid] = useState<boolean | null>(null);
@@ -310,6 +335,13 @@ export function EditorApp() {
   const [remoteLoadPending, setRemoteLoadPending] = useState(hasRemoteWidget);
   const [dirty, setDirty] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("canvas");
+  const [centerView, setCenterView] = useState<CenterView>("canvas");
+  /** Keep Lua editor mounted after first open so WASM/canvas stay warm on toggle. */
+  const [luaEditorMounted, setLuaEditorMounted] = useState(false);
+  const [pendingRevealLine, setPendingRevealLine] = useState<number | null>(
+    null,
+  );
+  const luaEditorRef = useRef<LuaSourceEditorHandle>(null);
   const [previewScenarioId, setPreviewScenarioId] = useState("editor-preview");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [liveTelemetryActive, setLiveTelemetryActive] = useState(false);
@@ -1798,10 +1830,13 @@ export function EditorApp() {
         setMobileTab("layers");
         return;
       }
+      setLuaEditorMounted(true);
+      setCenterView("lua");
+      setMobileTab("canvas");
+      setPendingRevealLine(issue.line);
       const exact = records.find((r) => r.sourceLine === issue.line);
       if (exact) {
         setSelectedIds([exact.id]);
-        setMobileTab("properties");
         return;
       }
       let best: DocumentRecord | null = null;
@@ -1816,12 +1851,69 @@ export function EditorApp() {
       }
       if (best && bestDist <= 3) {
         setSelectedIds([best.id]);
-        setMobileTab("properties");
-      } else {
-        setMobileTab("layers");
       }
     },
     [records],
+  );
+
+  const handleCenterViewChange = useCallback(
+    (view: CenterView) => {
+      if (view === centerView) return;
+      if (centerView === "lua") endTransient();
+      if (view === "lua") {
+        setLuaEditorMounted(true);
+        setMobileTab("canvas");
+        const line =
+          selectedRecords[0]?.sourceRef?.sourceLine ??
+          selectedRecords[0]?.sourceLine;
+        if (line != null) setPendingRevealLine(line);
+      }
+      setCenterView(view);
+    },
+    [centerView, endTransient, selectedRecords],
+  );
+
+  const handleLuaSourceChange = useCallback(
+    (next: string) => {
+      beginTransient();
+      setSource(next);
+      markDirty();
+    },
+    [beginTransient, setSource, markDirty],
+  );
+
+  const handleLuaEditorBlur = useCallback(() => {
+    endTransient();
+  }, [endTransient]);
+
+  // Reveal a source line once the Lua editor (dynamic) has a live CodeMirror view.
+  useEffect(() => {
+    if (centerView !== "lua" || pendingRevealLine == null) return;
+    let cancelled = false;
+    let attempts = 0;
+    const tick = () => {
+      if (cancelled) return;
+      if (luaEditorRef.current?.revealLine(pendingRevealLine)) {
+        setPendingRevealLine(null);
+        return;
+      }
+      attempts += 1;
+      if (attempts < 60) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+    };
+  }, [centerView, pendingRevealLine]);
+
+  const revealRecordInLua = useCallback(
+    (id: string) => {
+      if (centerView !== "lua") return;
+      const record = records.find((r) => r.id === id);
+      const line = record?.sourceRef?.sourceLine ?? record?.sourceLine;
+      if (line != null) setPendingRevealLine(line);
+    },
+    [centerView, records],
   );
 
   useEffect(() => {
@@ -1832,6 +1924,7 @@ export function EditorApp() {
       endTransient();
     };
     const onKey = (e: KeyboardEvent) => {
+      const editingText = isTextEditingTarget(e.target);
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         if (!saving && valid !== false) void handleSave();
@@ -1839,22 +1932,28 @@ export function EditorApp() {
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
+        endTransient();
         captureSelectionTexts();
         pendingSelectionRematchRef.current = true;
         undo();
         markDirty();
+        return;
       }
       if (
         (e.ctrlKey || e.metaKey) &&
         (e.key === "y" || (e.key === "z" && e.shiftKey))
       ) {
         e.preventDefault();
+        endTransient();
         captureSelectionTexts();
         pendingSelectionRematchRef.current = true;
         redo();
         markDirty();
+        return;
       }
       if (e.key === "Escape") {
+        // Let CodeMirror (completions / search) own Escape while typing Lua.
+        if (editingText) return;
         // Priority: UI chrome → selection → firmware RTN (one job per press).
         if (pasteOpen || exportOpen || canvasMenu || simOpen || projectModal) {
           setPasteOpen(false);
@@ -1882,46 +1981,40 @@ export function EditorApp() {
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIds.length > 0
       ) {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         e.preventDefault();
         handleDeleteIds(selectedIds);
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         if (selectedIds.length === 0) return;
         e.preventDefault();
         handleDuplicateSelected();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         if (selectedIds.length === 0) return;
         e.preventDefault();
         handleCopyElements();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "x") {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         if (selectedIds.length === 0) return;
         e.preventDefault();
         handleCutElements();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         if (elementClipboardRef.current.length === 0) return;
         e.preventDefault();
         handlePasteElements();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         e.preventDefault();
         handleSelectAll();
         return;
@@ -1933,8 +2026,7 @@ export function EditorApp() {
           e.key === "ArrowUp" ||
           e.key === "ArrowDown")
       ) {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (editingText) return;
         if (geometryEditsLocked) return;
         e.preventDefault();
         if (!nudgeActive.current) {
@@ -2020,23 +2112,28 @@ export function EditorApp() {
     setInlineSim(enabled);
   }, []);
 
-  const handleLayerSelect = useCallback((id: string, additive: boolean) => {
-    setSelectedIds((prev) =>
-      additive
-        ? prev.includes(id)
-          ? prev.filter((x) => x !== id)
-          : [...prev, id]
-        : [id],
-    );
-  }, []);
+  const handleLayerSelect = useCallback(
+    (id: string, additive: boolean) => {
+      setSelectedIds((prev) =>
+        additive
+          ? prev.includes(id)
+            ? prev.filter((x) => x !== id)
+            : [...prev, id]
+          : [id],
+      );
+      revealRecordInLua(id);
+    },
+    [revealRecordInLua],
+  );
 
   const handleLayerSelectMany = useCallback(
     (ids: string[], additive: boolean) => {
       setSelectedIds((prev) =>
         additive ? [...new Set([...prev, ...ids])] : ids,
       );
+      if (ids[0]) revealRecordInLua(ids[0]);
     },
-    [],
+    [revealRecordInLua],
   );
 
   const handleMoveLayerUp = useCallback(
@@ -2049,9 +2146,13 @@ export function EditorApp() {
     [handleMoveLayer],
   );
 
-  const handleSelectSceneRecord = useCallback((id: string) => {
-    setSelectedIds([id]);
-  }, []);
+  const handleSelectSceneRecord = useCallback(
+    (id: string) => {
+      setSelectedIds([id]);
+      revealRecordInLua(id);
+    },
+    [revealRecordInLua],
+  );
 
   const handleDismissLoadError = useCallback(() => setLoadError(null), []);
   const handleOpenExport = useCallback(() => setExportOpen(true), []);
@@ -2090,18 +2191,20 @@ export function EditorApp() {
   );
 
   const handleToolbarUndo = useCallback(() => {
+    endTransient();
     captureSelectionTexts();
     pendingSelectionRematchRef.current = true;
     undo();
     markDirty();
-  }, [captureSelectionTexts, undo, markDirty]);
+  }, [endTransient, captureSelectionTexts, undo, markDirty]);
 
   const handleToolbarRedo = useCallback(() => {
+    endTransient();
     captureSelectionTexts();
     pendingSelectionRematchRef.current = true;
     redo();
     markDirty();
-  }, [captureSelectionTexts, redo, markDirty]);
+  }, [endTransient, captureSelectionTexts, redo, markDirty]);
 
   const usesBitmap = useMemo(
     () => /drawBitmap|Bitmap\.open/.test(source),
@@ -2116,8 +2219,20 @@ export function EditorApp() {
     if (sessionId) params.set("sessionId", sessionId);
     if (workspaceKey) params.set("instanceId", workspaceKey);
     else if (meta.name) params.set("name", meta.name);
+    params.set("layoutProfile", layoutProfileId);
+    params.set("radioId", radioId);
+    params.set("edgeTxVersion", edgeTxVersion);
     return `/editor?${params.toString()}`;
-  }, [protocol, chatId, sessionId, workspaceKey, meta.name]);
+  }, [
+    protocol,
+    chatId,
+    sessionId,
+    workspaceKey,
+    meta.name,
+    layoutProfileId,
+    radioId,
+    edgeTxVersion,
+  ]);
 
   const subtitle = useMemo(
     () => (
@@ -2303,6 +2418,8 @@ export function EditorApp() {
               valid={valid}
               protocol={protocol}
               onProtocolChange={setProtocol}
+              edgeTxVersion={edgeTxVersion}
+              onEdgeTxVersionChange={setEdgeTxVersion}
               previewScenarioId={previewScenarioId}
               onPreviewScenarioChange={setPreviewScenarioId}
               liveTelemetryActive={liveTelemetryActive}
@@ -2385,46 +2502,84 @@ export function EditorApp() {
                 aria-labelledby="editor-tab-canvas"
                 className={`${styles.mobilePane} ${styles.mobilePaneCanvas}`}
               >
+                <div className={styles.centerViewBar}>
+                  <CenterViewTabs
+                    view={centerView}
+                    onChange={handleCenterViewChange}
+                  />
+                </div>
+                {luaEditorMounted ? (
+                  <div
+                    id="editor-panel-lua"
+                    role="tabpanel"
+                    aria-labelledby="center-view-lua"
+                    className={styles.luaEditorPane}
+                    hidden={centerView !== "lua"}
+                    aria-hidden={centerView !== "lua"}
+                  >
+                    <LuaSourceEditor
+                      ref={luaEditorRef}
+                      value={source}
+                      onChange={handleLuaSourceChange}
+                      onBlur={handleLuaEditorBlur}
+                      issues={validationIssues}
+                      edgeTxVersion={edgeTxVersion}
+                    />
+                  </div>
+                ) : null}
                 {remoteLoadPending ? (
-                  <div className={styles.canvasStage}>
+                  <div
+                    className={styles.canvasStage}
+                    hidden={centerView !== "canvas"}
+                    aria-hidden={centerView !== "canvas"}
+                  >
                     <div className={styles.loadingPreview}>Loading widget…</div>
                   </div>
                 ) : (
-                  <EditorCanvas
-                    source={source}
-                    records={records}
-                    zone={zone}
-                    selectedIds={selectedIds}
-                    onSelect={setSelectedIds}
-                    onTranslate={handleTranslate}
-                    onResize={handleResize}
-                    onGestureStart={handleGestureStart}
-                    onGestureEnd={handleGestureEnd}
-                    showSnapGuides={showSnapGuides}
-                    snapEnabled={snapEnabled}
-                    scenarioId={previewScenarioId}
-                    scenarioOverride={
-                      liveTelemetryActive ? previewScenario : undefined
-                    }
-                    layoutProfileId={layoutProfileId}
-                    onContextMenu={openCanvasContextMenu}
-                    geometryEditsLocked={geometryEditsLocked}
-                    inlineSim={
-                      inlineSim && hasColorWasmSim(radioId) ? (
-                        <RadioSimPreview
-                          luaSource={source}
-                          layoutProfileId={layoutProfileId}
-                          radioId={radioId}
-                          mock={previewScenario.mock}
-                          active={inlineSim}
-                          fillHost
-                          modelPng={modelPngBytes}
-                          onRunningChange={handleSimRunningChange}
-                          onInteractiveControls={handleRadioInteractiveControls}
-                        />
-                      ) : null
-                    }
-                  />
+                  <div
+                    className={styles.centerCanvasHost}
+                    hidden={centerView !== "canvas"}
+                    aria-hidden={centerView !== "canvas"}
+                  >
+                    <EditorCanvas
+                      source={source}
+                      records={records}
+                      zone={zone}
+                      selectedIds={selectedIds}
+                      onSelect={setSelectedIds}
+                      onTranslate={handleTranslate}
+                      onResize={handleResize}
+                      onGestureStart={handleGestureStart}
+                      onGestureEnd={handleGestureEnd}
+                      showSnapGuides={showSnapGuides}
+                      snapEnabled={snapEnabled}
+                      scenarioId={previewScenarioId}
+                      scenarioOverride={
+                        liveTelemetryActive ? previewScenario : undefined
+                      }
+                      layoutProfileId={layoutProfileId}
+                      onContextMenu={openCanvasContextMenu}
+                      geometryEditsLocked={geometryEditsLocked}
+                      inlineSim={
+                        inlineSim && hasColorWasmSim(radioId) ? (
+                          <RadioSimPreview
+                            luaSource={source}
+                            layoutProfileId={layoutProfileId}
+                            radioId={radioId}
+                            edgeTxVersion={edgeTxVersion}
+                            mock={previewScenario.mock}
+                            active={inlineSim && centerView === "canvas"}
+                            fillHost
+                            modelPng={modelPngBytes}
+                            onRunningChange={handleSimRunningChange}
+                            onInteractiveControls={
+                              handleRadioInteractiveControls
+                            }
+                          />
+                        ) : null
+                      }
+                    />
+                  </div>
                 )}
               </div>
 
@@ -2555,6 +2710,7 @@ export function EditorApp() {
               }
               layoutProfileId={layoutProfileId}
               radioId={radioId}
+              edgeTxVersion={edgeTxVersion}
               modelPng={modelPngBytes}
               onRunningChange={handleSimRunningChange}
             />

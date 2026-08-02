@@ -5,6 +5,7 @@ import type { TelemetryProtocol } from "@widget-gen/shared";
 import type { InsertDrawKind } from "../elementMeta";
 import { EditorMenu, type EditorMenuItem } from "./EditorMenu";
 import { InsertMenu } from "./InsertMenu";
+import { EDGE_TX_VERSION_OPTIONS } from "~/lib/edgeTxVersions";
 import styles from "../editor.module.css";
 
 const SCENARIOS = [
@@ -36,6 +37,8 @@ interface EditorToolbarProps {
   valid: boolean | null;
   protocol: TelemetryProtocol;
   onProtocolChange: (protocol: TelemetryProtocol) => void;
+  edgeTxVersion: string;
+  onEdgeTxVersionChange: (version: string) => void;
   previewScenarioId: string;
   onPreviewScenarioChange: (id: string) => void;
   liveTelemetryActive?: boolean;
@@ -79,6 +82,8 @@ export const EditorToolbar = memo(function EditorToolbar({
   valid,
   protocol,
   onProtocolChange,
+  edgeTxVersion,
+  onEdgeTxVersionChange,
   previewScenarioId,
   onPreviewScenarioChange,
   liveTelemetryActive,
@@ -388,6 +393,24 @@ export const EditorToolbar = memo(function EditorToolbar({
             <option value="betaflight">Betaflight</option>
             <option value="rotorflight">Rotorflight</option>
             <option value="generic-crsf">Generic CRSF</option>
+          </select>
+        </label>
+
+        <label
+          className={styles.toolbarSelect}
+          title="EdgeTX firmware target for Lua autocomplete (sim uses nearest available WASM)"
+        >
+          <span className={styles.toolbarSelectLabel}>EdgeTX</span>
+          <select
+            value={edgeTxVersion}
+            onChange={(e) => onEdgeTxVersionChange(e.target.value)}
+            data-testid="editor-edgetx-version"
+          >
+            {EDGE_TX_VERSION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
 

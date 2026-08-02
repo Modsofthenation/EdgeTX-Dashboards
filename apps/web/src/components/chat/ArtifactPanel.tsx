@@ -30,7 +30,7 @@ import { ArtifactVersionSelect } from "./ArtifactVersionSelect";
 import styles from "./ArtifactPanel.module.css";
 import { useChatSession } from "~/lib/useWidgetChat";
 import type { PendingPromptImage } from "~/lib/promptImages";
-import { buildBlankEditorHref } from "~/lib/editorHref";
+import { buildBlankEditorHref, buildEditorHref } from "~/lib/editorHref";
 import { saveBlobToDisk } from "~/lib/desktopDownload";
 
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
@@ -360,6 +360,7 @@ export const ArtifactPanel = memo(function ArtifactPanel({
                 radioId,
                 layoutProfileId,
                 chatId,
+                edgeTxVersion,
               })}
               className={styles.emptyLink}
             >
@@ -491,16 +492,16 @@ export const ArtifactPanel = memo(function ArtifactPanel({
               </div>
               <div className={styles.actions}>
                 <Link
-                  href={`/editor?${new URLSearchParams({
-                    ...(chatId ? { chatId } : {}),
-                    ...(sessionId ? { sessionId } : {}),
-                    ...(artifact.instanceId
-                      ? { instanceId: artifact.instanceId }
-                      : { name: artifact.name }),
+                  href={buildEditorHref({
                     protocol,
-                    layoutProfile: layoutProfileId,
-                    ...(radioId ? { radioId } : { radioId: layoutProfileId }),
-                  }).toString()}`}
+                    chatId,
+                    sessionId,
+                    instanceId: artifact.instanceId,
+                    name: artifact.name,
+                    layoutProfileId,
+                    radioId: radioId ?? layoutProfileId,
+                    edgeTxVersion,
+                  })}
                   className={styles.editLayoutBtn}
                 >
                   Open Layout
