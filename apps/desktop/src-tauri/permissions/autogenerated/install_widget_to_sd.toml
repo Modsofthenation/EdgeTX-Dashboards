@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-install-widget-to-sd"
+description = "Enables the install_widget_to_sd command without any pre-configured scope."
+commands.allow = ["install_widget_to_sd"]
+
+[[permission]]
+identifier = "deny-install-widget-to-sd"
+description = "Denies the install_widget_to_sd command without any pre-configured scope."
+commands.deny = ["install_widget_to_sd"]

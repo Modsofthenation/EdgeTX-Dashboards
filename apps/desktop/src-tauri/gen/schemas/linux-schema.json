@@ -387,6 +387,138 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the delete_app_data_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-delete-app-data-project",
+          "markdownDescription": "Enables the delete_app_data_project command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the install_widget_to_sd command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-install-widget-to-sd",
+          "markdownDescription": "Enables the install_widget_to_sd command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the list_app_data_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-list-app-data-projects",
+          "markdownDescription": "Enables the list_app_data_projects command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_text_with_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-text-with-dialog",
+          "markdownDescription": "Enables the open_text_with_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the read_app_data_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-read-app-data-project",
+          "markdownDescription": "Enables the read_app_data_project command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the read_text_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-read-text-file",
+          "markdownDescription": "Enables the read_text_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_bytes_with_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-bytes-with-dialog",
+          "markdownDescription": "Enables the save_bytes_with_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_text_with_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-text-with-dialog",
+          "markdownDescription": "Enables the save_text_with_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the write_app_data_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-write-app-data-project",
+          "markdownDescription": "Enables the write_app_data_project command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the write_bytes_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-write-bytes-file",
+          "markdownDescription": "Enables the write_bytes_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the write_text_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-write-text-file",
+          "markdownDescription": "Enables the write_text_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_app_data_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-delete-app-data-project",
+          "markdownDescription": "Denies the delete_app_data_project command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the install_widget_to_sd command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-install-widget-to-sd",
+          "markdownDescription": "Denies the install_widget_to_sd command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_app_data_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-list-app-data-projects",
+          "markdownDescription": "Denies the list_app_data_projects command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_text_with_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-text-with-dialog",
+          "markdownDescription": "Denies the open_text_with_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the read_app_data_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-read-app-data-project",
+          "markdownDescription": "Denies the read_app_data_project command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the read_text_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-read-text-file",
+          "markdownDescription": "Denies the read_text_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_bytes_with_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-bytes-with-dialog",
+          "markdownDescription": "Denies the save_bytes_with_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_text_with_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-text-with-dialog",
+          "markdownDescription": "Denies the save_text_with_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the write_app_data_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-write-app-data-project",
+          "markdownDescription": "Denies the write_app_data_project command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the write_bytes_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-write-bytes-file",
+          "markdownDescription": "Denies the write_bytes_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the write_text_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-write-text-file",
+          "markdownDescription": "Denies the write_text_file command without any pre-configured scope."
+        },
+        {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
           "type": "string",
           "const": "core:default",

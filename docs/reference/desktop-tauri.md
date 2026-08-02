@@ -34,6 +34,10 @@ In-app **Preferences** (Generate + Layout headers) covers:
 - **Appearance** — multiple UI themes
 - **Simulator WASM** — download / refresh EdgeTX TX15 firmware for radio preview
 
+## IPC / ACL
+
+The webview loads the Next.js sidecar from `http://localhost` / `127.0.0.1`, which Tauri treats as a **remote** origin. Custom Rust commands (`write_app_data_project`, dialog-owned save/open, SD install, …) must be listed in `src-tauri/build.rs` (`AppManifest::commands`) and allowed in `src-tauri/capabilities/default.json` (`allow-*`). Missing entries surface as `Command … not allowed by ACL` (e.g. project save sync).
+
 ## CI packages (manual)
 
 GitHub Actions workflow [`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml) builds installers **on demand** (Actions → **Desktop packages** → **Run workflow**) and on `desktop-v*` tags. It does **not** run on every merge to `main` (saves Actions minutes).

@@ -103,4 +103,32 @@ describe("desktop Tauri standalone resources", () => {
       "missing dialog:allow-open (Pick SD / Open project)",
     );
   });
+
+  it("ACL-allows app-data project + dialog-owned IPC for remote webviews", () => {
+    const caps = JSON.parse(
+      readFileSync(
+        join(root, "src-tauri", "capabilities", "default.json"),
+        "utf8",
+      ),
+    );
+    const build = readFileSync(join(root, "src-tauri", "build.rs"), "utf8");
+    const required = [
+      "allow-write-app-data-project",
+      "allow-list-app-data-projects",
+      "allow-read-app-data-project",
+      "allow-delete-app-data-project",
+      "allow-save-text-with-dialog",
+      "allow-open-text-with-dialog",
+      "allow-install-widget-to-sd",
+    ];
+    for (const permission of required) {
+      assert.ok(
+        caps.permissions.includes(permission),
+        `missing capability permission ${permission}`,
+      );
+    }
+    assert.match(build, /AppManifest::new\(\)\.commands/);
+    assert.match(build, /"write_app_data_project"/);
+    assert.match(build, /"list_app_data_projects"/);
+  });
 });
