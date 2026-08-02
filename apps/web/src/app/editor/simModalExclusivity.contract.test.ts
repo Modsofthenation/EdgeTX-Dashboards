@@ -7,15 +7,21 @@ import { fileURLToPath } from "node:url";
 const dir = dirname(fileURLToPath(import.meta.url));
 
 describe("simulator modal OPFS exclusivity", () => {
-  it("defers modal WASM mount with the shared handoff delay", () => {
+  it("wires isModalSimHandoffReady(completedReloadKey) to the WASM mount gate", () => {
     const src = readFileSync(
       join(dir, "components/SimVerifyModal.tsx"),
       "utf8",
     );
     assert.match(src, /SIM_OPFS_HANDOFF_MS/);
-    assert.match(src, /isModalSimHandoffReady/);
-    assert.match(src, /completedReloadKey/);
-    assert.match(src, /sim-opfs-handoff/);
+    assert.match(
+      src,
+      /const runtimeReady = isModalSimHandoffReady\(\{\s*open,\s*reloadKey,\s*completedReloadKey,/s,
+    );
+    assert.match(src, /setCompletedReloadKey\(reloadKey\)/);
+    // Mount path must be gated; handoff placeholder must remain for the wait.
+    assert.match(src, /wasmReady && runtimeReady \? \(/);
+    assert.match(src, /<RadioSimPreview/);
+    assert.match(src, /data-testid="sim-opfs-handoff"/);
   });
 
   it("gates inline radio preview on modal open + post-close handoff", () => {
