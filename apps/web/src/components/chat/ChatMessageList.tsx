@@ -107,7 +107,7 @@ export function ChatMessageList({
           {blankLayoutHref ? (
             <div className={styles.emptyActions}>
               <Link href={blankLayoutHref} className={styles.buildManualBtn}>
-                Build in Layout (no AI)
+                Build in Editor (no AI)
               </Link>
             </div>
           ) : null}

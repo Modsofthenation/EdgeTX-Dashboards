@@ -65,8 +65,8 @@ export function FirstRunWizard() {
           Set up AI generation
         </h2>
         <p className={styles.lead}>
-          Add an AI API key ({providerLabels}) to generate Lua from chat, or
-          skip AI and build visually in Layout (Insert / prefabs). You can also
+          Add an AI API key ({providerLabels}) to generate Lua from Studio, or
+          skip AI and build visually in Editor (Insert / prefabs). You can also
           set{" "}
           {providerEnvVars.map((env, i) => (
             <span key={env}>
@@ -77,9 +77,9 @@ export function FirstRunWizard() {
           on the server for shared installs.
         </p>
         <ol className={styles.steps}>
-          <li>Open Preferences → AI (optional for generate)</li>
+          <li>Open Settings → AI (optional for generate)</li>
           <li>
-            Choose a provider, paste your API key, and Save — or open Layout
+            Choose a provider, paste your API key, and Save — or open Editor
           </li>
           <li>Describe a dashboard, or place elements by hand</li>
         </ol>
@@ -96,7 +96,7 @@ export function FirstRunWizard() {
             className={styles.secondary}
             onClick={() => dismiss(true)}
           >
-            Open Layout
+            Open Editor
           </a>
           <button
             type="button"
@@ -106,7 +106,7 @@ export function FirstRunWizard() {
               openAppPreferences("ai");
             }}
           >
-            Open AI preferences
+            Open AI settings
           </button>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { AppChrome } from "~/components/AppChrome";
+import { AppShell } from "~/components/AppShell";
 import { EditorMenu, type EditorMenuItem } from "./EditorMenu";
 import styles from "../editor.module.css";
 
@@ -21,6 +21,7 @@ export const EditorChrome = memo(function EditorChrome({
   onNewBoard,
   onClearAllLayers,
   onOpenPrefs,
+  children,
 }: {
   subtitle: React.ReactNode;
   generateHref: string;
@@ -37,6 +38,7 @@ export const EditorChrome = memo(function EditorChrome({
   onNewBoard: () => void;
   onClearAllLayers: () => void;
   onOpenPrefs: () => void;
+  children?: React.ReactNode;
 }) {
   const moreItems: EditorMenuItem[] = [
     {
@@ -73,18 +75,19 @@ export const EditorChrome = memo(function EditorChrome({
     },
     {
       id: "prefs",
-      label: "Preferences…",
+      label: "Settings…",
       separatorBefore: true,
       onClick: onOpenPrefs,
     },
   ];
 
   return (
-    <AppChrome
-      surface="layout"
+    <AppShell
+      surface="editor"
+      iconRail
       subtitle={subtitle}
-      generateHref={generateHref}
-      layoutHref={layoutHref}
+      studioHref={generateHref}
+      editorHref={layoutHref}
       actions={
         <>
           <button
@@ -107,11 +110,13 @@ export const EditorChrome = memo(function EditorChrome({
             label="More"
             variant="ghost"
             align="right"
-            title="Copy, import, and preferences"
+            title="Copy, import, and settings"
             items={moreItems}
           />
         </>
       }
-    />
+    >
+      {children ?? null}
+    </AppShell>
   );
 });

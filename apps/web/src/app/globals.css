@@ -1,3 +1,33 @@
+@import "tailwindcss";
+
+/*
+  Map product theme tokens (data-theme) into Tailwind v4 + shadcn semantics.
+  Source of truth remains the :root[data-theme="…"] blocks below.
+*/
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--bg-elevated);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-secondary: var(--surface-hover);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-hover);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--surface-hover);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--error);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent-bright);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-canvas: var(--canvas-bg);
+}
+
 :root,
 :root[data-theme="light"] {
   /* Cool light instrument bench — dark LCD canvas stays separate */
