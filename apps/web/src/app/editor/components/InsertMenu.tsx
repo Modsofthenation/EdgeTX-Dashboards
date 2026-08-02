@@ -143,6 +143,7 @@ export function InsertMenu({
             type="button"
             role="menuitem"
             className={styles.insertItem}
+            title={description}
             onClick={() => {
               onInsert(kind);
               setOpen(false);
@@ -433,6 +434,7 @@ export function InsertMenu({
         className={styles.insertTrigger}
         aria-expanded={open}
         aria-haspopup="menu"
+        title="Insert primitives, prefab sections, or full boards"
         onClick={() => (open ? setOpen(false) : openMenu())}
       >
         <span className={styles.insertTriggerIcon} aria-hidden>

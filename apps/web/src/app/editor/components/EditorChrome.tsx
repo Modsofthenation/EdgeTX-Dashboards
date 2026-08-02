@@ -94,6 +94,7 @@ export const EditorChrome = memo(function EditorChrome({
             type="button"
             className={styles.secondaryBtn}
             onClick={onOpenSim}
+            title="Open the full interactive EdgeTX radio simulator"
           >
             <span className={styles.actionLabelFull}>Simulator</span>
             <span className={styles.actionLabelShort}>Sim</span>
@@ -102,6 +103,7 @@ export const EditorChrome = memo(function EditorChrome({
             type="button"
             className={styles.primaryBtn}
             onClick={onOpenExport}
+            title="Package the widget zip and install guide for the SD card"
           >
             <span className={styles.actionLabelFull}>Export</span>
             <span className={styles.actionLabelShort}>Export</span>

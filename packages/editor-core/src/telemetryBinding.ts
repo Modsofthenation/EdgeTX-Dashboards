@@ -248,9 +248,66 @@ function escapeReg(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+const CREATE_SIG = /local\s+function\s+create\s*\([^)]*\)/;
+const LUA_BLOCK_OPEN = new Set(["function", "if", "for", "while", "repeat"]);
+
+/** create() body range, or null when the widget has no create(). */
+function findCreateBodyRange(
+  source: string,
+): { start: number; end: number } | null {
+  const sig = source.match(CREATE_SIG);
+  if (!sig || sig.index === undefined) return null;
+  const start = sig.index + sig[0].length;
+  const end = findBalancedLuaEnd(source, start);
+  return { start, end };
+}
+
+/**
+ * Prefer create() for src cache reads/writes. Fall back to the full source when
+ * create() is missing (fragment fixtures / incomplete imports).
+ */
+function createScopedSlice(source: string): { text: string; offset: number } {
+  const range = findCreateBodyRange(source);
+  if (!range) return { text: source, offset: 0 };
+  return { text: source.slice(range.start, range.end), offset: range.start };
+}
+
+function findBalancedLuaEnd(source: string, bodyStart: number): number {
+  let depth = 1;
+  let i = bodyStart;
+  while (i < source.length && depth > 0) {
+    const ch = source[i];
+    if (ch === "-" && source[i + 1] === "-") {
+      const nl = source.indexOf("\n", i);
+      i = nl === -1 ? source.length : nl + 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      const quote = ch;
+      i++;
+      while (i < source.length && source[i] !== quote) {
+        if (source[i] === "\\") i++;
+        i++;
+      }
+      i++;
+      continue;
+    }
+    const word = source.slice(i).match(/^[A-Za-z_]\w*/);
+    if (word) {
+      if (LUA_BLOCK_OPEN.has(word[0]!)) depth++;
+      else if (word[0] === "end" || word[0] === "until") depth--;
+      i += word[0]!.length;
+      continue;
+    }
+    i++;
+  }
+  return depth === 0 ? i - 3 : source.length;
+}
+
 /**
  * Remap an existing `src` cache key to a different catalog sensor name.
  * Keeps the Lua field (`widget.src.hspd`) stable so prefab refresh locals keep working.
+ * Only rewrites assignments inside create() when that function is present.
  */
 export function remapSrcSensor(
   source: string,
@@ -258,14 +315,18 @@ export function remapSrcSensor(
   newSensor: string,
 ): string {
   if (!key || !newSensor) return source;
+  const { text, offset } = createScopedSlice(source);
   const keyRe = escapeReg(key);
   const patterns = [
     new RegExp(`(\\b${keyRe}\\s*=\\s*cacheSource\\s*\\(\\s*")([^"]*)(")`),
     new RegExp(`(\\b${keyRe}\\s*=\\s*getSourceIndex\\s*\\(\\s*")([^"]*)(")`),
   ];
   for (const re of patterns) {
-    if (re.test(source)) {
-      return source.replace(re, `$1${newSensor}$3`);
+    if (re.test(text)) {
+      const next = text.replace(re, `$1${newSensor}$3`);
+      return (
+        source.slice(0, offset) + next + source.slice(offset + text.length)
+      );
     }
   }
   return source;
@@ -275,12 +336,13 @@ export function remapSrcSensor(
 export function listSrcBindings(
   source: string,
 ): { key: string; sensor: string }[] {
+  const { text } = createScopedSlice(source);
   const bindings: { key: string; sensor: string }[] = [];
   const seen = new Set<string>();
   const re =
     /\b(\w+)\s*=\s*(?:cacheSource|getSourceIndex)\s*\(\s*"([^"]+)"\s*\)/g;
   let match: RegExpExecArray | null;
-  while ((match = re.exec(source)) !== null) {
+  while ((match = re.exec(text)) !== null) {
     const key = match[1]!;
     if (seen.has(key)) continue;
     seen.add(key);

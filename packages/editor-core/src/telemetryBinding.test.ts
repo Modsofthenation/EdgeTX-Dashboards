@@ -105,4 +105,40 @@ return {
     const source = `src = { hspd = cacheSource("HSpd") }`;
     assert.equal(remapSrcSensor(source, "missing", "RPM"), source);
   });
+
+  it("ignores duplicate keys outside create() when listing and remapping", () => {
+    const source = `local decoy = {
+  hspd = cacheSource("RPM"),
+}
+local function create(zone, opts)
+  return {
+    src = {
+      hspd = cacheSource("HSpd"),
+      tspd = cacheSource("Tspd"),
+    },
+  }
+end
+local function refresh(widget)
+  lcd.drawText(0, 0, tostring(telem(widget.src.hspd)), WHITE)
+end
+return { name = "T", create = create, refresh = refresh }
+`;
+    const bindings = listSrcBindings(source);
+    assert.deepEqual(
+      bindings.find((b) => b.key === "hspd"),
+      { key: "hspd", sensor: "HSpd" },
+    );
+    assert.equal(
+      bindings.some((b) => b.sensor === "RPM"),
+      false,
+    );
+
+    const next = remapSrcSensor(source, "hspd", "Curr");
+    assert.match(next, /hspd\s*=\s*cacheSource\("Curr"\)/);
+    assert.match(next, /decoy[\s\S]*hspd\s*=\s*cacheSource\("RPM"\)/);
+    assert.doesNotMatch(
+      next.slice(0, next.indexOf("local function create")),
+      /cacheSource\("Curr"\)/,
+    );
+  });
 });
