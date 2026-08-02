@@ -494,6 +494,8 @@ export function RadioSimPreview({
           ? `${styles.simPreviewRoot} ${styles.simPreviewFill}`
           : styles.simPreviewRoot
       }
+      data-testid="radio-sim-preview"
+      data-sim-phase={state.phase}
     >
       <SimFrameCanvas
         frame={displayFrame}
@@ -505,7 +507,11 @@ export function RadioSimPreview({
         }
       />
       {isSoftRestarting ? (
-        <div className={styles.radioSimUpdating} aria-live="polite">
+        <div
+          className={styles.radioSimUpdating}
+          aria-live="polite"
+          data-testid="radio-sim-updating"
+        >
           Updating radio preview…
         </div>
       ) : null}
