@@ -245,7 +245,9 @@ export function RadioSimPreview({
       setFrame(next);
     });
     return () => subscribeFrames(null);
-  }, [subscribeFrames]);
+    // Re-bind after auto-recover / firmware reboot (bootNonce) in case dispose
+    // historically cleared the subscriber while this component stayed mounted.
+  }, [subscribeFrames, bootNonce]);
 
   const layoutProfile = useMemo(() => {
     try {
