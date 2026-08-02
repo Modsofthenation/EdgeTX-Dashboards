@@ -104,6 +104,10 @@ export class LuaPreviewWorkerClient {
   private handleMessage(msg: LuaPreviewWorkerResponse): void {
     if (msg.type === "error") {
       this.degraded = true;
+      for (const pending of this.pending.values()) {
+        pending.reject(new Error(msg.message));
+      }
+      this.pending.clear();
       return;
     }
     if (msg.type !== "applyMockResult") return;

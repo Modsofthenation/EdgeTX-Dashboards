@@ -114,11 +114,15 @@ export function useResizableEditorPanels(
     origin: number;
   } | null>(null);
   const widthsRef = useRef(widths);
-  widthsRef.current = widths;
+  // Skip render-phase sync while dragging — live widths live only in the ref.
+  if (!dragRef.current) {
+    widthsRef.current = widths;
+  }
   const bodyWidthRef = useRef(bodyWidth);
   bodyWidthRef.current = bodyWidth;
   const detachRef = useRef<(() => void) | null>(null);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPersistRef = useRef<PanelWidths | null>(null);
   const bodyElRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -151,8 +155,10 @@ export function useResizableEditorPanels(
 
   const schedulePersist = useCallback((next: PanelWidths) => {
     if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    pendingPersistRef.current = next;
     persistTimerRef.current = setTimeout(() => {
       persistTimerRef.current = null;
+      pendingPersistRef.current = null;
       writeStored(next);
     }, 200);
   }, []);
@@ -164,6 +170,8 @@ export function useResizableEditorPanels(
       if (persistTimerRef.current) {
         clearTimeout(persistTimerRef.current);
         persistTimerRef.current = null;
+        if (pendingPersistRef.current) writeStored(pendingPersistRef.current);
+        pendingPersistRef.current = null;
       }
     };
   }, []);
@@ -260,7 +268,10 @@ export function useResizableEditorPanels(
     schedulePersist(next);
   }, [applyWidthsLive, schedulePersist]);
 
-  const gridTemplateColumns = `${widths.left}px ${HANDLE}px minmax(${CANVAS_MIN}px, 1fr) ${HANDLE}px ${widths.right}px`;
+  const gridTemplateColumns = (() => {
+    const live = dragRef.current ? widthsRef.current : widths;
+    return `${live.left}px ${HANDLE}px minmax(${CANVAS_MIN}px, 1fr) ${HANDLE}px ${live.right}px`;
+  })();
 
   return {
     widths,

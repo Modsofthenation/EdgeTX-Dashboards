@@ -33,6 +33,18 @@ function percentile(sorted: number[], p: number): number {
   return sorted[idx]!;
 }
 
+function assertPositiveInt(name: string, value: number): void {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
+    throw new RangeError(`${name} must be a positive integer`);
+  }
+}
+
+function assertNonNegativeInt(name: string, value: number): void {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    throw new RangeError(`${name} must be a non-negative integer`);
+  }
+}
+
 /** Time a synchronous function across warm-up + measured iterations. */
 export function measureSync(
   name: string,
@@ -41,6 +53,8 @@ export function measureSync(
 ): BenchStats {
   const iterations = opts.iterations ?? 40;
   const warmup = opts.warmup ?? 5;
+  assertPositiveInt("iterations", iterations);
+  assertNonNegativeInt("warmup", warmup);
   const now = opts.now ?? (() => performance.now());
 
   for (let i = 0; i < warmup; i++) fn();

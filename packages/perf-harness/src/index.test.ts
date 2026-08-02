@@ -30,6 +30,22 @@ describe("perf-harness", () => {
     assert.ok(stats.opsPerSec > 0);
   });
 
+  it("measureSync rejects invalid iterations and warmup", () => {
+    const noop = () => {};
+    for (const iterations of [0, -1, 1.5, Number.POSITIVE_INFINITY, NaN]) {
+      assert.throws(
+        () => measureSync("bad-iter", noop, { iterations, warmup: 0 }),
+        /iterations must be a positive integer/,
+      );
+    }
+    for (const warmup of [-1, 1.5, Number.POSITIVE_INFINITY, NaN]) {
+      assert.throws(
+        () => measureSync("bad-warmup", noop, { iterations: 1, warmup }),
+        /warmup must be a non-negative integer/,
+      );
+    }
+  });
+
   it("assertBenchBudget fails over ceiling", () => {
     const stats = measureSync("slowish", () => {}, {
       iterations: 5,

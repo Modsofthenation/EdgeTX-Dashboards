@@ -95,7 +95,14 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
     return map;
   }, [prefabSpans, records]);
 
+  const refreshDropRects = () => {
+    dropRectsRef.current = listRef.current
+      ? cacheLayerDropRects(listRef.current)
+      : [];
+  };
+
   const clearDrag = () => {
+    listRef.current?.removeEventListener("scroll", refreshDropRects);
     dragIdRef.current = null;
     dropHintRef.current = null;
     dropRectsRef.current = [];
@@ -123,9 +130,11 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     dragIdRef.current = recordId;
     dropHintRef.current = null;
-    dropRectsRef.current = listRef.current
-      ? cacheLayerDropRects(listRef.current)
-      : [];
+    refreshDropRects();
+    // Viewport rects go stale if the list scrolls mid-drag.
+    listRef.current?.addEventListener("scroll", refreshDropRects, {
+      passive: true,
+    });
     setDraggingId(recordId);
     setDropHint(null);
     onSelect(recordId, false);

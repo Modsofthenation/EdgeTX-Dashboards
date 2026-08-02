@@ -7,5 +7,5 @@ export {
 export {
   createFrameThrottle,
   FRAME_MIN_INTERVAL_MS,
-} from "../src/lib/radioSim/frameThrottle.ts";
-export { unifiedDiff } from "../src/lib/luaDiff.ts";
+} from "~/lib/radioSim/frameThrottle";
+export { unifiedDiff } from "~/lib/luaDiff";

@@ -62,9 +62,6 @@ function simplifiedMiddleDiff(
   for (const row of midB) {
     if (pushTruncated(lines, maxLines, `+${row}`)) return;
   }
-  if (lines.length < maxLines) {
-    lines.push("… (diff simplified: input too large)");
-  }
 }
 
 export function unifiedDiff(
@@ -101,6 +98,9 @@ export function unifiedDiff(
     }
     for (const row of suffix) {
       if (pushTruncated(lines, maxLines, ` ${row}`)) return lines.join("\n");
+    }
+    if (lines.length < maxLines) {
+      lines.push("… (diff simplified: input too large)");
     }
     return lines.join("\n");
   }

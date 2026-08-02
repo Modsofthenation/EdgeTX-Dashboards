@@ -18,7 +18,7 @@ import {
 } from "~/lib/templateGallery";
 
 export type TemplateCompanionSuite =
-  "rf-heli-electric" | "batt-select" | "flight-logger";
+  "rf-heli-electric" | "sensor-dump" | "batt-select" | "flight-logger";
 
 export type TemplateEditorBootstrap = {
   source: string;
@@ -52,11 +52,12 @@ export function resolveTemplateEditorBootstrap(
       lcd,
     );
     source = next;
+    companionSuites.push("sensor-dump");
   } else if (prefab === "battery-tool") {
-    source = getLayoutTemplateBoardSource("battery-tool");
+    source = getLayoutTemplateBoardSource("battery-tool", lcd);
     companionSuites.push("batt-select");
   } else if (prefab === "flight-logger") {
-    source = getLayoutTemplateBoardSource("flight-logger");
+    source = getLayoutTemplateBoardSource("flight-logger", lcd);
     companionSuites.push("flight-logger");
   } else {
     source = getLayoutTemplateBoardSource(prefab, lcd);

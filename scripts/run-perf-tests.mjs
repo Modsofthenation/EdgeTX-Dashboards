@@ -8,9 +8,11 @@
  */
 import { spawnSync } from "node:child_process";
 import { readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
+const npxBin = process.platform === "win32" ? "npx.cmd" : "npx";
 
 function walk(dir, acc = []) {
   let entries;
@@ -38,9 +40,15 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+/** True when `file` is inside `dir` (or is `dir`). */
+function isUnder(file, dir) {
+  const rel = relative(dir, file);
+  return rel === "" || (!rel.startsWith(`..${sep}`) && rel !== "..");
+}
+
 const files = [
   ...walk(join(root, "packages")),
-  ...walk(join(root, "apps/web/perf")),
+  ...walk(join(root, "apps", "web", "perf")),
 ].sort();
 
 if (files.length === 0) {
@@ -49,10 +57,10 @@ if (files.length === 0) {
 }
 
 console.log(`test:perf — ${files.length} file(s)`);
-for (const f of files) console.log(`  ${f.replace(root + "/", "")}`);
+for (const f of files) console.log(`  ${relative(root, f)}`);
 
-const packageFiles = files.filter((f) => f.includes(`${join("packages")}`));
-const webFiles = files.filter((f) => f.includes(`${join("apps", "web")}`));
+const packageFiles = files.filter((f) => isUnder(f, join(root, "packages")));
+const webFiles = files.filter((f) => isUnder(f, join(root, "apps", "web")));
 
 let failed = false;
 
@@ -66,10 +74,11 @@ if (packageFiles.length) {
 }
 
 if (webFiles.length) {
-  const r = spawnSync("npx", ["tsx", "--test", ...webFiles], {
+  const r = spawnSync(npxBin, ["tsx", "--test", ...webFiles], {
     stdio: "inherit",
-    cwd: join(root, "apps/web"),
+    cwd: join(root, "apps", "web"),
     env: process.env,
+    shell: process.platform === "win32",
   });
   if (r.status !== 0) failed = true;
 }
