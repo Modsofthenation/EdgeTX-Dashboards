@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, memo } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  memo,
+  type ReactNode,
+} from "react";
 import {
   DEFAULT_BG_IMAGE_PATH,
   RADIO_SAFE_COLOR_NAMES,
@@ -23,6 +30,11 @@ import type { EdgeColor } from "@widget-gen/layout-verify";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { catalogForDrawKind } from "../elementMeta";
 import { SENSOR_CATALOG, formatSensorOptionLabel } from "../lib/sensorCatalog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import styles from "../editor.module.css";
 
 const LAYOUT_OPTIONS = [
@@ -33,6 +45,116 @@ const LAYOUT_OPTIONS = [
 ] as const;
 
 const EMPTY_SENSORS: string[] = [];
+
+function FieldLabel({
+  children,
+  hint,
+}: {
+  children: ReactNode;
+  hint?: string;
+}) {
+  if (!hint) {
+    return <span className={styles.fieldLabel}>{children}</span>;
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={`${styles.fieldLabel} ${styles.fieldLabelHint}`}
+          tabIndex={0}
+        >
+          {children}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="left">{hint}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function NumField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  hint?: string;
+}) {
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(value));
+      return;
+    }
+    if (parsed === value) return;
+    onChange(parsed);
+  };
+
+  return (
+    <label className={styles.propField}>
+      <FieldLabel hint={hint}>{label}</FieldLabel>
+      <input
+        type="number"
+        className={styles.fieldInput}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+        }}
+        title={hint}
+      />
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const commit = () => {
+    if (draft === value) return;
+    onChange(draft);
+  };
+
+  return (
+    <label className={styles.propField}>
+      <FieldLabel hint={hint}>{label}</FieldLabel>
+      <input
+        type="text"
+        className={styles.fieldInput}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+        }}
+        title={hint}
+      />
+    </label>
+  );
+}
 
 interface RecordPropertiesPanelProps {
   meta: { name: string; layout: string; zone: number };
@@ -72,89 +194,6 @@ interface RecordPropertiesPanelProps {
   onBackgroundImageChange?: (file: File | null) => void;
   backgroundImageName?: string | null;
   backgroundImageUrl?: string | null;
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <span className={styles.fieldLabel}>{children}</span>;
-}
-
-function NumField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  const [draft, setDraft] = useState(String(value));
-
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-
-  const commit = () => {
-    const parsed = Number(draft);
-    if (!Number.isFinite(parsed)) {
-      setDraft(String(value));
-      return;
-    }
-    if (parsed === value) return;
-    onChange(parsed);
-  };
-
-  return (
-    <label className={styles.propField}>
-      <FieldLabel>{label}</FieldLabel>
-      <input
-        type="number"
-        className={styles.fieldInput}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
-        }}
-      />
-    </label>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  const commit = () => {
-    if (draft === value) return;
-    onChange(draft);
-  };
-
-  return (
-    <label className={styles.propField}>
-      <FieldLabel>{label}</FieldLabel>
-      <input
-        type="text"
-        className={styles.fieldInput}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
-        }}
-      />
-    </label>
-  );
 }
 
 export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
@@ -299,9 +338,16 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
 
       {showDashboardProps && (
         <section className={styles.propSection}>
-          <h3 className={styles.sectionTitle}>Widget</h3>
+          <h3
+            className={styles.sectionTitle}
+            title="Widget identity and where it sits on the radio screen"
+          >
+            Widget
+          </h3>
           <label className={styles.propField}>
-            <FieldLabel>Name</FieldLabel>
+            <FieldLabel hint="Widget script name shown on the radio (max 10 characters).">
+              Name
+            </FieldLabel>
             <input
               type="text"
               className={styles.fieldInput}
@@ -320,7 +366,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
           </label>
           <div className={styles.fieldRow}>
             <label className={styles.propField}>
-              <FieldLabel>Layout</FieldLabel>
+              <FieldLabel hint="EdgeTX screen layout that hosts this widget (Layout1x1 fills the LCD).">
+                Layout
+              </FieldLabel>
               {onPatchSimulate ? (
                 <select
                   className={styles.fieldInput}
@@ -343,7 +391,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               )}
             </label>
             <label className={styles.propField}>
-              <FieldLabel>Zone</FieldLabel>
+              <FieldLabel hint="Zone index inside the layout (0 is the first/top-left cell).">
+                Zone
+              </FieldLabel>
               {onPatchSimulate ? (
                 <select
                   className={styles.fieldInput}
@@ -373,14 +423,21 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
 
       {showDashboardProps && onApplyBackground && (
         <section className={styles.propSection}>
-          <h3 className={styles.sectionTitle}>Background</h3>
+          <h3
+            className={styles.sectionTitle}
+            title="Full-dashboard background behind cards and telemetry"
+          >
+            Background
+          </h3>
           <p className={styles.propEmptyHint}>
             Full-dashboard fill behind cards. Color uses <code>lcd.clear</code>;
             model uses the EdgeTX model bitmap; custom loads a PNG from the SD
             card.
           </p>
           <label className={styles.propField}>
-            <FieldLabel>Fill</FieldLabel>
+            <FieldLabel hint="How the full dashboard background is painted behind cards.">
+              Fill
+            </FieldLabel>
             <select
               className={styles.fieldInput}
               value={background.mode}
@@ -402,7 +459,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
           </label>
           {background.mode === "color" && (
             <label className={styles.propField}>
-              <FieldLabel>Color</FieldLabel>
+              <FieldLabel hint="lcd.clear color used for a solid dashboard background.">
+                Color
+              </FieldLabel>
               <select
                 className={styles.fieldInput}
                 value={toRadioSafeColor(background.color as EdgeColor)}
@@ -433,6 +492,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <>
               <TextField
                 label="SD path"
+                hint="Absolute path on the radio SD card for the custom background PNG."
                 value={background.imagePath ?? DEFAULT_BG_IMAGE_PATH}
                 onChange={(path) => {
                   const trimmed = path.trim() || DEFAULT_BG_IMAGE_PATH;
@@ -500,14 +560,23 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
 
       {showDashboardProps && onRemapSrcSensor && liveBindings.length > 0 && (
         <section className={styles.propSection}>
-          <h3 className={styles.sectionTitle}>Telemetry sources</h3>
+          <h3
+            className={styles.sectionTitle}
+            title="Sensors cached in create() — remap CRSF names without rewriting Lua keys"
+          >
+            Telemetry sources
+          </h3>
           <p className={styles.propEmptyHint}>
             Cached sensors in create(). Select a field on the canvas to edit
             that element only.
           </p>
           {liveBindings.map((binding) => (
             <label key={binding.key} className={styles.propField}>
-              <FieldLabel>{binding.key}</FieldLabel>
+              <FieldLabel
+                hint={`create() cache key src.${binding.key}. Change the CRSF sensor name without renaming the Lua variable.`}
+              >
+                {binding.key}
+              </FieldLabel>
               <select
                 className={styles.fieldInput}
                 value={binding.sensor}
@@ -535,7 +604,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             Multi-select ({selectedRecords.length})
           </h3>
           <label className={styles.propField}>
-            <FieldLabel>Color</FieldLabel>
+            <FieldLabel hint="Apply one EdgeTX color to every selected draw call.">
+              Color
+            </FieldLabel>
             <select
               className={styles.fieldInput}
               value={selectedColor}
@@ -558,6 +629,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               {selectedZoneX != null && (
                 <NumField
                   label="X"
+                  hint="Shared X for all selected elements (zone pixels)."
                   value={selectedZoneX}
                   onChange={(x) => onPatchSelectedRecords?.({ x: toLcdX(x) })}
                 />
@@ -565,6 +637,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               {selectedZoneY != null && (
                 <NumField
                   label="Y"
+                  hint="Shared Y for all selected elements (zone pixels)."
                   value={selectedZoneY}
                   onChange={(y) => onPatchSelectedRecords?.({ y: toLcdY(y) })}
                 />
@@ -576,6 +649,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <button
               type="button"
               className={styles.secondaryBtn}
+              title="Move selection left by 12 px (grid step)"
               onClick={() => onTranslateSelected?.(-12, 0)}
             >
               ← 12
@@ -583,6 +657,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <button
               type="button"
               className={styles.secondaryBtn}
+              title="Move selection right by 12 px (grid step)"
               onClick={() => onTranslateSelected?.(12, 0)}
             >
               12 →
@@ -592,6 +667,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <button
               type="button"
               className={styles.secondaryBtn}
+              title="Move selection up by 12 px (grid step)"
               onClick={() => onTranslateSelected?.(0, -12)}
             >
               ↑ 12
@@ -599,6 +675,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <button
               type="button"
               className={styles.secondaryBtn}
+              title="Move selection down by 12 px (grid step)"
               onClick={() => onTranslateSelected?.(0, 12)}
             >
               ↓ 12
@@ -625,11 +702,13 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <div className={styles.fieldRow}>
               <NumField
                 label="X"
+                hint="Horizontal position in zone pixels (0 = left edge of the widget zone)."
                 value={zoneX}
                 onChange={(x) => onPatchRecord(record, { x: toLcdX(x) })}
               />
               <NumField
                 label="Y"
+                hint="Vertical position in zone pixels (0 = top edge of the widget zone)."
                 value={zoneY}
                 onChange={(y) => onPatchRecord(record, { y: toLcdY(y) })}
               />
@@ -642,11 +721,13 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <div className={styles.fieldRow}>
               <NumField
                 label="W"
+                hint="Width in pixels."
                 value={record.w ?? 0}
                 onChange={(w) => onPatchRecord(record, { w })}
               />
               <NumField
                 label="H"
+                hint="Height in pixels."
                 value={record.h ?? 0}
                 onChange={(h) => onPatchRecord(record, { h })}
               />
@@ -658,11 +739,13 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               <div className={styles.fieldRow}>
                 <NumField
                   label="X1"
+                  hint="Line start X in zone pixels."
                   value={(record.x ?? 0) - zone.zoneX}
                   onChange={(x) => onPatchRecord(record, { x: toLcdX(x) })}
                 />
                 <NumField
                   label="Y1"
+                  hint="Line start Y in zone pixels."
                   value={(record.y ?? 0) - zone.zoneY}
                   onChange={(y) => onPatchRecord(record, { y: toLcdY(y) })}
                 />
@@ -670,11 +753,13 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               <div className={styles.fieldRow}>
                 <NumField
                   label="X2"
+                  hint="Line end X in zone pixels."
                   value={(record.x2 ?? 0) - zone.zoneX}
                   onChange={(x2) => onPatchRecord(record, { x2: toLcdX(x2) })}
                 />
                 <NumField
                   label="Y2"
+                  hint="Line end Y in zone pixels."
                   value={(record.y2 ?? 0) - zone.zoneY}
                   onChange={(y2) => onPatchRecord(record, { y2: toLcdY(y2) })}
                 />
@@ -685,6 +770,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
           {(record.kind === "circle" || record.kind === "filledCircle") && (
             <NumField
               label="Radius"
+              hint="Circle radius in pixels from the center point."
               value={record.r ?? 0}
               onChange={(r) => onPatchRecord(record, { r })}
             />
@@ -694,12 +780,14 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <>
               <NumField
                 label="Radius"
+                hint="Arc radius in pixels from the center point."
                 value={record.r ?? 0}
                 onChange={(r) => onPatchRecord(record, { r })}
               />
               <div className={styles.fieldRow}>
                 <NumField
                   label="Start °"
+                  hint="Arc start angle in degrees (0° is typically right / 3 o’clock)."
                   value={record.startAngle ?? 0}
                   onChange={(startAngle) =>
                     onPatchRecord(record, { startAngle })
@@ -707,6 +795,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
                 />
                 <NumField
                   label="End °"
+                  hint="Arc end angle in degrees."
                   value={record.endAngle ?? 0}
                   onChange={(endAngle) => onPatchRecord(record, { endAngle })}
                 />
@@ -719,11 +808,13 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               <div className={styles.fieldRow}>
                 <NumField
                   label="Inner R"
+                  hint="Inner hole radius of the ring."
                   value={record.rIn ?? 0}
                   onChange={(rIn) => onPatchRecord(record, { rIn })}
                 />
                 <NumField
                   label="Outer R"
+                  hint="Outer radius of the ring."
                   value={record.rOut ?? 0}
                   onChange={(rOut) => onPatchRecord(record, { rOut })}
                 />
@@ -731,6 +822,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
               <div className={styles.fieldRow}>
                 <NumField
                   label="Start °"
+                  hint="Ring segment start angle in degrees."
                   value={record.startAngle ?? 0}
                   onChange={(startAngle) =>
                     onPatchRecord(record, { startAngle })
@@ -738,6 +830,7 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
                 />
                 <NumField
                   label="End °"
+                  hint="Ring segment end angle in degrees."
                   value={record.endAngle ?? 0}
                   onChange={(endAngle) => onPatchRecord(record, { endAngle })}
                 />
@@ -749,11 +842,13 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <div className={styles.fieldRow}>
               <NumField
                 label="Fill"
+                hint="Current gauge value drawn as a filled portion of the bar."
                 value={record.fill ?? 0}
                 onChange={(fill) => onPatchRecord(record, { fill })}
               />
               <NumField
                 label="Max"
+                hint="Gauge scale maximum (fill / max = filled fraction)."
                 value={record.maxFill ?? 100}
                 onChange={(maxFill) => onPatchRecord(record, { maxFill })}
               />
@@ -764,12 +859,15 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
             <>
               <TextField
                 label="Static text"
+                hint="Literal string drawn when this text is not bound to telemetry."
                 value={record.text ?? ""}
                 onChange={(text) => onSetText(record, text)}
               />
               <div className={styles.fieldRow}>
                 <label className={styles.propField}>
-                  <FieldLabel>Size</FieldLabel>
+                  <FieldLabel hint="EdgeTX font flag: SMLSIZE, MIDSIZE, or DBLSIZE.">
+                    Size
+                  </FieldLabel>
                   <select
                     className={styles.fieldInput}
                     value={textSize}
@@ -785,7 +883,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
                   </select>
                 </label>
                 <label className={styles.propField}>
-                  <FieldLabel>Align</FieldLabel>
+                  <FieldLabel hint="Horizontal alignment of the text anchor point.">
+                    Align
+                  </FieldLabel>
                   <select
                     className={styles.fieldInput}
                     value={textAlign}
@@ -814,7 +914,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
                       : "Static text (not bound)"}
                   </p>
                   <label className={styles.propField}>
-                    <FieldLabel>Format</FieldLabel>
+                    <FieldLabel hint="How the live sensor value is formatted before drawText.">
+                      Format
+                    </FieldLabel>
                     <select
                       className={styles.fieldInput}
                       value={bindFormat}
@@ -830,7 +932,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
                     </select>
                   </label>
                   <label className={styles.propField}>
-                    <FieldLabel>Sensor</FieldLabel>
+                    <FieldLabel hint="CRSF/ELRS telemetry sensor name cached in create() and read each refresh.">
+                      Sensor
+                    </FieldLabel>
                     <select
                       className={styles.fieldInput}
                       value={detectedBinding?.sensor ?? bindSensor}
@@ -913,7 +1017,9 @@ export const RecordPropertiesPanel = memo(function RecordPropertiesPanel({
 
           {record.kind !== "bitmap" && (
             <label className={styles.propField}>
-              <FieldLabel>Color</FieldLabel>
+              <FieldLabel hint="EdgeTX named color for this draw call (radio-safe palette).">
+                Color
+              </FieldLabel>
               <select
                 className={styles.fieldInput}
                 value={toRadioSafeColor(hexToEdgeColor(record.color))}

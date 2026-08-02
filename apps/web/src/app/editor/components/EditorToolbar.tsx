@@ -374,7 +374,10 @@ export const EditorToolbar = memo(function EditorToolbar({
 
         <div className={styles.toolbarDivider} aria-hidden />
 
-        <label className={styles.toolbarSelect}>
+        <label
+          className={styles.toolbarSelect}
+          title="Telemetry catalog used for sensor pickers and validation"
+        >
           <span className={styles.toolbarSelectLabel}>Protocol</span>
           <select
             value={protocol}
@@ -442,6 +445,7 @@ export const EditorToolbar = memo(function EditorToolbar({
           <span
             className={`${styles.statusPill} ${styles.statusPillOk}`}
             data-testid="editor-validation-status"
+            title="Lua passed structure, telemetry, and draw checks"
           >
             Valid
           </span>
@@ -450,6 +454,7 @@ export const EditorToolbar = memo(function EditorToolbar({
           <span
             className={`${styles.statusPill} ${styles.statusPillErr}`}
             data-testid="editor-validation-status"
+            title="Validation found errors — open Validate for details"
           >
             Invalid
           </span>
@@ -467,6 +472,7 @@ export const EditorToolbar = memo(function EditorToolbar({
           type="button"
           className={`${styles.secondaryBtn} ${styles.hideOnNarrow}`}
           onClick={onValidate}
+          title="Run EdgeTX widget validation (structure, sensors, draws)"
         >
           Validate
         </button>

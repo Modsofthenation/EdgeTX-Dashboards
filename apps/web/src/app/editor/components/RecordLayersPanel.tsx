@@ -285,6 +285,11 @@ export const RecordLayersPanel = memo(function RecordLayersPanel({
                   <button
                     type="button"
                     className={styles.layerSelect}
+                    title={
+                      meta?.description
+                        ? `${meta.label} — ${meta.description}`
+                        : (meta?.label ?? record.kind)
+                    }
                     onClick={(e) =>
                       onSelect(record.id, e.shiftKey || e.metaKey || e.ctrlKey)
                     }
