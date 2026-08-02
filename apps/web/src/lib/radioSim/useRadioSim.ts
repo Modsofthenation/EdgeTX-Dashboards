@@ -57,6 +57,16 @@ function fetchSimManifest(): Promise<SimManifest> {
   return manifestPromise;
 }
 
+function rejectPendingLoads(
+  pending: Map<number, { resolve: () => void; reject: (err: Error) => void }>,
+  reason: string,
+) {
+  for (const entry of pending.values()) {
+    entry.reject(new Error(reason));
+  }
+  pending.clear();
+}
+
 export function useRadioSim() {
   const workerRef = useRef<Worker | null>(null);
   const frameRef = useRef<SimFrameData | null>(null);
@@ -67,6 +77,21 @@ export function useRadioSim() {
   );
   const [state, setState] = useState<RadioSimState>(DEFAULT_STATE);
   const [firmware, setFirmware] = useState<SimFirmwareResolution | null>(null);
+
+  const dropWorker = useCallback((reason: string) => {
+    rejectPendingLoads(pendingLoadRef.current, reason);
+    const worker = workerRef.current;
+    workerRef.current = null;
+    if (worker) {
+      try {
+        worker.onerror = null;
+        worker.onmessage = null;
+        worker.terminate();
+      } catch {
+        // ignore terminate races
+      }
+    }
+  }, []);
 
   const ensureWorker = useCallback(() => {
     if (workerRef.current) return workerRef.current;
@@ -82,6 +107,9 @@ export function useRadioSim() {
         frameSubscriberRef.current?.(msg.frame);
       }
       if (msg.type === "error") {
+        // Soft worker error (caught exception) — drop the worker so the next
+        // init/retry starts clean rather than posting into a half-dead runtime.
+        dropWorker(msg.message);
         setState({
           phase: "error",
           progress: 0,
@@ -94,6 +122,7 @@ export function useRadioSim() {
         const pending = pendingLoadRef.current.get(msg.requestId);
         if (!pending) return;
         pendingLoadRef.current.delete(msg.requestId);
+        // Latest-wins: superseded requestIds still settle so promises do not hang.
         if (msg.ok) {
           pending.resolve();
         } else {
@@ -102,6 +131,7 @@ export function useRadioSim() {
       }
     };
     worker.onerror = () => {
+      dropWorker("Radio sim worker failed");
       setState({
         phase: "error",
         progress: 0,
@@ -112,11 +142,10 @@ export function useRadioSim() {
     };
     workerRef.current = worker;
     return worker;
-  }, []);
+  }, [dropWorker]);
 
   const init = useCallback(
     async (widget?: RadioSimInitOptions) => {
-      const worker = ensureWorker();
       const edgeTxVersion = widget?.edgeTxVersion ?? DEFAULT_EDGE_TX_VERSION;
       setState({
         phase: "loading-wasm",
@@ -127,6 +156,9 @@ export function useRadioSim() {
       });
 
       try {
+        // Ensure a live worker before/after async firmware resolve — crashes
+        // during download must not leave us posting into a terminated worker.
+        ensureWorker();
         const manifest = await fetchSimManifest();
         const radioId = widget?.radioId ?? "tx15";
         const resolved = resolveSimFirmware(manifest, edgeTxVersion, radioId);
@@ -140,6 +172,7 @@ export function useRadioSim() {
           keyboardMode: "none",
         });
 
+        const worker = ensureWorker();
         const modelPng = widget?.modelPng
           ? (widget.modelPng.buffer.slice(
               widget.modelPng.byteOffset,
@@ -162,6 +195,7 @@ export function useRadioSim() {
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        dropWorker(message);
         setState({
           phase: "error",
           progress: 0,
@@ -171,12 +205,15 @@ export function useRadioSim() {
         });
       }
     },
-    [ensureWorker],
+    [ensureWorker, dropWorker],
   );
 
   const loadWidget = useCallback(
     (source: string, zone?: WidgetSimulateZone, modelPng?: Uint8Array) => {
-      const worker = ensureWorker();
+      const worker = workerRef.current;
+      if (!worker) {
+        return Promise.reject(new Error("Simulator not initialized"));
+      }
       const requestId = nextLoadRequestIdRef.current++;
       const transferPng = modelPng
         ? (modelPng.buffer.slice(
@@ -199,17 +236,15 @@ export function useRadioSim() {
         );
       });
     },
-    [ensureWorker],
+    [],
   );
 
-  const setMock = useCallback(
-    (mock: MockTelemetryValues) => {
-      const worker = ensureWorker();
-      const req: SimWorkerRequest = { type: "setMock", mock };
-      worker.postMessage(req);
-    },
-    [ensureWorker],
-  );
+  const setMock = useCallback((mock: MockTelemetryValues) => {
+    const worker = workerRef.current;
+    if (!worker) return;
+    const req: SimWorkerRequest = { type: "setMock", mock };
+    worker.postMessage(req);
+  }, []);
 
   const sendInput = useCallback((msg: SimInputMessage) => {
     const worker = workerRef.current;
@@ -244,20 +279,20 @@ export function useRadioSim() {
   }, []);
 
   const dispose = useCallback(() => {
-    for (const pending of pendingLoadRef.current.values()) {
-      pending.reject(new Error("Simulator disposed"));
+    const worker = workerRef.current;
+    if (worker) {
+      try {
+        worker.postMessage({ type: "dispose" } satisfies SimWorkerRequest);
+      } catch {
+        // worker may already be dead
+      }
     }
-    pendingLoadRef.current.clear();
-    workerRef.current?.postMessage({
-      type: "dispose",
-    } satisfies SimWorkerRequest);
-    workerRef.current?.terminate();
-    workerRef.current = null;
+    dropWorker("Simulator disposed");
     frameRef.current = null;
     frameSubscriberRef.current = null;
     setFirmware(null);
     setState(DEFAULT_STATE);
-  }, []);
+  }, [dropWorker]);
 
   const wasmSizeMb =
     firmware?.size != null
