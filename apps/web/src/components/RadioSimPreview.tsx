@@ -254,6 +254,8 @@ export function RadioSimPreview({
       setFrame(next);
     });
     return () => subscribeFrames(null);
+    // dispose() only clearLatest() — the hub keeps this subscriber across
+    // auto-recover, so bootNonce rebind is unnecessary.
   }, [subscribeFrames]);
 
   const layoutProfile = useMemo(() => {

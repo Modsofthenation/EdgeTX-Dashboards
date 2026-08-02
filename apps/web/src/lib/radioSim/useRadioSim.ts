@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from "react";
 import type {
   MockTelemetryValues,
   RadioSimState,
-  SimFrameData,
   SimInputMessage,
   SimWorkerRequest,
   SimWorkerResponse,
@@ -17,6 +16,12 @@ import {
   type SimManifest,
 } from "~/lib/radioSim/simFirmware";
 import { resolveReachableWasmUrl } from "~/lib/radioSim/resolveWasmUrl";
+import {
+  RadioSimFrameHub,
+  type FrameSubscriber,
+} from "~/lib/radioSim/frameHub";
+
+export type { FrameSubscriber };
 
 const DEFAULT_STATE: RadioSimState = {
   phase: "idle",
@@ -25,8 +30,6 @@ const DEFAULT_STATE: RadioSimState = {
   error: null,
   keyboardMode: "none",
 };
-
-export type FrameSubscriber = (frame: SimFrameData) => void;
 
 export type RadioSimInitOptions = {
   source: string;
@@ -69,8 +72,8 @@ function rejectPendingLoads(
 
 export function useRadioSim() {
   const workerRef = useRef<Worker | null>(null);
-  const frameRef = useRef<SimFrameData | null>(null);
-  const frameSubscriberRef = useRef<FrameSubscriber | null>(null);
+  const frameHubRef = useRef<RadioSimFrameHub | null>(null);
+  if (!frameHubRef.current) frameHubRef.current = new RadioSimFrameHub();
   const nextLoadRequestIdRef = useRef(1);
   const pendingLoadRef = useRef(
     new Map<number, { resolve: () => void; reject: (err: Error) => void }>(),
@@ -103,8 +106,7 @@ export function useRadioSim() {
       if (msg.type === "state") setState(msg.state);
       if (msg.type === "frame") {
         // Worker already throttles to ~30 Hz; deliver every transferred frame.
-        frameRef.current = msg.frame;
-        frameSubscriberRef.current?.(msg.frame);
+        frameHubRef.current?.publish(msg.frame);
       }
       if (msg.type === "error") {
         // Soft worker error (caught exception) — drop the worker so the next
@@ -272,10 +274,7 @@ export function useRadioSim() {
   }, []);
 
   const subscribeFrames = useCallback((subscriber: FrameSubscriber | null) => {
-    frameSubscriberRef.current = subscriber;
-    if (subscriber && frameRef.current) {
-      subscriber(frameRef.current);
-    }
+    frameHubRef.current?.subscribe(subscriber);
   }, []);
 
   const dispose = useCallback(() => {
@@ -288,8 +287,8 @@ export function useRadioSim() {
       }
     }
     dropWorker("Simulator disposed");
-    frameRef.current = null;
-    frameSubscriberRef.current = null;
+    // Clear latest frame only — keep the React subscriber across auto-recover.
+    frameHubRef.current?.clearLatest();
     setFirmware(null);
     setState(DEFAULT_STATE);
   }, [dropWorker]);
