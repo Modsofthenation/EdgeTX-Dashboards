@@ -9,14 +9,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)]",
+          "bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] hover:text-[var(--on-accent)]",
         secondary:
-          "border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-hover)]",
+          "border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]",
         outline:
-          "border border-[var(--border-strong)] bg-transparent hover:bg-[var(--surface-hover)]",
-        ghost: "hover:bg-[var(--surface-hover)] text-[var(--text)]",
-        destructive: "bg-[var(--error)] text-white hover:opacity-90",
-        link: "text-[var(--accent)] underline-offset-4 hover:underline",
+          "border border-[var(--border-strong)] bg-transparent text-[var(--text)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]",
+        ghost:
+          "hover:bg-[var(--surface-hover)] text-[var(--text)] hover:text-[var(--text)]",
+        destructive:
+          "bg-[var(--error)] text-white hover:opacity-90 hover:text-white",
+        link: "text-[var(--accent)] underline-offset-4 hover:underline hover:text-[var(--accent-hover)]",
       },
       size: {
         default: "h-9 px-4 py-2",

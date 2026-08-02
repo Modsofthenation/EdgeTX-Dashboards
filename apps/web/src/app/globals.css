@@ -532,14 +532,21 @@ button:active:not(:disabled) {
   transform: scale(0.98);
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-  transition: color var(--transition);
-}
+@layer base {
+  /*
+    Unlayered `a { color }` beats Tailwind utilities, so Button asChild+Link
+    (primary) rendered accent-on-accent and looked blank. Keep prose links in
+    @layer base so button text-* utilities win.
+  */
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--transition);
+  }
 
-a:hover {
-  color: var(--accent-hover);
+  a:hover {
+    color: var(--accent-hover);
+  }
 }
 
 code {
