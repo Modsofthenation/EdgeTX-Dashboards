@@ -1855,16 +1855,28 @@ export function EditorApp() {
         markDirty();
       }
       if (e.key === "Escape") {
-        setPasteOpen(false);
-        setExportOpen(false);
-        setCanvasMenu(null);
-        setSimOpen(false);
+        // Priority: UI chrome → selection → firmware RTN (one job per press).
+        if (pasteOpen || exportOpen || canvasMenu || simOpen || projectModal) {
+          setPasteOpen(false);
+          setExportOpen(false);
+          setCanvasMenu(null);
+          setSimOpen(false);
+          setProjectModal(null);
+          e.preventDefault();
+          return;
+        }
+        if (selectedIds.length > 0) {
+          setSelectedIds([]);
+          e.preventDefault();
+          return;
+        }
         // EdgeTX widget menus (Full screen / Widget settings) live in the WASM
-        // framebuffer — Esc pulses RTN so users can dismiss them.
+        // framebuffer — Esc pulses RTN so users can dismiss them. Skip when the
+        // interactive overlay is open (it owns Escape → KEY_EXIT).
         if (inlineSim) {
           dismissRadioUiRef.current?.();
         }
-        setSelectedIds([]);
+        return;
       }
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
@@ -1976,6 +1988,11 @@ export function EditorApp() {
     valid,
     geometryEditsLocked,
     inlineSim,
+    pasteOpen,
+    exportOpen,
+    canvasMenu,
+    simOpen,
+    projectModal,
   ]);
 
   const openSim = useCallback(() => {

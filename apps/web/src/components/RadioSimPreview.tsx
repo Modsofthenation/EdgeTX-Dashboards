@@ -110,14 +110,14 @@ function SimInteractiveOverlay({
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      // RTN first so EdgeTX widget menus close before the React shell unmounts.
-      onInput({ type: "simKey", key: 1, state: 1 });
-      onInput({ type: "simKey", key: 1, state: 0 });
+      // @edgetx/simulator-ui already pulses KEY_EXIT on Escape. Only close the
+      // React shell here — do not send a second RTN (would stack with sim-ui).
+      // EditorApp skips firmware dismiss while simOpen is true (modal priority).
       onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, onInput]);
+  }, [onClose]);
 
   if (typeof document === "undefined") return null;
 
