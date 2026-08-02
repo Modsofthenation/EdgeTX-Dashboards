@@ -336,6 +336,7 @@ export function EditorApp() {
   );
   /** True once radio WASM pixels actually ran this session (inline or modal). */
   const [simSeenThisSession, setSimSeenThisSession] = useState(false);
+  const dismissRadioUiRef = useRef<(() => void) | null>(null);
   const elementClipboardRef = useRef<string[]>([]);
   const selectionTextsRef = useRef<string[]>([]);
   const pendingSelectionRematchRef = useRef(false);
@@ -1854,11 +1855,28 @@ export function EditorApp() {
         markDirty();
       }
       if (e.key === "Escape") {
-        setPasteOpen(false);
-        setExportOpen(false);
-        setCanvasMenu(null);
-        setSimOpen(false);
-        setSelectedIds([]);
+        // Priority: UI chrome → selection → firmware RTN (one job per press).
+        if (pasteOpen || exportOpen || canvasMenu || simOpen || projectModal) {
+          setPasteOpen(false);
+          setExportOpen(false);
+          setCanvasMenu(null);
+          setSimOpen(false);
+          setProjectModal(null);
+          e.preventDefault();
+          return;
+        }
+        if (selectedIds.length > 0) {
+          setSelectedIds([]);
+          e.preventDefault();
+          return;
+        }
+        // EdgeTX widget menus (Full screen / Widget settings) live in the WASM
+        // framebuffer — Esc pulses RTN so users can dismiss them. Skip when the
+        // interactive overlay is open (it owns Escape → KEY_EXIT).
+        if (inlineSim) {
+          dismissRadioUiRef.current?.();
+        }
+        return;
       }
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
@@ -1969,6 +1987,12 @@ export function EditorApp() {
     saving,
     valid,
     geometryEditsLocked,
+    inlineSim,
+    pasteOpen,
+    exportOpen,
+    canvasMenu,
+    simOpen,
+    projectModal,
   ]);
 
   const openSim = useCallback(() => {
@@ -1979,6 +2003,18 @@ export function EditorApp() {
   const handleSimRunningChange = useCallback((running: boolean) => {
     if (running) setSimSeenThisSession(true);
   }, []);
+
+  const handleRadioInteractiveControls = useCallback(
+    (
+      controls: {
+        openInteractive: () => void;
+        dismissRadioUi: () => void;
+      } | null,
+    ) => {
+      dismissRadioUiRef.current = controls?.dismissRadioUi ?? null;
+    },
+    [],
+  );
 
   const handleInlineSimChange = useCallback((enabled: boolean) => {
     setInlineSim(enabled);
@@ -2384,6 +2420,7 @@ export function EditorApp() {
                           fillHost
                           modelPng={modelPngBytes}
                           onRunningChange={handleSimRunningChange}
+                          onInteractiveControls={handleRadioInteractiveControls}
                         />
                       ) : null
                     }

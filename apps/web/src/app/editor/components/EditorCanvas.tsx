@@ -391,6 +391,16 @@ export const EditorCanvas = memo(function EditorCanvas({
             ·
           </span>
           <span>Drag empty to marquee</span>
+          {hasRadioPreview ? (
+            <>
+              <span className={styles.canvasMetaSep} aria-hidden>
+                ·
+              </span>
+              <span title="Dismisses EdgeTX widget menus painted into the radio preview">
+                Esc = radio RTN
+              </span>
+            </>
+          ) : null}
         </p>
         {records.length === 0 && !hasRadioPreview ? (
           <p className={styles.canvasMetaEmpty}>
