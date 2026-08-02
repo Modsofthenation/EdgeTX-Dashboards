@@ -26,6 +26,8 @@ describe("themes", () => {
     assert.equal(isThemeId(DEFAULT_THEME), true);
     assert.equal(isThemeId("volt"), true);
     assert.equal(isThemeId("copper"), true);
+    assert.equal(isThemeId("aurora"), true);
+    assert.equal(isThemeId("candy"), true);
     assert.equal(isThemeId("not-a-theme"), false);
     assert.equal(isThemeId(null), false);
   });

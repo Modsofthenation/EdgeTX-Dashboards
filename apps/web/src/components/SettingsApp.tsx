@@ -102,20 +102,7 @@ export function SettingsApp() {
                         : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]",
                     )}
                   >
-                    <div className="mb-2 flex h-10 overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border)]">
-                      <span
-                        className="flex-1"
-                        style={{ background: swatch(opt.id).a }}
-                      />
-                      <span
-                        className="flex-1"
-                        style={{ background: swatch(opt.id).b }}
-                      />
-                      <span
-                        className="w-4"
-                        style={{ background: swatch(opt.id).accent }}
-                      />
-                    </div>
+                    <ThemePreviewSwatch id={opt.id} />
                     <div className="text-sm font-semibold">{opt.label}</div>
                     <div className="text-xs text-[var(--text-muted)]">
                       {opt.description}
@@ -153,8 +140,36 @@ export function SettingsApp() {
   );
 }
 
-function swatch(id: ThemeId): { a: string; b: string; accent: string } {
-  const map: Record<ThemeId, { a: string; b: string; accent: string }> = {
+function ThemePreviewSwatch({ id }: { id: ThemeId }) {
+  const colors = swatch(id);
+  return (
+    <div className="mb-2 flex h-10 overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border)]">
+      {colors.gradient ? (
+        <>
+          <span className="flex-[3]" style={{ background: colors.gradient }} />
+          <span className="w-4" style={{ background: colors.accent }} />
+        </>
+      ) : (
+        <>
+          <span className="flex-1" style={{ background: colors.a }} />
+          <span className="flex-1" style={{ background: colors.b }} />
+          <span className="w-4" style={{ background: colors.accent }} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function swatch(id: ThemeId): {
+  a: string;
+  b: string;
+  accent: string;
+  gradient?: string;
+} {
+  const map: Record<
+    ThemeId,
+    { a: string; b: string; accent: string; gradient?: string }
+  > = {
     light: { a: "#eef1f4", b: "#ffffff", accent: "#0f766e" },
     dark: { a: "#0c0e13", b: "#181d28", accent: "#14b8a6" },
     midnight: { a: "#070b16", b: "#111c33", accent: "#0ea5e9" },
@@ -168,6 +183,30 @@ function swatch(id: ThemeId): { a: string; b: string; accent: string } {
     ember: { a: "#140f0c", b: "#1f1712", accent: "#f59e0b" },
     volt: { a: "#0b0f0a", b: "#141a12", accent: "#a3e635" },
     copper: { a: "#16110e", b: "#221a15", accent: "#d97706" },
+    aurora: {
+      a: "#070b14",
+      b: "#131c2e",
+      accent: "#22d3ee",
+      gradient:
+        "linear-gradient(135deg, #22d3ee 0%, #34d399 45%, #e879f9 100%)",
+    },
+    sunset: {
+      a: "#140c0e",
+      b: "#271820",
+      accent: "#fb7185",
+      gradient:
+        "linear-gradient(135deg, #fb7185 0%, #f97316 50%, #fbbf24 100%)",
+    },
+    prism: {
+      a: "#f3f0f8",
+      b: "#ffffff",
+      accent: "#0d9488",
+      gradient:
+        "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 50%, #f472b6 100%)",
+    },
+    flare: { a: "#120814", b: "#261430", accent: "#e879f9" },
+    citrus: { a: "#121008", b: "#262010", accent: "#f59e0b" },
+    candy: { a: "#0e0a16", b: "#1e1630", accent: "#f472b6" },
   };
   return map[id];
 }
