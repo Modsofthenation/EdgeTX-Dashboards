@@ -17,6 +17,12 @@ export type UseLuaPreviewCommandsResult = {
   meta: PreviewParseMeta | null;
   /** True while a newer interpret is in flight (previous commands still painted). */
   pending: boolean;
+  /**
+   * True only while the applied snapshot source lags the current source.
+   * Scenario/profile pending must not keep drag hold transforms alive once
+   * geometry commands already match the committed Lua.
+   */
+  sourcePending: boolean;
 };
 
 const EMPTY_META: PreviewParseMeta = {
@@ -30,13 +36,36 @@ function scenarioKey(scenario: LayoutScenario): string {
   return JSON.stringify(scenario);
 }
 
+/** Pure pending flags for tests and the hook. */
+export function deriveLuaPreviewPending(input: {
+  source: string | null | undefined;
+  snapshot: {
+    source: string;
+    profileId: string;
+    scenarioKey: string;
+  } | null;
+  profileId: string;
+  scenarioKey: string;
+}): { pending: boolean; sourcePending: boolean } {
+  const { source, snapshot, profileId, scenarioKey: key } = input;
+  if (!source) return { pending: false, sourcePending: false };
+  const sourcePending = !snapshot || snapshot.source !== source;
+  const pending =
+    sourcePending ||
+    !snapshot ||
+    snapshot.profileId !== profileId ||
+    snapshot.scenarioKey !== key;
+  return { pending, sourcePending };
+}
+
 /**
  * Offloads applyMockToCommands to a worker. Keeps last-good commands while
  * pending so paint never blanks. Falls back to sync interpret if the worker
  * is unavailable.
  *
- * `pending` is derived from the applied snapshot vs current inputs so it flips
- * true synchronously on source change (critical for drag keep-alive).
+ * `pending` / `sourcePending` are derived from the applied snapshot vs current
+ * inputs so they flip true synchronously on source change (critical for drag
+ * keep-alive). Drag hold must use `sourcePending` only.
  */
 export function useLuaPreviewCommands(
   source: string | null | undefined,
@@ -53,13 +82,12 @@ export function useLuaPreviewCommands(
   const requestSeq = useRef(0);
   const key = scenarioKey(scenario);
 
-  const pending = Boolean(
-    source &&
-    (!snapshot ||
-      snapshot.source !== source ||
-      snapshot.profileId !== profileId ||
-      snapshot.scenarioKey !== key),
-  );
+  const { pending, sourcePending } = deriveLuaPreviewPending({
+    source,
+    snapshot,
+    profileId,
+    scenarioKey: key,
+  });
 
   useEffect(() => {
     if (!source) {
@@ -98,5 +126,6 @@ export function useLuaPreviewCommands(
     commands: snapshot?.commands ?? [],
     meta: snapshot?.meta ?? (source ? EMPTY_META : null),
     pending,
+    sourcePending,
   };
 }

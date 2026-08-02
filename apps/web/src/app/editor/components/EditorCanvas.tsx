@@ -87,7 +87,7 @@ export const EditorCanvas = memo(function EditorCanvas({
   const [previewDragHold, setPreviewDragHold] = useState<LiveDragState | null>(
     null,
   );
-  const [previewPending, setPreviewPending] = useState(false);
+  const [sourcePending, setSourcePending] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const spaceDownRef = useRef(false);
@@ -107,37 +107,38 @@ export const EditorCanvas = memo(function EditorCanvas({
   const showParserPreview = !inlineSim;
   const hasRadioPreview = Boolean(inlineSim);
 
-  // Clear overlay liveDrag once records reflect the committed Lua edit.
-  // In approximate mode, transfer the final transform into previewDragHold so
-  // the canvas does not flash the pre-drag position while the worker is stale.
+  // Clear overlay liveDrag once committed Lua source lands (drag → edit).
+  // Key off `source` (not `records`) so scenario/rematch churn cannot steal an
+  // active gesture or spuriously arm the hold. In approximate mode, transfer
+  // the final transform into previewDragHold until source interpret catches up.
   useLayoutEffect(() => {
     const current = liveDragRef.current;
     if (showParserPreview && current) {
       setPreviewDragHold(current);
-      // Synchronously mark pending — child onPendingChange runs too late for paint.
-      setPreviewPending(true);
+      // Synchronously mark source pending — child callback runs too late for paint.
+      setSourcePending(true);
     } else {
       setPreviewDragHold(null);
     }
     setLiveDrag(null);
-  }, [records, showParserPreview]);
+  }, [source, showParserPreview]);
 
   useLayoutEffect(() => {
-    if (!previewPending) {
+    if (!sourcePending) {
       setPreviewDragHold(null);
     }
-  }, [previewPending]);
+  }, [sourcePending]);
 
-  const onPreviewPendingChange = useCallback((pending: boolean) => {
-    setPreviewPending(pending);
+  const onSourcePendingChange = useCallback((pending: boolean) => {
+    setSourcePending(pending);
   }, []);
 
-  /** Active gesture wins; otherwise hold only while worker cmds are stale. */
+  /** Active gesture wins; otherwise hold only while source cmds are stale. */
   const canvasLiveDrag = resolveCanvasLiveDrag({
     liveDrag,
     previewDragHold,
     showParserPreview,
-    previewPending,
+    sourcePending,
   });
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -282,7 +283,7 @@ export const EditorCanvas = memo(function EditorCanvas({
             scenarioOverride={scenarioOverride}
             liveDrag={canvasLiveDrag}
             layoutProfileId={layoutProfileId}
-            onPendingChange={onPreviewPendingChange}
+            onPendingChange={onSourcePendingChange}
           />
         ) : null}
         {showSnapGuides && layout ? (

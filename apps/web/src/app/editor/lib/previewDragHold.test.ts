@@ -23,31 +23,45 @@ describe("resolveCanvasLiveDrag", () => {
         liveDrag: active,
         previewDragHold: move,
         showParserPreview: true,
-        previewPending: true,
+        sourcePending: true,
       }),
       active,
     );
   });
 
-  it("holds the final transform while approximate preview is pending", () => {
+  it("holds the final transform while source interpret lags", () => {
     assert.deepEqual(
       resolveCanvasLiveDrag({
         liveDrag: null,
         previewDragHold: move,
         showParserPreview: true,
-        previewPending: true,
+        sourcePending: true,
       }),
       move,
     );
   });
 
-  it("drops the hold once preview commands catch up", () => {
+  it("drops the hold once source commands catch up", () => {
     assert.equal(
       resolveCanvasLiveDrag({
         liveDrag: null,
         previewDragHold: move,
         showParserPreview: true,
-        previewPending: false,
+        sourcePending: false,
+      }),
+      null,
+    );
+  });
+
+  it("does not hold when only scenario/profile would still be pending", () => {
+    // Source already matches committed geometry; scenario mock lag must not
+    // re-apply the drag delta (would overshoot).
+    assert.equal(
+      resolveCanvasLiveDrag({
+        liveDrag: null,
+        previewDragHold: move,
+        showParserPreview: true,
+        sourcePending: false,
       }),
       null,
     );
@@ -59,7 +73,7 @@ describe("resolveCanvasLiveDrag", () => {
         liveDrag: null,
         previewDragHold: move,
         showParserPreview: false,
-        previewPending: true,
+        sourcePending: true,
       }),
       null,
     );

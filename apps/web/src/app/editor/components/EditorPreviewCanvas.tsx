@@ -33,8 +33,8 @@ interface EditorPreviewCanvasProps {
   /** In-progress drag/resize geometry (zone space) — does not re-parse Lua. */
   liveDrag?: LiveDragState | null;
   layoutProfileId?: string;
-  /** Notifies parent when worker interpret is pending (stale last-good cmds). */
-  onPendingChange?: (pending: boolean) => void;
+  /** Notifies parent when source interpret is pending (stale last-good cmds). */
+  onPendingChange?: (sourcePending: boolean) => void;
 }
 
 export const EditorPreviewCanvas = memo(function EditorPreviewCanvas({
@@ -55,15 +55,15 @@ export const EditorPreviewCanvas = memo(function EditorPreviewCanvas({
   );
 
   /** Off-thread applyMock — keeps last-good commands while pending. */
-  const { commands: parsedCommands, pending } = useLuaPreviewCommands(
+  const { commands: parsedCommands, sourcePending } = useLuaPreviewCommands(
     source,
     scenario,
     layoutProfileId,
   );
 
   useLayoutEffect(() => {
-    onPendingChange?.(pending);
-  }, [pending, onPendingChange]);
+    onPendingChange?.(sourcePending);
+  }, [sourcePending, onPendingChange]);
 
   const baseCommands = useMemo(
     () =>
