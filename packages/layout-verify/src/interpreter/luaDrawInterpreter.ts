@@ -260,13 +260,50 @@ function resolveColorToken(
   return null;
 }
 
+/** Resolve widget.options.Name / widget.options[N] to a seeded COLOR name. */
+function resolveOptionColorName(
+  expr: string,
+  ctx: EvalCtx,
+  optionIndex?: Map<number, string>,
+): string | null {
+  const trimmed = expr.trim();
+  const dotted = trimmed.match(/^widget\.options\.(\w+)$/);
+  if (dotted) {
+    const value = ctx[dotted[1]!];
+    return value != null ? String(value) : null;
+  }
+  const indexed = trimmed.match(/^widget\.options\[(\d+)\]$/);
+  if (indexed && optionIndex) {
+    const name = optionIndex.get(Number(indexed[1]));
+    if (!name) return null;
+    const value = ctx[name];
+    return value != null ? String(value) : null;
+  }
+  return null;
+}
+
 function resolveColor(
   flags: string,
   rgbMap: Record<string, string>,
   ctx: EvalCtx = {},
   fallback = "#ffffff",
+  optionIndex?: Map<number, string>,
 ): string {
-  const tokens = flags
+  const expanded = optionIndex
+    ? substituteWidgetOptions(flags, ctx, optionIndex)
+    : flags.replace(/widget\.options\.(\w+)/g, (_, name: string) => {
+        const value = ctx[name];
+        if (
+          typeof value === "string" &&
+          /^[A-Za-z_][A-Za-z0-9_]*$/.test(value)
+        ) {
+          return value;
+        }
+        if (typeof value === "number") return String(value);
+        return "0";
+      });
+
+  const tokens = expanded
     .split("+")
     .map((t) => t.trim())
     .filter(Boolean);
@@ -277,13 +314,13 @@ function resolveColor(
   }
 
   for (const name of EDGE_COLOR_NAMES) {
-    if (flags.includes(name)) return COLOR_MAP[name];
+    if (expanded.includes(name)) return COLOR_MAP[name];
   }
   for (const [name, hex] of Object.entries(THEME_COLOR_MAP)) {
-    if (flags.includes(name)) return hex;
+    if (expanded.includes(name)) return hex;
   }
   for (const [name, hex] of Object.entries(rgbMap)) {
-    if (flags.includes(name)) return hex;
+    if (expanded.includes(name)) return hex;
   }
   return fallback;
 }
@@ -292,8 +329,14 @@ function resolveDrawColor(
   colorExpr: string,
   rgbMap: Record<string, string>,
   ctx: EvalCtx = {},
+  optionIndex?: Map<number, string>,
 ): string {
   const trimmed = colorExpr.trim();
+  const fromOpt = resolveOptionColorName(trimmed, ctx, optionIndex);
+  if (fromOpt) {
+    const nested = resolveColorToken(fromOpt, rgbMap, ctx, "");
+    if (nested) return nested;
+  }
   const direct = resolveColorToken(trimmed, rgbMap, ctx, "");
   if (direct) return direct;
   if (trimmed in ctx) {
@@ -444,7 +487,7 @@ function skipQuotedString(source: string, start: number): number {
 function evalBoolExpr(expr: string, ctx: EvalCtx, dims: EvalDims): boolean {
   let e = expr.trim();
   if (dims.optionIndex) {
-    e = substituteWidgetOptions(e, ctx, dims.optionIndex);
+    e = substituteWidgetOptions(e, ctx, dims.optionIndex, "bool");
   }
   e = e.replace(/\btInfo\.value\b/g, String(ctx.timerSec ?? 154));
   e = substituteCtxNumbers(e, ctx);
@@ -458,6 +501,10 @@ function evalBoolExpr(expr: string, ctx: EvalCtx, dims: EvalDims): boolean {
   );
   for (const [k, v] of Object.entries(ctx)) {
     if (typeof v === "number") {
+      // Lua: only false/nil are falsy — numeric 0 is truthy when used bare.
+      // Keep == comparisons working by substituting the raw number; bare
+      // identifiers of 0 still become JS 0 (falsey). Prefer explicit == 1
+      // for BOOL options (the common EdgeTX pattern).
       e = e.replace(new RegExp(`\\b${k}\\b(?!\\.)`, "g"), String(v));
     } else if (typeof v === "string") {
       e = e.replace(new RegExp(`\\b${k}\\b(?!\\.)`, "g"), JSON.stringify(v));
@@ -684,26 +731,27 @@ function substituteWidgetOptions(
   expr: string,
   ctx: EvalCtx,
   optionIndex: Map<number, string>,
+  mode: "value" | "bool" = "value",
 ): string {
-  let e = expr;
-  e = e.replace(/widget\.options\.(\w+)/g, (_, name: string) => {
-    const value = ctx[name];
+  const replaceOptionValue = (value: unknown): string => {
     if (typeof value === "number") return String(value);
     // COLOR option defaults are seeded as EdgeTX color names (e.g. YELLOW).
     if (typeof value === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
+      // In bool exprs, bare color names become unresolved JS identifiers.
+      // Lua treats any non-nil/false value as truthy (including color consts).
+      if (mode === "bool") return "true";
       return value;
     }
     return "0";
-  });
+  };
+  let e = expr;
+  e = e.replace(/widget\.options\.(\w+)/g, (_, name: string) =>
+    replaceOptionValue(ctx[name]),
+  );
   e = e.replace(/widget\.options\[(\d+)\]/g, (_, index: string) => {
     const name = optionIndex.get(Number(index));
     if (!name) return "0";
-    const value = ctx[name];
-    if (typeof value === "number") return String(value);
-    if (typeof value === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
-      return value;
-    }
-    return "0";
+    return replaceOptionValue(ctx[name]);
   });
   return e;
 }
@@ -1629,7 +1677,12 @@ export function applyMockToCommands(
 
     const clearParsed = parseLcdCallWithSource(line, "clear");
     if (clearParsed?.args.length === 1) {
-      bg = resolveDrawColor(clearParsed.args[0]!, rgbMap, ctx);
+      bg = resolveDrawColor(
+        clearParsed.args[0]!,
+        rgbMap,
+        ctx,
+        evalDims.optionIndex,
+      );
       commands.push(attach({ kind: "clear", color: bg }, clearParsed));
       continue;
     }
@@ -1655,7 +1708,13 @@ export function applyMockToCommands(
               x,
               y,
               text,
-              color: resolveColor(flags, rgbMap, ctx),
+              color: resolveColor(
+                flags,
+                rgbMap,
+                ctx,
+                "#ffffff",
+                evalDims.optionIndex,
+              ),
               fontSize: resolveFontSize(flags),
               textAlign: resolveTextAlign(flags),
             },
@@ -1683,7 +1742,12 @@ export function applyMockToCommands(
             y: evalNumberExpr(lineArgs[1]!, ctx, evalDims) + dims.zoneY,
             x2: evalNumberExpr(lineArgs[2]!, ctx, evalDims) + dims.zoneX,
             y2: evalNumberExpr(lineArgs[3]!, ctx, evalDims) + dims.zoneY,
-            color: resolveDrawColor(colorExpr, rgbMap, ctx),
+            color: resolveDrawColor(
+              colorExpr,
+              rgbMap,
+              ctx,
+              evalDims.optionIndex,
+            ),
           },
           lineParsed,
         ),
@@ -1733,7 +1797,12 @@ export function applyMockToCommands(
             y: evalNumberExpr(fillArgs[1]!, ctx, evalDims) + dims.zoneY,
             w: evalNumberExpr(fillArgs[2]!, ctx, evalDims),
             h: evalNumberExpr(fillArgs[3]!, ctx, evalDims),
-            color: resolveDrawColor(fillArgs[4]!, rgbMap, ctx),
+            color: resolveDrawColor(
+              fillArgs[4]!,
+              rgbMap,
+              ctx,
+              evalDims.optionIndex,
+            ),
             ...(opacity != null ? { opacity } : {}),
           },
           fillParsed,
@@ -1753,7 +1822,12 @@ export function applyMockToCommands(
             y: evalNumberExpr(rectArgs[1]!, ctx, evalDims) + dims.zoneY,
             w: evalNumberExpr(rectArgs[2]!, ctx, evalDims),
             h: evalNumberExpr(rectArgs[3]!, ctx, evalDims),
-            color: resolveDrawColor(rectArgs[4]!, rgbMap, ctx),
+            color: resolveDrawColor(
+              rectArgs[4]!,
+              rgbMap,
+              ctx,
+              evalDims.optionIndex,
+            ),
           },
           rectParsed,
         ),
@@ -1779,6 +1853,7 @@ export function applyMockToCommands(
               typeof flags === "string" ? flags : "CYAN",
               rgbMap,
               ctx,
+              evalDims.optionIndex,
             ),
           },
           gaugeParsed,
@@ -1802,6 +1877,7 @@ export function applyMockToCommands(
               typeof flags === "string" ? flags : "WHITE",
               rgbMap,
               ctx,
+              evalDims.optionIndex,
             ),
           },
           circleParsed,
@@ -1825,6 +1901,7 @@ export function applyMockToCommands(
               typeof flags === "string" ? flags : "WHITE",
               rgbMap,
               ctx,
+              evalDims.optionIndex,
             ),
           },
           filledCircleParsed,
@@ -1850,6 +1927,7 @@ export function applyMockToCommands(
               typeof flags === "string" ? flags : "WHITE",
               rgbMap,
               ctx,
+              evalDims.optionIndex,
             ),
           },
           arcParsed,
@@ -1883,6 +1961,7 @@ export function applyMockToCommands(
               typeof flags === "string" ? flags : "CYAN",
               rgbMap,
               ctx,
+              evalDims.optionIndex,
             ),
           },
           annulusParsed,

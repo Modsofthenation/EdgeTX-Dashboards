@@ -445,6 +445,36 @@ describe("parseLuaToDrawCommands", () => {
     const text = cmds.find((c) => c.kind === "text");
     assert.equal(text?.color, "#ffffff");
   });
+
+  it("resolves direct and indexed COLOR options for draw colors", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local options = {",
+      '  { "ShowLink", BOOL, 1 },',
+      '  { "Accent", COLOR, CYAN },',
+      "}",
+      "local function refresh(widget)",
+      "  lcd.clear(BLACK)",
+      "  lcd.drawRectangle(10, 10, 40, 20, widget.options.Accent)",
+      "  lcd.drawRectangle(60, 10, 40, 20, widget.options[2])",
+      '  lcd.drawText(10, 40, "Hi", MIDSIZE + widget.options.Accent)',
+      "  if widget.options.Accent then",
+      '    lcd.drawText(10, 70, "accent-on", SMLSIZE + WHITE)',
+      "  end",
+      "end",
+      "return { options = options, refresh = refresh }",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    const rects = cmds.filter((c) => c.kind === "rect");
+    assert.equal(rects.length, 2);
+    assert.equal(rects[0]?.color, "#00ffff");
+    assert.equal(rects[1]?.color, "#00ffff");
+    const accentText = cmds.find((c) => c.kind === "text" && c.text === "Hi");
+    assert.equal(accentText?.color, "#00ffff");
+    const gated = cmds.find((c) => c.kind === "text" && c.text === "accent-on");
+    assert.ok(gated, "COLOR option in bool condition should be truthy");
+  });
 });
 
 describe("edgeTxDegToCanvasRad", () => {

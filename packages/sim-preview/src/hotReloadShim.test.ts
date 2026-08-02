@@ -22,9 +22,16 @@ describe("hotReloadShim", () => {
     assert.match(shim, /\/WIDGETS\/Whoop\/body\.lua/);
     // Body options are loaded at module scope for EdgeTX registration.
     assert.match(shim, /options = m\.options/);
-    // On gen bump, rebuild widget.options from body defaults (COLOR edits).
-    assert.match(shim, /local function defaultsFromOptions\(optionDefs\)/);
-    assert.match(shim, /opts = defaultsFromOptions\(m\.options\)/);
+    // On gen bump, merge COLOR defaults into live options (preserve BOOL/etc).
+    assert.match(
+      shim,
+      /local function mergeOptionDefaults\(liveOpts, optionDefs\)/,
+    );
+    assert.match(
+      shim,
+      /opts = mergeOptionDefaults\(widget\.options, m\.options\)/,
+    );
+    assert.match(shim, /elseif kind == COLOR then/);
     // gen advances only after a successful body load (retry same gen on fail).
     const checkReloadFn = shim.match(
       /local function checkReload\(\)\n([\s\S]*?)\nend\n\nlocal function create/,
@@ -49,7 +56,10 @@ describe("hotReloadShim", () => {
     assert.ok(backgroundFn);
     assert.ok(refreshFn);
     assert.match(refreshFn!, /checkReload\(\)/);
-    assert.match(refreshFn!, /defaultsFromOptions\(m\.options\)/);
+    assert.match(
+      refreshFn!,
+      /mergeOptionDefaults\(widget\.options, m\.options\)/,
+    );
     assert.doesNotMatch(updateFn!, /checkReload/);
     assert.doesNotMatch(backgroundFn!, /checkReload/);
     assert.match(updateFn!, /mod\.update/);

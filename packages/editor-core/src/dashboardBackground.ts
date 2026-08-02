@@ -63,9 +63,24 @@ export function resolveBgColorOption(source: string): string | null {
   return SAFE_COLOR_SET.has(color) ? color : null;
 }
 
+/** True when lcd.clear arg is bg / widget.options.BgColor or a proven alias. */
+export function isBgColorClearAlias(clearArg: string, source: string): boolean {
+  const arg = clearArg.trim();
+  if (arg === "bg" || arg === "widget.options.BgColor") return true;
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(arg)) return false;
+  // Proven local alias: `local dashboardBg = widget.options.BgColor`
+  const assign = new RegExp(
+    `(?:local\\s+)?\\b${arg}\\s*=\\s*widget\\.options\\.BgColor\\b`,
+  );
+  return assign.test(source);
+}
+
 function resolvePickerColor(clearArg: string, source: string): string {
   if (SAFE_COLOR_SET.has(clearArg)) return clearArg;
-  return resolveBgColorOption(source) ?? "BLACK";
+  if (isBgColorClearAlias(clearArg, source)) {
+    return resolveBgColorOption(source) ?? "BLACK";
+  }
+  return "BLACK";
 }
 
 /** Read current background mode from widget Lua. */
@@ -279,11 +294,7 @@ export function applyDashboardBackground(
   if (input.mode === "color") {
     next = removeBgImage(next);
     const current = detectDashboardBackground(source);
-    const usesBgOption =
-      current.clearArg === "bg" ||
-      current.clearArg === "widget.options.BgColor" ||
-      /BgColor/.test(current.clearArg) ||
-      /\bbg\s*=\s*widget\.options\.BgColor/.test(source);
+    const usesBgOption = isBgColorClearAlias(current.clearArg, source);
 
     if (usesBgOption) {
       next = patchBgColorOption(next, color);

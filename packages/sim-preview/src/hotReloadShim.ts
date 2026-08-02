@@ -45,8 +45,9 @@ export function buildHotReloadGenSource(generation: number): string {
  *
  * Body `options` are loaded once at module scope so EdgeTX registers the real
  * option defaults (ShowLink, etc.) instead of an empty table. On body gen
- * bumps we rebuild widget.options from the new defaults so COLOR edits
- * (BgColor / TextColor) from the editor take effect in radio preview.
+ * bumps we merge COLOR defaults (and newly added options) into the live
+ * widget.options table so editor COLOR edits take effect without wiping
+ * BOOL/SOURCE/VALUE selections the user already set.
  */
 export function buildHotReloadShimSource(folderName: string): string {
   const safe = sanitizeWidgetFolderName(folderName);
@@ -63,14 +64,27 @@ local gen = -1
 local mod = nil
 local options = {}
 
-local function defaultsFromOptions(optionDefs)
+local function mergeOptionDefaults(liveOpts, optionDefs)
   local opts = {}
+  if type(liveOpts) == "table" then
+    for k, v in pairs(liveOpts) do
+      opts[k] = v
+    end
+  end
   if type(optionDefs) ~= "table" then
     return opts
   end
   for _, def in ipairs(optionDefs) do
     if type(def) == "table" and type(def[1]) == "string" then
-      opts[def[1]] = def[3]
+      local optName = def[1]
+      local kind = def[2]
+      local default = def[3]
+      if opts[optName] == nil then
+        opts[optName] = default
+      elseif kind == COLOR then
+        -- COLOR defaults come from the edited body; preserve other kinds.
+        opts[optName] = default
+      end
     end
   end
   return opts
@@ -138,11 +152,11 @@ local function refresh(widget, event, touch)
   -- When body generation changes, re-run create into the live widget table
   -- so telemetry src caches match the new script (geometry-only edits still
   -- work even without this; structural create() changes need it).
-  -- Rebuild options from the new body defaults so COLOR option edits
-  -- (BgColor/TextColor) from the editor are not stuck on the previous value.
+  -- Merge COLOR defaults (and new options) into live options so COLOR edits
+  -- from the editor apply without resetting BOOL/SOURCE/VALUE selections.
   if m and type(m.create) == "function" and gen ~= prevGen then
     local zone = widget.zone
-    local opts = defaultsFromOptions(m.options)
+    local opts = mergeOptionDefaults(widget.options, m.options)
     local fresh = m.create(zone, opts)
     if type(fresh) == "table" then
       for k in pairs(widget) do

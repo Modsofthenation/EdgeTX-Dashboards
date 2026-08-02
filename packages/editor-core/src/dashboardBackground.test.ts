@@ -54,6 +54,22 @@ describe("dashboardBackground", () => {
     assert.match(black, /lcd\.clear\(bg\)/);
   });
 
+  it("does not inherit BgColor for unrelated lcd.clear args", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local options = {",
+      '  { "BgColor", COLOR, YELLOW },',
+      "}",
+      "local function refresh(widget)",
+      "  lcd.clear(customThemeColor)",
+      "end",
+      "return { options = options, refresh = refresh }",
+    ].join("\n");
+    const state = detectDashboardBackground(source);
+    assert.equal(state.clearArg, "customThemeColor");
+    assert.equal(state.color, "BLACK");
+  });
+
   it("switches to model bitmap fullscreen draw", () => {
     const next = applyDashboardBackground(STARTER_WIDGET_SOURCE, {
       mode: "model",
