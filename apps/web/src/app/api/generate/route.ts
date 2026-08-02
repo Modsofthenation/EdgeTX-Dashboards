@@ -1,5 +1,5 @@
 import {
-  CursorAgentError,
+  formatAgentStartupError,
   getSessionStore,
   listModelCatalog,
   validateGenerateRequest,
@@ -138,12 +138,7 @@ export async function POST(request: Request): Promise<Response> {
         if (request.signal.aborted) {
           return;
         }
-        const message =
-          err instanceof CursorAgentError
-            ? `Startup failed: ${err.message}`
-            : err instanceof Error
-              ? err.message
-              : "Unknown error";
+        const message = formatAgentStartupError(err);
         send({
           type: "error",
           content: message,

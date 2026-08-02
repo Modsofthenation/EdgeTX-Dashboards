@@ -113,7 +113,7 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 
 - Never commit `.env`, API keys, or secrets
 - `GENERATOR_API_SECRET` optional for non-localhost API use
-- Cursor local agent sandbox is **on by default**; set `CURSOR_SANDBOX_ENABLED=0` only when debugging needs broader FS access (see `.env.example`)
+- Cursor local agent sandbox is **on by default** for web/dev; set `CURSOR_SANDBOX_ENABLED=0` only when debugging needs broader FS access (see `.env.example`). Packaged desktop sets `CURSOR_SANDBOX_ENABLED=0` automatically (Windows sandbox requires WSL2).
 - Sanitize widget names via `packages/generator/src/paths.ts` (no path traversal)
 - Do not expose absolute filesystem paths in SSE responses
 - Desktop Tauri file I/O uses dialog-owned commands or the app-data directory — never free-path writes from the webview
