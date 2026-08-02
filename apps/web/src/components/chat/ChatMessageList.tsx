@@ -142,12 +142,13 @@ export function ChatMessageList({
           <div
             className={styles.galleryFilters}
             role="group"
-            aria-label="Template variants"
+            aria-label="Filter by protocol"
           >
             {VARIANT_FILTERS.map((f) => (
               <button
                 key={f.id}
                 type="button"
+                aria-pressed={variantFilter === f.id}
                 className={
                   variantFilter === f.id
                     ? styles.galleryFilterActive
