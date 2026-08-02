@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EdgeTX Dashboards — UI/UX Wireframe Proposals</title>
+    <style>
+      :root {
+        --bg: #f4f4f5;
+        --paper: #ffffff;
+        --ink: #18181b;
+        --muted: #71717a;
+        --line: #d4d4d8;
+        --line-strong: #a1a1aa;
+        --accent: #3f3f46;
+        --fill: #e4e4e7;
+        --fill-2: #f4f4f5;
+        --ok: #16a34a;
+        --warn: #ca8a04;
+        --radius: 6px;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font);
+        color: var(--ink);
+        background: var(--bg);
+        line-height: 1.45;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+      }
+
+      .hero {
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+
+      h1 {
+        font-size: 28px;
+        margin: 0 0 8px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .lede {
+        max-width: 72ch;
+        color: var(--muted);
+        margin: 0;
+      }
+
+      .toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 20px 0 0;
+      }
+
+      .toc a {
+        text-decoration: none;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+      }
+
+      .toc a:hover {
+        border-color: var(--line-strong);
+      }
+
+      section.screen {
+        margin-top: 40px;
+        scroll-margin-top: 16px;
+      }
+
+      .screen-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px 16px;
+        margin-bottom: 12px;
+      }
+
+      .screen-head h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 650;
+      }
+
+      .screen-meta {
+        font-size: 12px;
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+
+      .note {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .note strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .frame {
+        background: #ececee;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .wire {
+        background: var(--paper);
+        border: 1.5px solid var(--ink);
+        border-radius: 8px;
+        overflow: hidden;
+        min-height: 420px;
+      }
+
+      .row {
+        display: flex;
+        min-height: inherit;
+      }
+
+      .col {
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--ink);
+      }
+
+      .col:last-child {
+        border-right: none;
+      }
+
+      .box {
+        border: 1.5px dashed var(--line-strong);
+        background: var(--fill-2);
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .box.solid {
+        border-style: solid;
+        border-color: var(--line);
+        background: var(--fill);
+        color: var(--ink);
+      }
+
+      .label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--ink);
+        min-height: 40px;
+        background: #fafafa;
+      }
+
+      .bar .brand {
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 11px;
+        background: var(--paper);
+        white-space: nowrap;
+      }
+
+      .chip.active {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .chip.ghost {
+        border-style: dashed;
+        color: var(--muted);
+      }
+
+      .btn {
+        border: 1.5px solid var(--ink);
+        background: var(--paper);
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      .btn.primary {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .btn.ghost {
+        border-style: dashed;
+        color: var(--muted);
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: #fafafa;
+      }
+
+      .sidebar .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .sidebar .nav-item.active {
+        background: var(--fill);
+        font-weight: 600;
+      }
+
+      .sidebar .section-title {
+        padding: 12px 12px 6px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .content {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+
+      .card {
+        border: 1.5px solid var(--ink);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+
+      .card .thumb {
+        height: 72px;
+        background: repeating-linear-gradient(
+          -45deg,
+          #e4e4e7,
+          #e4e4e7 6px,
+          #f4f4f5 6px,
+          #f4f4f5 12px
+        );
+        border-bottom: 1px solid var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .card .body {
+        padding: 8px;
+      }
+
+      .card .title {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0 0 2px;
+      }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .msg {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 12px;
+        max-width: 90%;
+      }
+
+      .msg.user {
+        align-self: flex-end;
+        background: var(--fill);
+        border-color: var(--line-strong);
+      }
+
+      .msg.assistant {
+        align-self: flex-start;
+      }
+
+      .composer {
+        border-top: 1px solid var(--ink);
+        padding: 10px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        background: #fafafa;
+      }
+
+      .composer .field {
+        flex: 1;
+        border: 1.5px solid var(--ink);
+        border-radius: 6px;
+        min-height: 56px;
+        padding: 8px;
+        font-size: 12px;
+        color: var(--muted);
+        background: var(--paper);
+      }
+
+      .lcd {
+        aspect-ratio: 480 / 320;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
+        background: #111;
+        border: 2px solid var(--ink);
+        border-radius: 4px;
+        color: #aaa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-family: var(--mono);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--ink);
+        font-size: 12px;
+        font-weight: 600;
+        background: #fafafa;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--ink);
+      }
+
+      .tabs .tab {
+        padding: 8px 12px;
+        font-size: 12px;
+        border-right: 1px solid var(--line);
+      }
+
+      .tabs .tab.active {
+        font-weight: 700;
+        background: var(--fill);
+      }
+
+      .list-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+
+      .list-row .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--line-strong);
+        flex-shrink: 0;
+      }
+
+      .ia {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .ia {
+          grid-template-columns: 1fr;
+        }
+        .grid-3,
+        .grid-4 {
+          grid-template-columns: 1fr 1fr;
+        }
+        .sidebar {
+          width: 160px;
+        }
+      }
+
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+
+      .flow .arrow {
+        color: var(--muted);
+      }
+
+      .callout {
+        border-left: 3px solid var(--ink);
+        padding-left: 10px;
+        margin: 8px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      @media (max-width: 800px) {
+        .compare {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .compare h3 {
+        margin: 0 0 8px;
+        font-size: 14px;
+      }
+
+      ul.tight {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      ul.tight li {
+        margin: 3px 0;
+      }
+
+      .footer-note {
+        margin-top: 48px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* Mobile wireframe */
+      .phone {
+        width: 280px;
+        margin: 0 auto;
+        border: 2px solid var(--ink);
+        border-radius: 18px;
+        overflow: hidden;
+        background: var(--paper);
+        min-height: 480px;
+      }
+
+      .phone .notch {
+        height: 18px;
+        background: #fafafa;
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+        font-size: 9px;
+        color: var(--muted);
+        line-height: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="eyebrow">Design exploration · low-fidelity · Shadcn-oriented</p>
+        <h1>UI/UX &amp; IA overhaul — wireframe proposals</h1>
+        <p class="lede">
+          Review sketches for a Shadcn-based redesign of EdgeTX Dashboards.
+          Goal: clearer product structure (Library → Studio → Editor → Ship),
+          less modal sprawl, and one app shell shared by AI generate and visual
+          layout. Boxes are structural only — not visual polish.
+        </p>
+        <nav class="toc" aria-label="Wireframe screens">
+          <a href="#ia">01 IA</a>
+          <a href="#shell">02 App shell</a>
+          <a href="#home">03 Home / Library</a>
+          <a href="#studio">04 Studio</a>
+          <a href="#editor">05 Editor</a>
+          <a href="#templates">06 Templates</a>
+          <a href="#export">07 Export</a>
+          <a href="#settings">08 Settings</a>
+          <a href="#mobile">09 Mobile</a>
+          <a href="#alt">10 Alt layouts</a>
+        </nav>
+        <div class="frame" style="margin-top: 20px">
+          <div class="label" style="margin-bottom: 10px">
+            Quick visual scan (generated low-fi frames)
+          </div>
+          <div class="grid-2-scan">
+            <figure class="scan">
+              <img src="wf-00-ia-sitemap.png" alt="Proposed IA sitemap wireframe" />
+              <figcaption>IA sitemap</figcaption>
+            </figure>
+            <figure class="scan">
+              <img src="wf-01-home-library.png" alt="Home library wireframe" />
+              <figcaption>Home / Library</figcaption>
+            </figure>
+            <figure class="scan">
+              <img src="wf-02-studio.png" alt="Studio wireframe" />
+              <figcaption>Studio</figcaption>
+            </figure>
+            <figure class="scan">
+              <img src="wf-03-editor.png" alt="Editor wireframe" />
+              <figcaption>Editor</figcaption>
+            </figure>
+            <figure class="scan">
+              <img src="wf-04-export-sheet.png" alt="Export sheet wireframe" />
+              <figcaption>Export Sheet</figcaption>
+            </figure>
+          </div>
+        </div>
+      </header>
+      <style>
+        .grid-2-scan {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        @media (max-width: 800px) {
+          .grid-2-scan {
+            grid-template-columns: 1fr;
+          }
+        }
+        .scan {
+          margin: 0;
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          overflow: hidden;
+          background: #fff;
+        }
+        .scan img {
+          display: block;
+          width: 100%;
+          height: auto;
+          vertical-align: top;
+        }
+        .scan figcaption {
+          padding: 6px 8px;
+          font-size: 12px;
+          color: var(--muted);
+          border-top: 1px solid var(--line);
+        }
+      </style>
+
+      <!-- 01 IA -->
+      <section class="screen" id="ia">
+        <div class="screen-head">
+          <h2>01 — Proposed information architecture</h2>
+          <span class="screen-meta">sitemap · mental model</span>
+        </div>
+        <div class="note">
+          <strong>Shift:</strong> from “two tabs + modals” to a
+          <em>project-centric</em> app with four primary destinations and one
+          persistent shell. Chat history becomes project history. Preferences
+          become a Settings page (still openable as a Sheet from anywhere).
+        </div>
+        <div class="frame">
+          <div class="ia">
+            <div class="wire" style="min-height: auto; padding: 16px">
+              <div class="label">Current (simplified)</div>
+              <div class="stack" style="margin-top: 8px">
+                <div class="box solid">
+                  / Generate — History | Chat+Templates | Artifact preview
+                </div>
+                <div class="box solid">
+                  /editor Layout — Layers | Canvas | Properties (+ Assist)
+                </div>
+                <div class="box">
+                  Modals: Preferences · First-run · Project library · Import ·
+                  Export/Install · Sim verify · Validation failure
+                </div>
+              </div>
+              <p class="callout">
+                Pain: templates compete with empty chat; Layout feels like a
+                separate app; export/install buried in artifact panel; prefs as
+                modal only.
+              </p>
+            </div>
+            <div class="wire" style="min-height: auto; padding: 16px">
+              <div class="label">Proposed</div>
+              <div class="stack" style="margin-top: 8px">
+                <div class="box solid">App shell — Sidebar + top command bar</div>
+                <div class="box solid">/ Home — recent projects + quick start</div>
+                <div class="box solid">
+                  /studio/[id] — AI chat + live preview (was Generate)
+                </div>
+                <div class="box solid">
+                  /editor/[id] — visual layout (same project id)
+                </div>
+                <div class="box solid">/templates — gallery (start or fork)</div>
+                <div class="box solid">
+                  /settings — Appearance · AI · Simulator · Defaults
+                </div>
+                <div class="box">
+                  Overlays: Command palette · Export Sheet · Sim Sheet · Import
+                  Dialog
+                </div>
+              </div>
+              <div class="flow" style="margin-top: 12px">
+                <span class="chip">Browse</span>
+                <span class="arrow">→</span>
+                <span class="chip">Create</span>
+                <span class="arrow">→</span>
+                <span class="chip">Refine</span>
+                <span class="arrow">→</span>
+                <span class="chip active">Ship</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 Shell -->
+      <section class="screen" id="shell">
+        <div class="screen-head">
+          <h2>02 — Persistent app shell (Shadcn Sidebar)</h2>
+          <span class="screen-meta">shadcn/ui · Sidebar · Breadcrumb · Command</span>
+        </div>
+        <div class="note">
+          One chrome for every surface. Primary nav on the left; project context
+          and primary actions in the top bar. <strong>⌘K</strong> for jump /
+          new / open template / settings.
+        </div>
+        <div class="frame">
+          <div class="wire">
+            <div class="row" style="min-height: 440px">
+              <aside class="col sidebar">
+                <div class="bar">
+                  <span class="brand">ETX</span>
+                  <span class="muted">Dashboards</span>
+                </div>
+                <div class="section-title">Workspace</div>
+                <div class="nav-item active">⌂ Home</div>
+                <div class="nav-item">◇ Studio</div>
+                <div class="nav-item">▦ Editor</div>
+                <div class="nav-item">▤ Templates</div>
+                <div class="section-title">Project</div>
+                <div class="nav-item" style="font-size: 12px; color: var(--muted)">
+                  Whoop Race v3
+                </div>
+                <div class="nav-item" style="font-size: 12px; color: var(--muted)">
+                  RF Heli Nitro
+                </div>
+                <div class="spacer"></div>
+                <div class="nav-item">⚙ Settings</div>
+              </aside>
+              <div class="main">
+                <div class="bar">
+                  <span class="chip ghost">Home</span>
+                  <span class="muted">/</span>
+                  <span class="chip">Library</span>
+                  <span class="spacer"></span>
+                  <span class="chip ghost">⌘K Search</span>
+                  <span class="btn">New</span>
+                </div>
+                <div class="content">
+                  <div class="box" style="flex: 1; display: flex; align-items: center; justify-content: center">
+                    Route content (Home / Studio / Editor / …)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 03 Home -->
+      <section class="screen" id="home">
+        <div class="screen-head">
+          <h2>03 — Home / Library</h2>
+          <span class="screen-meta">entry · projects · quick start</span>
+        </div>
+        <div class="note">
+          Replace the blank chat + template strip with a proper home.
+          Three equal entry paths: <strong>Describe with AI</strong>,
+          <strong>Start from template</strong>, <strong>Blank / Import</strong>.
+          Recent projects are first-class cards (interactive containers — OK for
+          cards).
+        </div>
+        <div class="frame">
+          <div class="wire">
+            <div class="row" style="min-height: 480px">
+              <aside class="col sidebar">
+                <div class="bar"><span class="brand">ETX</span></div>
+                <div class="nav-item active">⌂ Home</div>
+                <div class="nav-item">◇ Studio</div>
+                <div class="nav-item">▦ Editor</div>
+                <div class="nav-item">▤ Templates</div>
+                <div class="nav-item">⚙ Settings</div>
+              </aside>
+              <div class="main">
+                <div class="bar">
+                  <span class="brand">Home</span>
+                  <span class="spacer"></span>
+                  <span class="chip ghost">Radio: TX15</span>
+                  <span class="chip ghost">Protocol: Betaflight</span>
+                  <span class="btn primary">New dashboard</span>
+                </div>
+                <div class="content">
+                  <div class="grid-3">
+                    <div class="card">
+                      <div class="body stack">
+                        <div class="label">AI Studio</div>
+                        <p class="muted" style="margin: 0">
+                          Describe a dashboard in plain language
+                        </p>
+                        <span class="btn primary" style="align-self: start"
+                          >Describe…</span
+                        >
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="body stack">
+                        <div class="label">Templates</div>
+                        <p class="muted" style="margin: 0">
+                          Whoop, freestyle, RF heli, CRSF…
+                        </p>
+                        <span class="btn" style="align-self: start"
+                          >Browse gallery</span
+                        >
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="body stack">
+                        <div class="label">Blank / Import</div>
+                        <p class="muted" style="margin: 0">
+                          Empty board or paste existing Lua
+                        </p>
+                        <span class="btn" style="align-self: start"
+                          >Open editor</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                  <div class="label" style="margin-top: 6px">Recent projects</div>
+                  <div class="grid-4">
+                    <div class="card">
+                      <div class="thumb">480×320 preview</div>
+                      <div class="body">
+                        <p class="title">Whoop Race</p>
+                        <p class="muted" style="margin: 0">Edited 2h ago</p>
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="thumb">480×320 preview</div>
+                      <div class="body">
+                        <p class="title">RF Heli Nitro</p>
+                        <p class="muted" style="margin: 0">Edited yesterday</p>
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="thumb">480×320 preview</div>
+                      <div class="body">
+                        <p class="title">Dense CRSF</p>
+                        <p class="muted" style="margin: 0">Edited 3d ago</p>
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="thumb">+ New</div>
+                      <div class="body">
+                        <p class="title">Create blank</p>
+                        <p class="muted" style="margin: 0">TX15 · Layout1x1</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 Studio -->
+      <section class="screen" id="studio">
+        <div class="screen-head">
+          <h2>04 — Studio (AI generate + preview)</h2>
+          <span class="screen-meta">shadcn ResizablePanelGroup · was Generate</span>
+        </div>
+        <div class="note">
+          Chat left, radio preview right (always visible once a project exists).
+          Version select + Open in Editor + Export live in the preview header —
+          not buried under the LCD. Templates move out of the empty state into
+          Home / Templates.
+        </div>
+        <div class="frame">
+          <div class="wire">
+            <div class="row" style="min-height: 520px">
+              <aside class="col sidebar" style="width: 200px">
+                <div class="bar"><span class="brand">ETX</span></div>
+                <div class="nav-item">⌂ Home</div>
+                <div class="nav-item active">◇ Studio</div>
+                <div class="nav-item">▦ Editor</div>
+                <div class="nav-item">▤ Templates</div>
+                <div class="section-title">This project</div>
+                <div class="list-row"><span class="dot"></span> v1 draft</div>
+                <div class="list-row">
+                  <span class="dot" style="background: var(--ok)"></span> v2
+                  validated
+                </div>
+                <div class="list-row"><span class="dot"></span> v3 refine</div>
+              </aside>
+              <div class="main" style="border-right: 1px solid var(--ink)">
+                <div class="bar">
+                  <span class="chip active">Studio</span>
+                  <span class="muted">Whoop Race</span>
+                  <span class="spacer"></span>
+                  <span class="chip ghost">Betaflight</span>
+                  <span class="chip ghost">TX15</span>
+                </div>
+                <div class="content" style="flex: 1; overflow: auto">
+                  <div class="stack">
+                    <div class="msg user">
+                      Whoop dashboard: lipo, RSSI, GPS sats, timer. Dark cards,
+                      12px grid.
+                    </div>
+                    <div class="msg assistant">
+                      Writing main.lua… validating sensors… packaging.
+                      <div class="muted" style="margin-top: 6px">
+                        tools: listTelemetry · validateWidget · packageWidget
+                      </div>
+                    </div>
+                    <div class="msg assistant">
+                      Validated. Preview updated — open Editor to nudge layout,
+                      or Export for SD zip.
+                    </div>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="field">
+                    Refine… attach photo of radio screen optional
+                  </div>
+                  <span class="btn">Attach</span>
+                  <span class="btn primary">Send</span>
+                </div>
+              </div>
+              <div class="col" style="width: 300px">
+                <div class="panel-head">
+                  Preview
+                  <span class="spacer"></span>
+                  <span class="chip">v2</span>
+                </div>
+                <div class="content">
+                  <div class="lcd">LCD 480×320</div>
+                  <div class="stack">
+                    <span class="btn">Open interactive sim</span>
+                    <span class="btn">Open in Editor</span>
+                    <span class="btn primary">Export / Install</span>
+                  </div>
+                  <div class="box">
+                    Status: validated ✓ · name ≤10 · BF sensors
+                  </div>
+                  <div class="box">
+                    Radio feedback notes → refine (photo optional)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 Editor -->
+      <section class="screen" id="editor">
+        <div class="screen-head">
+          <h2>05 — Editor (visual layout)</h2>
+          <span class="screen-meta">Layers · Canvas · Inspector · same project</span>
+        </div>
+        <div class="note">
+          Keep the three-pane editor, but align chrome with Studio (same
+          sidebar, same project). Right inspector uses Shadcn
+          <strong>Tabs</strong>: Properties | Telemetry | Assist. Insert becomes
+          a left Sheet / popover, not a competing menu system.
+        </div>
+        <div class="frame">
+          <div class="wire">
+            <div class="row" style="min-height: 520px">
+              <aside class="col sidebar" style="width: 56px">
+                <div class="bar" style="justify-content: center; padding: 8px">
+                  <span class="brand">E</span>
+                </div>
+                <div
+                  class="nav-item"
+                  style="justify-content: center; padding: 10px 0"
+                  title="Home"
+                >
+                  ⌂
+                </div>
+                <div
+                  class="nav-item"
+                  style="justify-content: center; padding: 10px 0"
+                  title="Studio"
+                >
+                  ◇
+                </div>
+                <div
+                  class="nav-item active"
+                  style="justify-content: center; padding: 10px 0"
+                  title="Editor"
+                >
+                  ▦
+                </div>
+                <div
+                  class="nav-item"
+                  style="justify-content: center; padding: 10px 0"
+                  title="Templates"
+                >
+                  ▤
+                </div>
+              </aside>
+              <div class="col" style="width: 200px">
+                <div class="panel-head">
+                  Layers <span class="spacer"></span>
+                  <span class="btn" style="padding: 2px 6px">+</span>
+                </div>
+                <div class="list-row">▢ Panel bg</div>
+                <div class="list-row" style="background: var(--fill)">
+                  T Lipo V
+                </div>
+                <div class="list-row">T RSSI</div>
+                <div class="list-row">▬ Batt bar</div>
+                <div class="list-row">T Timer</div>
+                <div style="padding: 10px">
+                  <span class="btn" style="width: 100%; text-align: center"
+                    >Insert…</span
+                  >
+                </div>
+              </div>
+              <div class="main" style="border-right: 1px solid var(--ink)">
+                <div class="bar">
+                  <span class="chip active">Editor</span>
+                  <span class="muted">Whoop Race</span>
+                  <span class="chip ghost">dirty</span>
+                  <span class="spacer"></span>
+                  <span class="btn">Sim</span>
+                  <span class="btn">Studio</span>
+                  <span class="btn primary">Export</span>
+                </div>
+                <div
+                  class="content"
+                  style="
+                    align-items: center;
+                    justify-content: center;
+                    background: #ddd;
+                  "
+                >
+                  <div class="lcd" style="max-width: 360px">
+                    canvas + selection handles
+                  </div>
+                  <div class="muted">Radio preview toggle · zoom · grid</div>
+                </div>
+              </div>
+              <div class="col" style="width: 240px">
+                <div class="tabs">
+                  <div class="tab active">Props</div>
+                  <div class="tab">Telemetry</div>
+                  <div class="tab">Assist</div>
+                </div>
+                <div class="content stack">
+                  <div class="box solid">
+                    <div class="label">Text</div>
+                    Lipo V
+                  </div>
+                  <div class="box solid">
+                    <div class="label">Position</div>
+                    x 24 · y 36 · w 120 · h 28
+                  </div>
+                  <div class="box solid">
+                    <div class="label">Style</div>
+                    MIDSIZE · WHITE · LEFT
+                  </div>
+                  <div class="box">
+                    Bind sensor: RxBt ▾
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 Templates -->
+      <section class="screen" id="templates">
+        <div class="screen-head">
+          <h2>06 — Templates gallery</h2>
+          <span class="screen-meta">dedicated route · filter · fork</span>
+        </div>
+        <div class="note">
+          Full-page gallery with protocol / craft filters. Primary CTA per card:
+          <strong>Open in Editor</strong>. Secondary: <strong>Generate with
+          AI</strong> (uses template prompt). Avoids crowding the Studio empty
+          state.
+        </div>
+        <div class="frame">
+          <div class="wire">
+            <div class="row" style="min-height: 460px">
+              <aside class="col sidebar">
+                <div class="bar"><span class="brand">ETX</span></div>
+                <div class="nav-item">⌂ Home</div>
+                <div class="nav-item">◇ Studio</div>
+                <div class="nav-item">▦ Editor</div>
+                <div class="nav-item active">▤ Templates</div>
+              </aside>
+              <div class="main">
+                <div class="bar">
+                  <span class="brand">Templates</span>
+                  <span class="spacer"></span>
+                  <span class="chip active">All</span>
+                  <span class="chip">Betaflight</span>
+                  <span class="chip">Rotorflight</span>
+                  <span class="chip">CRSF</span>
+                  <span class="chip ghost">Search…</span>
+                </div>
+                <div class="content">
+                  <div class="grid-4">
+                    <div class="card">
+                      <div class="thumb">whoop board</div>
+                      <div class="body">
+                        <p class="title">Whoop Race</p>
+                        <p class="muted" style="margin: 0 0 6px">BF · TX15</p>
+                        <span class="btn primary" style="font-size: 11px"
+                          >Open in Editor</span
+                        >
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="thumb">freestyle</div>
+                      <div class="body">
+                        <p class="title">Freestyle</p>
+                        <p class="muted" style="margin: 0 0 6px">BF · TX15</p>
+                        <span class="btn primary" style="font-size: 11px"
+                          >Open in Editor</span
+                        >
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="thumb">heli electric</div>
+                      <div class="body">
+                        <p class="title">RF Heli Electric</p>
+                        <p class="muted" style="margin: 0 0 6px">RF · TX15</p>
+                        <span class="btn primary" style="font-size: 11px"
+                          >Open in Editor</span
+                        >
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="thumb">dense crsf</div>
+                      <div class="body">
+                        <p class="title">Dense CRSF</p>
+                        <p class="muted" style="margin: 0 0 6px">CRSF · TX15</p>
+                        <span class="btn primary" style="font-size: 11px"
+                          >Open in Editor</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 07 Export -->
+      <section class="screen" id="export">
+        <div class="screen-head">
+          <h2>07 — Export / Install Sheet</h2>
+          <span class="screen-meta">shadcn Sheet · stepped flow</span>
+        </div>
+        <div class="note">
+          One Ship surface reachable from Studio and Editor. Steps: Validate →
+          Package → Download zip / follow install guide. Validation failures
+          stay inline in the sheet (not a disconnected dialog).
+        </div>
+        <div class="frame">
+          <div class="wire" style="position: relative; min-height: 420px">
+            <div
+              class="content"
+              style="opacity: 0.35; pointer-events: none; min-height: 420px"
+            >
+              <div class="box" style="height: 100%">Studio / Editor behind</div>
+            </div>
+            <div
+              style="
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 360px;
+                background: var(--paper);
+                border-left: 2px solid var(--ink);
+                display: flex;
+                flex-direction: column;
+              "
+            >
+              <div class="panel-head">
+                Export / Install
+                <span class="spacer"></span>
+                <span class="muted">✕</span>
+              </div>
+              <div class="content stack" style="flex: 1">
+                <div class="flow">
+                  <span class="chip active">1 Validate</span>
+                  <span class="arrow">→</span>
+                  <span class="chip">2 Package</span>
+                  <span class="arrow">→</span>
+                  <span class="chip">3 Download</span>
+                </div>
+                <div class="box solid">
+                  <div class="label">Checks</div>
+                  ✓ structure · ✓ telemetry · ✓ lcd API<br />
+                  <span class="muted">2 design warnings (non-blocking)</span>
+                </div>
+                <div class="box">
+                  Widget name: <strong>WhoopRace</strong> (≤10)<br />
+                  Path: WIDGETS/WhoopRace/main.lua
+                </div>
+                <div class="box">
+                  Install guide preview (SD card steps…)
+                </div>
+                <span class="spacer"></span>
+                <span class="btn primary" style="text-align: center"
+                  >Download zip</span
+                >
+                <span class="btn" style="text-align: center"
+                  >Copy install guide</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 08 Settings -->
+      <section class="screen" id="settings">
+        <div class="screen-head">
+          <h2>08 — Settings (full page)</h2>
+          <span class="screen-meta">was Preferences modal</span>
+        </div>
+        <div class="note">
+          Promote Preferences to a routed page with a vertical subnav (Shadcn
+          pattern). Same content: Appearance, AI, Simulator, plus
+          <strong>Defaults</strong> (radio, protocol, layout profile) so Home /
+          Studio inherit them.
+        </div>
+        <div class="frame">
+          <div class="wire">
+            <div class="row" style="min-height: 420px">
+              <aside class="col sidebar">
+                <div class="bar"><span class="brand">ETX</span></div>
+                <div class="nav-item">⌂ Home</div>
+                <div class="nav-item">◇ Studio</div>
+                <div class="nav-item">▦ Editor</div>
+                <div class="nav-item">▤ Templates</div>
+                <div class="nav-item active">⚙ Settings</div>
+              </aside>
+              <div class="col" style="width: 180px">
+                <div class="panel-head">Settings</div>
+                <div class="nav-item active">Appearance</div>
+                <div class="nav-item">AI providers</div>
+                <div class="nav-item">Simulator</div>
+                <div class="nav-item">Defaults</div>
+              </div>
+              <div class="main">
+                <div class="bar"><span class="brand">Appearance</span></div>
+                <div class="content">
+                  <div class="label">Theme</div>
+                  <div class="grid-4">
+                    <div class="box solid" style="text-align: center">Light</div>
+                    <div class="box solid" style="text-align: center; outline: 2px solid var(--ink)">
+                      Dark ✓
+                    </div>
+                    <div class="box solid" style="text-align: center">
+                      Midnight
+                    </div>
+                    <div class="box solid" style="text-align: center">Ocean</div>
+                  </div>
+                  <p class="muted">
+                    Themes style the app chrome. Radio LCD canvas stays dark.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 09 Mobile -->
+      <section class="screen" id="mobile">
+        <div class="screen-head">
+          <h2>09 — Mobile (Studio)</h2>
+          <span class="screen-meta">bottom tabs · sheet preview</span>
+        </div>
+        <div class="note">
+          Collapse the sidebar into bottom tabs. Preview becomes a bottom Sheet
+          (“Show radio”). Editor remains best on desktop; mobile deep-links can
+          open Studio + Export.
+        </div>
+        <div class="frame">
+          <div class="phone">
+            <div class="notch">status</div>
+            <div class="bar">
+              <span class="brand">Whoop Race</span>
+              <span class="spacer"></span>
+              <span class="chip">Preview</span>
+            </div>
+            <div class="content stack" style="min-height: 320px">
+              <div class="msg user">Add GPS sats top-right</div>
+              <div class="msg assistant">Updated preview · validated</div>
+            </div>
+            <div class="composer">
+              <div class="field" style="min-height: 40px">Message…</div>
+              <span class="btn primary">↑</span>
+            </div>
+            <div
+              class="bar"
+              style="border-top: 1px solid var(--ink); border-bottom: none"
+            >
+              <span class="chip">Home</span>
+              <span class="chip active">Studio</span>
+              <span class="chip">Templates</span>
+              <span class="chip">More</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10 Alts -->
+      <section class="screen" id="alt">
+        <div class="screen-head">
+          <h2>10 — Alternate Studio layouts (pick a direction)</h2>
+          <span class="screen-meta">A/B/C for review</span>
+        </div>
+        <div class="compare">
+          <div class="frame">
+            <h3>A — Chat-primary (recommended)</h3>
+            <p class="muted" style="margin-top: 0">
+              Wide chat, narrow sticky preview. Best match for “describe →
+              refine” and current agent streaming.
+            </p>
+            <ul class="tight">
+              <li>Preview always on desktop</li>
+              <li>Export in preview header</li>
+              <li>Versions in left rail</li>
+            </ul>
+          </div>
+          <div class="frame">
+            <h3>B — Preview-primary</h3>
+            <p class="muted" style="margin-top: 0">
+              Large LCD center; chat as a right Sheet / drawer. Feels more like a
+              design tool, less like ChatGPT.
+            </p>
+            <ul class="tight">
+              <li>Stronger radio-first mindset</li>
+              <li>Harder for long agent transcripts</li>
+              <li>Good if AI is secondary to visual edit</li>
+            </ul>
+          </div>
+        </div>
+        <div class="compare" style="margin-top: 12px">
+          <div class="frame">
+            <h3>C — Unified workspace tabs</h3>
+            <p class="muted" style="margin-top: 0">
+              One project URL with tabs: Studio | Editor | Files | Export. No
+              separate /studio vs /editor routes — only mode switches.
+            </p>
+            <ul class="tight">
+              <li>Simplest IA for “one dashboard”</li>
+              <li>Heavier single page</li>
+              <li>Shadcn Tabs + Resizable panels</li>
+            </ul>
+          </div>
+          <div class="frame">
+            <h3>Shadcn building blocks</h3>
+            <ul class="tight">
+              <li>Sidebar / SidebarProvider</li>
+              <li>ResizablePanelGroup</li>
+              <li>Sheet (export, mobile preview, insert)</li>
+              <li>Dialog (import Lua, destructive confirms)</li>
+              <li>Tabs (inspector, settings)</li>
+              <li>Command (⌘K)</li>
+              <li>Breadcrumb, Button, Badge, ScrollArea</li>
+              <li>DropdownMenu (project / version)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer-note">
+        Open this file in a browser for review:
+        <code>docs/design/wireframes/index.html</code>. These are structural
+        proposals only — no implementation commitment. Feedback to capture:
+        (1) Home vs jump-straight-to-Studio, (2) Studio layout A/B/C, (3)
+        Settings page vs keep modal, (4) icon sidebar vs full labels in Editor.
+      </footer>
+    </div>
+  </body>
+</html>
