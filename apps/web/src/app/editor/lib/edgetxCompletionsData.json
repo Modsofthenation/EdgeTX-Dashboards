@@ -1,6 +1,6 @@
 {
   "defaultVersion": "2.11",
-  "generated": "2026-08-02T09:06:19.566Z",
+  "generated": "2026-08-02T09:16:15.653Z",
   "versions": {
     "2.10": {
       "version": "2.10",
@@ -18,7 +18,7 @@
         {
           "kind": "function",
           "label": "lcd.clear",
-          "insert": "clear([color])",
+          "insert": "clear()",
           "detail": "lcd.clear([color])",
           "info": "Clear the LCD screen",
           "module": "lcd",
@@ -36,7 +36,7 @@
         {
           "kind": "function",
           "label": "lcd.drawPoint",
-          "insert": "drawPoint(x, y, [flags])",
+          "insert": "drawPoint(x, y)",
           "detail": "lcd.drawPoint(x, y, [flags])",
           "info": "Draw a single pixel at (x,y) position",
           "module": "lcd",
@@ -45,7 +45,7 @@
         {
           "kind": "function",
           "label": "lcd.drawLine",
-          "insert": "drawLine(x1, y1, x2, y2, pattern, [flags])",
+          "insert": "drawLine(x1, y1, x2, y2, pattern)",
           "detail": "lcd.drawLine(x1, y1, x2, y2, pattern, [flags])",
           "info": "Draw a straight line on LCD",
           "module": "lcd",
@@ -54,7 +54,7 @@
         {
           "kind": "function",
           "label": "lcd.drawText",
-          "insert": "drawText(x, y, text, [flags], [inversColor])",
+          "insert": "drawText(x, y, text)",
           "detail": "lcd.drawText(x, y, text [, flags [, inversColor]])",
           "info": "Draw a text beginning at (x,y)",
           "module": "lcd",
@@ -63,7 +63,7 @@
         {
           "kind": "function",
           "label": "lcd.sizeText",
-          "insert": "sizeText(text, [flags])",
+          "insert": "sizeText(text)",
           "detail": "lcd.sizeText(text [, flags])",
           "info": "Get the width and height of a text string drawn with flags",
           "module": "lcd",
@@ -72,7 +72,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTextLines",
-          "insert": "drawTextLines(x, y, w, h, text, [flags])",
+          "insert": "drawTextLines(x, y, w, h, text)",
           "detail": "lcd.drawTextLines(x, y, w, h, text [, flags])",
           "info": "Draw text inside rectangle (x,y,w,h) with line breaks",
           "module": "lcd",
@@ -81,7 +81,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTimer",
-          "insert": "drawTimer(x, y, value, [flags], [inversColor])",
+          "insert": "drawTimer(x, y, value)",
           "detail": "lcd.drawTimer(x, y, value [, flags [, inversColor]])",
           "info": "Display a value formatted as time at (x,y)",
           "module": "lcd",
@@ -90,7 +90,7 @@
         {
           "kind": "function",
           "label": "lcd.drawNumber",
-          "insert": "drawNumber(x, y, value, [flags], [inversColor])",
+          "insert": "drawNumber(x, y, value)",
           "detail": "lcd.drawNumber(x, y, value [, flags [, inversColor]])",
           "info": "Display a number at (x,y)",
           "module": "lcd",
@@ -99,7 +99,7 @@
         {
           "kind": "function",
           "label": "lcd.drawChannel",
-          "insert": "drawChannel(x, y, source, [flags])",
+          "insert": "drawChannel(x, y, source)",
           "detail": "lcd.drawChannel(x, y, source, flags)",
           "info": "Display a telemetry value at (x,y)",
           "module": "lcd",
@@ -108,7 +108,7 @@
         {
           "kind": "function",
           "label": "lcd.drawSwitch",
-          "insert": "drawSwitch(x, y, switch, [flags])",
+          "insert": "drawSwitch(x, y, switch)",
           "detail": "lcd.drawSwitch(x, y, switch, flags)",
           "info": "Draw a text representation of switch at (x,y)",
           "module": "lcd",
@@ -117,7 +117,7 @@
         {
           "kind": "function",
           "label": "lcd.drawSource",
-          "insert": "drawSource(x, y, source, [flags])",
+          "insert": "drawSource(x, y, source)",
           "detail": "lcd.drawSource(x, y, source [, flags])",
           "info": "Displays the name of the corresponding input as defined by the source at (x,y)",
           "module": "lcd",
@@ -135,7 +135,7 @@
         {
           "kind": "function",
           "label": "Bitmap.getSize",
-          "insert": "getSize(name, [bitmap])",
+          "insert": "getSize(name)",
           "detail": "Bitmap.getSize(name)",
           "info": "Return width, height of a bitmap object",
           "module": "Bitmap",
@@ -162,7 +162,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmap",
-          "insert": "drawBitmap(bitmap, x, y, [scale])",
+          "insert": "drawBitmap(bitmap, x, y)",
           "detail": "lcd.drawBitmap(bitmap, x, y [, scale])",
           "info": "Displays a bitmap at (x,y)",
           "module": "lcd",
@@ -171,7 +171,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmapPattern",
-          "insert": "drawBitmapPattern(bitmap, x, y, [flags])",
+          "insert": "drawBitmapPattern(bitmap, x, y)",
           "detail": "lcd.drawBitmapPattern(bitmap, x, y [, flags])",
           "info": "Displays a bitmap pattern at (x,y)",
           "module": "lcd",
@@ -180,7 +180,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmapPatternPie",
-          "insert": "drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle, [flags])",
+          "insert": "drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle)",
           "detail": "lcd.drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle [, flags])",
           "info": "Displays a bitmap pattern pie at (x,y)",
           "module": "lcd",
@@ -189,7 +189,7 @@
         {
           "kind": "function",
           "label": "lcd.drawRectangle",
-          "insert": "drawRectangle(x, y, w, h, [flags], [t], [opacity])",
+          "insert": "drawRectangle(x, y, w, h)",
           "detail": "lcd.drawRectangle(x, y, w, h [, flags [, t [, opacity]]])",
           "info": "Draw a rectangle from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -198,7 +198,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledRectangle",
-          "insert": "drawFilledRectangle(x, y, w, h, [flags], [opacity])",
+          "insert": "drawFilledRectangle(x, y, w, h)",
           "detail": "lcd.drawFilledRectangle(x, y, w, h [, flags [, opacity]])",
           "info": "Draw a solid rectangle from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -207,7 +207,7 @@
         {
           "kind": "function",
           "label": "lcd.invertRect",
-          "insert": "invertRect(x, y, w, h, [flags])",
+          "insert": "invertRect(x, y, w, h)",
           "detail": "lcd.invertRect(x, y, w, h [, flags])",
           "info": "Invert a rectangle zone from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -216,7 +216,7 @@
         {
           "kind": "function",
           "label": "lcd.drawGauge",
-          "insert": "drawGauge(x, y, w, h, fill, maxfill, [flags])",
+          "insert": "drawGauge(x, y, w, h, fill, maxfill)",
           "detail": "lcd.drawGauge(x, y, w, h, fill, maxfill [, flags])",
           "info": "Draw a simple gauge that is filled based upon fill value",
           "module": "lcd",
@@ -234,7 +234,7 @@
         {
           "kind": "function",
           "label": "lcd.getColor",
-          "insert": "getColor([flags])",
+          "insert": "getColor()",
           "detail": "lcd.getColor(flags)",
           "info": "Get the color value from flags",
           "module": "lcd",
@@ -252,7 +252,7 @@
         {
           "kind": "function",
           "label": "lcd.drawCircle",
-          "insert": "drawCircle(x, y, r, [flags])",
+          "insert": "drawCircle(x, y, r)",
           "detail": "lcd.drawCircle(x, y, r [, flags])",
           "info": "Draw a circle at (x, y) of specified radius",
           "module": "lcd",
@@ -261,7 +261,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledCircle",
-          "insert": "drawFilledCircle(x, y, r, [flags])",
+          "insert": "drawFilledCircle(x, y, r)",
           "detail": "lcd.drawFilledCircle(x, y, r [, flags])",
           "info": "Draw a filled circle at (x, y) of specified radius",
           "module": "lcd",
@@ -270,7 +270,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTriangle",
-          "insert": "drawTriangle(x1, y1, x2, y2, x3, y3, [flags])",
+          "insert": "drawTriangle(x1, y1, x2, y2, x3, y3)",
           "detail": "lcd.drawTriangle(x1, y1, x2, y2, x3, y3 [, flags])",
           "info": "Draw a triangle",
           "module": "lcd",
@@ -279,7 +279,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledTriangle",
-          "insert": "drawFilledTriangle(x1, y1, x2, y2, x3, y3, [flags])",
+          "insert": "drawFilledTriangle(x1, y1, x2, y2, x3, y3)",
           "detail": "lcd.drawFilledTriangle(x1, y1, x2, y2, x3, y3 [, flags])",
           "info": "Draw a filled triangle",
           "module": "lcd",
@@ -288,7 +288,7 @@
         {
           "kind": "function",
           "label": "lcd.drawArc",
-          "insert": "drawArc(x, y, r, start, end, [flags])",
+          "insert": "drawArc(x, y, r, start, end)",
           "detail": "lcd.drawArc(x, y, r, start, end [, flags])",
           "info": "Draw an arc",
           "module": "lcd",
@@ -297,7 +297,7 @@
         {
           "kind": "function",
           "label": "lcd.drawPie",
-          "insert": "drawPie(x, y, r, start, end, [flags])",
+          "insert": "drawPie(x, y, r, start, end)",
           "detail": "lcd.drawPie(x, y, r, start, end [, flags])",
           "info": "Draw a pie slice",
           "module": "lcd",
@@ -306,7 +306,7 @@
         {
           "kind": "function",
           "label": "lcd.drawAnnulus",
-          "insert": "drawAnnulus(x, y, r1, r2, start, end, [flags])",
+          "insert": "drawAnnulus(x, y, r1, r2, start, end)",
           "detail": "lcd.drawAnnulus(x, y, r1, r2, start, end [, flags])",
           "info": "Draw an arc",
           "module": "lcd",
@@ -315,7 +315,7 @@
         {
           "kind": "function",
           "label": "lcd.drawLineWithClipping",
-          "insert": "drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern, [flags])",
+          "insert": "drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern)",
           "detail": "lcd.drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern [, flags])",
           "info": "Draw a line only inside a rectangle",
           "module": "lcd",
@@ -324,7 +324,7 @@
         {
           "kind": "function",
           "label": "lcd.drawHudRectangle",
-          "insert": "drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax, [flags])",
+          "insert": "drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax)",
           "detail": "lcd.drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax [, flags])",
           "info": "Draw a rectangle in perspective",
           "module": "lcd",
@@ -648,7 +648,7 @@
         {
           "kind": "function",
           "label": "model.setSwashRing",
-          "insert": "setSwashRing(params, [value])",
+          "insert": "setSwashRing(params)",
           "detail": "model.setSwashRing(params)",
           "info": "Set heli swash parameters",
           "module": "model",
@@ -702,7 +702,7 @@
         {
           "kind": "function",
           "label": "lcd.drawCombobox",
-          "insert": "drawCombobox(x, y, w, list, idx, [flags])",
+          "insert": "drawCombobox(x, y, w, list, idx)",
           "detail": "lcd.drawCombobox(x, y, w, list, idx [, flags])",
           "info": "Draw a combo box",
           "module": "lcd",
@@ -815,7 +815,7 @@
         {
           "kind": "function",
           "label": "sportTelemetryPush",
-          "insert": "sportTelemetryPush([sensorId], [frameId], [dataId], [value])",
+          "insert": "sportTelemetryPush()",
           "detail": "sportTelemetryPush()",
           "info": "This functions allows for sending SPORT telemetry data toward the receiver, and more generally, to anything connected SPORT bus on the receiver or transmitter. When called without ",
           "name": "sportTelemetryPush"
@@ -823,7 +823,7 @@
         {
           "kind": "function",
           "label": "accessTelemetryPush",
-          "insert": "accessTelemetryPush([module], [rxUid], [sensorId], [frameId], [dataId], [value])",
+          "insert": "accessTelemetryPush()",
           "detail": "accessTelemetryPush()",
           "info": "This functions allows for sending SPORT / ACCESS telemetry data toward the receiver, and more generally, to anything connected SPORT bus on the receiver or transmitter. When called",
           "name": "accessTelemetryPush"
@@ -839,7 +839,7 @@
         {
           "kind": "function",
           "label": "crossfireTelemetryPush",
-          "insert": "crossfireTelemetryPush([command], [data])",
+          "insert": "crossfireTelemetryPush()",
           "detail": "crossfireTelemetryPush()",
           "info": "This functions allows for sending telemetry data toward the TBS Crossfire link. When called without parameters, it will only return the status of the output buffer without sending ",
           "name": "crossfireTelemetryPush"
@@ -855,7 +855,7 @@
         {
           "kind": "function",
           "label": "ghostTelemetryPush",
-          "insert": "ghostTelemetryPush([command], [data])",
+          "insert": "ghostTelemetryPush()",
           "detail": "ghostTelemetryPush()",
           "info": "This functions allows for sending telemetry data toward the Ghost link. When called without parameters, it will only return the status of the output buffer without sending anything",
           "name": "ghostTelemetryPush"
@@ -887,7 +887,7 @@
         {
           "kind": "function",
           "label": "playFile",
-          "insert": "playFile(filename, [volume])",
+          "insert": "playFile(filename)",
           "detail": "playFile(filename [, volume])",
           "info": "Play a file from the SD card",
           "name": "playFile"
@@ -895,7 +895,7 @@
         {
           "kind": "function",
           "label": "playNumber",
-          "insert": "playNumber(value, unit, [attributes], [volume])",
+          "insert": "playNumber(value, unit)",
           "detail": "playNumber(value, unit [, attributes [, volume]])",
           "info": "Play a numerical value (text to speech)",
           "name": "playNumber"
@@ -903,7 +903,7 @@
         {
           "kind": "function",
           "label": "playDuration",
-          "insert": "playDuration(duration, [hourFormat], [volume])",
+          "insert": "playDuration(duration)",
           "detail": "playDuration(duration [, hourFormat [, volume]])",
           "info": "Play a time value (text to speech)",
           "name": "playDuration"
@@ -911,7 +911,7 @@
         {
           "kind": "function",
           "label": "playTone",
-          "insert": "playTone(frequency, duration, pause, [flags], [freqIncr], [volume])",
+          "insert": "playTone(frequency, duration, pause)",
           "detail": "playTone(frequency, duration, pause [, flags [, freqIncr [, volume]]])",
           "info": "Play a tone",
           "name": "playTone"
@@ -919,7 +919,7 @@
         {
           "kind": "function",
           "label": "playHaptic",
-          "insert": "playHaptic(duration, pause, [flags])",
+          "insert": "playHaptic(duration, pause)",
           "detail": "playHaptic(duration, pause [, flags])",
           "info": "Generate haptic feedback",
           "name": "playHaptic"
@@ -975,7 +975,7 @@
         {
           "kind": "function",
           "label": "popupConfirmation",
-          "insert": "popupConfirmation(title, event, [message])",
+          "insert": "popupConfirmation(title, event)",
           "detail": "popupConfirmation(title, event) deprecated, please replace by",
           "info": "Raises a pop-up on screen that asks for confirmation",
           "name": "popupConfirmation"
@@ -991,7 +991,7 @@
         {
           "kind": "function",
           "label": "setTelemetryValue",
-          "insert": "setTelemetryValue(id, subID, instance, value, [unit], [precision], [name])",
+          "insert": "setTelemetryValue(id, subID, instance, value)",
           "detail": "setTelemetryValue(id, subID, instance, value [, unit [, precision [, name]]])",
           "info": "",
           "name": "setTelemetryValue"
@@ -1031,7 +1031,7 @@
         {
           "kind": "function",
           "label": "loadScript",
-          "insert": "loadScript(file, [mode], [env])",
+          "insert": "loadScript(file)",
           "detail": "loadScript(file [, mode], [,env])",
           "info": "Load a Lua script file. This is similar to Lua's own [loadfile()](https://www.lua.org/manual/5.2/manual.htmlpdf-loadfile) API method, but it uses OpenTx's optional pre-compilation ",
           "name": "loadScript"
@@ -1055,7 +1055,7 @@
         {
           "kind": "function",
           "label": "resetGlobalTimer",
-          "insert": "resetGlobalTimer([type], [optional])",
+          "insert": "resetGlobalTimer()",
           "detail": "resetGlobalTimer([type])",
           "info": "Resets the radio global timer to 0.",
           "name": "resetGlobalTimer"
@@ -1063,7 +1063,7 @@
         {
           "kind": "function",
           "label": "multiBuffer",
-          "insert": "multiBuffer(address, [value], [optional])",
+          "insert": "multiBuffer(address)",
           "detail": "multiBuffer(address[,value])",
           "info": "This function reads/writes the Multi protocol buffer to interact with a protocol².",
           "name": "multiBuffer"
@@ -1087,7 +1087,7 @@
         {
           "kind": "function",
           "label": "serialRead",
-          "insert": "serialRead([num])",
+          "insert": "serialRead()",
           "detail": "serialRead([num])",
           "info": "",
           "name": "serialRead"
@@ -1167,7 +1167,7 @@
         {
           "kind": "function",
           "label": "switches",
-          "insert": "switches([first], [last])",
+          "insert": "switches()",
           "detail": "switches([first[, last]])",
           "info": "",
           "name": "switches"
@@ -1191,7 +1191,7 @@
         {
           "kind": "function",
           "label": "sources",
-          "insert": "sources([first], [last])",
+          "insert": "sources()",
           "detail": "sources([first[, last]])",
           "info": "",
           "name": "sources"
@@ -1215,7 +1215,7 @@
         {
           "kind": "function",
           "label": "setRGBLedColor",
-          "insert": "setRGBLedColor(id, rvalue, bvalue, cvalue, [gvalue])",
+          "insert": "setRGBLedColor(id, rvalue, bvalue, cvalue)",
           "detail": "setRGBLedColor(id, rvalue, bvalue, cvalue)",
           "info": "",
           "name": "setRGBLedColor"
@@ -3966,7 +3966,7 @@
         {
           "kind": "function",
           "label": "lcd.clear",
-          "insert": "clear([color])",
+          "insert": "clear()",
           "detail": "lcd.clear([color])",
           "info": "Clear the LCD screen",
           "module": "lcd",
@@ -3984,7 +3984,7 @@
         {
           "kind": "function",
           "label": "lcd.drawPoint",
-          "insert": "drawPoint(x, y, [flags])",
+          "insert": "drawPoint(x, y)",
           "detail": "lcd.drawPoint(x, y, [flags])",
           "info": "Draw a single pixel at (x,y) position",
           "module": "lcd",
@@ -3993,7 +3993,7 @@
         {
           "kind": "function",
           "label": "lcd.drawLine",
-          "insert": "drawLine(x1, y1, x2, y2, pattern, [flags])",
+          "insert": "drawLine(x1, y1, x2, y2, pattern)",
           "detail": "lcd.drawLine(x1, y1, x2, y2, pattern, [flags])",
           "info": "Draw a straight line on LCD",
           "module": "lcd",
@@ -4002,7 +4002,7 @@
         {
           "kind": "function",
           "label": "lcd.drawText",
-          "insert": "drawText(x, y, text, [flags], [inversColor])",
+          "insert": "drawText(x, y, text)",
           "detail": "lcd.drawText(x, y, text [, flags [, inversColor]])",
           "info": "Draw a text beginning at (x,y)",
           "module": "lcd",
@@ -4011,7 +4011,7 @@
         {
           "kind": "function",
           "label": "lcd.sizeText",
-          "insert": "sizeText(text, [flags])",
+          "insert": "sizeText(text)",
           "detail": "lcd.sizeText(text [, flags])",
           "info": "Get the width and height of a text string drawn with flags",
           "module": "lcd",
@@ -4020,7 +4020,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTextLines",
-          "insert": "drawTextLines(x, y, w, h, text, [flags])",
+          "insert": "drawTextLines(x, y, w, h, text)",
           "detail": "lcd.drawTextLines(x, y, w, h, text [, flags])",
           "info": "Draw text inside rectangle (x,y,w,h) with line breaks",
           "module": "lcd",
@@ -4029,7 +4029,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTimer",
-          "insert": "drawTimer(x, y, value, [flags], [inversColor])",
+          "insert": "drawTimer(x, y, value)",
           "detail": "lcd.drawTimer(x, y, value [, flags [, inversColor]])",
           "info": "Display a value formatted as time at (x,y)",
           "module": "lcd",
@@ -4038,7 +4038,7 @@
         {
           "kind": "function",
           "label": "lcd.drawNumber",
-          "insert": "drawNumber(x, y, value, [flags], [inversColor])",
+          "insert": "drawNumber(x, y, value)",
           "detail": "lcd.drawNumber(x, y, value [, flags [, inversColor]])",
           "info": "Display a number at (x,y)",
           "module": "lcd",
@@ -4047,7 +4047,7 @@
         {
           "kind": "function",
           "label": "lcd.drawChannel",
-          "insert": "drawChannel(x, y, source, [flags])",
+          "insert": "drawChannel(x, y, source)",
           "detail": "lcd.drawChannel(x, y, source, flags)",
           "info": "Display a telemetry value at (x,y)",
           "module": "lcd",
@@ -4056,7 +4056,7 @@
         {
           "kind": "function",
           "label": "lcd.drawSwitch",
-          "insert": "drawSwitch(x, y, switch, [flags])",
+          "insert": "drawSwitch(x, y, switch)",
           "detail": "lcd.drawSwitch(x, y, switch, flags)",
           "info": "Draw a text representation of switch at (x,y)",
           "module": "lcd",
@@ -4065,7 +4065,7 @@
         {
           "kind": "function",
           "label": "lcd.drawSource",
-          "insert": "drawSource(x, y, source, [flags])",
+          "insert": "drawSource(x, y, source)",
           "detail": "lcd.drawSource(x, y, source [, flags])",
           "info": "Displays the name of the corresponding input as defined by the source at (x,y)",
           "module": "lcd",
@@ -4083,7 +4083,7 @@
         {
           "kind": "function",
           "label": "Bitmap.getSize",
-          "insert": "getSize(name, [bitmap])",
+          "insert": "getSize(name)",
           "detail": "Bitmap.getSize(name)",
           "info": "Return width, height of a bitmap object",
           "module": "Bitmap",
@@ -4110,7 +4110,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmap",
-          "insert": "drawBitmap(bitmap, x, y, [scale])",
+          "insert": "drawBitmap(bitmap, x, y)",
           "detail": "lcd.drawBitmap(bitmap, x, y [, scale])",
           "info": "Displays a bitmap at (x,y)",
           "module": "lcd",
@@ -4119,7 +4119,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmapPattern",
-          "insert": "drawBitmapPattern(bitmap, x, y, [flags])",
+          "insert": "drawBitmapPattern(bitmap, x, y)",
           "detail": "lcd.drawBitmapPattern(bitmap, x, y [, flags])",
           "info": "Displays a bitmap pattern at (x,y)",
           "module": "lcd",
@@ -4128,7 +4128,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmapPatternPie",
-          "insert": "drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle, [flags])",
+          "insert": "drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle)",
           "detail": "lcd.drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle [, flags])",
           "info": "Displays a bitmap pattern pie at (x,y)",
           "module": "lcd",
@@ -4137,7 +4137,7 @@
         {
           "kind": "function",
           "label": "lcd.drawRectangle",
-          "insert": "drawRectangle(x, y, w, h, [flags], [t], [opacity])",
+          "insert": "drawRectangle(x, y, w, h)",
           "detail": "lcd.drawRectangle(x, y, w, h [, flags [, t [, opacity]]])",
           "info": "Draw a rectangle from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -4146,7 +4146,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledRectangle",
-          "insert": "drawFilledRectangle(x, y, w, h, [flags], [opacity])",
+          "insert": "drawFilledRectangle(x, y, w, h)",
           "detail": "lcd.drawFilledRectangle(x, y, w, h [, flags [, opacity]])",
           "info": "Draw a solid rectangle from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -4155,7 +4155,7 @@
         {
           "kind": "function",
           "label": "lcd.invertRect",
-          "insert": "invertRect(x, y, w, h, [flags])",
+          "insert": "invertRect(x, y, w, h)",
           "detail": "lcd.invertRect(x, y, w, h [, flags])",
           "info": "Invert a rectangle zone from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -4164,7 +4164,7 @@
         {
           "kind": "function",
           "label": "lcd.drawGauge",
-          "insert": "drawGauge(x, y, w, h, fill, maxfill, [flags])",
+          "insert": "drawGauge(x, y, w, h, fill, maxfill)",
           "detail": "lcd.drawGauge(x, y, w, h, fill, maxfill [, flags])",
           "info": "Draw a simple gauge that is filled based upon fill value",
           "module": "lcd",
@@ -4182,7 +4182,7 @@
         {
           "kind": "function",
           "label": "lcd.getColor",
-          "insert": "getColor([flags])",
+          "insert": "getColor()",
           "detail": "lcd.getColor(flags)",
           "info": "Get the color value from flags",
           "module": "lcd",
@@ -4200,7 +4200,7 @@
         {
           "kind": "function",
           "label": "lcd.drawCircle",
-          "insert": "drawCircle(x, y, r, [flags])",
+          "insert": "drawCircle(x, y, r)",
           "detail": "lcd.drawCircle(x, y, r [, flags])",
           "info": "Draw a circle at (x, y) of specified radius",
           "module": "lcd",
@@ -4209,7 +4209,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledCircle",
-          "insert": "drawFilledCircle(x, y, r, [flags])",
+          "insert": "drawFilledCircle(x, y, r)",
           "detail": "lcd.drawFilledCircle(x, y, r [, flags])",
           "info": "Draw a filled circle at (x, y) of specified radius",
           "module": "lcd",
@@ -4218,7 +4218,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTriangle",
-          "insert": "drawTriangle(x1, y1, x2, y2, x3, y3, [flags])",
+          "insert": "drawTriangle(x1, y1, x2, y2, x3, y3)",
           "detail": "lcd.drawTriangle(x1, y1, x2, y2, x3, y3 [, flags])",
           "info": "Draw a triangle",
           "module": "lcd",
@@ -4227,7 +4227,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledTriangle",
-          "insert": "drawFilledTriangle(x1, y1, x2, y2, x3, y3, [flags])",
+          "insert": "drawFilledTriangle(x1, y1, x2, y2, x3, y3)",
           "detail": "lcd.drawFilledTriangle(x1, y1, x2, y2, x3, y3 [, flags])",
           "info": "Draw a filled triangle",
           "module": "lcd",
@@ -4236,7 +4236,7 @@
         {
           "kind": "function",
           "label": "lcd.drawArc",
-          "insert": "drawArc(x, y, r, start, end, [flags])",
+          "insert": "drawArc(x, y, r, start, end)",
           "detail": "lcd.drawArc(x, y, r, start, end [, flags])",
           "info": "Draw an arc",
           "module": "lcd",
@@ -4245,7 +4245,7 @@
         {
           "kind": "function",
           "label": "lcd.drawPie",
-          "insert": "drawPie(x, y, r, start, end, [flags])",
+          "insert": "drawPie(x, y, r, start, end)",
           "detail": "lcd.drawPie(x, y, r, start, end [, flags])",
           "info": "Draw a pie slice",
           "module": "lcd",
@@ -4254,7 +4254,7 @@
         {
           "kind": "function",
           "label": "lcd.drawAnnulus",
-          "insert": "drawAnnulus(x, y, r1, r2, start, end, [flags])",
+          "insert": "drawAnnulus(x, y, r1, r2, start, end)",
           "detail": "lcd.drawAnnulus(x, y, r1, r2, start, end [, flags])",
           "info": "Draw an arc",
           "module": "lcd",
@@ -4263,7 +4263,7 @@
         {
           "kind": "function",
           "label": "lcd.drawLineWithClipping",
-          "insert": "drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern, [flags])",
+          "insert": "drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern)",
           "detail": "lcd.drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern [, flags])",
           "info": "Draw a line only inside a rectangle",
           "module": "lcd",
@@ -4272,7 +4272,7 @@
         {
           "kind": "function",
           "label": "lcd.drawHudRectangle",
-          "insert": "drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax, [flags])",
+          "insert": "drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax)",
           "detail": "lcd.drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax [, flags])",
           "info": "Draw a rectangle in perspective",
           "module": "lcd",
@@ -4335,7 +4335,7 @@
         {
           "kind": "function",
           "label": "lcd.drawCombobox",
-          "insert": "drawCombobox(x, y, w, list, idx, [flags])",
+          "insert": "drawCombobox(x, y, w, list, idx)",
           "detail": "lcd.drawCombobox(x, y, w, list, idx [, flags])",
           "info": "Draw a combo box",
           "module": "lcd",
@@ -4668,7 +4668,7 @@
         {
           "kind": "function",
           "label": "model.setSwashRing",
-          "insert": "setSwashRing(params, [value])",
+          "insert": "setSwashRing(params)",
           "detail": "model.setSwashRing(params)",
           "info": "Set heli swash parameters",
           "module": "model",
@@ -4805,7 +4805,7 @@
         {
           "kind": "function",
           "label": "sportTelemetryPush",
-          "insert": "sportTelemetryPush([sensorId], [frameId], [dataId], [value])",
+          "insert": "sportTelemetryPush()",
           "detail": "sportTelemetryPush()",
           "info": "This functions allows for sending SPORT telemetry data toward the receiver, and more generally, to anything connected SPORT bus on the receiver or transmitter. When called without ",
           "name": "sportTelemetryPush"
@@ -4813,7 +4813,7 @@
         {
           "kind": "function",
           "label": "accessTelemetryPush",
-          "insert": "accessTelemetryPush([module], [rxUid], [sensorId], [frameId], [dataId], [value])",
+          "insert": "accessTelemetryPush()",
           "detail": "accessTelemetryPush()",
           "info": "This functions allows for sending SPORT / ACCESS telemetry data toward the receiver, and more generally, to anything connected SPORT bus on the receiver or transmitter. When called",
           "name": "accessTelemetryPush"
@@ -4829,7 +4829,7 @@
         {
           "kind": "function",
           "label": "crossfireTelemetryPush",
-          "insert": "crossfireTelemetryPush([command], [data])",
+          "insert": "crossfireTelemetryPush()",
           "detail": "crossfireTelemetryPush()",
           "info": "This functions allows for sending telemetry data toward the TBS Crossfire link. When called without parameters, it will only return the status of the output buffer without sending ",
           "name": "crossfireTelemetryPush"
@@ -4845,7 +4845,7 @@
         {
           "kind": "function",
           "label": "ghostTelemetryPush",
-          "insert": "ghostTelemetryPush([command], [data])",
+          "insert": "ghostTelemetryPush()",
           "detail": "ghostTelemetryPush()",
           "info": "This functions allows for sending telemetry data toward the Ghost link. When called without parameters, it will only return the status of the output buffer without sending anything",
           "name": "ghostTelemetryPush"
@@ -4877,7 +4877,7 @@
         {
           "kind": "function",
           "label": "playFile",
-          "insert": "playFile(filename, [volume])",
+          "insert": "playFile(filename)",
           "detail": "playFile(filename [, volume])",
           "info": "Play a file from the SD card",
           "name": "playFile"
@@ -4885,7 +4885,7 @@
         {
           "kind": "function",
           "label": "playNumber",
-          "insert": "playNumber(value, unit, [attributes], [volume])",
+          "insert": "playNumber(value, unit)",
           "detail": "playNumber(value, unit [, attributes [, volume]])",
           "info": "Play a numerical value (text to speech)",
           "name": "playNumber"
@@ -4893,7 +4893,7 @@
         {
           "kind": "function",
           "label": "playDuration",
-          "insert": "playDuration(duration, [hourFormat], [volume])",
+          "insert": "playDuration(duration)",
           "detail": "playDuration(duration [, hourFormat [, volume]])",
           "info": "Play a time value (text to speech)",
           "name": "playDuration"
@@ -4901,7 +4901,7 @@
         {
           "kind": "function",
           "label": "playTone",
-          "insert": "playTone(frequency, duration, pause, [flags], [freqIncr], [volume])",
+          "insert": "playTone(frequency, duration, pause)",
           "detail": "playTone(frequency, duration, pause [, flags [, freqIncr [, volume]]])",
           "info": "Play a tone",
           "name": "playTone"
@@ -4917,7 +4917,7 @@
         {
           "kind": "function",
           "label": "playHaptic",
-          "insert": "playHaptic(duration, pause, [flags])",
+          "insert": "playHaptic(duration, pause)",
           "detail": "playHaptic(duration, pause [, flags])",
           "info": "Generate haptic feedback",
           "name": "playHaptic"
@@ -4973,7 +4973,7 @@
         {
           "kind": "function",
           "label": "popupConfirmation",
-          "insert": "popupConfirmation(title, event, [message])",
+          "insert": "popupConfirmation(title, event)",
           "detail": "popupConfirmation(title, event) deprecated, please replace by",
           "info": "Raises a pop-up on screen that asks for confirmation",
           "name": "popupConfirmation"
@@ -4989,7 +4989,7 @@
         {
           "kind": "function",
           "label": "setTelemetryValue",
-          "insert": "setTelemetryValue(id, subID, instance, value, [unit], [precision], [name])",
+          "insert": "setTelemetryValue(id, subID, instance, value)",
           "detail": "setTelemetryValue(id, subID, instance, value [, unit [, precision [, name]]])",
           "info": "",
           "name": "setTelemetryValue"
@@ -5021,7 +5021,7 @@
         {
           "kind": "function",
           "label": "loadScript",
-          "insert": "loadScript(file, [mode], [env])",
+          "insert": "loadScript(file)",
           "detail": "loadScript(file [, mode], [,env])",
           "info": "Load a Lua script file. This is similar to Lua's own [loadfile()](https://www.lua.org/manual/5.2/manual.htmlpdf-loadfile) API method, but it uses OpenTx's optional pre-compilation ",
           "name": "loadScript"
@@ -5045,7 +5045,7 @@
         {
           "kind": "function",
           "label": "resetGlobalTimer",
-          "insert": "resetGlobalTimer([type], [optional])",
+          "insert": "resetGlobalTimer()",
           "detail": "resetGlobalTimer([type])",
           "info": "Resets the radio global timer to 0.",
           "name": "resetGlobalTimer"
@@ -5053,7 +5053,7 @@
         {
           "kind": "function",
           "label": "multiBuffer",
-          "insert": "multiBuffer(address, [value], [optional])",
+          "insert": "multiBuffer(address)",
           "detail": "multiBuffer(address[,value])",
           "info": "This function reads/writes the Multi protocol buffer to interact with a protocol².",
           "name": "multiBuffer"
@@ -5077,7 +5077,7 @@
         {
           "kind": "function",
           "label": "serialRead",
-          "insert": "serialRead([num])",
+          "insert": "serialRead()",
           "detail": "serialRead([num])",
           "info": "",
           "name": "serialRead"
@@ -5157,7 +5157,7 @@
         {
           "kind": "function",
           "label": "switches",
-          "insert": "switches([first], [last])",
+          "insert": "switches()",
           "detail": "switches([first[, last]])",
           "info": "",
           "name": "switches"
@@ -5181,7 +5181,7 @@
         {
           "kind": "function",
           "label": "sources",
-          "insert": "sources([first], [last])",
+          "insert": "sources()",
           "detail": "sources([first[, last]])",
           "info": "",
           "name": "sources"
@@ -5205,7 +5205,7 @@
         {
           "kind": "function",
           "label": "setRGBLedColor",
-          "insert": "setRGBLedColor(id, rvalue, bvalue, cvalue, [gvalue])",
+          "insert": "setRGBLedColor(id, rvalue, bvalue, cvalue)",
           "detail": "setRGBLedColor(id, rvalue, bvalue, cvalue)",
           "info": "",
           "name": "setRGBLedColor"
@@ -8060,7 +8060,7 @@
         {
           "kind": "function",
           "label": "lcd.clear",
-          "insert": "clear([color])",
+          "insert": "clear()",
           "detail": "lcd.clear([color])",
           "info": "Clear the LCD screen",
           "module": "lcd",
@@ -8078,7 +8078,7 @@
         {
           "kind": "function",
           "label": "lcd.drawPoint",
-          "insert": "drawPoint(x, y, [flags])",
+          "insert": "drawPoint(x, y)",
           "detail": "lcd.drawPoint(x, y)",
           "info": "Draw a single pixel at (x,y) position",
           "module": "lcd",
@@ -8087,7 +8087,7 @@
         {
           "kind": "function",
           "label": "lcd.drawLine",
-          "insert": "drawLine(x1, y1, x2, y2, pattern, [flags])",
+          "insert": "drawLine(x1, y1, x2, y2, pattern)",
           "detail": "lcd.drawLine(x1, y1, x2, y2, pattern, flags)",
           "info": "Draw a straight line on LCD",
           "module": "lcd",
@@ -8123,7 +8123,7 @@
         {
           "kind": "function",
           "label": "lcd.drawText",
-          "insert": "drawText(x, y, text, [flags])",
+          "insert": "drawText(x, y, text)",
           "detail": "lcd.drawText(x, y, text [, flags])",
           "info": "Draw a text beginning at (x,y)",
           "module": "lcd",
@@ -8132,7 +8132,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTimer",
-          "insert": "drawTimer(x, y, value, [flags])",
+          "insert": "drawTimer(x, y, value)",
           "detail": "lcd.drawTimer(x, y, value [, flags])",
           "info": "Display a value formatted as time at (x,y)",
           "module": "lcd",
@@ -8141,7 +8141,7 @@
         {
           "kind": "function",
           "label": "lcd.drawNumber",
-          "insert": "drawNumber(x, y, value, [flags])",
+          "insert": "drawNumber(x, y, value)",
           "detail": "lcd.drawNumber(x, y, value [, flags])",
           "info": "Display a number at (x,y)",
           "module": "lcd",
@@ -8150,7 +8150,7 @@
         {
           "kind": "function",
           "label": "lcd.drawChannel",
-          "insert": "drawChannel(x, y, source, [flags])",
+          "insert": "drawChannel(x, y, source)",
           "detail": "lcd.drawChannel(x, y, source, flags)",
           "info": "Display a telemetry value at (x,y)",
           "module": "lcd",
@@ -8159,7 +8159,7 @@
         {
           "kind": "function",
           "label": "lcd.drawSwitch",
-          "insert": "drawSwitch(x, y, switch, [flags])",
+          "insert": "drawSwitch(x, y, switch)",
           "detail": "lcd.drawSwitch(x, y, switch, flags)",
           "info": "Draw a text representation of switch at (x,y)",
           "module": "lcd",
@@ -8168,7 +8168,7 @@
         {
           "kind": "function",
           "label": "lcd.drawSource",
-          "insert": "drawSource(x, y, source, [flags])",
+          "insert": "drawSource(x, y, source)",
           "detail": "lcd.drawSource(x, y, source [, flags])",
           "info": "Displays the name of the corresponding input as defined by the source at (x,y)",
           "module": "lcd",
@@ -8186,7 +8186,7 @@
         {
           "kind": "function",
           "label": "lcd.drawRectangle",
-          "insert": "drawRectangle(x, y, w, h, [flags], [t])",
+          "insert": "drawRectangle(x, y, w, h)",
           "detail": "lcd.drawRectangle(x, y, w, h [, flags [, t]])",
           "info": "Draw a rectangle from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -8195,7 +8195,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledRectangle",
-          "insert": "drawFilledRectangle(x, y, w, h, [flags])",
+          "insert": "drawFilledRectangle(x, y, w, h)",
           "detail": "lcd.drawFilledRectangle(x, y, w, h [, flags])",
           "info": "Draw a solid rectangle from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -8204,7 +8204,7 @@
         {
           "kind": "function",
           "label": "lcd.drawGauge",
-          "insert": "drawGauge(x, y, w, h, fill, maxfill, [flags])",
+          "insert": "drawGauge(x, y, w, h, fill, maxfill)",
           "detail": "lcd.drawGauge(x, y, w, h, fill, maxfill [, flags])",
           "info": "Draw a simple gauge that is filled based upon fill value",
           "module": "lcd",
@@ -8222,7 +8222,7 @@
         {
           "kind": "function",
           "label": "lcd.drawCombobox",
-          "insert": "drawCombobox(x, y, w, list, idx, [flags])",
+          "insert": "drawCombobox(x, y, w, list, idx)",
           "detail": "lcd.drawCombobox(x, y, w, list, idx [, flags])",
           "info": "Draw a combo box",
           "module": "lcd",
@@ -8231,7 +8231,7 @@
         {
           "kind": "function",
           "label": "lcd.sizeText",
-          "insert": "sizeText(text, [flags])",
+          "insert": "sizeText(text)",
           "detail": "lcd.sizeText(text [, flags])",
           "info": "Get the width and height of a text string drawn with flags",
           "module": "lcd",
@@ -8240,7 +8240,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTextLines",
-          "insert": "drawTextLines(x, y, w, h, text, [flags])",
+          "insert": "drawTextLines(x, y, w, h, text)",
           "detail": "lcd.drawTextLines(x, y, w, h, text [, flags])",
           "info": "Draw text inside rectangle (x,y,w,h) with line breaks",
           "module": "lcd",
@@ -8258,7 +8258,7 @@
         {
           "kind": "function",
           "label": "Bitmap.getSize",
-          "insert": "getSize(name, [bitmap])",
+          "insert": "getSize(name)",
           "detail": "Bitmap.getSize(name)",
           "info": "Return width, height of a bitmap object",
           "module": "Bitmap",
@@ -8285,7 +8285,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmap",
-          "insert": "drawBitmap(bitmap, x, y, [scale])",
+          "insert": "drawBitmap(bitmap, x, y)",
           "detail": "lcd.drawBitmap(bitmap, x, y [, scale])",
           "info": "Displays a bitmap at (x,y)",
           "module": "lcd",
@@ -8294,7 +8294,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmapPattern",
-          "insert": "drawBitmapPattern(bitmap, x, y, [flags])",
+          "insert": "drawBitmapPattern(bitmap, x, y)",
           "detail": "lcd.drawBitmapPattern(bitmap, x, y [, flags])",
           "info": "Displays a bitmap pattern at (x,y)",
           "module": "lcd",
@@ -8303,7 +8303,7 @@
         {
           "kind": "function",
           "label": "lcd.drawBitmapPatternPie",
-          "insert": "drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle, [flags])",
+          "insert": "drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle)",
           "detail": "lcd.drawBitmapPatternPie(bitmap, x, y, startAngle, endAngle [, flags])",
           "info": "Displays a bitmap pattern pie at (x,y)",
           "module": "lcd",
@@ -8312,7 +8312,7 @@
         {
           "kind": "function",
           "label": "lcd.invertRect",
-          "insert": "invertRect(x, y, w, h, [flags])",
+          "insert": "invertRect(x, y, w, h)",
           "detail": "lcd.invertRect(x, y, w, h [, flags])",
           "info": "Invert a rectangle zone from top left corner (x,y) of specified width and height",
           "module": "lcd",
@@ -8330,7 +8330,7 @@
         {
           "kind": "function",
           "label": "lcd.getColor",
-          "insert": "getColor([flags])",
+          "insert": "getColor()",
           "detail": "lcd.getColor(flags)",
           "info": "Get the color value from flags",
           "module": "lcd",
@@ -8348,7 +8348,7 @@
         {
           "kind": "function",
           "label": "lcd.drawCircle",
-          "insert": "drawCircle(x, y, r, [flags])",
+          "insert": "drawCircle(x, y, r)",
           "detail": "lcd.drawCircle(x, y, r [, flags])",
           "info": "Draw a circle at (x, y) of specified radius",
           "module": "lcd",
@@ -8357,7 +8357,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledCircle",
-          "insert": "drawFilledCircle(x, y, r, [flags])",
+          "insert": "drawFilledCircle(x, y, r)",
           "detail": "lcd.drawFilledCircle(x, y, r [, flags])",
           "info": "Draw a filled circle at (x, y) of specified radius",
           "module": "lcd",
@@ -8366,7 +8366,7 @@
         {
           "kind": "function",
           "label": "lcd.drawTriangle",
-          "insert": "drawTriangle(x1, y1, x2, y2, x3, y3, [flags])",
+          "insert": "drawTriangle(x1, y1, x2, y2, x3, y3)",
           "detail": "lcd.drawTriangle(x1, y1, x2, y2, x3, y3 [, flags])",
           "info": "Draw a triangle",
           "module": "lcd",
@@ -8375,7 +8375,7 @@
         {
           "kind": "function",
           "label": "lcd.drawFilledTriangle",
-          "insert": "drawFilledTriangle(x1, y1, x2, y2, x3, y3, [flags])",
+          "insert": "drawFilledTriangle(x1, y1, x2, y2, x3, y3)",
           "detail": "lcd.drawFilledTriangle(x1, y1, x2, y2, x3, y3 [, flags])",
           "info": "Draw a filled triangle",
           "module": "lcd",
@@ -8384,7 +8384,7 @@
         {
           "kind": "function",
           "label": "lcd.drawArc",
-          "insert": "drawArc(x, y, r, start, end, [flags])",
+          "insert": "drawArc(x, y, r, start, end)",
           "detail": "lcd.drawArc(x, y, r, start, end [, flags])",
           "info": "Draw an arc",
           "module": "lcd",
@@ -8393,7 +8393,7 @@
         {
           "kind": "function",
           "label": "lcd.drawPie",
-          "insert": "drawPie(x, y, r, start, end, [flags])",
+          "insert": "drawPie(x, y, r, start, end)",
           "detail": "lcd.drawPie(x, y, r, start, end [, flags])",
           "info": "Draw a pie slice",
           "module": "lcd",
@@ -8402,7 +8402,7 @@
         {
           "kind": "function",
           "label": "lcd.drawAnnulus",
-          "insert": "drawAnnulus(x, y, r1, r2, start, end, [flags])",
+          "insert": "drawAnnulus(x, y, r1, r2, start, end)",
           "detail": "lcd.drawAnnulus(x, y, r1, r2, start, end [, flags])",
           "info": "Draw an arc",
           "module": "lcd",
@@ -8411,7 +8411,7 @@
         {
           "kind": "function",
           "label": "lcd.drawLineWithClipping",
-          "insert": "drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern, [flags])",
+          "insert": "drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern)",
           "detail": "lcd.drawLineWithClipping(x1, y1, x2, y2, xmin, xmax, ymin, ymax, pattern [, flags])",
           "info": "Draw a line only inside a rectangle",
           "module": "lcd",
@@ -8420,7 +8420,7 @@
         {
           "kind": "function",
           "label": "lcd.drawHudRectangle",
-          "insert": "drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax, [flags])",
+          "insert": "drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax)",
           "detail": "lcd.drawHudRectangle(pitch, roll, xmin, xmax, ymin, ymax [, flags])",
           "info": "Draw a rectangle in perspective",
           "module": "lcd",
@@ -8518,7 +8518,7 @@
         {
           "kind": "function",
           "label": "sportTelemetryPush",
-          "insert": "sportTelemetryPush([sensorId], [frameId], [dataId], [value])",
+          "insert": "sportTelemetryPush()",
           "detail": "sportTelemetryPush()",
           "info": "This functions allows for sending SPORT telemetry data toward the receiver, and more generally, to anything connected SPORT bus on the receiver or transmitter. When called without ",
           "name": "sportTelemetryPush"
@@ -8526,7 +8526,7 @@
         {
           "kind": "function",
           "label": "accessTelemetryPush",
-          "insert": "accessTelemetryPush([module], [rxUid], [sensorId], [frameId], [dataId], [value])",
+          "insert": "accessTelemetryPush()",
           "detail": "accessTelemetryPush()",
           "info": "This functions allows for sending SPORT / ACCESS telemetry data toward the receiver, and more generally, to anything connected SPORT bus on the receiver or transmitter. When called",
           "name": "accessTelemetryPush"
@@ -8542,7 +8542,7 @@
         {
           "kind": "function",
           "label": "crossfireTelemetryPush",
-          "insert": "crossfireTelemetryPush([command], [data])",
+          "insert": "crossfireTelemetryPush()",
           "detail": "crossfireTelemetryPush()",
           "info": "This functions allows for sending telemetry data toward the TBS Crossfire link. When called without parameters, it will only return the status of the output buffer without sending ",
           "name": "crossfireTelemetryPush"
@@ -8558,7 +8558,7 @@
         {
           "kind": "function",
           "label": "ghostTelemetryPush",
-          "insert": "ghostTelemetryPush([command], [data])",
+          "insert": "ghostTelemetryPush()",
           "detail": "ghostTelemetryPush()",
           "info": "This functions allows for sending telemetry data toward the Ghost link. When called without parameters, it will only return the status of the output buffer without sending anything",
           "name": "ghostTelemetryPush"
@@ -8590,7 +8590,7 @@
         {
           "kind": "function",
           "label": "playFile",
-          "insert": "playFile(filename, [volume])",
+          "insert": "playFile(filename)",
           "detail": "playFile(filename [, volume])",
           "info": "Play a file from the SD card",
           "name": "playFile"
@@ -8598,7 +8598,7 @@
         {
           "kind": "function",
           "label": "playNumber",
-          "insert": "playNumber(value, unit, [attributes], [volume])",
+          "insert": "playNumber(value, unit)",
           "detail": "playNumber(value, unit [, attributes [, volume]])",
           "info": "Play a numerical value (text to speech)",
           "name": "playNumber"
@@ -8606,7 +8606,7 @@
         {
           "kind": "function",
           "label": "playDuration",
-          "insert": "playDuration(duration, [hourFormat], [volume])",
+          "insert": "playDuration(duration)",
           "detail": "playDuration(duration [, hourFormat [, volume]])",
           "info": "Play a time value (text to speech)",
           "name": "playDuration"
@@ -8614,7 +8614,7 @@
         {
           "kind": "function",
           "label": "playTone",
-          "insert": "playTone(frequency, duration, pause, [flags], [freqIncr], [volume])",
+          "insert": "playTone(frequency, duration, pause)",
           "detail": "playTone(frequency, duration, pause [, flags [, freqIncr [, volume]]])",
           "info": "Play a tone",
           "name": "playTone"
@@ -8630,7 +8630,7 @@
         {
           "kind": "function",
           "label": "playHaptic",
-          "insert": "playHaptic(duration, pause, [flags])",
+          "insert": "playHaptic(duration, pause)",
           "detail": "playHaptic(duration, pause [, flags])",
           "info": "Generate haptic feedback",
           "name": "playHaptic"
@@ -8686,7 +8686,7 @@
         {
           "kind": "function",
           "label": "popupConfirmation",
-          "insert": "popupConfirmation(title, event, [message])",
+          "insert": "popupConfirmation(title, event)",
           "detail": "popupConfirmation(title, event) deprecated, please replace by",
           "info": "Raises a pop-up on screen that asks for confirmation",
           "name": "popupConfirmation"
@@ -8702,7 +8702,7 @@
         {
           "kind": "function",
           "label": "setTelemetryValue",
-          "insert": "setTelemetryValue(id, subID, instance, value, [unit], [precision], [name])",
+          "insert": "setTelemetryValue(id, subID, instance, value)",
           "detail": "setTelemetryValue(id, subID, instance, value [, unit [, precision [, name]]])",
           "info": "",
           "name": "setTelemetryValue"
@@ -8734,7 +8734,7 @@
         {
           "kind": "function",
           "label": "loadScript",
-          "insert": "loadScript(file, [mode], [env])",
+          "insert": "loadScript(file)",
           "detail": "loadScript(file [, mode], [,env])",
           "info": "Load a Lua script file. This is similar to Lua's own [loadfile()](https://www.lua.org/manual/5.2/manual.htmlpdf-loadfile) API method, but it uses OpenTx's optional pre-compilation ",
           "name": "loadScript"
@@ -8758,7 +8758,7 @@
         {
           "kind": "function",
           "label": "resetGlobalTimer",
-          "insert": "resetGlobalTimer([type], [optional])",
+          "insert": "resetGlobalTimer()",
           "detail": "resetGlobalTimer([type])",
           "info": "Resets the radio global timer to 0.",
           "name": "resetGlobalTimer"
@@ -8766,7 +8766,7 @@
         {
           "kind": "function",
           "label": "multiBuffer",
-          "insert": "multiBuffer(address, [value], [optional])",
+          "insert": "multiBuffer(address)",
           "detail": "multiBuffer(address[,value])",
           "info": "This function reads/writes the Multi protocol buffer to interact with a protocol.",
           "name": "multiBuffer"
@@ -8790,7 +8790,7 @@
         {
           "kind": "function",
           "label": "serialRead",
-          "insert": "serialRead([num])",
+          "insert": "serialRead()",
           "detail": "serialRead([num])",
           "info": "",
           "name": "serialRead"
@@ -8878,7 +8878,7 @@
         {
           "kind": "function",
           "label": "switches",
-          "insert": "switches([first], [last])",
+          "insert": "switches()",
           "detail": "switches([first[, last]])",
           "info": "",
           "name": "switches"
@@ -8902,7 +8902,7 @@
         {
           "kind": "function",
           "label": "sources",
-          "insert": "sources([first], [last])",
+          "insert": "sources()",
           "detail": "sources([first[, last]])",
           "info": "",
           "name": "sources"
@@ -8926,7 +8926,7 @@
         {
           "kind": "function",
           "label": "setRGBLedColor",
-          "insert": "setRGBLedColor(id, rvalue, bvalue, cvalue, [gvalue])",
+          "insert": "setRGBLedColor(id, rvalue, bvalue, cvalue)",
           "detail": "setRGBLedColor(id, rvalue, bvalue, cvalue)",
           "info": "",
           "name": "setRGBLedColor"
@@ -8934,7 +8934,7 @@
         {
           "kind": "function",
           "label": "setCFSLedColor",
-          "insert": "setCFSLedColor(id, rvalue, bvalue, cvalue, [gvalue])",
+          "insert": "setCFSLedColor(id, rvalue, bvalue, cvalue)",
           "detail": "setCFSLedColor(id, rvalue, bvalue, cvalue)",
           "info": "Overrides the LED color for a custom function switch - if passed 4 arguments (id, r, g, b) then sets override color - if passed 1 argument (id) then cancels override color",
           "name": "setCFSLedColor"
@@ -9298,7 +9298,7 @@
         {
           "kind": "function",
           "label": "model.setSwashRing",
-          "insert": "setSwashRing(params, [value])",
+          "insert": "setSwashRing(params)",
           "detail": "model.setSwashRing(params)",
           "info": "Set heli swash parameters",
           "module": "model",

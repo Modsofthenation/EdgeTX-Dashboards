@@ -50,13 +50,16 @@ function buildItems(api) {
     if (!f?.name) continue;
     const mod = f.module && f.module !== "general" ? f.module : null;
     const label = mod ? `${mod}.${f.name}` : f.name;
-    const params = (f.parameters ?? [])
-      .map((p) => (p.optional ? `[${p.name}]` : p.name))
+    // Only required params in the insert text — optional markers like [flags]
+    // are invalid Lua if accepted as-is. Keep the full signature in detail.
+    const required = (f.parameters ?? [])
+      .filter((p) => !p.optional)
+      .map((p) => p.name)
       .join(", ");
     items.push({
       kind: "function",
       label,
-      insert: `${f.name}(${params})`,
+      insert: `${f.name}(${required})`,
       detail: f.signature || label,
       info: slimDesc(f.description),
       ...(mod ? { module: mod } : {}),

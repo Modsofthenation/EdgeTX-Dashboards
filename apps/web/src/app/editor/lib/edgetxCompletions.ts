@@ -176,8 +176,14 @@ export function edgeTxCompletionsFor(
       const labelMatch = item.label.toLowerCase().startsWith(needle);
       const nameMatch = item.name.toLowerCase().startsWith(needle);
       if (!labelMatch && !nameMatch) continue;
+      // Bare-word accept must keep the module qualifier (typing "lcd" →
+      // accept "lcd.clear" must insert "lcd.clear()", not "clear()").
+      const insert = item.module
+        ? `${item.module}.${item.insert}`
+        : item.insert;
       options.push(
         toCompletion(item, {
+          insertOverride: insert,
           boost: item.module ? 1 : 2,
         }),
       );

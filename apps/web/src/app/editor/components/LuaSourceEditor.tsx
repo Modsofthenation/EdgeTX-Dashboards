@@ -26,7 +26,8 @@ import {
 import styles from "../editor.module.css";
 
 export type LuaSourceEditorHandle = {
-  revealLine: (line: number) => void;
+  /** @returns true when the CodeMirror view was ready and scrolled. */
+  revealLine: (line: number) => boolean;
   focus: () => void;
 };
 
@@ -108,7 +109,7 @@ export const LuaSourceEditor = memo(
       () => ({
         revealLine(line: number) {
           const view = cmRef.current?.view;
-          if (!view) return;
+          if (!view) return false;
           const safe = Math.max(1, Math.min(line, view.state.doc.lines));
           const lineObj = view.state.doc.line(safe);
           view.dispatch({
@@ -116,6 +117,7 @@ export const LuaSourceEditor = memo(
             effects: EditorView.scrollIntoView(lineObj.from, { y: "center" }),
           });
           view.focus();
+          return true;
         },
         focus() {
           cmRef.current?.view?.focus();

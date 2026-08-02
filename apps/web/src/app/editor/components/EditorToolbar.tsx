@@ -398,7 +398,7 @@ export const EditorToolbar = memo(function EditorToolbar({
 
         <label
           className={styles.toolbarSelect}
-          title="EdgeTX firmware target — Lua autocomplete and radio sim use this version"
+          title="EdgeTX firmware target for Lua autocomplete (sim uses nearest available WASM)"
         >
           <span className={styles.toolbarSelectLabel}>EdgeTX</span>
           <select

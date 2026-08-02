@@ -80,9 +80,28 @@ describe("edgeTxCompletions", () => {
     assert.ok(labels.includes("getValue"));
   });
 
-  it("suggests Lua keywords", () => {
-    const result = edgeTxCompletionsFor("2.11.0")(fakeContext("loc"));
+  it("keeps module qualifier when accepting a bare-word lcd completion", () => {
+    const result = edgeTxCompletionsFor("2.11.0")(fakeContext("lcd"));
     assert.ok(result);
-    assert.ok(result!.options.some((o) => o.label === "local"));
+    const clear = result!.options.find((o) => o.label === "lcd.clear");
+    assert.ok(clear);
+    assert.equal(clear!.apply, "lcd.clear()");
+  });
+
+  it("inserts only the member name after a module dot", () => {
+    const result = edgeTxCompletionsFor("2.11.0")(fakeContext("lcd."));
+    assert.ok(result);
+    const clear = result!.options.find((o) => o.label === "lcd.clear");
+    assert.ok(clear);
+    assert.equal(clear!.apply, "clear()");
+  });
+
+  it("does not insert optional-bracket markers into apply text", () => {
+    const result = edgeTxCompletionsFor("2.11.0")(fakeContext("lcd."));
+    assert.ok(result);
+    for (const opt of result!.options) {
+      const apply = typeof opt.apply === "string" ? opt.apply : "";
+      assert.equal(apply.includes("["), false, `${opt.label} → ${apply}`);
+    }
   });
 });

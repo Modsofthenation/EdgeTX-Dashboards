@@ -336,6 +336,11 @@ export function EditorApp() {
   const [dirty, setDirty] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("canvas");
   const [centerView, setCenterView] = useState<CenterView>("canvas");
+  /** Keep Lua editor mounted after first open so WASM/canvas stay warm on toggle. */
+  const [luaEditorMounted, setLuaEditorMounted] = useState(false);
+  const [pendingRevealLine, setPendingRevealLine] = useState<number | null>(
+    null,
+  );
   const luaEditorRef = useRef<LuaSourceEditorHandle>(null);
   const [previewScenarioId, setPreviewScenarioId] = useState("editor-preview");
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -1824,9 +1829,10 @@ export function EditorApp() {
         setMobileTab("layers");
         return;
       }
+      setLuaEditorMounted(true);
       setCenterView("lua");
       setMobileTab("canvas");
-      queueMicrotask(() => luaEditorRef.current?.revealLine(issue.line!));
+      setPendingRevealLine(issue.line);
       const exact = records.find((r) => r.sourceLine === issue.line);
       if (exact) {
         setSelectedIds([exact.id]);
@@ -1853,17 +1859,15 @@ export function EditorApp() {
     (view: CenterView) => {
       if (view === centerView) return;
       if (centerView === "lua") endTransient();
-      setCenterView(view);
       if (view === "lua") {
+        setLuaEditorMounted(true);
         setMobileTab("canvas");
-        queueMicrotask(() => {
-          const line =
-            selectedRecords[0]?.sourceRef?.sourceLine ??
-            selectedRecords[0]?.sourceLine;
-          if (line != null) luaEditorRef.current?.revealLine(line);
-          else luaEditorRef.current?.focus();
-        });
+        const line =
+          selectedRecords[0]?.sourceRef?.sourceLine ??
+          selectedRecords[0]?.sourceLine;
+        if (line != null) setPendingRevealLine(line);
       }
+      setCenterView(view);
     },
     [centerView, endTransient, selectedRecords],
   );
@@ -1880,6 +1884,36 @@ export function EditorApp() {
   const handleLuaEditorBlur = useCallback(() => {
     endTransient();
   }, [endTransient]);
+
+  // Reveal a source line once the Lua editor (dynamic) has a live CodeMirror view.
+  useEffect(() => {
+    if (centerView !== "lua" || pendingRevealLine == null) return;
+    let cancelled = false;
+    let attempts = 0;
+    const tick = () => {
+      if (cancelled) return;
+      if (luaEditorRef.current?.revealLine(pendingRevealLine)) {
+        setPendingRevealLine(null);
+        return;
+      }
+      attempts += 1;
+      if (attempts < 60) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+    };
+  }, [centerView, pendingRevealLine]);
+
+  const revealRecordInLua = useCallback(
+    (id: string) => {
+      if (centerView !== "lua") return;
+      const record = records.find((r) => r.id === id);
+      const line = record?.sourceRef?.sourceLine ?? record?.sourceLine;
+      if (line != null) setPendingRevealLine(line);
+    },
+    [centerView, records],
+  );
 
   useEffect(() => {
     const nudgeActive = { current: false };
@@ -2040,18 +2074,6 @@ export function EditorApp() {
     setInlineSim(enabled);
   }, []);
 
-  const revealRecordInLua = useCallback(
-    (id: string) => {
-      if (centerView !== "lua") return;
-      const record = records.find((r) => r.id === id);
-      const line = record?.sourceRef?.sourceLine ?? record?.sourceLine;
-      if (line != null) {
-        queueMicrotask(() => luaEditorRef.current?.revealLine(line));
-      }
-    },
-    [centerView, records],
-  );
-
   const handleLayerSelect = useCallback(
     (id: string, additive: boolean) => {
       setSelectedIds((prev) =>
@@ -2131,18 +2153,20 @@ export function EditorApp() {
   );
 
   const handleToolbarUndo = useCallback(() => {
+    endTransient();
     captureSelectionTexts();
     pendingSelectionRematchRef.current = true;
     undo();
     markDirty();
-  }, [captureSelectionTexts, undo, markDirty]);
+  }, [endTransient, captureSelectionTexts, undo, markDirty]);
 
   const handleToolbarRedo = useCallback(() => {
+    endTransient();
     captureSelectionTexts();
     pendingSelectionRematchRef.current = true;
     redo();
     markDirty();
-  }, [captureSelectionTexts, redo, markDirty]);
+  }, [endTransient, captureSelectionTexts, redo, markDirty]);
 
   const usesBitmap = useMemo(
     () => /drawBitmap|Bitmap\.open/.test(source),
@@ -2157,8 +2181,20 @@ export function EditorApp() {
     if (sessionId) params.set("sessionId", sessionId);
     if (workspaceKey) params.set("instanceId", workspaceKey);
     else if (meta.name) params.set("name", meta.name);
+    params.set("layoutProfile", layoutProfileId);
+    params.set("radioId", radioId);
+    params.set("edgeTxVersion", edgeTxVersion);
     return `/editor?${params.toString()}`;
-  }, [protocol, chatId, sessionId, workspaceKey, meta.name]);
+  }, [
+    protocol,
+    chatId,
+    sessionId,
+    workspaceKey,
+    meta.name,
+    layoutProfileId,
+    radioId,
+    edgeTxVersion,
+  ]);
 
   const subtitle = useMemo(
     () => (
@@ -2434,12 +2470,14 @@ export function EditorApp() {
                     onChange={handleCenterViewChange}
                   />
                 </div>
-                {centerView === "lua" ? (
+                {luaEditorMounted ? (
                   <div
                     id="editor-panel-lua"
                     role="tabpanel"
                     aria-labelledby="center-view-lua"
                     className={styles.luaEditorPane}
+                    hidden={centerView !== "lua"}
+                    aria-hidden={centerView !== "lua"}
                   >
                     <LuaSourceEditor
                       ref={luaEditorRef}
@@ -2450,46 +2488,57 @@ export function EditorApp() {
                       edgeTxVersion={edgeTxVersion}
                     />
                   </div>
-                ) : remoteLoadPending ? (
-                  <div className={styles.canvasStage}>
+                ) : null}
+                {remoteLoadPending ? (
+                  <div
+                    className={styles.canvasStage}
+                    hidden={centerView !== "canvas"}
+                    aria-hidden={centerView !== "canvas"}
+                  >
                     <div className={styles.loadingPreview}>Loading widget…</div>
                   </div>
                 ) : (
-                  <EditorCanvas
-                    source={source}
-                    records={records}
-                    zone={zone}
-                    selectedIds={selectedIds}
-                    onSelect={setSelectedIds}
-                    onTranslate={handleTranslate}
-                    onResize={handleResize}
-                    onGestureStart={handleGestureStart}
-                    onGestureEnd={handleGestureEnd}
-                    showSnapGuides={showSnapGuides}
-                    snapEnabled={snapEnabled}
-                    scenarioId={previewScenarioId}
-                    scenarioOverride={
-                      liveTelemetryActive ? previewScenario : undefined
-                    }
-                    layoutProfileId={layoutProfileId}
-                    onContextMenu={openCanvasContextMenu}
-                    geometryEditsLocked={geometryEditsLocked}
-                    inlineSim={
-                      inlineSim && hasColorWasmSim(radioId) ? (
-                        <RadioSimPreview
-                          luaSource={source}
-                          layoutProfileId={layoutProfileId}
-                          radioId={radioId}
-                          edgeTxVersion={edgeTxVersion}
-                          mock={previewScenario.mock}
-                          active={inlineSim}
-                          fillHost
-                          modelPng={modelPngBytes}
-                          onRunningChange={handleSimRunningChange}
-                        />
-                      ) : null
-                    }
-                  />
+                  <div
+                    className={styles.centerCanvasHost}
+                    hidden={centerView !== "canvas"}
+                    aria-hidden={centerView !== "canvas"}
+                  >
+                    <EditorCanvas
+                      source={source}
+                      records={records}
+                      zone={zone}
+                      selectedIds={selectedIds}
+                      onSelect={setSelectedIds}
+                      onTranslate={handleTranslate}
+                      onResize={handleResize}
+                      onGestureStart={handleGestureStart}
+                      onGestureEnd={handleGestureEnd}
+                      showSnapGuides={showSnapGuides}
+                      snapEnabled={snapEnabled}
+                      scenarioId={previewScenarioId}
+                      scenarioOverride={
+                        liveTelemetryActive ? previewScenario : undefined
+                      }
+                      layoutProfileId={layoutProfileId}
+                      onContextMenu={openCanvasContextMenu}
+                      geometryEditsLocked={geometryEditsLocked}
+                      inlineSim={
+                        inlineSim && hasColorWasmSim(radioId) ? (
+                          <RadioSimPreview
+                            luaSource={source}
+                            layoutProfileId={layoutProfileId}
+                            radioId={radioId}
+                            edgeTxVersion={edgeTxVersion}
+                            mock={previewScenario.mock}
+                            active={inlineSim && centerView === "canvas"}
+                            fillHost
+                            modelPng={modelPngBytes}
+                            onRunningChange={handleSimRunningChange}
+                          />
+                        ) : null
+                      }
+                    />
+                  </div>
                 )}
               </div>
 
