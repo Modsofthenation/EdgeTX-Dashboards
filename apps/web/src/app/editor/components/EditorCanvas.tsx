@@ -186,7 +186,9 @@ export function EditorCanvas({
     setPan({ x: 0, y: 0 });
   }, []);
 
-  const showParserPreview = !inlineSim || liveDrag != null;
+  // Keep WASM visible while dragging — only selection handles follow liveDrag.
+  // Swapping in the approximate parser over a dimmed radio frame caused a harsh jump.
+  const showParserPreview = !inlineSim;
   const hasRadioPreview = Boolean(inlineSim);
 
   return (
@@ -195,13 +197,7 @@ export function EditorCanvas({
         className={styles.simWrapper}
         ref={frameRef}
         data-testid="editor-canvas-frame"
-        data-preview-mode={
-          hasRadioPreview
-            ? liveDrag
-              ? "editing-overlay"
-              : "radio"
-            : "approximate"
-        }
+        data-preview-mode={hasRadioPreview ? "radio" : "approximate"}
         onWheel={onWheel}
         onPointerDown={onPointerDownPan}
         onPointerMove={onPointerMovePan}
@@ -211,7 +207,6 @@ export function EditorCanvas({
         {inlineSim && layout ? (
           <div
             className={styles.inlineSimHost}
-            data-dimmed={liveDrag ? "true" : undefined}
             style={{
               left: layout.offsetX,
               top: layout.offsetY,
@@ -327,7 +322,7 @@ export function EditorCanvas({
               className={styles.canvasHint}
               data-testid="editor-preview-mode-label"
             >
-              {liveDrag ? "Editing overlay" : "Radio preview"}
+              Radio preview
             </span>
           </>
         ) : (

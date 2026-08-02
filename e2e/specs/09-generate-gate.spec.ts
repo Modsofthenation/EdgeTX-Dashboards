@@ -27,29 +27,31 @@ test.describe("Generate gate (no AI key)", () => {
     expect(body.error).toMatch(/API key|configured|Preferences/i);
   });
 
-  test("sending a prompt surfaces an error in chat", async ({ page }) => {
-    await gotoHome(page);
-
-    const input = page.getByPlaceholder(/Describe your dashboard/i);
-    await input.fill("Simple link and battery dashboard for TX15");
-    await page.getByRole("button", { name: "Send message" }).click();
-
-    await expect(
-      page.getByRole("alert").filter({ hasText: /API key/i }),
-    ).toBeVisible({ timeout: 30_000 });
-  });
-
-  test("Generate with AI on template also fails gracefully", async ({
+  test("sending a prompt is blocked until AI is configured", async ({
     page,
   }) => {
     await gotoHome(page);
-    await page
-      .getByRole("button", { name: "Generate with AI" })
-      .first()
-      .click();
 
-    await expect(
-      page.getByRole("alert").filter({ hasText: /API key/i }),
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/AI not configured/i).first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const input = page.getByPlaceholder(/Describe your dashboard/i);
+    await input.fill("Simple link and battery dashboard for TX15");
+    const send = page.getByRole("button", { name: "Send message" });
+    await expect(send).toBeDisabled();
+  });
+
+  test("Generate with AI on template is disabled without a key", async ({
+    page,
+  }) => {
+    await gotoHome(page);
+    await expect(page.getByText(/AI not configured/i).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    const aiBtn = page
+      .getByRole("button", { name: "Generate with AI" })
+      .first();
+    await expect(aiBtn).toBeDisabled();
   });
 });

@@ -26,6 +26,8 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   scrollRevision: number;
   running: boolean;
+  /** When false, hide/disable Generate with AI on templates. */
+  aiReady?: boolean;
   /** Active radio layout profile — picks TX15 vs color272 gallery thumbs. */
   layoutProfileId?: string | null;
   /** Primary: open template prefab in Layout (no AI). */
@@ -42,6 +44,7 @@ export function ChatMessageList({
   messages,
   scrollRevision,
   running,
+  aiReady = true,
   layoutProfileId = null,
   onSuggestion,
   onGenerateSuggestion,
@@ -188,28 +191,18 @@ export function ChatMessageList({
                   <button
                     type="button"
                     className={styles.galleryCardAi}
-                    disabled={running}
+                    disabled={running || !aiReady}
                     onClick={() => onGenerateSuggestion(item)}
-                    title={item.prompt}
+                    title={
+                      !aiReady
+                        ? "Configure an AI provider in Preferences to generate"
+                        : item.prompt
+                    }
                   >
                     Generate with AI
                   </button>
                 ) : null}
               </div>
-            ))}
-          </div>
-
-          <div className={styles.suggestions}>
-            {galleryItems.map((item) => (
-              <button
-                key={`s-${item.id}`}
-                type="button"
-                className={styles.suggestion}
-                disabled={running}
-                onClick={() => onSuggestion(item)}
-              >
-                Layout: {item.title}
-              </button>
             ))}
           </div>
         </div>

@@ -1,14 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  applySceneGeometryToSource,
   applyDashboardBackground,
   bindTextRecordToSensorDetailed,
   createStarterSource,
   DEFAULT_BG_IMAGE_PATH,
-  getLayoutTemplateBoardSource,
   interpretDocument,
   insertDrawLineWithId,
   DENSE_CRSF_LAYOUT_ORDER,
@@ -25,6 +30,7 @@ import {
   removeRecordLines,
   remapRecordIdsAfterLineRemoval,
   remapSrcSensor,
+  resizeRecord,
   setRecordColor,
   setRecordText,
   setRecordTextFlags,
@@ -36,8 +42,8 @@ import {
   luaToScene,
   remapPreviewOnlyColorLiterals,
   sceneToLua,
+  translateRecord,
   type DocumentRecord,
-  type EditorElement,
   type TextAlignFlag,
   type TextFormat,
   type TextSizeFlag,
@@ -64,6 +70,8 @@ import dynamic from "next/dynamic";
 import { AppChrome } from "~/components/AppChrome";
 import { useSourceUndoStack } from "./hooks/useSourceUndoStack";
 import { useResizableEditorPanels } from "./hooks/useResizableEditorPanels";
+import { resolveTemplateEditorBootstrap } from "./lib/templateBootstrap";
+import type { TemplateCompanionSuite } from "./lib/templateBootstrap";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { RecordLayersPanel } from "./components/RecordLayersPanel";
 import { RecordPropertiesPanel } from "./components/RecordPropertiesPanel";
@@ -128,10 +136,6 @@ import {
   type CompanionSuiteId,
   type EditorCompanionState,
 } from "~/lib/companionSuites";
-import {
-  getTemplateById,
-  type TemplateLayoutPrefab,
-} from "~/lib/templateGallery";
 import { fetchRadioCatalog } from "~/lib/radioCatalog";
 import {
   buildInstallGuide,
@@ -169,37 +173,6 @@ function findRecordByLineText(
   });
 }
 
-function translateSceneElement(
-  element: EditorElement,
-  dx: number,
-  dy: number,
-): EditorElement {
-  if (element.kind === "line") {
-    return {
-      ...element,
-      x1: element.x1 + dx,
-      y1: element.y1 + dy,
-      x2: element.x2 + dx,
-      y2: element.y2 + dy,
-    };
-  }
-  return { ...element, x: element.x + dx, y: element.y + dy };
-}
-
-function resizeSceneElement(
-  element: EditorElement,
-  box: { x: number; y: number; w: number; h: number },
-): EditorElement {
-  if (
-    element.kind === "filledRect" ||
-    element.kind === "rect" ||
-    element.kind === "gauge"
-  ) {
-    return { ...element, ...box };
-  }
-  return element;
-}
-
 const LIVE_ENRICH_STORAGE_KEY = "edgetx.liveEnrich.v1";
 
 function readEnrichRotorflightPreference(): boolean {
@@ -233,6 +206,55 @@ function parseProtocol(raw: string | null): TelemetryProtocol {
   return "betaflight";
 }
 
+function parseLayoutProfileId(raw: string | null): LayoutProfileId {
+  return raw && isLayoutProfileId(raw) ? raw : DEFAULT_RADIO_ID;
+}
+
+/** Sync gallery bootstrap so WASM boots on the template board, not starter. */
+function initialEditorFromSearchParams(searchParams: URLSearchParams): {
+  layoutProfileId: LayoutProfileId;
+  protocol: TelemetryProtocol;
+  source: string;
+  companionSuites: TemplateCompanionSuite[];
+  templateAppliedId: string | null;
+} {
+  const instanceId = searchParams.get("instanceId");
+  const widgetName = searchParams.get("name");
+  const sid = searchParams.get("sessionId");
+  const templateId = searchParams.get("template");
+  const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
+  const layoutProfileId = parseLayoutProfileId(
+    searchParams.get("layoutProfile") ??
+      searchParams.get("radioId") ??
+      DEFAULT_RADIO_ID,
+  );
+
+  if (!hasRemoteWidget && templateId) {
+    const profile = getSimulateLayoutProfile(layoutProfileId);
+    const boot = resolveTemplateEditorBootstrap(templateId, {
+      lcdW: profile.lcdW,
+      lcdH: profile.lcdH,
+    });
+    if (boot) {
+      return {
+        layoutProfileId,
+        protocol: boot.protocol,
+        source: boot.source,
+        companionSuites: boot.companionSuites,
+        templateAppliedId: templateId,
+      };
+    }
+  }
+
+  return {
+    layoutProfileId,
+    protocol: parseProtocol(searchParams.get("protocol")),
+    source: createStarterSource(),
+    companionSuites: [],
+    templateAppliedId: null,
+  };
+}
+
 export function EditorApp() {
   const searchParams = useSearchParams();
   const instanceId = searchParams.get("instanceId");
@@ -242,20 +264,17 @@ export function EditorApp() {
   const templateId = searchParams.get("template");
   const hasRemoteWidget = Boolean(instanceId || widgetName || sid);
 
-  const [protocol, setProtocol] = useState<TelemetryProtocol>(() =>
-    parseProtocol(searchParams.get("protocol")),
+  const [initialEditor] = useState(() =>
+    initialEditorFromSearchParams(searchParams),
   );
   const [layoutProfileId, setLayoutProfileId] = useState<LayoutProfileId>(
-    () => {
-      const raw =
-        searchParams.get("layoutProfile") ??
-        searchParams.get("radioId") ??
-        DEFAULT_RADIO_ID;
-      return isLayoutProfileId(raw) ? raw : DEFAULT_RADIO_ID;
-    },
+    () => initialEditor.layoutProfileId,
+  );
+  const [protocol, setProtocol] = useState<TelemetryProtocol>(
+    () => initialEditor.protocol,
   );
   const [radioId, setRadioId] = useState(
-    () => searchParams.get("radioId") ?? layoutProfileId,
+    () => searchParams.get("radioId") ?? initialEditor.layoutProfileId,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -311,20 +330,27 @@ export function EditorApp() {
   const [enrichRotorflight, setEnrichRotorflight] = useState(
     readEnrichRotorflightPreference,
   );
-  const [companions, setCompanions] = useState<EditorCompanionState>({
-    suites: [],
-    files: [],
+  const [companions, setCompanions] = useState<EditorCompanionState>(() => {
+    let next: EditorCompanionState = { suites: [], files: [] };
+    for (const suite of initialEditor.companionSuites) {
+      next = addCompanionSuite(next, suite);
+    }
+    return next;
   });
   const [radioTouch, setRadioTouch] = useState(true);
   const [radioDisplayName, setRadioDisplayName] = useState<string | null>(null);
   const liveHandleRef = useRef<LiveTelemetryHandle | null>(null);
-  const templateAppliedRef = useRef<string | null>(null);
+  const templateAppliedRef = useRef<string | null>(
+    initialEditor.templateAppliedId,
+  );
   const liveTelemetrySupported = useMemo(
     () => (typeof window !== "undefined" ? isWebSerialSupported() : false),
     [],
   );
   const loadRequestIdRef = useRef(0);
-  const savedSourceRef = useRef<string | null>(null);
+  const savedSourceRef = useRef<string | null>(
+    initialEditor.templateAppliedId ? initialEditor.source : null,
+  );
 
   const {
     source,
@@ -336,7 +362,7 @@ export function EditorApp() {
     redo,
     canUndo,
     canRedo,
-  } = useSourceUndoStack(createStarterSource());
+  } = useSourceUndoStack(initialEditor.source);
 
   const editorBodyRef = useRef<HTMLDivElement>(null);
   const { gridTemplateColumns, activeSide, onHandlePointerDown, resetWidths } =
@@ -528,34 +554,13 @@ export function EditorApp() {
   useEffect(() => {
     if (hasRemoteWidget || !templateId) return;
     if (templateAppliedRef.current === templateId) return;
-    const template = getTemplateById(templateId);
-    if (!template) return;
+    const boot = resolveTemplateEditorBootstrap(templateId, prefabLcd);
+    if (!boot) return;
     templateAppliedRef.current = templateId;
-    const prefab: TemplateLayoutPrefab = template.layoutPrefab ?? "starter";
-    setProtocol(template.protocol);
-    if (prefab === "rf-heli-electric") {
-      const { source: next } = insertPrefabSections(
-        createStarterSource(),
-        [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER],
-        prefabLcd,
-      );
-      loadFromSource(next, true);
-      setCompanions((prev) => addCompanionSuite(prev, "rf-heli-electric"));
-    } else if (prefab === "rf-heli-nitro") {
-      const { source: next } = insertPrefabSections(
-        createStarterSource(),
-        [...ROTORFLIGHT_NITRO_LAYOUT_ORDER],
-        prefabLcd,
-      );
-      loadFromSource(next, true);
-    } else if (prefab === "battery-tool") {
-      loadFromSource(getLayoutTemplateBoardSource("battery-tool"), true);
-      setCompanions((prev) => addCompanionSuite(prev, "batt-select"));
-    } else if (prefab === "flight-logger") {
-      loadFromSource(getLayoutTemplateBoardSource("flight-logger"), true);
-      setCompanions((prev) => addCompanionSuite(prev, "flight-logger"));
-    } else {
-      loadFromSource(getLayoutTemplateBoardSource(prefab, prefabLcd), true);
+    setProtocol(boot.protocol);
+    loadFromSource(boot.source, true);
+    for (const suite of boot.companionSuites) {
+      setCompanions((prev) => addCompanionSuite(prev, suite));
     }
   }, [templateId, hasRemoteWidget, loadFromSource, prefabLcd]);
 
@@ -569,13 +574,14 @@ export function EditorApp() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  const deferredSource = useDeferredValue(source);
   const sceneAssist = useMemo(() => {
     try {
-      return luaToScene(source);
+      return luaToScene(deferredSource);
     } catch {
       return null;
     }
-  }, [source]);
+  }, [deferredSource]);
 
   const selectedRecords = useMemo(
     () => records.filter((r) => selectedIds.includes(r.id)),
@@ -607,74 +613,24 @@ export function EditorApp() {
   const handleTranslate = useCallback(
     (ids: string[], dx: number, dy: number) => {
       if (dx === 0 && dy === 0) return;
-      if (!sceneAssist) return;
-      const recordIds = new Set(ids);
-      const elementIds: string[] = [];
-      const scene = {
-        ...sceneAssist.scene,
-        elements: sceneAssist.scene.elements.map((element) => {
-          if (
-            element.sourceLine == null ||
-            !recordIds.has(`L${element.sourceLine}`)
-          ) {
-            return element;
-          }
-          elementIds.push(element.id);
-          return translateSceneElement(element, dx, dy);
-        }),
-      };
-      if (elementIds.length === 0) return;
-      setSource((prev) =>
-        applySceneGeometryToSource(
-          prev,
-          scene,
-          {
-            x: zone.zoneX,
-            y: zone.zoneY,
-            w: zone.zoneW,
-            h: zone.zoneH,
-          },
-          elementIds,
-        ),
+      applyToRecords(
+        ids,
+        (current, record) => translateRecord(current, record, dx, dy, zone),
+        { history: false },
       );
-      markDirty();
     },
-    [markDirty, sceneAssist, setSource, zone],
+    [applyToRecords, zone],
   );
 
   const handleResize = useCallback(
     (id: string, box: { x: number; y: number; w: number; h: number }) => {
-      if (!sceneAssist) return;
-      const elementIds: string[] = [];
-      const scene = {
-        ...sceneAssist.scene,
-        elements: sceneAssist.scene.elements.map((element) => {
-          if (element.sourceLine == null || id !== `L${element.sourceLine}`) {
-            return element;
-          }
-          elementIds.push(element.id);
-          return resizeSceneElement(element, box);
-        }),
-      };
-      if (elementIds.length === 0) return;
-      setSource(
-        (prev) =>
-          applySceneGeometryToSource(
-            prev,
-            scene,
-            {
-              x: zone.zoneX,
-              y: zone.zoneY,
-              w: zone.zoneW,
-              h: zone.zoneH,
-            },
-            elementIds,
-          ),
+      applyToRecords(
+        [id],
+        (current, record) => resizeRecord(current, record, box, zone),
         { history: false },
       );
-      markDirty();
     },
-    [setSource, zone, markDirty, sceneAssist],
+    [applyToRecords, zone],
   );
 
   const handleGestureStart = useCallback(() => {

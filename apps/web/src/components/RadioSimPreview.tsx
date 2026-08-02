@@ -191,7 +191,6 @@ export function RadioSimPreview({
     wasmSizeMb,
     keyboardMode,
     init,
-    loadWidget,
     setMock,
     sendInput,
     pause,
@@ -210,6 +209,8 @@ export function RadioSimPreview({
   const loadedRadioRef = useRef<string | null>(null);
   const sendInputRef = useRef(sendInput);
   const [frame, setFrame] = useState<SimFrameData | null>(null);
+  /** Keep last good frame during soft-restarts so the LCD doesn't blank. */
+  const lastGoodFrameRef = useRef<SimFrameData | null>(null);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [radioProfile, setRadioProfile] = useState<RadioProfile | null>(null);
 
@@ -234,7 +235,10 @@ export function RadioSimPreview({
   }, [radioId]);
 
   useEffect(() => {
-    subscribeFrames((next) => setFrame(next));
+    subscribeFrames((next) => {
+      lastGoodFrameRef.current = next;
+      setFrame(next);
+    });
     return () => subscribeFrames(null);
   }, [subscribeFrames]);
 
@@ -353,9 +357,10 @@ export function RadioSimPreview({
     loadedFirmwareRef.current = edgeTxVersion;
     loadedRadioRef.current = radioId;
     desiredSourceRef.current = desiredSourceRef.current || luaSource;
-    // Reconcile once after running; don't trust init source application as final.
-    appliedSourceRef.current = null;
-    appliedModelPngRef.current = undefined;
+    // Mark the boot source as applied so the running-phase reconciler does not
+    // immediately soft-restart with the same script.
+    appliedSourceRef.current = desiredSourceRef.current;
+    appliedModelPngRef.current = modelPngRef.current;
     void init({
       source: desiredSourceRef.current,
       zone: simZone,
@@ -384,12 +389,16 @@ export function RadioSimPreview({
   }, [active, state.phase, mock, setMock]);
 
   useEffect(() => {
-    if (!active || state.phase !== "running") return;
+    if (!active) return;
     desiredSourceRef.current = luaSource;
+    if (state.phase !== "running") return;
     const sourceSame = appliedSourceRef.current === desiredSourceRef.current;
     const pngSame = appliedModelPngRef.current === modelPng;
     if (sourceSame && pngSame) return;
 
+    // EdgeTX caches Lua widget factories at boot — FS rewrite + simuLoadWidget
+    // does not re-parse main.lua (see EdgeTX #7216). Soft-restart via init()
+    // (worker disposes + reinits without terminating) so edits actually paint.
     const timer = window.setTimeout(() => {
       const nextSource = desiredSourceRef.current;
       if (
@@ -398,18 +407,36 @@ export function RadioSimPreview({
       ) {
         return;
       }
-      void loadWidget(nextSource, simZone, modelPng ?? undefined)
-        .then(() => {
-          appliedSourceRef.current = nextSource;
-          appliedModelPngRef.current = modelPng;
-        })
-        .catch(() => {
-          // keep desired source; next running/source transition retries.
-        });
-    }, 350);
+      appliedSourceRef.current = nextSource;
+      appliedModelPngRef.current = modelPng;
+      void init({
+        source: nextSource,
+        zone: simZone,
+        mock: mockRef.current,
+        edgeTxVersion,
+        radioId,
+        modelPng: modelPng ?? undefined,
+      });
+    }, 450);
 
     return () => window.clearTimeout(timer);
-  }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);
+  }, [
+    active,
+    state.phase,
+    luaSource,
+    init,
+    simZone,
+    modelPng,
+    edgeTxVersion,
+    radioId,
+  ]);
+
+  const displayFrame = frame ?? lastGoodFrameRef.current;
+  const isSoftRestarting =
+    displayFrame != null &&
+    (state.phase === "idle" ||
+      state.phase === "loading-wasm" ||
+      state.phase === "booting");
 
   if (state.phase === "error") {
     return (
@@ -433,9 +460,10 @@ export function RadioSimPreview({
   }
 
   if (
-    state.phase === "idle" ||
-    state.phase === "loading-wasm" ||
-    state.phase === "booting"
+    (state.phase === "idle" ||
+      state.phase === "loading-wasm" ||
+      state.phase === "booting") &&
+    !displayFrame
   ) {
     return (
       <div
@@ -478,7 +506,7 @@ export function RadioSimPreview({
       }
     >
       <SimFrameCanvas
-        frame={frame}
+        frame={displayFrame}
         zone={frameZone}
         allowUpscale={fillHost}
         ignoreChatScrollPause={fillHost}
@@ -486,12 +514,17 @@ export function RadioSimPreview({
           fillHost ? "editor-radio-preview" : "edgetx-widget-preview"
         }
       />
+      {isSoftRestarting ? (
+        <div className={styles.radioSimUpdating} aria-live="polite">
+          Updating radio preview…
+        </div>
+      ) : null}
 
       {overlayOpen && radioProfile && (
         <SimInteractiveOverlay
           radioProfile={radioProfile}
           previewDims={previewDims}
-          frame={frame}
+          frame={displayFrame}
           live={live}
           running={state.phase === "running"}
           simState={simState}
