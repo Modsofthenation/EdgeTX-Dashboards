@@ -47,6 +47,7 @@ export function TransformHandles({
             className={styles.resizeHandle}
             style={{ left, top, cursor: HANDLE_CURSOR[handle] }}
             onPointerDown={(e) => {
+              if (e.button !== 0) return;
               e.stopPropagation();
               onResizeStart(handle, e);
             }}

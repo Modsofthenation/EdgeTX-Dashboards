@@ -52,6 +52,11 @@ interface RecordSelectionOverlayProps {
    * (approximate overlay is unreliable — edit in Source or enable radio preview).
    */
   geometryEditsLocked?: boolean;
+  /**
+   * When Space is held, EditorCanvas owns pan — skip selection/marquee so we
+   * do not arm dragRef / gesture undo before the frame captures the pointer.
+   */
+  spacePanActiveRef?: React.RefObject<boolean>;
 }
 
 function screenToZone(
@@ -106,6 +111,7 @@ export function RecordSelectionOverlay({
   onSnapGuidesChange,
   onContextMenu,
   geometryEditsLocked = false,
+  spacePanActiveRef,
 }: RecordSelectionOverlayProps) {
   const dragRef = useRef<DragSession | null>(null);
   const [marquee, setMarquee] = useState<BoundingBox | null>(null);
@@ -327,6 +333,11 @@ export function RecordSelectionOverlay({
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent) => {
+      // Left-button only — middle-click pans the canvas (EditorCanvas),
+      // right-click opens the context menu.
+      if (event.button !== 0) return;
+      // Space-drag pan: do not start move/marquee or capture — let the frame pan.
+      if (spacePanActiveRef?.current) return;
       if (!layout || !frameRef.current) return;
       const rect = frameRef.current.getBoundingClientRect();
       const pointer = screenToZone(event.clientX, event.clientY, rect, layout);
@@ -405,6 +416,7 @@ export function RecordSelectionOverlay({
       measureText,
       geometryEditsLocked,
       baseBoxById,
+      spacePanActiveRef,
     ],
   );
 

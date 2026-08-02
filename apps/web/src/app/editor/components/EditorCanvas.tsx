@@ -301,6 +301,7 @@ export const EditorCanvas = memo(function EditorCanvas({
           onSnapGuidesChange={setActiveGuides}
           onContextMenu={onContextMenu}
           geometryEditsLocked={geometryEditsLocked}
+          spacePanActiveRef={spaceDownRef}
         />
       </div>
       <div className={styles.canvasMeta} data-testid="editor-canvas-meta">
@@ -344,7 +345,7 @@ export const EditorCanvas = memo(function EditorCanvas({
           <span className={styles.canvasMetaSep} aria-hidden>
             ·
           </span>
-          <span>Space-drag pan</span>
+          <span>Space / middle-drag pan</span>
           <span className={styles.canvasMetaSep} aria-hidden>
             ·
           </span>
