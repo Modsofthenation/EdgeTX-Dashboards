@@ -34,10 +34,10 @@ describe("bboxForRecord", () => {
       textAlign: "right",
     });
     assert.ok(box);
-    // SMLSIZE cw=8 → 3*8=24
-    assert.equal(box!.w, 24);
+    // SMLSIZE cw=7 → 3*7=21
+    assert.equal(box!.w, 21);
     assert.equal(box!.h, 17);
-    assert.equal(box!.x, 76);
+    assert.equal(box!.x, 79);
   });
 
   it("sizes MIDSIZE text close to WASM lcd.sizeText footprint", () => {
@@ -49,8 +49,8 @@ describe("bboxForRecord", () => {
       fontSize: COLOR_LCD_FONT_SIZES.MIDSIZE,
     });
     assert.ok(box);
-    // Color MIDSIZE: h=29, cw=15 → 45×29 (firmware "98%" ≈ 44.6×29)
-    assert.equal(box!.w, 45);
+    // Color MIDSIZE: h=29, cw=14 → 42×29 (firmware "98%" ≈ 44.6×29)
+    assert.equal(box!.w, 42);
     assert.equal(box!.h, 29);
   });
 
@@ -85,7 +85,7 @@ describe("color LCD font metrics", () => {
   });
 
   it("edgeTxTextSize matches calibrated advances", () => {
-    assert.deepEqual(edgeTxTextSize("98%", 29), { w: 45, h: 29 });
-    assert.deepEqual(edgeTxTextSize("LINK", 17), { w: 32, h: 17 });
+    assert.deepEqual(edgeTxTextSize("98%", 29), { w: 42, h: 29 });
+    assert.deepEqual(edgeTxTextSize("LINK", 17), { w: 28, h: 17 });
   });
 });

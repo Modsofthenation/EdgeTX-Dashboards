@@ -23,15 +23,15 @@ export const COLOR_LCD_FONT_SIZES = {
   XXLSIZE: 69,
 } as const;
 
-/** Mean horizontal advance (px/char). Slightly upper-biased so outlines enclose labels. */
+/** Mean digit advance (px/char) — telemetry values dominate selection targets. */
 const CHAR_W: Record<number, number> = {
   [COLOR_LCD_FONT_SIZES.TINSIZE]: 6,
-  [COLOR_LCD_FONT_SIZES.SMLSIZE]: 8,
-  [COLOR_LCD_FONT_SIZES.BOLD]: 10,
-  [COLOR_LCD_FONT_SIZES.STDSIZE]: 10,
-  [COLOR_LCD_FONT_SIZES.MIDSIZE]: 15,
-  [COLOR_LCD_FONT_SIZES.DBLSIZE]: 20,
-  [COLOR_LCD_FONT_SIZES.XXLSIZE]: 39,
+  [COLOR_LCD_FONT_SIZES.SMLSIZE]: 7,
+  [COLOR_LCD_FONT_SIZES.BOLD]: 9,
+  [COLOR_LCD_FONT_SIZES.STDSIZE]: 9,
+  [COLOR_LCD_FONT_SIZES.MIDSIZE]: 14,
+  [COLOR_LCD_FONT_SIZES.DBLSIZE]: 18,
+  [COLOR_LCD_FONT_SIZES.XXLSIZE]: 37,
 };
 
 /**
