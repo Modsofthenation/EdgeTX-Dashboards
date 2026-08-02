@@ -30,6 +30,7 @@ export {
   LCD_BACKLIGHT_RGB,
 } from "./framebuffer.ts";
 export { WIDGET_LAUNCH_DELAY_FRAMES } from "./SimRuntime.ts";
+export { EDGETX_KEY_EXIT, pulseSimKey, pulseSimKeyExit } from "./simKeys.ts";
 export {
   buildHotReloadShimSource,
   buildHotReloadGenSource,

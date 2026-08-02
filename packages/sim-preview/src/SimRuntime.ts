@@ -45,9 +45,7 @@ const DEFAULT_STATE: RadioSimState = {
 export const WIDGET_LAUNCH_DELAY_FRAMES = 12;
 
 const FULLSCREEN_WAIT_FRAMES = 30;
-const FULLSCREEN_RETRY_WAIT_FRAMES = 20;
 const FULLSCREEN_TAP_GAP_FRAMES = 4;
-const FULLSCREEN_MAX_ATTEMPTS = 4;
 
 /** Cheap full-buffer fingerprint — PNG magic/IEND bytes are constant. */
 function fnv1a32(bytes: Uint8Array): string {
@@ -62,7 +60,7 @@ function fnv1a32(bytes: Uint8Array): string {
 type FullscreenTapGesture = {
   x: number;
   y: number;
-  /** 0=wait, 1=down, 2=up+gap, 3=down, 4=up */
+  /** 0=wait, 1=down, 2=up, 3=gap, 4=down, 5=up+done */
   step: number;
   counter: number;
   attempt: number;
@@ -520,6 +518,12 @@ export class SimRuntime {
 
   private beginFullscreenTap(zone: WidgetSimulateZone): void {
     const { x, y } = this.fullscreenTapCoords(zone);
+    // Clear leftover EdgeTX popup menus from a prior session before tapping.
+    const ex = this.runner?.exports as ExtendedSimulatorExports | undefined;
+    if (typeof ex?.simuSetKey === "function") {
+      ex.simuSetKey(1, 1);
+      ex.simuSetKey(1, 0);
+    }
     this.fullscreenTap = {
       x,
       y,
@@ -604,6 +608,7 @@ export class SimRuntime {
         gesture.step = 2;
         break;
       case 2:
+        // Release on the next LCD frame so the hold stays a short tap.
         ex.simuTouchUp();
         gesture.step = 3;
         gesture.counter = FULLSCREEN_TAP_GAP_FRAMES;
@@ -616,18 +621,12 @@ export class SimRuntime {
         ex.simuTouchDown(gesture.x, gesture.y);
         gesture.step = 5;
         break;
+      case 5:
+        ex.simuTouchUp();
+        this.finishFullscreenTap(ex);
+        break;
       default:
-        if (gesture.attempt + 1 < FULLSCREEN_MAX_ATTEMPTS) {
-          gesture.attempt += 1;
-          gesture.step = 0;
-          gesture.counter = FULLSCREEN_RETRY_WAIT_FRAMES;
-          ex.simuTouchUp();
-          this.callbacks.onLog?.(
-            `Radio sim: retrying widget fullscreen double-tap (${gesture.attempt + 1}/${FULLSCREEN_MAX_ATTEMPTS})`,
-          );
-        } else {
-          this.finishFullscreenTap(ex);
-        }
+        this.finishFullscreenTap(ex);
         break;
     }
   }

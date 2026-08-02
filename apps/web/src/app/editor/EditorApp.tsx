@@ -336,6 +336,7 @@ export function EditorApp() {
   );
   /** True once radio WASM pixels actually ran this session (inline or modal). */
   const [simSeenThisSession, setSimSeenThisSession] = useState(false);
+  const dismissRadioUiRef = useRef<(() => void) | null>(null);
   const elementClipboardRef = useRef<string[]>([]);
   const selectionTextsRef = useRef<string[]>([]);
   const pendingSelectionRematchRef = useRef(false);
@@ -1858,6 +1859,11 @@ export function EditorApp() {
         setExportOpen(false);
         setCanvasMenu(null);
         setSimOpen(false);
+        // EdgeTX widget menus (Full screen / Widget settings) live in the WASM
+        // framebuffer — Esc pulses RTN so users can dismiss them.
+        if (inlineSim) {
+          dismissRadioUiRef.current?.();
+        }
         setSelectedIds([]);
       }
       if (
@@ -1969,6 +1975,7 @@ export function EditorApp() {
     saving,
     valid,
     geometryEditsLocked,
+    inlineSim,
   ]);
 
   const openSim = useCallback(() => {
@@ -1979,6 +1986,18 @@ export function EditorApp() {
   const handleSimRunningChange = useCallback((running: boolean) => {
     if (running) setSimSeenThisSession(true);
   }, []);
+
+  const handleRadioInteractiveControls = useCallback(
+    (
+      controls: {
+        openInteractive: () => void;
+        dismissRadioUi: () => void;
+      } | null,
+    ) => {
+      dismissRadioUiRef.current = controls?.dismissRadioUi ?? null;
+    },
+    [],
+  );
 
   const handleInlineSimChange = useCallback((enabled: boolean) => {
     setInlineSim(enabled);
@@ -2384,6 +2403,7 @@ export function EditorApp() {
                           fillHost
                           modelPng={modelPngBytes}
                           onRunningChange={handleSimRunningChange}
+                          onInteractiveControls={handleRadioInteractiveControls}
                         />
                       ) : null
                     }

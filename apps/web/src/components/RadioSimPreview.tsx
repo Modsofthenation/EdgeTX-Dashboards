@@ -13,6 +13,7 @@ import type {
   SimFrameData,
   SimKeyboardMode,
 } from "@widget-gen/sim-preview";
+import { pulseSimKeyExit } from "@widget-gen/sim-preview";
 import type { RadioProfile } from "@edgetx/simulator-ui";
 import { useRadioSim } from "~/lib/radioSim/useRadioSim";
 import { getColorWasmRadio, wasmFileForFlavour } from "@widget-gen/shared";
@@ -45,7 +46,11 @@ interface RadioSimPreviewProps {
   modelPng?: Uint8Array | null;
   /** Called when interactive sim can be opened (running) or unavailable. */
   onInteractiveControls?: (
-    controls: { openInteractive: () => void } | null,
+    controls: {
+      openInteractive: () => void;
+      /** Pulse EdgeTX RTN/EXIT to dismiss firmware menus (widget popup, etc.). */
+      dismissRadioUi: () => void;
+    } | null,
   ) => void;
   /** Fires when the WASM runtime reaches (or leaves) the running phase. */
   onRunningChange?: (running: boolean) => void;
@@ -104,11 +109,15 @@ function SimInteractiveOverlay({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      // RTN first so EdgeTX widget menus close before the React shell unmounts.
+      onInput({ type: "simKey", key: 1, state: 1 });
+      onInput({ type: "simKey", key: 1, state: 0 });
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, onInput]);
 
   if (typeof document === "undefined") return null;
 
@@ -164,8 +173,8 @@ function SimInteractiveOverlay({
         </div>
       </div>
       <p className={styles.radioSimFullscreenHint}>
-        Double-tap widget for fullscreen · Esc to close · Arrow keys = rotary
-        encoder
+        Double-tap widget for fullscreen · Esc = RTN (dismiss menus) then close
+        · Arrow keys = rotary encoder
       </p>
     </div>,
     document.body,
@@ -293,15 +302,25 @@ export function RadioSimPreview({
 
   const openInteractive = useCallback(() => setOverlayOpen(true), []);
 
+  const dismissRadioUi = useCallback(() => {
+    pulseSimKeyExit(sendInputRef.current);
+  }, []);
+
   useEffect(() => {
     if (!onInteractiveControls) return;
     if (active && state.phase === "running") {
-      onInteractiveControls({ openInteractive });
+      onInteractiveControls({ openInteractive, dismissRadioUi });
     } else {
       onInteractiveControls(null);
     }
     return () => onInteractiveControls(null);
-  }, [active, state.phase, openInteractive, onInteractiveControls]);
+  }, [
+    active,
+    state.phase,
+    openInteractive,
+    dismissRadioUi,
+    onInteractiveControls,
+  ]);
 
   useEffect(() => {
     onRunningChange?.(active && state.phase === "running");
