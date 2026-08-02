@@ -16,6 +16,7 @@ import {
   buildHotReloadShimSource,
   hotReloadPaths,
 } from "./hotReloadShim.ts";
+import { createFsTickGate, type FsTickGate } from "./fsTickGate.ts";
 import type {
   ExtendedSimulatorExports,
   MockTelemetryValues,
@@ -97,6 +98,11 @@ export class SimRuntime {
     modelKey: null,
     pngFingerprint: null,
   };
+  /**
+   * Serialize virtual-SD writes vs WASM frame ticks so hot-reload cannot tear
+   * body/gen reads mid-refresh (worker abort → "Radio sim worker failed").
+   */
+  private readonly tickGate: FsTickGate = createFsTickGate();
 
   private wasmUrl: string;
   private radioKey: string;
@@ -275,8 +281,13 @@ export class SimRuntime {
       ? `${layoutPlan.widgetName}|${layoutPlan.layoutId}|${layoutPlan.zoneIndex}|${this.edgeTxVersion}`
       : null;
     if (modelKey !== this.deployCache.modelKey) {
-      await deploySimModel(runner, layoutPlan, this.edgeTxVersion);
-      this.deployCache.modelKey = modelKey;
+      await this.tickGate.beginFsExclusive();
+      try {
+        await deploySimModel(runner, layoutPlan, this.edgeTxVersion);
+        this.deployCache.modelKey = modelKey;
+      } finally {
+        this.tickGate.endFsExclusive();
+      }
     }
     this.pendingWidget = { source, zone };
 
@@ -338,6 +349,7 @@ export class SimRuntime {
     this.loadWidgetChain = Promise.resolve();
     this.hotReloadGen = 0;
     this.hotReloadFolder = null;
+    this.tickGate.reset();
     this.deployCache = {
       bodySource: null,
       folderName: null,
@@ -395,42 +407,56 @@ export class SimRuntime {
 
     const bodyChanged = this.deployCache.bodySource !== source;
     const folderCacheMiss = this.deployCache.folderName !== plan.folderName;
-
-    // Write first, then commit instance/cache state so a rejected write cannot
-    // leave hotReloadFolder / gen claiming a deploy that never landed.
-    if (bodyChanged) {
-      const nextGen = this.hotReloadGen + 1;
-      await runner.fsWriteFile(paths.bodyPath, encode(source));
-      await runner.fsWriteFile(
-        paths.genPath,
-        encode(buildHotReloadGenSource(nextGen)),
-      );
-      this.hotReloadGen = nextGen;
-      this.deployCache.bodySource = source;
-    }
-
-    // Shim main.lua only needs writing when the factory is (re)registered.
-    if (needsRelaunch || folderCacheMiss) {
-      await runner.fsWriteFile(
-        paths.shimPath,
-        encode(buildHotReloadShimSource(plan.folderName)),
-      );
-      this.deployCache.folderName = plan.folderName;
-    }
-
-    this.hotReloadFolder = plan.folderName;
-
     const png = this.customModelPng ?? PLACEHOLDER_MODEL_PNG;
     const pngFingerprint = `${png.byteLength}:${png[0] ?? 0}:${png[png.length >> 1] ?? 0}:${png[png.length - 1] ?? 0}`;
-    if (this.deployCache.pngFingerprint !== pngFingerprint) {
-      const pngBuf = png.buffer.slice(
-        png.byteOffset,
-        png.byteOffset + png.byteLength,
-      ) as ArrayBuffer;
-      await runner.fsWriteFile(plan.paths.modelPngPath, pngBuf);
-      // Mirror for custom BG_IMG dashboards (`/IMAGES/dashbg.png`).
-      await runner.fsWriteFile("/IMAGES/dashbg.png", pngBuf.slice(0));
-      this.deployCache.pngFingerprint = pngFingerprint;
+    const pngChanged = this.deployCache.pngFingerprint !== pngFingerprint;
+    const needsFsWrite =
+      bodyChanged || needsRelaunch || folderCacheMiss || pngChanged;
+
+    if (!needsFsWrite) {
+      return { needsRelaunch, folderName: plan.folderName };
+    }
+
+    // Pause WASM ticks across the whole write batch so refresh() cannot
+    // loadScript a half-written body/gen pair (or torn FAT metadata).
+    await this.tickGate.beginFsExclusive();
+    try {
+      // Write first, then commit instance/cache state so a rejected write cannot
+      // leave hotReloadFolder / gen claiming a deploy that never landed.
+      if (bodyChanged) {
+        const nextGen = this.hotReloadGen + 1;
+        await runner.fsWriteFile(paths.bodyPath, encode(source));
+        await runner.fsWriteFile(
+          paths.genPath,
+          encode(buildHotReloadGenSource(nextGen)),
+        );
+        this.hotReloadGen = nextGen;
+        this.deployCache.bodySource = source;
+      }
+
+      // Shim main.lua only needs writing when the factory is (re)registered.
+      if (needsRelaunch || folderCacheMiss) {
+        await runner.fsWriteFile(
+          paths.shimPath,
+          encode(buildHotReloadShimSource(plan.folderName)),
+        );
+        this.deployCache.folderName = plan.folderName;
+      }
+
+      this.hotReloadFolder = plan.folderName;
+
+      if (pngChanged) {
+        const pngBuf = png.buffer.slice(
+          png.byteOffset,
+          png.byteOffset + png.byteLength,
+        ) as ArrayBuffer;
+        await runner.fsWriteFile(plan.paths.modelPngPath, pngBuf);
+        // Mirror for custom BG_IMG dashboards (`/IMAGES/dashbg.png`).
+        await runner.fsWriteFile("/IMAGES/dashbg.png", pngBuf.slice(0));
+        this.deployCache.pngFingerprint = pngFingerprint;
+      }
+    } finally {
+      this.tickGate.endFsExclusive();
     }
 
     return { needsRelaunch, folderName: plan.folderName };
@@ -633,47 +659,66 @@ export class SimRuntime {
         continue;
       }
 
-      const runner = this.runner;
-      const ex = runner.exports;
-      if (!ex) break;
-
-      const ready = await runner.waitForLcdFrame(100);
-      if (!this.loopRunning || !runner.exports) break;
-      if (!ready) continue;
-
-      const now = Date.now();
-      this.maybeInjectTelemetry(now);
-      this.maybePollKeyboardMode(now);
-
-      const depth = ex.simuLcdGetDepth();
-      const w = ex.simuLcdGetWidth();
-      const h = ex.simuLcdGetHeight();
-      const size = lcdFrameByteSize(w, h, depth);
-      const frame = runner.copyLcd(size);
-      if (!frame) continue;
-
-      ex.simuLcdFlushed();
-
-      if (this.pendingWidget && !this.scriptLaunched) {
-        if (this.widgetLaunchDelayFrames > 0) {
-          this.widgetLaunchDelayFrames -= 1;
-        } else {
-          await this.backupModels();
-          this.scriptLaunched = true;
-          this.launchWidget(this.pendingWidget.source, this.pendingWidget.zone);
-        }
+      const pendingFs = this.tickGate.fsGate();
+      if (pendingFs) {
+        await pendingFs;
+        continue;
       }
 
-      this.advanceFullscreenTap(ex as ExtendedSimulatorExports);
+      if (!this.tickGate.tryBeginTick()) {
+        continue;
+      }
 
-      const buf =
-        frame.byteOffset === 0 && frame.byteLength === frame.buffer.byteLength
-          ? (frame.buffer as ArrayBuffer)
-          : (frame.buffer.slice(
-              frame.byteOffset,
-              frame.byteOffset + frame.byteLength,
-            ) as ArrayBuffer);
-      this.callbacks.onFrame?.({ buffer: buf, width: w, height: h, depth });
+      try {
+        const runner = this.runner;
+        const ex = runner.exports;
+        if (!ex) break;
+
+        const ready = await runner.waitForLcdFrame(100);
+        if (!this.loopRunning || !runner.exports) break;
+        // Deploy may have started while we awaited the LCD — yield cleanly.
+        if (this.tickGate.fsGate()) continue;
+        if (!ready) continue;
+
+        const now = Date.now();
+        this.maybeInjectTelemetry(now);
+        this.maybePollKeyboardMode(now);
+
+        const depth = ex.simuLcdGetDepth();
+        const w = ex.simuLcdGetWidth();
+        const h = ex.simuLcdGetHeight();
+        const size = lcdFrameByteSize(w, h, depth);
+        const frame = runner.copyLcd(size);
+        if (!frame) continue;
+
+        ex.simuLcdFlushed();
+
+        if (this.pendingWidget && !this.scriptLaunched) {
+          if (this.widgetLaunchDelayFrames > 0) {
+            this.widgetLaunchDelayFrames -= 1;
+          } else {
+            await this.backupModels();
+            this.scriptLaunched = true;
+            this.launchWidget(
+              this.pendingWidget.source,
+              this.pendingWidget.zone,
+            );
+          }
+        }
+
+        this.advanceFullscreenTap(ex as ExtendedSimulatorExports);
+
+        const buf =
+          frame.byteOffset === 0 && frame.byteLength === frame.buffer.byteLength
+            ? (frame.buffer as ArrayBuffer)
+            : (frame.buffer.slice(
+                frame.byteOffset,
+                frame.byteOffset + frame.byteLength,
+              ) as ArrayBuffer);
+        this.callbacks.onFrame?.({ buffer: buf, width: w, height: h, depth });
+      } finally {
+        this.tickGate.endTick();
+      }
     }
   }
 }

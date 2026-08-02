@@ -208,7 +208,10 @@ export function RadioSimPreview({
   const appliedModelPngRef = useRef<Uint8Array | null | undefined>(undefined);
   const loadedFirmwareRef = useRef<string | null>(null);
   const loadedRadioRef = useRef<string | null>(null);
+  const crashRetryCountRef = useRef(0);
   const sendInputRef = useRef(sendInput);
+  const [bootNonce, setBootNonce] = useState(0);
+  const [autoRecovering, setAutoRecovering] = useState(false);
   const [frame, setFrame] = useState<SimFrameData | null>(null);
   /** Keep last good frame during soft-restarts so the LCD doesn't blank. */
   const lastGoodFrameRef = useRef<SimFrameData | null>(null);
@@ -318,6 +321,39 @@ export function RadioSimPreview({
     if (!active) setOverlayOpen(false);
   }, [active]);
 
+  const rebootSim = useCallback(() => {
+    dispose();
+    startedRef.current = false;
+    appliedSourceRef.current = null;
+    appliedModelPngRef.current = undefined;
+    loadedFirmwareRef.current = null;
+    loadedRadioRef.current = null;
+    setBootNonce((n) => n + 1);
+  }, [dispose]);
+
+  useEffect(() => {
+    if (state.phase === "running") {
+      crashRetryCountRef.current = 0;
+      setAutoRecovering(false);
+    }
+  }, [state.phase]);
+
+  // Auto-recover a few times after worker aborts (common during rapid edits).
+  useEffect(() => {
+    if (!active || state.phase !== "error") return;
+    if (crashRetryCountRef.current >= 2) {
+      setAutoRecovering(false);
+      return;
+    }
+    crashRetryCountRef.current += 1;
+    setAutoRecovering(true);
+    const delayMs = 350 * crashRetryCountRef.current;
+    const timer = window.setTimeout(() => {
+      rebootSim();
+    }, delayMs);
+    return () => window.clearTimeout(timer);
+  }, [active, state.phase, rebootSim]);
+
   const simState = useMemo(
     () => ({
       loading: state.phase === "loading-wasm" || state.phase === "booting",
@@ -370,7 +406,17 @@ export function RadioSimPreview({
       radioId,
       modelPng: modelPngRef.current ?? undefined,
     });
-  }, [active, edgeTxVersion, radioId, simZone, init, pause, resume, dispose]);
+  }, [
+    active,
+    edgeTxVersion,
+    radioId,
+    simZone,
+    init,
+    pause,
+    resume,
+    dispose,
+    bootNonce,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -381,6 +427,7 @@ export function RadioSimPreview({
       appliedModelPngRef.current = undefined;
       loadedFirmwareRef.current = null;
       loadedRadioRef.current = null;
+      crashRetryCountRef.current = 0;
     };
   }, [dispose]);
 
@@ -402,21 +449,26 @@ export function RadioSimPreview({
     // without soft-restarting WASM (EdgeTX caches widget factories, #7216).
     const timer = window.setTimeout(() => {
       const nextSource = desiredSourceRef.current;
-      if (
-        appliedSourceRef.current === nextSource &&
-        appliedModelPngRef.current === modelPng
-      ) {
+      const nextPng = modelPngRef.current;
+      const nextSourceSame = appliedSourceRef.current === nextSource;
+      const nextPngSame = appliedModelPngRef.current === nextPng;
+      if (nextSourceSame && nextPngSame) {
         return;
       }
-      void loadWidget(nextSource, simZone, modelPng ?? undefined)
+      // Skip PNG transfer when only Lua changed — avoids worker memory churn.
+      void loadWidget(
+        nextSource,
+        simZone,
+        nextPngSame ? undefined : (nextPng ?? undefined),
+      )
         .then(() => {
           appliedSourceRef.current = nextSource;
-          appliedModelPngRef.current = modelPng;
+          appliedModelPngRef.current = nextPng;
         })
         .catch(() => {
           // keep desired source; next running/source transition retries.
         });
-    }, 120);
+    }, 180);
 
     return () => window.clearTimeout(timer);
   }, [active, state.phase, luaSource, loadWidget, simZone, modelPng]);
@@ -440,10 +492,23 @@ export function RadioSimPreview({
         <div className={styles.radioSimMessage}>
           <p>Radio preview unavailable: {state.error}</p>
           <p className={styles.hint}>
-            The EdgeTX firmware may still be downloading, or the sim worker
-            crashed. Hard-refresh the page. If this persists, run{" "}
-            <code>npm run setup:sim</code> then restart the app.
+            {autoRecovering
+              ? "Restarting radio preview…"
+              : "The sim worker crashed while updating the preview. Retry, or hard-refresh if this keeps happening."}
           </p>
+          {!autoRecovering && (
+            <button
+              type="button"
+              className={styles.radioSimRetry}
+              onClick={() => {
+                crashRetryCountRef.current = 0;
+                setAutoRecovering(false);
+                rebootSim();
+              }}
+            >
+              Retry radio preview
+            </button>
+          )}
         </div>
       </div>
     );

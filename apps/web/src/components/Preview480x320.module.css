@@ -624,6 +624,27 @@
   text-align: center;
 }
 
+.radioSimRetry {
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text, #e8edf7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.radioSimRetry:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.radioSimRetry:focus-visible {
+  outline: 2px solid var(--accent, #5eb0ff);
+  outline-offset: 2px;
+}
+
 .radioSimUpdating {
   position: absolute;
   left: 50%;

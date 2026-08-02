@@ -35,6 +35,8 @@ export {
   buildHotReloadGenSource,
   hotReloadPaths,
 } from "./hotReloadShim.ts";
+export { createFsTickGate } from "./fsTickGate.ts";
+export type { FsTickGate } from "./fsTickGate.ts";
 export type {
   MockTelemetryValues,
   SimFrameData,

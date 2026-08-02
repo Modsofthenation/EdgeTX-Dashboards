@@ -6,11 +6,13 @@ import {
   type SimWorkerResponse,
   type MockTelemetryValues,
   type SimFrameData,
+  type WidgetSimulateZone,
 } from "@widget-gen/sim-preview";
 import {
   createFrameThrottle,
   FRAME_MIN_INTERVAL_MS,
 } from "../lib/radioSim/frameThrottle.ts";
+import { createLoadWidgetCoalescer } from "../lib/radioSim/loadWidgetCoalesce.ts";
 
 let runtime: SimRuntime | null = null;
 let currentMock: MockTelemetryValues | null = null;
@@ -19,12 +21,52 @@ let frameThrottle = createFrameThrottle<SimFrameData>((frame) => {
   post({ type: "frame", frame }, [frame.buffer]);
 }, FRAME_MIN_INTERVAL_MS);
 
+const loadWidgetCoalescer = createLoadWidgetCoalescer<WidgetSimulateZone>({
+  run: async (job) => {
+    if (!runtime) throw new Error("Simulator not initialized");
+    await runtime.loadWidget(
+      job.source,
+      job.zone,
+      job.modelPng ? new Uint8Array(job.modelPng) : undefined,
+    );
+    if (currentMock) runtime.setMockTelemetry(currentMock);
+  },
+  onResult: (requestId, result) => {
+    if (result.ok) {
+      post({ type: "loadWidgetResult", requestId, ok: true });
+    } else {
+      post({
+        type: "log",
+        text: `Widget reload failed: ${result.error}`,
+      });
+      post({
+        type: "loadWidgetResult",
+        requestId,
+        ok: false,
+        error: result.error,
+      });
+    }
+  },
+});
+
 function post(msg: SimWorkerResponse, transfer?: Transferable[]): void {
   self.postMessage(msg, transfer ?? []);
 }
 
 self.onmessage = (event: MessageEvent<SimWorkerRequest>) => {
   const msg = event.data;
+  // Coalesce outside the serial command queue so rapid editor edits collapse
+  // to the latest source instead of each awaiting a full deploy.
+  if (msg.type === "loadWidget") {
+    loadWidgetCoalescer.enqueue({
+      source: msg.source,
+      zone: msg.zone,
+      requestId: msg.requestId,
+      modelPng: msg.modelPng,
+    });
+    return;
+  }
+
   commandQueue = commandQueue
     .then(() => handleMessage(msg))
     .catch((err) => {
@@ -47,6 +89,7 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
   try {
     switch (msg.type) {
       case "init": {
+        loadWidgetCoalescer.reset("re-init");
         frameThrottle.reset();
         if (runtime) {
           await runtime.dispose();
@@ -78,32 +121,6 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         }
         break;
       }
-      case "loadWidget": {
-        if (!runtime) throw new Error("Simulator not initialized");
-        try {
-          await runtime.loadWidget(
-            msg.source,
-            msg.zone,
-            msg.modelPng ? new Uint8Array(msg.modelPng) : undefined,
-          );
-          if (currentMock) runtime.setMockTelemetry(currentMock);
-          post({
-            type: "loadWidgetResult",
-            requestId: msg.requestId,
-            ok: true,
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          post({ type: "log", text: `Widget reload failed: ${message}` });
-          post({
-            type: "loadWidgetResult",
-            requestId: msg.requestId,
-            ok: false,
-            error: message,
-          });
-        }
-        break;
-      }
       case "setMock": {
         currentMock = msg.mock;
         runtime?.setMockTelemetry(msg.mock);
@@ -126,6 +143,7 @@ async function handleMessage(msg: SimWorkerRequest): Promise<void> {
         break;
       }
       case "dispose": {
+        loadWidgetCoalescer.reset("disposed");
         frameThrottle.reset();
         await runtime?.dispose();
         runtime = null;
