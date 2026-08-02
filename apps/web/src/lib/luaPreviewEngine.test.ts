@@ -422,6 +422,29 @@ describe("parseLuaToDrawCommands", () => {
     const meta = getLastPreviewParseMeta();
     assert.equal(meta.skippedTextCount, 0);
   });
+
+  it("resolves lcd.clear(bg) from BgColor COLOR option default", () => {
+    const source = [
+      "---@simulate Layout1x1 zone=0",
+      "local options = {",
+      '  { "BgColor", COLOR, YELLOW },',
+      '  { "TextColor", COLOR, WHITE },',
+      "}",
+      "local function refresh(widget)",
+      "  local bg = widget.options.BgColor",
+      "  local fg = widget.options.TextColor",
+      "  lcd.clear(bg)",
+      '  lcd.drawText(10, 10, "Hi", SMLSIZE + fg)',
+      "end",
+      "return { options = options, refresh = refresh }",
+    ].join("\n");
+
+    const cmds = parseLuaToDrawCommands(source, BASE_MOCK);
+    const clear = cmds.find((c) => c.kind === "clear");
+    assert.equal(clear?.color, "#ffff00");
+    const text = cmds.find((c) => c.kind === "text");
+    assert.equal(text?.color, "#ffffff");
+  });
 });
 
 describe("edgeTxDegToCanvasRad", () => {

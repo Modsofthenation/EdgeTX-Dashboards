@@ -355,6 +355,17 @@ function seedWidgetContext(
       ctx[localName] = ctx[name]!;
     }
   }
+  for (const m of source.matchAll(
+    /\{\s*"([^"]+)"\s*,\s*COLOR\s*,\s*([A-Za-z0-9_]+)\s*\}/g,
+  )) {
+    const name = m[1]!;
+    const colorName = m[2]!;
+    if (scenario?.options && name in scenario.options) {
+      ctx[name] = scenario.options[name]!;
+    } else {
+      ctx[name] = colorName;
+    }
+  }
   const lhBlock = source.match(/local\s+LH\s*=\s*\{([^}]+)\}/);
   if (lhBlock) {
     for (const kv of lhBlock[1]!.matchAll(/(\w+)\s*=\s*([\d.]+)/g)) {
@@ -677,13 +688,22 @@ function substituteWidgetOptions(
   let e = expr;
   e = e.replace(/widget\.options\.(\w+)/g, (_, name: string) => {
     const value = ctx[name];
-    return typeof value === "number" ? String(value) : "0";
+    if (typeof value === "number") return String(value);
+    // COLOR option defaults are seeded as EdgeTX color names (e.g. YELLOW).
+    if (typeof value === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
+      return value;
+    }
+    return "0";
   });
   e = e.replace(/widget\.options\[(\d+)\]/g, (_, index: string) => {
     const name = optionIndex.get(Number(index));
     if (!name) return "0";
     const value = ctx[name];
-    return typeof value === "number" ? String(value) : "0";
+    if (typeof value === "number") return String(value);
+    if (typeof value === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
+      return value;
+    }
+    return "0";
   });
   return e;
 }
@@ -913,6 +933,12 @@ function evalValue(
     if (prop === "flightSecs") return (ctx.flightSecs as number) ?? 3;
     if (prop === "lastFlightSecs") return 0;
     if (prop in ctx) return ctx[prop]!;
+  }
+
+  const widgetOption = expr.match(/^widget\.options\.(\w+)$/);
+  if (widgetOption) {
+    const name = widgetOption[1]!;
+    if (name in ctx) return ctx[name]!;
   }
 
   if (expr in ctx) {

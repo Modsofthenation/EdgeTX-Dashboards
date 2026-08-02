@@ -44,7 +44,9 @@ export function buildHotReloadGenSource(generation: number): string {
  * so we do not loadScript(gen.lua) on every EdgeTX callback.
  *
  * Body `options` are loaded once at module scope so EdgeTX registers the real
- * option defaults (ShowLink, etc.) instead of an empty table.
+ * option defaults (ShowLink, etc.) instead of an empty table. On body gen
+ * bumps we rebuild widget.options from the new defaults so COLOR edits
+ * (BgColor / TextColor) from the editor take effect in radio preview.
  */
 export function buildHotReloadShimSource(folderName: string): string {
   const safe = sanitizeWidgetFolderName(folderName);
@@ -60,6 +62,19 @@ local GEN = "${gen}"
 local gen = -1
 local mod = nil
 local options = {}
+
+local function defaultsFromOptions(optionDefs)
+  local opts = {}
+  if type(optionDefs) ~= "table" then
+    return opts
+  end
+  for _, def in ipairs(optionDefs) do
+    if type(def) == "table" and type(def[1]) == "string" then
+      opts[def[1]] = def[3]
+    end
+  end
+  return opts
+end
 
 -- Load body once for factory options (EdgeTX reads options at registration).
 do
@@ -94,6 +109,9 @@ local function checkReload()
   if ok2 and type(m) == "table" then
     mod = m
     gen = g
+    if type(m.options) == "table" then
+      options = m.options
+    end
   end
   return mod
 end
@@ -120,9 +138,11 @@ local function refresh(widget, event, touch)
   -- When body generation changes, re-run create into the live widget table
   -- so telemetry src caches match the new script (geometry-only edits still
   -- work even without this; structural create() changes need it).
+  -- Rebuild options from the new body defaults so COLOR option edits
+  -- (BgColor/TextColor) from the editor are not stuck on the previous value.
   if m and type(m.create) == "function" and gen ~= prevGen then
     local zone = widget.zone
-    local opts = widget.options
+    local opts = defaultsFromOptions(m.options)
     local fresh = m.create(zone, opts)
     if type(fresh) == "table" then
       for k in pairs(widget) do
@@ -132,7 +152,7 @@ local function refresh(widget, event, touch)
         widget[k] = v
       end
       widget.zone = zone
-      widget.options = opts or widget.options
+      widget.options = opts
     end
   end
   if m and type(m.refresh) == "function" then

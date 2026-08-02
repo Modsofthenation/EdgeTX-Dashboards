@@ -12,6 +12,19 @@ describe("dashboardBackground", () => {
     const state = detectDashboardBackground(STARTER_WIDGET_SOURCE);
     assert.equal(state.mode, "color");
     assert.equal(state.clearArg, "bg");
+    assert.equal(state.color, "BLACK");
+  });
+
+  it("detects BgColor option when lcd.clear uses bg", () => {
+    const yellow = applyDashboardBackground(STARTER_WIDGET_SOURCE, {
+      mode: "color",
+      color: "YELLOW",
+    });
+    const state = detectDashboardBackground(yellow);
+    assert.equal(state.mode, "color");
+    assert.equal(state.clearArg, "bg");
+    assert.equal(state.color, "YELLOW");
+    assert.match(yellow, /\{\s*"BgColor"\s*,\s*COLOR\s*,\s*YELLOW\s*\}/);
   });
 
   it("applies a solid color literal", () => {
@@ -22,6 +35,23 @@ describe("dashboardBackground", () => {
     assert.match(next, /lcd\.clear\(bg\)/);
     assert.match(next, /\{\s*"BgColor"\s*,\s*COLOR\s*,\s*DARKBLUE\s*\}/);
     assert.equal(detectDashboardBackground(next).mode, "color");
+    assert.equal(detectDashboardBackground(next).color, "DARKBLUE");
+  });
+
+  it("can switch from yellow back to black via BgColor", () => {
+    const yellow = applyDashboardBackground(STARTER_WIDGET_SOURCE, {
+      mode: "color",
+      color: "YELLOW",
+    });
+    assert.equal(detectDashboardBackground(yellow).color, "YELLOW");
+
+    const black = applyDashboardBackground(yellow, {
+      mode: "color",
+      color: "BLACK",
+    });
+    assert.equal(detectDashboardBackground(black).color, "BLACK");
+    assert.match(black, /\{\s*"BgColor"\s*,\s*COLOR\s*,\s*BLACK\s*\}/);
+    assert.match(black, /lcd\.clear\(bg\)/);
   });
 
   it("switches to model bitmap fullscreen draw", () => {
