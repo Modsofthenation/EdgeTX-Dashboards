@@ -1311,22 +1311,101 @@
 
 .canvasMeta {
   position: absolute;
-  bottom: 0.65rem;
+  bottom: 0.75rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
+  gap: 0.4rem;
+  max-width: min(92%, 40rem);
+  padding: 0.5rem 0.95rem 0.55rem;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1.4;
   color: var(--text-secondary);
-  background: var(--bg-elevated);
+  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   pointer-events: none;
   z-index: 3;
+}
+
+.canvasMetaPrimary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0;
+}
+
+.canvasMetaPrimary > * {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.65rem;
+  white-space: nowrap;
+}
+
+.canvasMetaPrimary > * + * {
+  border-left: 1px solid var(--border);
+}
+
+.canvasMetaFact {
+  color: var(--text-secondary);
+}
+
+.canvasMetaZoom {
+  pointer-events: auto;
+  margin: 0;
+  padding: 0.12rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-hover);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.canvasMetaZoom:hover {
+  border-color: var(--border-strong);
+}
+
+.canvasMetaMode {
+  color: var(--muted);
+}
+
+.canvasMetaHints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.4rem;
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 450;
+  line-height: 1.4;
+}
+
+.canvasMetaHints > span {
+  white-space: nowrap;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-hover) 75%, transparent);
+}
+
+.canvasMetaEmpty {
+  margin: 0;
+  max-width: 34rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 450;
+  line-height: 1.4;
 }
 
 .canvasHint {

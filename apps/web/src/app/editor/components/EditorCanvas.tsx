@@ -304,66 +304,45 @@ export const EditorCanvas = memo(function EditorCanvas({
         />
       </div>
       <div className={styles.canvasMeta} data-testid="editor-canvas-meta">
-        <span>
-          {previewDims.zoneW} × {previewDims.zoneH}
-        </span>
-        <span className={styles.canvasHint}>·</span>
-        <span>
-          {previewDims.layout} z{previewDims.zone}
-        </span>
-        <span className={styles.canvasHint}>·</span>
-        <button
-          type="button"
-          className={styles.canvasHint}
-          style={{
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-            color: "inherit",
-            font: "inherit",
-          }}
-          onClick={resetView}
-          title="Reset zoom/pan"
-        >
-          {Math.round(zoom * 100)}%
-        </button>
-        <span className={styles.canvasHint}>·</span>
-        <span className={styles.canvasHint}>
-          Ctrl+wheel zoom · Space-drag pan · Drag empty to marquee · Drag
-          sidebar edges to resize
-        </span>
-        {hasRadioPreview ? (
-          <>
-            <span className={styles.canvasHint}>·</span>
-            <span
-              className={styles.canvasHint}
-              data-testid="editor-preview-mode-label"
+        <div className={styles.canvasMetaPrimary}>
+          <span className={styles.canvasMetaFact}>
+            {previewDims.zoneW} × {previewDims.zoneH}
+          </span>
+          <span className={styles.canvasMetaFact}>
+            {previewDims.layout} z{previewDims.zone}
+          </span>
+          <span className={styles.canvasMetaSlot}>
+            <button
+              type="button"
+              className={styles.canvasMetaZoom}
+              onClick={resetView}
+              title="Reset zoom/pan"
             >
-              Radio preview
-            </span>
-          </>
-        ) : (
-          <>
-            <span className={styles.canvasHint}>·</span>
-            <span
-              className={styles.canvasHint}
-              data-testid="editor-preview-mode-label"
-            >
-              {geometryEditsLocked
-                ? "Approximate preview · geometry locked"
+              {Math.round(zoom * 100)}%
+            </button>
+          </span>
+          <span
+            className={styles.canvasMetaMode}
+            data-testid="editor-preview-mode-label"
+          >
+            {hasRadioPreview
+              ? "Radio preview"
+              : geometryEditsLocked
+                ? "Approximate · geometry locked"
                 : "Approximate preview"}
-            </span>
-          </>
-        )}
+          </span>
+        </div>
+        <div className={styles.canvasMetaHints}>
+          <span>Ctrl+wheel zoom</span>
+          <span>Space-drag pan</span>
+          <span>Drag empty to marquee</span>
+          <span>Drag sidebar edges to resize</span>
+        </div>
         {records.length === 0 && !hasRadioPreview ? (
-          <>
-            <span className={styles.canvasHint}>·</span>
-            <span className={styles.canvasHint}>
-              Empty board — Insert elements, or View → Radio preview for EdgeTX
-              pixels
-            </span>
-          </>
+          <p className={styles.canvasMetaEmpty}>
+            Empty board — Insert elements, or View → Radio preview for EdgeTX
+            pixels
+          </p>
         ) : null}
       </div>
     </div>
