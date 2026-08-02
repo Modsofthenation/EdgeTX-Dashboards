@@ -227,6 +227,30 @@
   --preview-bg: #1c1613;
   --preview-accent: #d97756;
 }
+.swatch[data-theme-preview="aurora"] {
+  --preview-bg: #0e1524;
+  --preview-accent: #22d3ee;
+}
+.swatch[data-theme-preview="sunset"] {
+  --preview-bg: #1e1216;
+  --preview-accent: #fb7185;
+}
+.swatch[data-theme-preview="prism"] {
+  --preview-bg: #f3f0f8;
+  --preview-accent: #0d9488;
+}
+.swatch[data-theme-preview="flare"] {
+  --preview-bg: #1c0f22;
+  --preview-accent: #e879f9;
+}
+.swatch[data-theme-preview="citrus"] {
+  --preview-bg: #1c180c;
+  --preview-accent: #facc15;
+}
+.swatch[data-theme-preview="candy"] {
+  --preview-bg: #161022;
+  --preview-accent: #f472b6;
+}
 
 .themeLabel {
   font-size: 0.8125rem;

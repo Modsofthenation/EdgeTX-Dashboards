@@ -470,6 +470,204 @@
   --body-grid: rgba(253, 232, 220, 0.04);
 }
 
+:root[data-theme="aurora"] {
+  --bg: #070b14;
+  --bg-elevated: #0e1524;
+  --surface: #131c2e;
+  --surface-solid: #131c2e;
+  --surface-hover: #1a2740;
+  --border: rgba(34, 211, 238, 0.16);
+  --border-strong: rgba(232, 121, 249, 0.28);
+  --text: #e8f7ff;
+  --text-secondary: #9ad4e8;
+  --text-muted: #7aa8c4;
+  --muted: #7aa8c4;
+  --accent: #22d3ee;
+  --accent-bright: #67e8f9;
+  --accent-glow: rgba(34, 211, 238, 0.28);
+  --accent-hover: #0891b2;
+  --on-accent: #041018;
+  --cyan: #e879f9;
+  --success: #34d399;
+  --success-glow: rgba(52, 211, 153, 0.16);
+  --warning: #fbbf24;
+  --error: #fb7185;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(34, 211, 238, 0.24);
+  --scrollbar-thumb-hover: rgba(34, 211, 238, 0.36);
+  --scrollbar-thumb-active: rgba(232, 121, 249, 0.5);
+  --body-wash-a: rgba(34, 211, 238, 0.16);
+  --body-wash-b: rgba(232, 121, 249, 0.12);
+  --body-grid: rgba(232, 247, 255, 0.035);
+}
+
+:root[data-theme="sunset"] {
+  --bg: #140c0e;
+  --bg-elevated: #1e1216;
+  --surface: #271820;
+  --surface-solid: #271820;
+  --surface-hover: #332028;
+  --border: rgba(251, 113, 133, 0.16);
+  --border-strong: rgba(251, 191, 36, 0.28);
+  --text: #fff1e8;
+  --text-secondary: #f9c4a8;
+  --text-muted: #d49a7e;
+  --muted: #d49a7e;
+  --accent: #fb7185;
+  --accent-bright: #fda4af;
+  --accent-glow: rgba(251, 113, 133, 0.28);
+  --accent-hover: #e11d48;
+  --on-accent: #1a060a;
+  --cyan: #fbbf24;
+  --success: #4ade80;
+  --success-glow: rgba(74, 222, 128, 0.14);
+  --warning: #fbbf24;
+  --error: #f43f5e;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(251, 113, 133, 0.24);
+  --scrollbar-thumb-hover: rgba(251, 113, 133, 0.36);
+  --scrollbar-thumb-active: rgba(251, 191, 36, 0.5);
+  --body-wash-a: rgba(251, 113, 133, 0.16);
+  --body-wash-b: rgba(251, 191, 36, 0.12);
+  --body-grid: rgba(255, 241, 232, 0.035);
+}
+
+:root[data-theme="prism"] {
+  --bg: #f3f0f8;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-hover: #f7f4fc;
+  --border: rgba(13, 148, 136, 0.14);
+  --border-strong: rgba(236, 72, 153, 0.22);
+  --text: #1e1b2e;
+  --text-secondary: #5b5674;
+  --text-muted: #6b6685;
+  --muted: #6b6685;
+  --accent: #0d9488;
+  --accent-bright: #14b8a6;
+  --accent-glow: rgba(13, 148, 136, 0.18);
+  --accent-hover: #0f766e;
+  --on-accent: #ffffff;
+  --cyan: #0891b2;
+  --success: #059669;
+  --success-glow: rgba(5, 150, 105, 0.12);
+  --warning: #d97706;
+  --error: #e11d48;
+  --shadow-sm: 0 1px 2px rgba(30, 27, 46, 0.06);
+  --shadow-md: 0 8px 24px rgba(30, 27, 46, 0.08);
+  --shadow-lg: 0 20px 48px rgba(30, 27, 46, 0.12);
+  --scrollbar-thumb: rgba(13, 148, 136, 0.22);
+  --scrollbar-thumb-hover: rgba(13, 148, 136, 0.34);
+  --scrollbar-thumb-active: rgba(236, 72, 153, 0.45);
+  --body-wash-a: rgba(45, 212, 191, 0.14);
+  --body-wash-b: rgba(244, 114, 182, 0.12);
+  --body-grid: rgba(30, 27, 46, 0.03);
+}
+
+:root[data-theme="flare"] {
+  --bg: #120814;
+  --bg-elevated: #1c0f22;
+  --surface: #261430;
+  --surface-solid: #261430;
+  --surface-hover: #321a3e;
+  --border: rgba(232, 121, 249, 0.18);
+  --border-strong: rgba(232, 121, 249, 0.32);
+  --text: #fce7ff;
+  --text-secondary: #e9a8f5;
+  --text-muted: #c084d4;
+  --muted: #c084d4;
+  --accent: #e879f9;
+  --accent-bright: #f0abfc;
+  --accent-glow: rgba(232, 121, 249, 0.3);
+  --accent-hover: #c026d3;
+  --on-accent: #1a0618;
+  --cyan: #22d3ee;
+  --success: #4ade80;
+  --success-glow: rgba(74, 222, 128, 0.14);
+  --warning: #fbbf24;
+  --error: #fb7185;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(232, 121, 249, 0.26);
+  --scrollbar-thumb-hover: rgba(232, 121, 249, 0.38);
+  --scrollbar-thumb-active: rgba(240, 171, 252, 0.55);
+  --body-wash-a: rgba(232, 121, 249, 0.14);
+  --body-wash-b: rgba(192, 38, 211, 0.08);
+  --body-grid: rgba(252, 231, 255, 0.04);
+}
+
+:root[data-theme="citrus"] {
+  --bg: #121008;
+  --bg-elevated: #1c180c;
+  --surface: #262010;
+  --surface-solid: #262010;
+  --surface-hover: #322a14;
+  --border: rgba(250, 204, 21, 0.18);
+  --border-strong: rgba(249, 115, 22, 0.3);
+  --text: #fffbeb;
+  --text-secondary: #fde68a;
+  --text-muted: #d4a84b;
+  --muted: #d4a84b;
+  --accent: #f59e0b;
+  --accent-bright: #facc15;
+  --accent-glow: rgba(250, 204, 21, 0.28);
+  --accent-hover: #ea580c;
+  --on-accent: #1a1004;
+  --cyan: #fb923c;
+  --success: #84cc16;
+  --success-glow: rgba(132, 204, 22, 0.14);
+  --warning: #fbbf24;
+  --error: #fb7185;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(250, 204, 21, 0.26);
+  --scrollbar-thumb-hover: rgba(250, 204, 21, 0.38);
+  --scrollbar-thumb-active: rgba(249, 115, 22, 0.55);
+  --body-wash-a: rgba(250, 204, 21, 0.14);
+  --body-wash-b: rgba(249, 115, 22, 0.1);
+  --body-grid: rgba(255, 251, 235, 0.04);
+}
+
+:root[data-theme="candy"] {
+  --bg: #0e0a16;
+  --bg-elevated: #161022;
+  --surface: #1e1630;
+  --surface-solid: #1e1630;
+  --surface-hover: #2a1e40;
+  --border: rgba(244, 114, 182, 0.18);
+  --border-strong: rgba(34, 211, 238, 0.3);
+  --text: #fdf2f8;
+  --text-secondary: #f9a8d4;
+  --text-muted: #db7ab0;
+  --muted: #db7ab0;
+  --accent: #f472b6;
+  --accent-bright: #f9a8d4;
+  --accent-glow: rgba(244, 114, 182, 0.3);
+  --accent-hover: #db2777;
+  --on-accent: #1a0612;
+  --cyan: #22d3ee;
+  --success: #4ade80;
+  --success-glow: rgba(74, 222, 128, 0.14);
+  --warning: #fbbf24;
+  --error: #fb7185;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb: rgba(244, 114, 182, 0.26);
+  --scrollbar-thumb-hover: rgba(244, 114, 182, 0.38);
+  --scrollbar-thumb-active: rgba(34, 211, 238, 0.55);
+  --body-wash-a: rgba(244, 114, 182, 0.14);
+  --body-wash-b: rgba(34, 211, 238, 0.1);
+  --body-grid: rgba(253, 242, 248, 0.04);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -508,6 +706,64 @@ body {
   /* Notch / home-indicator safe areas for mobile shells */
   padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
     env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+}
+
+/* Fancy gradient themes — multi-stop atmosphere over the shared grid */
+:root[data-theme="aurora"] body {
+  background-image:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, transparent 42%),
+    linear-gradient(225deg, rgba(232, 121, 249, 0.16) 0%, transparent 48%),
+    radial-gradient(
+      ellipse 55% 40% at 70% 0%,
+      rgba(52, 211, 153, 0.12),
+      transparent 60%
+    ),
+    linear-gradient(var(--body-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--body-grid) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    auto,
+    24px 24px,
+    24px 24px;
+}
+
+:root[data-theme="sunset"] body {
+  background-image:
+    linear-gradient(160deg, rgba(251, 113, 133, 0.22) 0%, transparent 40%),
+    linear-gradient(20deg, rgba(251, 191, 36, 0.16) 0%, transparent 45%),
+    radial-gradient(
+      ellipse 60% 42% at 100% 10%,
+      rgba(249, 115, 22, 0.12),
+      transparent 55%
+    ),
+    linear-gradient(var(--body-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--body-grid) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    auto,
+    24px 24px,
+    24px 24px;
+}
+
+:root[data-theme="prism"] body {
+  background-image:
+    linear-gradient(125deg, rgba(45, 212, 191, 0.18) 0%, transparent 38%),
+    linear-gradient(235deg, rgba(244, 114, 182, 0.14) 0%, transparent 42%),
+    radial-gradient(
+      ellipse 50% 35% at 85% 0%,
+      rgba(56, 189, 248, 0.1),
+      transparent 55%
+    ),
+    linear-gradient(var(--body-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--body-grid) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    auto,
+    24px 24px,
+    24px 24px;
 }
 
 button,

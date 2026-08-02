@@ -12,6 +12,12 @@ export const THEME_IDS = [
   "ember",
   "volt",
   "copper",
+  "aurora",
+  "sunset",
+  "prism",
+  "flare",
+  "citrus",
+  "candy",
 ] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
@@ -85,6 +91,36 @@ export const THEME_OPTIONS: {
     id: "copper",
     label: "Copper",
     description: "Warm bronze instrument chrome",
+  },
+  {
+    id: "aurora",
+    label: "Aurora",
+    description: "Dark bench with cyan–magenta sky wash",
+  },
+  {
+    id: "sunset",
+    label: "Sunset",
+    description: "Warm dusk gradient, coral to gold",
+  },
+  {
+    id: "prism",
+    label: "Prism",
+    description: "Light chrome with soft multi-hue wash",
+  },
+  {
+    id: "flare",
+    label: "Flare",
+    description: "Hot magenta accents on charcoal",
+  },
+  {
+    id: "citrus",
+    label: "Citrus",
+    description: "Vivid orange-yellow instrument pop",
+  },
+  {
+    id: "candy",
+    label: "Candy",
+    description: "Neon pink and electric cyan",
   },
 ];
 

@@ -39,7 +39,7 @@ export default function RootLayout({
       <body>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var k='etx-dashboards-theme';var t=localStorage.getItem(k);var ok=['light','dark','midnight','slate','forest','ocean','contrast','graphite','meadow','fog','ember','volt','copper'];if(ok.indexOf(t)>=0)document.documentElement.dataset.theme=t;}catch(e){}})();`,
+            __html: `(function(){try{var k='etx-dashboards-theme';var t=localStorage.getItem(k);var ok=['light','dark','midnight','slate','forest','ocean','contrast','graphite','meadow','fog','ember','volt','copper','aurora','sunset','prism','flare','citrus','candy'];if(ok.indexOf(t)>=0)document.documentElement.dataset.theme=t;}catch(e){}})();`,
           }}
         />
         <ThemeProvider>
