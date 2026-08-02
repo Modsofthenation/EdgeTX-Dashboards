@@ -1,5 +1,5 @@
 {
-  "name": "@widget-gen/layout-verify",
+  "name": "@widget-gen/perf-harness",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,12 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
   },
-  "dependencies": {
-    "@widget-gen/shared": "*"
-  },
   "devDependencies": {
     "@types/node": "^22.15.0",
-    "@widget-gen/perf-harness": "*",
     "typescript": "^5.8.3"
   }
 }

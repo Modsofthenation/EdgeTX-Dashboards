@@ -11,6 +11,7 @@ Requires Node **22.13+**. Generation requires `CURSOR_API_KEY`.
 | `npm run dev`                                        | Web UI on http://localhost:3000 (fetches WASM first if missing)                   |
 | `npm run build`                                      | Ensure WASM assets, then build `apps/web` (packages need no build)                |
 | `npm test`                                           | Every workspace's `test` script                                                   |
+| `npm run test:perf`                                  | Micro-benchmark suites (`**/perf/*.perf.test.ts`) + baseline regression checks    |
 | `npm run test:wasm`                                  | EdgeTX WASM harness only (needs firmware synced)                                  |
 | `npm run typecheck`                                  | `tsc --noEmit` in every workspace                                                 |
 | `npm run lint`                                       | oxlint over the repo                                                              |
@@ -29,10 +30,13 @@ Run the narrowest thing that covers your change:
 ```bash
 npm run test -w @widget-gen/generator        # one package
 npm run typecheck -w @widget-gen/web         # one workspace
+npm run test:perf                            # hotspot budgets + baselines (see docs/reference/perf-harness.md)
 
 # one file
 node --experimental-strip-types --test packages/generator/src/validate.test.ts
 cd apps/web && npx tsx --test src/lib/luaPreviewEngine.test.ts
 ```
+
+`UPDATE_PERF_BASELINES=1 npm run test:perf` rewrites committed baseline JSON after intentional speedups. `PERF_STRICT=1` tightens regression allowance to 25%.
 
 `SKIP_WASM_SYNC=1` skips the firmware download (CI without the sim).

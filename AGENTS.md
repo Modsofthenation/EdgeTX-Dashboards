@@ -7,9 +7,10 @@ Telemetry protocols: `betaflight`, `rotorflight`, `generic-crsf` (sensor catalog
 ## Task Completion Requirements
 
 - Keep local verification focused on the files and packages changed. Run the smallest relevant test set; do not run the full workspace suite as a routine completion step.
-  - One file: `node --experimental-strip-types --test packages/generator/src/validate.test.ts`. Web tests need the `~/*` alias, so run them with `tsx`: `cd apps/web && npx tsx --test src/lib/luaPreviewEngine.test.ts`.
-  - One package: `npm run test -w @widget-gen/generator`.
-  - Run `npm run lint` and `npm run typecheck -w <workspace>` for the affected scope.
+- One file: `node --experimental-strip-types --test packages/generator/src/validate.test.ts`. Web tests need the `~/*` alias, so run them with `tsx`: `cd apps/web && npx tsx --test src/lib/luaPreviewEngine.test.ts`.
+- One package: `npm run test -w @widget-gen/generator`.
+- Performance hotspots: `npm run test:perf` (see [docs/reference/perf-harness.md](docs/reference/perf-harness.md)). Use `UPDATE_PERF_BASELINES=1` only when intentionally refreshing baselines.
+- Run `npm run lint` and `npm run typecheck -w <workspace>` for the affected scope.
 - **Before every commit/push:** run `npm run fmt:changed`, then confirm `npm run fmt:check` passes. CI fails on Prettier drift (`**/*.{ts,tsx,mjs,json,md,css}`), including markdown tables in READMEs.
 - Do not run repo-wide `npm test` or `npm run build` locally unless the user asks. CI owns full verification.
 - After a user-visible web change, verify the affected flow in the browser against `npm run dev`, then stop the dev server.
@@ -23,6 +24,7 @@ Telemetry protocols: `betaflight`, `rotorflight`, `generic-crsf` (sensor catalog
 - `packages/sim-preview`: EdgeTX WASM runtime (`SimRuntime`), virtual SD card, CRSF telemetry bridge.
 - `packages/layout-verify`: Static Lua draw interpreter plus overlap and geometry checks.
 - `packages/editor-core`: Lua ↔ scene document model behind the visual editor.
+- `packages/perf-harness`: Sync micro-benchmark helpers and baseline regression gates (`npm run test:perf`).
 
 ## Workspace Conventions
 

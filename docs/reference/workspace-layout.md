@@ -13,6 +13,7 @@ depends on package build ordering.
 | `packages/sim-preview/`       | EdgeTX WASM runtime (`SimRuntime`), virtual SD card, CRSF telemetry bridge                                         |
 | `packages/layout-verify/`     | Static Lua draw interpreter and overlap/geometry checks                                                            |
 | `packages/editor-core/`       | Lua ↔ scene document model behind the visual editor                                                                |
+| `packages/perf-harness/`      | Micro-benchmark helpers + baseline regression checks (`npm run test:perf`)                                         |
 | `knowledge/`                  | Radio profiles, telemetry catalogs, design guides                                                                  |
 | `templates/`                  | `dashboard-starter.lua`, `INSTALL.md.tpl`                                                                          |
 | `examples/`                   | Gold-standard reference widgets                                                                                    |
@@ -29,6 +30,8 @@ depends on package build ordering.
   handles emit for the one consumer that bundles (Next.js).
 - Tests are colocated with the module they cover (`validate.ts` / `validate.test.ts`)
   and discovered by glob, so a new test file needs no script changes.
+- Performance suites live under `perf/*.perf.test.ts` (outside default `src/**/*.test.ts`
+  globs) and run via `npm run test:perf` — see [perf-harness.md](./perf-harness.md).
 - Package tests run on Node's type stripping; web tests run through `tsx` because
   they resolve the `~/*` alias from `apps/web/tsconfig.json`.
 - Compiler options live in `tsconfig.base.json`; every package and `apps/web`
