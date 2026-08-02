@@ -327,6 +327,9 @@ export function RecordSelectionOverlay({
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent) => {
+      // Left-button only — middle-click pans the canvas (EditorCanvas),
+      // right-click opens the context menu.
+      if (event.button !== 0) return;
       if (!layout || !frameRef.current) return;
       const rect = frameRef.current.getBoundingClientRect();
       const pointer = screenToZone(event.clientX, event.clientY, rect, layout);

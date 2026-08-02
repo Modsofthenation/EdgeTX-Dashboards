@@ -344,7 +344,7 @@ export const EditorCanvas = memo(function EditorCanvas({
           <span className={styles.canvasMetaSep} aria-hidden>
             ·
           </span>
-          <span>Space-drag pan</span>
+          <span>Space / middle-drag pan</span>
           <span className={styles.canvasMetaSep} aria-hidden>
             ·
           </span>
