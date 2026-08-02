@@ -17,6 +17,17 @@
     "dialog:allow-save",
     "dialog:allow-message",
     "dialog:allow-ask",
-    "dialog:allow-confirm"
+    "dialog:allow-confirm",
+    "allow-install-widget-to-sd",
+    "allow-save-text-with-dialog",
+    "allow-save-bytes-with-dialog",
+    "allow-open-text-with-dialog",
+    "allow-write-text-file",
+    "allow-write-bytes-file",
+    "allow-read-text-file",
+    "allow-write-app-data-project",
+    "allow-list-app-data-projects",
+    "allow-read-app-data-project",
+    "allow-delete-app-data-project"
   ]
 }
