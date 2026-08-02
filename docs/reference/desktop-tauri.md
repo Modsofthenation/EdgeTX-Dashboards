@@ -14,11 +14,14 @@ Static export is **not** used. Production embeds a Next.js standalone server and
 
 `prepare-standalone.mjs` also stages generator filesystem assets (`knowledge/`, `templates/`, `examples/`, `stubs/`, `.cursor/rules/`) into the standalone tree. On launch, the Tauri shell copies those into a **writable** workspace under the OS app-data directory and sets:
 
-| Env                    | Purpose                                                            |
-| ---------------------- | ------------------------------------------------------------------ |
-| `WIDGET_GEN_DATA_DIR`  | Chat SQLite + caches                                               |
-| `WIDGET_GEN_REPO_ROOT` | Writable workspace (knowledge + `generated/` for the Cursor agent) |
-| `WIDGET_GEN_SIM_DIR`   | EdgeTX WASM sim assets                                             |
+| Env                        | Purpose                                                            |
+| -------------------------- | ------------------------------------------------------------------ |
+| `WIDGET_GEN_DATA_DIR`      | Chat SQLite + caches                                               |
+| `WIDGET_GEN_REPO_ROOT`     | Writable workspace (knowledge + `generated/` for the Cursor agent) |
+| `WIDGET_GEN_SIM_DIR`       | EdgeTX WASM sim assets                                             |
+| `CURSOR_SANDBOX_ENABLED=0` | Disable Cursor sandbox (Windows sandbox needs WSL2)                |
+
+Sidecar stdout/stderr are appended to `%AppData%/…/sidecar.log` (or the OS equivalent under the app data dir) so release GUI builds still leave diagnostics when chat generation fails.
 
 Without `knowledge/`, `/api/generate` fails looking up the repo root (historically shown as a bare **Internal Server Error** in the chat UI).
 

@@ -282,7 +282,8 @@ export function RecordSelectionOverlay({
 
     if (drag?.moved) {
       if (drag.mode === "move" && (drag.dx !== 0 || drag.dy !== 0)) {
-        // Keep final live transform painted until parent clears on records update.
+        // Keep final live transform painted until parent transfers it to the
+        // approximate preview hold (cleared when worker commands catch up).
         onLiveDragChange({
           mode: "move",
           ids: drag.recordIds,

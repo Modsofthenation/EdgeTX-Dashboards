@@ -17,6 +17,7 @@ import {
   hotReloadPaths,
 } from "./hotReloadShim.ts";
 import { createFsTickGate, type FsTickGate } from "./fsTickGate.ts";
+import { EDGETX_KEY_EXIT } from "./simKeys.ts";
 import type {
   ExtendedSimulatorExports,
   MockTelemetryValues,
@@ -45,9 +46,9 @@ const DEFAULT_STATE: RadioSimState = {
 export const WIDGET_LAUNCH_DELAY_FRAMES = 12;
 
 const FULLSCREEN_WAIT_FRAMES = 30;
-const FULLSCREEN_RETRY_WAIT_FRAMES = 20;
 const FULLSCREEN_TAP_GAP_FRAMES = 4;
-const FULLSCREEN_MAX_ATTEMPTS = 4;
+/** ~80ms KEY_EXIT hold before fullscreen double-tap (~5 frames at 60 Hz). */
+const KEY_EXIT_HOLD_FRAMES = 5;
 
 /** Cheap full-buffer fingerprint — PNG magic/IEND bytes are constant. */
 function fnv1a32(bytes: Uint8Array): string {
@@ -62,10 +63,13 @@ function fnv1a32(bytes: Uint8Array): string {
 type FullscreenTapGesture = {
   x: number;
   y: number;
-  /** 0=wait, 1=down, 2=up+gap, 3=down, 4=up */
+  /**
+   * 0=KEY_EXIT hold, 1=wait, 2=down, 3=up, 4=gap, 5=down, 6=up+done
+   */
   step: number;
   counter: number;
-  attempt: number;
+  /** True while KEY_EXIT is held from the menu-clear pulse. */
+  keyExitHeld: boolean;
 };
 
 export class SimRuntime {
@@ -520,12 +524,21 @@ export class SimRuntime {
 
   private beginFullscreenTap(zone: WidgetSimulateZone): void {
     const { x, y } = this.fullscreenTapCoords(zone);
+    // Clear leftover EdgeTX popup menus from a prior session before tapping.
+    // Hold KEY_EXIT across a few frames so firmware can scan it (instant
+    // press/release is often dropped before the next WASM tick).
+    const ex = this.runner?.exports as ExtendedSimulatorExports | undefined;
+    const setKey = ex?.simuSetKey;
+    const canKey = typeof setKey === "function";
+    if (canKey) {
+      setKey(EDGETX_KEY_EXIT, 1);
+    }
     this.fullscreenTap = {
       x,
       y,
       step: 0,
-      counter: FULLSCREEN_WAIT_FRAMES,
-      attempt: 0,
+      counter: canKey ? KEY_EXIT_HOLD_FRAMES : 0,
+      keyExitHeld: canKey,
     };
   }
 
@@ -596,38 +609,48 @@ export class SimRuntime {
 
     switch (gesture.step) {
       case 0:
-        gesture.counter -= 1;
-        if (gesture.counter <= 0) gesture.step = 1;
+        // Release menu-clear KEY_EXIT after a short hold, then wait for UI.
+        if (gesture.keyExitHeld) {
+          gesture.counter -= 1;
+          if (gesture.counter <= 0) {
+            ex.simuSetKey?.(EDGETX_KEY_EXIT, 0);
+            gesture.keyExitHeld = false;
+            gesture.step = 1;
+            gesture.counter = FULLSCREEN_WAIT_FRAMES;
+          }
+          break;
+        }
+        gesture.step = 1;
+        gesture.counter = FULLSCREEN_WAIT_FRAMES;
         break;
       case 1:
-        ex.simuTouchDown(gesture.x, gesture.y);
-        gesture.step = 2;
+        gesture.counter -= 1;
+        if (gesture.counter <= 0) gesture.step = 2;
         break;
       case 2:
-        ex.simuTouchUp();
+        ex.simuTouchDown(gesture.x, gesture.y);
         gesture.step = 3;
-        gesture.counter = FULLSCREEN_TAP_GAP_FRAMES;
         break;
       case 3:
-        gesture.counter -= 1;
-        if (gesture.counter <= 0) gesture.step = 4;
+        // Release on the next LCD frame so the hold stays a short tap.
+        ex.simuTouchUp();
+        gesture.step = 4;
+        gesture.counter = FULLSCREEN_TAP_GAP_FRAMES;
         break;
       case 4:
+        gesture.counter -= 1;
+        if (gesture.counter <= 0) gesture.step = 5;
+        break;
+      case 5:
         ex.simuTouchDown(gesture.x, gesture.y);
-        gesture.step = 5;
+        gesture.step = 6;
+        break;
+      case 6:
+        ex.simuTouchUp();
+        this.finishFullscreenTap(ex);
         break;
       default:
-        if (gesture.attempt + 1 < FULLSCREEN_MAX_ATTEMPTS) {
-          gesture.attempt += 1;
-          gesture.step = 0;
-          gesture.counter = FULLSCREEN_RETRY_WAIT_FRAMES;
-          ex.simuTouchUp();
-          this.callbacks.onLog?.(
-            `Radio sim: retrying widget fullscreen double-tap (${gesture.attempt + 1}/${FULLSCREEN_MAX_ATTEMPTS})`,
-          );
-        } else {
-          this.finishFullscreenTap(ex);
-        }
+        this.finishFullscreenTap(ex);
         break;
     }
   }
