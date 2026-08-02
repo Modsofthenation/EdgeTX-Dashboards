@@ -69,7 +69,10 @@ describe("desktop Tauri standalone resources", () => {
 
   it("allows dialog save for localhost/127.0.0.1 remote webviews", () => {
     const caps = JSON.parse(
-      readFileSync(join(root, "src-tauri", "capabilities", "default.json"), "utf8"),
+      readFileSync(
+        join(root, "src-tauri", "capabilities", "default.json"),
+        "utf8",
+      ),
     );
     assert.ok(Array.isArray(caps.remote?.urls));
     assert.ok(

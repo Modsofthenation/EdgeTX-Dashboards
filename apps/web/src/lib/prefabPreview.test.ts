@@ -4,10 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { listPrefabSections } from "@widget-gen/editor-core";
-import {
-  prefabBoardPreviewSrc,
-  prefabPreviewSrc,
-} from "./prefabPreview.ts";
+import { prefabBoardPreviewSrc, prefabPreviewSrc } from "./prefabPreview.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicRoot = join(__dirname, "..", "..", "public");

@@ -9,7 +9,10 @@ describe("isCursorSandboxEnabled", () => {
   });
 
   it("can be disabled explicitly", () => {
-    assert.equal(isCursorSandboxEnabled({ CURSOR_SANDBOX_ENABLED: "0" }), false);
+    assert.equal(
+      isCursorSandboxEnabled({ CURSOR_SANDBOX_ENABLED: "0" }),
+      false,
+    );
     assert.equal(
       isCursorSandboxEnabled({ CURSOR_SANDBOX_ENABLED: "false" }),
       false,

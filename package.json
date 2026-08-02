@@ -23,6 +23,7 @@
     "render:template-thumbs": "node --experimental-strip-types scripts/render-template-thumbs.ts",
     "render:prefab-thumbs": "node --experimental-strip-types scripts/render-prefab-thumbs.ts",
     "test": "npm run test --workspaces --if-present",
+    "test:perf": "node ./scripts/run-perf-tests.mjs",
     "test:wasm": "npm run test:wasm --workspace=@widget-gen/sim-preview",
     "test:e2e": "playwright test -c e2e/playwright.config.ts --project=chromium",
     "test:e2e:ai": "playwright test -c e2e/playwright.config.ts --project=ai",

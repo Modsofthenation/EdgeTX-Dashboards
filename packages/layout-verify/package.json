@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "@widget-gen/perf-harness": "*",
     "typescript": "^5.8.3"
   }
 }

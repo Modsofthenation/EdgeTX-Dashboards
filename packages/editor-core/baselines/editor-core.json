@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "suites": {
+    "interpretDocument.multi": {
+      "meanMs": 10.1557,
+      "p95Ms": 11.2869,
+      "opsPerSec": 98.47,
+      "updatedAt": "2026-08-02T01:42:12.886Z"
+    },
+    "moveRecordLinesToEdge.front": {
+      "meanMs": 0.1253,
+      "p95Ms": 0.2059,
+      "opsPerSec": 7978.91,
+      "updatedAt": "2026-08-02T01:42:12.903Z"
+    },
+    "translateRecord.rect": {
+      "meanMs": 0.0101,
+      "p95Ms": 0.0147,
+      "opsPerSec": 99327.39,
+      "updatedAt": "2026-08-02T01:42:12.916Z"
+    }
+  }
+}

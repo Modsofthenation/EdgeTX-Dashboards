@@ -33,5 +33,19 @@ describe("resolveTemplateEditorBootstrap", () => {
     assert.doesNotMatch(electric.source, /DashStart/);
     assert.match(electric.source, /RfHeliE|Governor|Headspeed|AMPS/i);
     assert.deepEqual(electric.companionSuites, ["rf-heli-electric"]);
+
+    const nitro = resolveTemplateEditorBootstrap("heli-nitro", lcd);
+    assert.ok(nitro);
+    assert.doesNotMatch(nitro.source, /DashStart/);
+    assert.deepEqual(nitro.companionSuites, ["sensor-dump"]);
+  });
+
+  it("seeds companion suites for battery-tool and flight-logger", () => {
+    const batt = resolveTemplateEditorBootstrap("battery-tool", lcd);
+    assert.ok(batt);
+    assert.deepEqual(batt.companionSuites, ["batt-select"]);
+    const logger = resolveTemplateEditorBootstrap("flight-logger", lcd);
+    assert.ok(logger);
+    assert.deepEqual(logger.companionSuites, ["flight-logger"]);
   });
 });

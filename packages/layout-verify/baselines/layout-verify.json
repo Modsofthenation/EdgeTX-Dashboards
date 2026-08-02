@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "suites": {
+    "parseLuaToDrawCommands.gold": {
+      "meanMs": 7.5157,
+      "p95Ms": 9.4557,
+      "opsPerSec": 133.05,
+      "updatedAt": "2026-08-02T01:42:12.672Z"
+    },
+    "staticParse.hot": {
+      "meanMs": 0.002,
+      "p95Ms": 0.0027,
+      "opsPerSec": 488352.79,
+      "updatedAt": "2026-08-02T01:42:12.677Z"
+    }
+  }
+}

@@ -30,9 +30,7 @@ function shortPath(path: string): string {
   if (parts.length === 0) return "…";
   // Absolute paths: never echo directory structure (only leaf names).
   if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
-    return parts.length === 1
-      ? parts[0]!
-      : `…/${parts.slice(-2).join("/")}`;
+    return parts.length === 1 ? parts[0]! : `…/${parts.slice(-2).join("/")}`;
   }
   if (parts.length <= 2) return parts.join("/");
   return `…/${parts.slice(-2).join("/")}`;
@@ -40,10 +38,13 @@ function shortPath(path: string): string {
 
 function scrubAbsolutePaths(text: string): string {
   return text
-    .replace(/(^|[\s"'=])(\/(?:[^/\s"']+\/)+[^/\s"']+)/g, (_m, prefix: string, path: string) => {
-      const leaf = path.split("/").filter(Boolean).pop() ?? "…";
-      return `${prefix}…/${leaf}`;
-    })
+    .replace(
+      /(^|[\s"'=])(\/(?:[^/\s"']+\/)+[^/\s"']+)/g,
+      (_m, prefix: string, path: string) => {
+        const leaf = path.split("/").filter(Boolean).pop() ?? "…";
+        return `${prefix}…/${leaf}`;
+      },
+    )
     .replace(
       /(^|[\s"'=])([A-Za-z]:\\(?:[^\\/\s"']+\\)+[^\\/\s"']+)/g,
       (_m, prefix: string, path: string) => {

@@ -825,7 +825,22 @@ export function EditorApp() {
   const companionStorageKey = workspaceKey ?? projectId ?? "local-editor";
 
   useEffect(() => {
-    setCompanions(loadEditorCompanions(companionStorageKey));
+    const stored = loadEditorCompanions(companionStorageKey);
+    // Merge so an empty localStorage entry does not wipe template-seeded suites.
+    setCompanions((prev) => {
+      if (stored.suites.length === 0 && stored.files.length === 0) return prev;
+      let next = prev;
+      for (const suite of stored.suites) {
+        next = addCompanionSuite(next, suite as CompanionSuiteId);
+      }
+      const seen = new Set(next.files.map((f) => f.relPath));
+      const extra = stored.files.filter((f) => !seen.has(f.relPath));
+      if (extra.length === 0 && next === prev) return prev;
+      return {
+        suites: next.suites,
+        files: extra.length ? [...next.files, ...extra] : next.files,
+      };
+    });
   }, [companionStorageKey]);
 
   const handleAddCompanionSuite = useCallback(
@@ -2281,7 +2296,12 @@ export function EditorApp() {
             data-mobile-tab={mobileTab}
             style={{ gridTemplateColumns }}
           >
-            <div className={`${styles.mobilePane} ${styles.mobilePaneLayers}`}>
+            <div
+              id="editor-panel-layers"
+              role="tabpanel"
+              aria-labelledby="editor-tab-layers"
+              className={`${styles.mobilePane} ${styles.mobilePaneLayers}`}
+            >
               <RecordLayersPanel
                 records={records}
                 source={source}
@@ -2306,7 +2326,12 @@ export function EditorApp() {
               onDoubleClick={resetWidths}
             />
 
-            <div className={`${styles.mobilePane} ${styles.mobilePaneCanvas}`}>
+            <div
+              id="editor-panel-canvas"
+              role="tabpanel"
+              aria-labelledby="editor-tab-canvas"
+              className={`${styles.mobilePane} ${styles.mobilePaneCanvas}`}
+            >
               {remoteLoadPending ? (
                 <div className={styles.canvasStage}>
                   <div className={styles.loadingPreview}>Loading widget…</div>
@@ -2360,6 +2385,9 @@ export function EditorApp() {
             />
 
             <div
+              id="editor-panel-properties"
+              role="tabpanel"
+              aria-labelledby="editor-tab-properties"
               className={`${styles.rightColumn} ${styles.mobilePane} ${styles.mobilePaneProperties}`}
             >
               <RecordPropertiesPanel

@@ -13,9 +13,7 @@ const ALL_PREFABS: PrefabSection[] = [
   ...BETAFLIGHT_QUAD_PREFABS,
 ];
 
-const BY_ID = new Map<string, PrefabSection>(
-  ALL_PREFABS.map((p) => [p.id, p]),
-);
+const BY_ID = new Map<string, PrefabSection>(ALL_PREFABS.map((p) => [p.id, p]));
 
 /** All registered prefab sections (editor + AI shared catalog). */
 export function listPrefabSections(filter?: {
