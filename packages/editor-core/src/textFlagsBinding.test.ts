@@ -3,9 +3,7 @@ import { describe, it } from "node:test";
 import { STARTER_WIDGET_SOURCE } from "./starterSource.ts";
 import { interpretDocument, setRecordTextFlags } from "./luaDocument.ts";
 import { detectTextBinding } from "./telemetryBinding.ts";
-import {
-  bindTextRecordToSensorDetailed,
-} from "./telemetryBinding.ts";
+import { bindTextRecordToSensorDetailed } from "./telemetryBinding.ts";
 
 describe("setRecordTextFlags", () => {
   it("sets MIDSIZE and CENTER while keeping color", () => {

@@ -16,7 +16,10 @@ describe("scalePrefabSection", () => {
     const raw = getPrefabSection("rf-battery-bar");
     assert.ok(raw);
     const scaled = scalePrefabSection(raw, 480, 272);
-    assert.equal(scaled.defaultBounds.y, Math.round((raw.defaultBounds.y * 272) / 320));
+    assert.equal(
+      scaled.defaultBounds.y,
+      Math.round((raw.defaultBounds.y * 272) / 320),
+    );
     assert.ok(
       scaled.refreshLines.some((l) => /lcd\.drawFilledRectangle\(/.test(l)),
     );
@@ -30,7 +33,11 @@ describe("scalePrefabSection", () => {
   });
 
   it("scales lcd.drawText coordinates in a line", () => {
-    const out = scaleLcdCoordsInLine('lcd.drawText(12, 56, "MODEL", SMLSIZE)', 1, 272 / 320);
+    const out = scaleLcdCoordsInLine(
+      'lcd.drawText(12, 56, "MODEL", SMLSIZE)',
+      1,
+      272 / 320,
+    );
     assert.match(out, /lcd\.drawText\(12, 48,/);
   });
 });

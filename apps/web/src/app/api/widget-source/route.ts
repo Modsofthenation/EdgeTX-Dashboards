@@ -152,10 +152,7 @@ export async function PUT(request: Request): Promise<Response> {
         ? resolved.workspaceKey
         : (chat.widgetInstanceId ?? chat.artifact?.instanceId ?? null);
       const version =
-        resolved.version ??
-        chat.widgetVersion ??
-        chat.artifact?.version ??
-        0;
+        resolved.version ?? chat.widgetVersion ?? chat.artifact?.version ?? 0;
       updateChat(chatId, {
         widgetName: displayName,
         widgetInstanceId: instanceId,

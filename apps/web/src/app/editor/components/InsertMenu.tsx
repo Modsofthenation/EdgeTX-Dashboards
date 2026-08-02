@@ -13,22 +13,13 @@ import {
 } from "@widget-gen/editor-core";
 import type { TelemetryProtocol } from "@widget-gen/shared";
 import { COMPANION_SUITES } from "~/lib/companionSuites";
-import {
-  prefabBoardPreviewSrc,
-  prefabPreviewSrc,
-} from "~/lib/prefabPreview";
+import { prefabBoardPreviewSrc, prefabPreviewSrc } from "~/lib/prefabPreview";
 import { DRAW_KIND_CATALOG, type InsertDrawKind } from "../elementMeta";
 import styles from "../editor.module.css";
 
 const EMPTY_SUITE_IDS: string[] = [];
 
-function InsertThumb({
-  src,
-  fallback,
-}: {
-  src: string;
-  fallback: string;
-}) {
+function InsertThumb({ src, fallback }: { src: string; fallback: string }) {
   return (
     <span className={styles.insertItemThumb} aria-hidden>
       <img
@@ -355,8 +346,8 @@ export function InsertMenu({
                       Full dense CRSF board
                     </span>
                     <span className={styles.insertItemDesc}>
-                      Metric grid · attitude ·{" "}
-                      {DENSE_CRSF_LAYOUT_ORDER.length} sections
+                      Metric grid · attitude · {DENSE_CRSF_LAYOUT_ORDER.length}{" "}
+                      sections
                     </span>
                   </span>
                 </button>

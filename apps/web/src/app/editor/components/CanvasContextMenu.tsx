@@ -102,7 +102,9 @@ export function CanvasContextMenu({
           >
             <span className={styles.contextMenuLabel}>{item.label}</span>
             {item.shortcut ? (
-              <span className={styles.contextMenuShortcut}>{item.shortcut}</span>
+              <span className={styles.contextMenuShortcut}>
+                {item.shortcut}
+              </span>
             ) : null}
           </button>
         </div>

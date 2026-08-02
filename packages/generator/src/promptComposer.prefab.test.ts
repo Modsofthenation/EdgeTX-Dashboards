@@ -70,9 +70,7 @@ describe("buildGenerationPrompt prefab-first", () => {
 
 describe("composeWidgetFromPrefabs tool", () => {
   it("writes a whoop board into the workspace", async () => {
-    const id = sanitizeWidgetInstanceId(
-      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    );
+    const id = sanitizeWidgetInstanceId("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
     const dir = getGeneratedDirForKey(id);
     mkdirSync(dir, { recursive: true });
     try {

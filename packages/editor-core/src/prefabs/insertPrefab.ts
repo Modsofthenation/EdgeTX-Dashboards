@@ -7,10 +7,7 @@ import {
 import { scalePrefabSection } from "./scalePrefab.ts";
 import type { PrefabSection } from "./types.ts";
 
-export {
-  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
-  ROTORFLIGHT_NITRO_LAYOUT_ORDER,
-};
+export { ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER, ROTORFLIGHT_NITRO_LAYOUT_ORDER };
 
 const CACHE_SOURCE_HELPER = `local function cacheSource(sensorName)
   local idx = getSourceIndex(sensorName)

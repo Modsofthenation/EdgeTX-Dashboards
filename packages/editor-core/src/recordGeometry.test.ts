@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  applyLiveDragToRecords,
-  resizeRecordBox,
-} from "./recordGeometry.ts";
+import { applyLiveDragToRecords, resizeRecordBox } from "./recordGeometry.ts";
 
 describe("resizeRecordBox", () => {
   const start = { x: 24, y: 24, w: 48, h: 36 };
