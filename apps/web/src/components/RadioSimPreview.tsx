@@ -254,9 +254,9 @@ export function RadioSimPreview({
       setFrame(next);
     });
     return () => subscribeFrames(null);
-    // Re-bind after auto-recover / firmware reboot (bootNonce) in case dispose
-    // historically cleared the subscriber while this component stayed mounted.
-  }, [subscribeFrames, bootNonce]);
+    // dispose() only clearLatest() — the hub keeps this subscriber across
+    // auto-recover, so bootNonce rebind is unnecessary.
+  }, [subscribeFrames]);
 
   const layoutProfile = useMemo(() => {
     try {

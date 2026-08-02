@@ -41,4 +41,21 @@ describe("RadioSimFrameHub", () => {
     hub.subscribe((f) => seen.push(f.width));
     assert.deepEqual(seen, [9]);
   });
+
+  it("replaces the subscriber and supports unsubscribe", () => {
+    const hub = new RadioSimFrameHub();
+    const first: number[] = [];
+    const second: number[] = [];
+    hub.subscribe((f) => first.push(f.width));
+    hub.publish(frame(1));
+    hub.subscribe((f) => second.push(f.width));
+    hub.publish(frame(2));
+    assert.deepEqual(first, [1]);
+    assert.deepEqual(second, [2]);
+    hub.subscribe(null);
+    assert.equal(hub.hasSubscriber, false);
+    hub.publish(frame(3));
+    assert.deepEqual(second, [2]);
+    assert.equal(hub.latestFrame?.width, 3);
+  });
 });

@@ -1,5 +1,5 @@
 /**
- * Frame fan-out for the radio sim worker → React canvas.
+ * Latest-frame hub for the radio sim worker → React canvas (single subscriber).
  *
  * Important: worker dispose/reboot must clear the latest frame but MUST NOT
  * drop the subscriber — RadioSimPreview stays mounted across auto-recover and
