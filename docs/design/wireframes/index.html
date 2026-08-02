@@ -546,15 +546,19 @@
   <body>
     <div class="page">
       <header class="hero">
-        <p class="eyebrow">Design exploration · low-fidelity · Shadcn-oriented</p>
+        <p class="eyebrow">
+          Design exploration · low-fidelity · decisions locked · Shadcn +
+          Tailwind v4
+        </p>
         <h1>UI/UX &amp; IA overhaul — wireframe proposals</h1>
         <p class="lede">
-          Review sketches for a Shadcn-based redesign of EdgeTX Dashboards.
-          Goal: clearer product structure (Library → Studio → Editor → Ship),
-          less modal sprawl, and one app shell shared by AI generate and visual
-          layout. Boxes are structural only — not visual polish.
+          Structural proposals for a Shadcn + Tailwind v4 redesign of EdgeTX
+          Dashboards. Product shape: Library → Studio → Editor → Ship, one
+          shared shell, less modal sprawl. Boxes are structure only — not visual
+          polish.
         </p>
         <nav class="toc" aria-label="Wireframe screens">
+          <a href="#decisions">00 Decisions</a>
           <a href="#ia">01 IA</a>
           <a href="#shell">02 App shell</a>
           <a href="#home">03 Home / Library</a>
@@ -564,7 +568,8 @@
           <a href="#export">07 Export</a>
           <a href="#settings">08 Settings</a>
           <a href="#mobile">09 Mobile</a>
-          <a href="#alt">10 Alt layouts</a>
+          <a href="#stack">10 Stack</a>
+          <a href="#alt">11 Alts (archived)</a>
         </nav>
         <div class="frame" style="margin-top: 20px">
           <div class="label" style="margin-bottom: 10px">
@@ -626,17 +631,93 @@
         }
       </style>
 
+      <!-- 00 Decisions -->
+      <section class="screen" id="decisions">
+        <div class="screen-head">
+          <h2>00 — Locked decisions</h2>
+          <span class="screen-meta">review feedback · 2026-08-02</span>
+        </div>
+        <div class="note">
+          These choices supersede the open questions in the first draft. Frames
+          below are annotated to match.
+        </div>
+        <div class="frame">
+          <div class="compare">
+            <div class="wire" style="min-height: auto; padding: 14px">
+              <div class="label">Product / IA</div>
+              <ul class="tight">
+                <li>
+                  <strong>Home library</strong> — keep as the app entry
+                  (recent projects + three quick starts).
+                </li>
+                <li>
+                  <strong>Settings page</strong> — routed
+                  <code>/settings</code> with vertical subnav (Appearance, AI,
+                  Simulator, Defaults). Optional Sheet shortcut from chrome is
+                  fine later; primary surface is the page.
+                </li>
+                <li>
+                  <strong>Studio layout A — chat-primary</strong> — wide chat +
+                  sticky preview (resizable). This is the current standard for
+                  AI build tools (Cursor, Claude Artifacts, v0, Lovable): the
+                  transcript is the workstream; the artifact stays visible
+                  without competing for reading width.
+                </li>
+                <li>
+                  <strong>Editor — icon rail + labeled task panels</strong> —
+                  app destinations collapse to icons (Figma / VS Code / Framer
+                  pattern) so the canvas stays wide; Layers and Inspector keep
+                  text labels because they are task panels, not nav.
+                </li>
+              </ul>
+            </div>
+            <div class="wire" style="min-height: auto; padding: 14px">
+              <div class="label">Engineering</div>
+              <ul class="tight">
+                <li>
+                  <strong>Design system:</strong> shadcn/ui (owned components
+                  under <code>components/ui</code>).
+                </li>
+                <li>
+                  <strong>CSS:</strong> Tailwind CSS <strong>v4</strong>
+                  (CSS-first <code>@theme</code>,
+                  <code>@tailwindcss/postcss</code>) — not v3 config JS.
+                </li>
+                <li>
+                  Existing CSS modules migrate incrementally; new chrome and
+                  pages ship Tailwind-first.
+                </li>
+                <li>
+                  Theme tokens (today’s 13 app themes) map into CSS variables
+                  consumed by both Tailwind utilities and shadcn primitives.
+                  Radio LCD canvas stays dark in every theme.
+                </li>
+              </ul>
+              <div class="flow" style="margin-top: 12px">
+                <span class="chip active">Home</span>
+                <span class="arrow">→</span>
+                <span class="chip active">Studio A</span>
+                <span class="arrow">→</span>
+                <span class="chip active">Editor icon rail</span>
+                <span class="arrow">→</span>
+                <span class="chip active">Settings page</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 01 IA -->
       <section class="screen" id="ia">
         <div class="screen-head">
           <h2>01 — Proposed information architecture</h2>
-          <span class="screen-meta">sitemap · mental model</span>
+          <span class="screen-meta">sitemap · mental model · locked</span>
         </div>
         <div class="note">
           <strong>Shift:</strong> from “two tabs + modals” to a
-          <em>project-centric</em> app with four primary destinations and one
-          persistent shell. Chat history becomes project history. Preferences
-          become a Settings page (still openable as a Sheet from anywhere).
+          <em>project-centric</em> app with Home as the library entry, Studio /
+          Editor as project modes, Templates and Settings as first-class
+          routes, and Export as a Sheet. Chat history becomes project history.
         </div>
         <div class="frame">
           <div class="ia">
@@ -858,13 +939,16 @@
       <section class="screen" id="studio">
         <div class="screen-head">
           <h2>04 — Studio (AI generate + preview)</h2>
-          <span class="screen-meta">shadcn ResizablePanelGroup · was Generate</span>
+          <span class="screen-meta"
+            >locked · layout A · ResizablePanelGroup</span
+          >
         </div>
         <div class="note">
-          Chat left, radio preview right (always visible once a project exists).
-          Version select + Open in Editor + Export live in the preview header —
-          not buried under the LCD. Templates move out of the empty state into
-          Home / Templates.
+          <strong>Locked: chat-primary (A).</strong> Chat left / center, radio
+          preview sticky on the right (always visible once a project exists).
+          Panels are resizable so users can favor preview when refining layout
+          verbally. Version select + Open in Editor + Export live in the preview
+          header. Templates live on Home / Templates — not in the empty chat.
         </div>
         <div class="frame">
           <div class="wire">
@@ -947,13 +1031,17 @@
       <section class="screen" id="editor">
         <div class="screen-head">
           <h2>05 — Editor (visual layout)</h2>
-          <span class="screen-meta">Layers · Canvas · Inspector · same project</span>
+          <span class="screen-meta"
+            >locked · icon rail · Layers · Canvas · Inspector</span
+          >
         </div>
         <div class="note">
-          Keep the three-pane editor, but align chrome with Studio (same
-          sidebar, same project). Right inspector uses Shadcn
-          <strong>Tabs</strong>: Properties | Telemetry | Assist. Insert becomes
-          a left Sheet / popover, not a competing menu system.
+          <strong>Locked: icon rail for app nav</strong> (standard for dense
+          creative tools — Figma, Framer, VS Code). Maximize canvas width while
+          keeping Home / Studio / Editor / Templates one click away. Layers and
+          the right inspector stay <em>labeled</em> panels. Inspector uses
+          Shadcn <strong>Tabs</strong>: Properties | Telemetry | Assist. Insert
+          is a Sheet / popover from Layers.
         </div>
         <div class="frame">
           <div class="wire">
@@ -1218,13 +1306,13 @@
       <section class="screen" id="settings">
         <div class="screen-head">
           <h2>08 — Settings (full page)</h2>
-          <span class="screen-meta">was Preferences modal</span>
+          <span class="screen-meta">locked · was Preferences modal</span>
         </div>
         <div class="note">
-          Promote Preferences to a routed page with a vertical subnav (Shadcn
-          pattern). Same content: Appearance, AI, Simulator, plus
-          <strong>Defaults</strong> (radio, protocol, layout profile) so Home /
-          Studio inherit them.
+          <strong>Locked:</strong> routed Settings page with vertical subnav.
+          Sections: Appearance, AI providers, Simulator, Defaults (radio,
+          protocol, layout profile). Replaces the Preferences modal as the
+          primary surface.
         </div>
         <div class="frame">
           <div class="wire">
@@ -1308,73 +1396,124 @@
         </div>
       </section>
 
-      <!-- 10 Alts -->
-      <section class="screen" id="alt">
+      <!-- 10 Stack -->
+      <section class="screen" id="stack">
         <div class="screen-head">
-          <h2>10 — Alternate Studio layouts (pick a direction)</h2>
-          <span class="screen-meta">A/B/C for review</span>
+          <h2>10 — Stack: shadcn/ui + Tailwind CSS v4</h2>
+          <span class="screen-meta">engineering direction · locked</span>
+        </div>
+        <div class="note">
+          New UI chrome ships on <strong>Tailwind v4</strong> (CSS-first) with
+          <strong>shadcn/ui</strong> primitives. Existing CSS modules can remain
+          until a surface is rewritten — no big-bang rewrite required.
         </div>
         <div class="compare">
           <div class="frame">
-            <h3>A — Chat-primary (recommended)</h3>
-            <p class="muted" style="margin-top: 0">
-              Wide chat, narrow sticky preview. Best match for “describe →
-              refine” and current agent streaming.
-            </p>
+            <h3>Tailwind v4</h3>
             <ul class="tight">
-              <li>Preview always on desktop</li>
-              <li>Export in preview header</li>
-              <li>Versions in left rail</li>
+              <li>
+                <code>@import "tailwindcss"</code> in
+                <code>globals.css</code>
+              </li>
+              <li>
+                CSS-first tokens via <code>@theme inline</code> (no
+                <code>tailwind.config.js</code> as source of truth)
+              </li>
+              <li>
+                PostCSS plugin: <code>@tailwindcss/postcss</code>
+              </li>
+              <li>
+                Map current theme palette → CSS variables → utility classes
+              </li>
+              <li>LCD / sim canvases stay outside utility theming (dark fixed)</li>
             </ul>
           </div>
           <div class="frame">
-            <h3>B — Preview-primary</h3>
-            <p class="muted" style="margin-top: 0">
-              Large LCD center; chat as a right Sheet / drawer. Feels more like a
-              design tool, less like ChatGPT.
-            </p>
+            <h3>shadcn/ui building blocks</h3>
             <ul class="tight">
-              <li>Stronger radio-first mindset</li>
-              <li>Harder for long agent transcripts</li>
-              <li>Good if AI is secondary to visual edit</li>
-            </ul>
-          </div>
-        </div>
-        <div class="compare" style="margin-top: 12px">
-          <div class="frame">
-            <h3>C — Unified workspace tabs</h3>
-            <p class="muted" style="margin-top: 0">
-              One project URL with tabs: Studio | Editor | Files | Export. No
-              separate /studio vs /editor routes — only mode switches.
-            </p>
-            <ul class="tight">
-              <li>Simplest IA for “one dashboard”</li>
-              <li>Heavier single page</li>
-              <li>Shadcn Tabs + Resizable panels</li>
-            </ul>
-          </div>
-          <div class="frame">
-            <h3>Shadcn building blocks</h3>
-            <ul class="tight">
-              <li>Sidebar / SidebarProvider</li>
-              <li>ResizablePanelGroup</li>
+              <li>Sidebar / SidebarProvider (app shell; icon mode in Editor)</li>
+              <li>ResizablePanelGroup (Studio chat | preview)</li>
               <li>Sheet (export, mobile preview, insert)</li>
               <li>Dialog (import Lua, destructive confirms)</li>
-              <li>Tabs (inspector, settings)</li>
+              <li>Tabs (inspector, settings subnav content)</li>
               <li>Command (⌘K)</li>
               <li>Breadcrumb, Button, Badge, ScrollArea</li>
               <li>DropdownMenu (project / version)</li>
             </ul>
           </div>
         </div>
+        <div class="frame" style="margin-top: 12px">
+          <h3 style="margin-top: 0">Suggested adoption order</h3>
+          <div class="flow">
+            <span class="chip active">1 Tailwind v4 + tokens</span>
+            <span class="arrow">→</span>
+            <span class="chip active">2 shadcn init + shell</span>
+            <span class="arrow">→</span>
+            <span class="chip">3 Home</span>
+            <span class="arrow">→</span>
+            <span class="chip">4 Settings</span>
+            <span class="arrow">→</span>
+            <span class="chip">5 Studio</span>
+            <span class="arrow">→</span>
+            <span class="chip">6 Editor chrome</span>
+            <span class="arrow">→</span>
+            <span class="chip">7 Export Sheet</span>
+          </div>
+          <p class="callout">
+            Alias note: apps/web already uses <code>~/*</code>. shadcn defaults
+            to <code>@/*</code> — configure <code>components.json</code> aliases
+            to match the existing <code>~/*</code> (or dual-map) so imports stay
+            consistent.
+          </p>
+        </div>
+      </section>
+
+      <!-- 11 Alts archived -->
+      <section class="screen" id="alt">
+        <div class="screen-head">
+          <h2>11 — Alternate Studio layouts (archived)</h2>
+          <span class="screen-meta">not chosen · kept for context</span>
+        </div>
+        <div class="note">
+          <strong>Selected: A.</strong> B and C remain documented so we do not
+          re-litigate them later without context.
+        </div>
+        <div class="compare">
+          <div class="frame">
+            <h3>A — Chat-primary ✓ locked</h3>
+            <p class="muted" style="margin-top: 0">
+              Wide chat, sticky preview, resizable. Matches today’s AI product
+              pattern and long agent transcripts.
+            </p>
+            <ul class="tight">
+              <li>Preview always on desktop</li>
+              <li>Export in preview header</li>
+              <li>Versions in left / project rail</li>
+            </ul>
+          </div>
+          <div class="frame">
+            <h3>B — Preview-primary (not chosen)</h3>
+            <p class="muted" style="margin-top: 0">
+              Large LCD center; chat as a Sheet. Stronger design-tool feel;
+              weaker for streaming agent output.
+            </p>
+          </div>
+        </div>
+        <div class="frame" style="margin-top: 12px">
+          <h3 style="margin-top: 0">C — Unified workspace tabs (not chosen)</h3>
+          <p class="muted">
+            One project URL with Studio | Editor | Files | Export tabs. Simpler
+            “one dashboard” mental model, but a heavier single page. We keep
+            separate Studio / Editor routes under the same project id instead.
+          </p>
+        </div>
       </section>
 
       <footer class="footer-note">
-        Open this file in a browser for review:
-        <code>docs/design/wireframes/index.html</code>. These are structural
-        proposals only — no implementation commitment. Feedback to capture:
-        (1) Home vs jump-straight-to-Studio, (2) Studio layout A/B/C, (3)
-        Settings page vs keep modal, (4) icon sidebar vs full labels in Editor.
+        Open <code>docs/design/wireframes/index.html</code> in a browser.
+        Decisions locked: Home library · Studio A (chat-primary) · Settings page
+        · Editor icon rail · shadcn/ui + Tailwind CSS v4. Ready for
+        implementation planning when you want to proceed.
       </footer>
     </div>
   </body>
