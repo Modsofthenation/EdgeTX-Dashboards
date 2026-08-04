@@ -20,23 +20,91 @@ Generate validated EdgeTX Lua dashboards for color LCD radios from a plain-langu
 - Cursor agent writes `main.lua` (and optional companion scripts) against real EdgeTX rules
 - In-browser **EdgeTX TX15 WASM** preview with mock CRSF telemetry
 - Visual **Editor**: layers, properties, multi-select, telemetry bind, Insert prefabs, Export Sheet
-- **Thirteen UI themes** (LCD canvas stays dark in every theme)
+- **Nineteen UI themes** (LCD canvas stays dark in every theme)
 - **Settings → AI** for a browser API key or server `CURSOR_API_KEY` / Anthropic / OpenAI / Gemini
 - Desktop installers for **Windows / macOS / Linux** (manual Actions workflow)
 
 ## Tour
+
+Screens below were recaptured from a live `npm run dev` session (`scripts/capture-readme-screenshots.ts`) across every primary surface and every UI theme.
 
 ### Home library
 
 The app opens on **Home** (`/`): recent projects plus three equal entry paths — **AI Studio**, **Templates**, and **Blank / Import**.
 
 <p align="center">
-  <img src="docs/screenshots/readme-home-light.png" alt="Home library in Light theme" width="720" />
+  <img src="docs/screenshots/readme-home-dark.png" alt="Home library in Dark theme" width="900" />
 </p>
 
 <p align="center">
-  <sub>Home · Light</sub>
+  <sub>Home · Dark</sub>
 </p>
+
+<details>
+<summary>All Home themes (19)</summary>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-light.png" alt="Home · Light" width="280" />
+  <img src="docs/screenshots/readme-home-dark.png" alt="Home · Dark" width="280" />
+  <img src="docs/screenshots/readme-home-midnight.png" alt="Home · Midnight" width="280" />
+</p>
+<p align="center">
+  <sub>Light · Dark · Midnight</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-slate.png" alt="Home · Slate" width="280" />
+  <img src="docs/screenshots/readme-home-forest.png" alt="Home · Forest" width="280" />
+  <img src="docs/screenshots/readme-home-ocean.png" alt="Home · Ocean" width="280" />
+</p>
+<p align="center">
+  <sub>Slate · Forest · Ocean</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-contrast.png" alt="Home · High contrast" width="280" />
+  <img src="docs/screenshots/readme-home-graphite.png" alt="Home · Graphite" width="280" />
+  <img src="docs/screenshots/readme-home-meadow.png" alt="Home · Meadow" width="280" />
+</p>
+<p align="center">
+  <sub>High contrast · Graphite · Meadow</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-fog.png" alt="Home · Fog" width="280" />
+  <img src="docs/screenshots/readme-home-ember.png" alt="Home · Ember" width="280" />
+  <img src="docs/screenshots/readme-home-volt.png" alt="Home · Volt" width="280" />
+</p>
+<p align="center">
+  <sub>Fog · Ember · Volt</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-copper.png" alt="Home · Copper" width="280" />
+  <img src="docs/screenshots/readme-home-aurora.png" alt="Home · Aurora" width="280" />
+  <img src="docs/screenshots/readme-home-sunset.png" alt="Home · Sunset" width="280" />
+</p>
+<p align="center">
+  <sub>Copper · Aurora · Sunset</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-prism.png" alt="Home · Prism" width="280" />
+  <img src="docs/screenshots/readme-home-flare.png" alt="Home · Flare" width="280" />
+  <img src="docs/screenshots/readme-home-citrus.png" alt="Home · Citrus" width="280" />
+</p>
+<p align="center">
+  <sub>Prism · Flare · Citrus</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-home-candy.png" alt="Home · Candy" width="280" />
+</p>
+<p align="center">
+  <sub>Candy</sub>
+</p>
+
+</details>
 
 ### Studio (AI generate)
 
@@ -50,25 +118,71 @@ The app opens on **Home** (`/`): recent projects plus three equal entry paths �
   <sub>Studio · Dark</sub>
 </p>
 
+<details>
+<summary>All Studio themes (19)</summary>
+
 <p align="center">
-  <img src="docs/screenshots/readme-studio-ocean.png" alt="Studio in Ocean theme" width="720" />
-  &nbsp;
-  <img src="docs/screenshots/readme-studio-midnight.png" alt="Studio in Midnight theme" width="720" />
+  <img src="docs/screenshots/readme-studio-light.png" alt="Studio · Light" width="280" />
+  <img src="docs/screenshots/readme-studio-dark.png" alt="Studio · Dark" width="280" />
+  <img src="docs/screenshots/readme-studio-midnight.png" alt="Studio · Midnight" width="280" />
+</p>
+<p align="center">
+  <sub>Light · Dark · Midnight</sub>
 </p>
 
 <p align="center">
-  <sub>Ocean · Midnight</sub>
+  <img src="docs/screenshots/readme-studio-slate.png" alt="Studio · Slate" width="280" />
+  <img src="docs/screenshots/readme-studio-forest.png" alt="Studio · Forest" width="280" />
+  <img src="docs/screenshots/readme-studio-ocean.png" alt="Studio · Ocean" width="280" />
+</p>
+<p align="center">
+  <sub>Slate · Forest · Ocean</sub>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/readme-studio-light.png" alt="Studio in Light theme" width="720" />
-  &nbsp;
-  <img src="docs/screenshots/readme-studio-ember.png" alt="Studio in Ember theme" width="720" />
+  <img src="docs/screenshots/readme-studio-contrast.png" alt="Studio · High contrast" width="280" />
+  <img src="docs/screenshots/readme-studio-graphite.png" alt="Studio · Graphite" width="280" />
+  <img src="docs/screenshots/readme-studio-meadow.png" alt="Studio · Meadow" width="280" />
+</p>
+<p align="center">
+  <sub>High contrast · Graphite · Meadow</sub>
 </p>
 
 <p align="center">
-  <sub>Light · Ember</sub>
+  <img src="docs/screenshots/readme-studio-fog.png" alt="Studio · Fog" width="280" />
+  <img src="docs/screenshots/readme-studio-ember.png" alt="Studio · Ember" width="280" />
+  <img src="docs/screenshots/readme-studio-volt.png" alt="Studio · Volt" width="280" />
 </p>
+<p align="center">
+  <sub>Fog · Ember · Volt</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-studio-copper.png" alt="Studio · Copper" width="280" />
+  <img src="docs/screenshots/readme-studio-aurora.png" alt="Studio · Aurora" width="280" />
+  <img src="docs/screenshots/readme-studio-sunset.png" alt="Studio · Sunset" width="280" />
+</p>
+<p align="center">
+  <sub>Copper · Aurora · Sunset</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-studio-prism.png" alt="Studio · Prism" width="280" />
+  <img src="docs/screenshots/readme-studio-flare.png" alt="Studio · Flare" width="280" />
+  <img src="docs/screenshots/readme-studio-citrus.png" alt="Studio · Citrus" width="280" />
+</p>
+<p align="center">
+  <sub>Prism · Flare · Citrus</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-studio-candy.png" alt="Studio · Candy" width="280" />
+</p>
+<p align="center">
+  <sub>Candy</sub>
+</p>
+
+</details>
 
 ### Templates
 
@@ -82,6 +196,72 @@ The app opens on **Home** (`/`): recent projects plus three equal entry paths �
   <sub>Templates · Dark</sub>
 </p>
 
+<details>
+<summary>All Templates themes (19)</summary>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-light.png" alt="Templates · Light" width="280" />
+  <img src="docs/screenshots/readme-templates-dark.png" alt="Templates · Dark" width="280" />
+  <img src="docs/screenshots/readme-templates-midnight.png" alt="Templates · Midnight" width="280" />
+</p>
+<p align="center">
+  <sub>Light · Dark · Midnight</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-slate.png" alt="Templates · Slate" width="280" />
+  <img src="docs/screenshots/readme-templates-forest.png" alt="Templates · Forest" width="280" />
+  <img src="docs/screenshots/readme-templates-ocean.png" alt="Templates · Ocean" width="280" />
+</p>
+<p align="center">
+  <sub>Slate · Forest · Ocean</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-contrast.png" alt="Templates · High contrast" width="280" />
+  <img src="docs/screenshots/readme-templates-graphite.png" alt="Templates · Graphite" width="280" />
+  <img src="docs/screenshots/readme-templates-meadow.png" alt="Templates · Meadow" width="280" />
+</p>
+<p align="center">
+  <sub>High contrast · Graphite · Meadow</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-fog.png" alt="Templates · Fog" width="280" />
+  <img src="docs/screenshots/readme-templates-ember.png" alt="Templates · Ember" width="280" />
+  <img src="docs/screenshots/readme-templates-volt.png" alt="Templates · Volt" width="280" />
+</p>
+<p align="center">
+  <sub>Fog · Ember · Volt</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-copper.png" alt="Templates · Copper" width="280" />
+  <img src="docs/screenshots/readme-templates-aurora.png" alt="Templates · Aurora" width="280" />
+  <img src="docs/screenshots/readme-templates-sunset.png" alt="Templates · Sunset" width="280" />
+</p>
+<p align="center">
+  <sub>Copper · Aurora · Sunset</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-prism.png" alt="Templates · Prism" width="280" />
+  <img src="docs/screenshots/readme-templates-flare.png" alt="Templates · Flare" width="280" />
+  <img src="docs/screenshots/readme-templates-citrus.png" alt="Templates · Citrus" width="280" />
+</p>
+<p align="center">
+  <sub>Prism · Flare · Citrus</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-templates-candy.png" alt="Templates · Candy" width="280" />
+</p>
+<p align="center">
+  <sub>Candy</sub>
+</p>
+
+</details>
+
 ### Editor
 
 **Editor** (`/editor`) uses an icon rail for app destinations so the canvas stays wide. Layers and Properties stay labeled. Insert prefabs, bind telemetry, validate, then **Export**.
@@ -94,25 +274,71 @@ The app opens on **Home** (`/`): recent projects plus three equal entry paths �
   <sub>Editor · Dark · whoop board</sub>
 </p>
 
+<details>
+<summary>All Editor themes (19)</summary>
+
 <p align="center">
-  <img src="docs/screenshots/readme-editor-forest.png" alt="Editor in Forest theme" width="720" />
-  &nbsp;
-  <img src="docs/screenshots/readme-editor-midnight.png" alt="Editor in Midnight theme" width="720" />
+  <img src="docs/screenshots/readme-editor-light.png" alt="Editor · Light" width="280" />
+  <img src="docs/screenshots/readme-editor-dark.png" alt="Editor · Dark" width="280" />
+  <img src="docs/screenshots/readme-editor-midnight.png" alt="Editor · Midnight" width="280" />
+</p>
+<p align="center">
+  <sub>Light · Dark · Midnight</sub>
 </p>
 
 <p align="center">
-  <sub>Forest · Midnight</sub>
+  <img src="docs/screenshots/readme-editor-slate.png" alt="Editor · Slate" width="280" />
+  <img src="docs/screenshots/readme-editor-forest.png" alt="Editor · Forest" width="280" />
+  <img src="docs/screenshots/readme-editor-ocean.png" alt="Editor · Ocean" width="280" />
+</p>
+<p align="center">
+  <sub>Slate · Forest · Ocean</sub>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/readme-editor-light.png" alt="Editor in Light theme" width="720" />
-  &nbsp;
-  <img src="docs/screenshots/readme-editor-slate.png" alt="Editor in Slate theme" width="720" />
+  <img src="docs/screenshots/readme-editor-contrast.png" alt="Editor · High contrast" width="280" />
+  <img src="docs/screenshots/readme-editor-graphite.png" alt="Editor · Graphite" width="280" />
+  <img src="docs/screenshots/readme-editor-meadow.png" alt="Editor · Meadow" width="280" />
+</p>
+<p align="center">
+  <sub>High contrast · Graphite · Meadow</sub>
 </p>
 
 <p align="center">
-  <sub>Light · Slate</sub>
+  <img src="docs/screenshots/readme-editor-fog.png" alt="Editor · Fog" width="280" />
+  <img src="docs/screenshots/readme-editor-ember.png" alt="Editor · Ember" width="280" />
+  <img src="docs/screenshots/readme-editor-volt.png" alt="Editor · Volt" width="280" />
 </p>
+<p align="center">
+  <sub>Fog · Ember · Volt</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-editor-copper.png" alt="Editor · Copper" width="280" />
+  <img src="docs/screenshots/readme-editor-aurora.png" alt="Editor · Aurora" width="280" />
+  <img src="docs/screenshots/readme-editor-sunset.png" alt="Editor · Sunset" width="280" />
+</p>
+<p align="center">
+  <sub>Copper · Aurora · Sunset</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-editor-prism.png" alt="Editor · Prism" width="280" />
+  <img src="docs/screenshots/readme-editor-flare.png" alt="Editor · Flare" width="280" />
+  <img src="docs/screenshots/readme-editor-citrus.png" alt="Editor · Citrus" width="280" />
+</p>
+<p align="center">
+  <sub>Prism · Flare · Citrus</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-editor-candy.png" alt="Editor · Candy" width="280" />
+</p>
+<p align="center">
+  <sub>Candy</sub>
+</p>
+
+</details>
 
 ### Insert prefabs
 
@@ -123,7 +349,24 @@ The app opens on **Home** (`/`): recent projects plus three equal entry paths �
 </p>
 
 <p align="center">
-  <sub>Insert · prefabs</sub>
+  <sub>Insert · Dark · Quad sections</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-insert-light.png" alt="Insert · Light" width="280" />
+  <img src="docs/screenshots/readme-insert-dark.png" alt="Insert · Dark" width="280" />
+  <img src="docs/screenshots/readme-insert-ember.png" alt="Insert · Ember" width="280" />
+</p>
+<p align="center">
+  <sub>Light · Dark · Ember</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-insert-volt.png" alt="Insert · Volt" width="280" />
+  <img src="docs/screenshots/readme-insert-candy.png" alt="Insert · Candy" width="280" />
+</p>
+<p align="center">
+  <sub>Volt · Candy</sub>
 </p>
 
 ### Settings
@@ -135,10 +378,86 @@ The app opens on **Home** (`/`): recent projects plus three equal entry paths �
 </p>
 
 <p align="center">
-  <sub>Settings · Appearance</sub>
+  <sub>Settings · Appearance · Dark</sub>
 </p>
 
-Themes: Light, Dark, Midnight, Slate, Forest, Ocean, High contrast, Graphite, Meadow, Fog, Ember, Volt, and Copper. The radio LCD canvas stays dark everywhere.
+Themes: Light, Dark, Midnight, Slate, Forest, Ocean, High contrast, Graphite, Meadow, Fog, Ember, Volt, Copper, Aurora, Sunset, Prism, Flare, Citrus, and Candy. The radio LCD canvas stays dark everywhere.
+
+<details>
+<summary>All Settings Appearance themes (19)</summary>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-light.png" alt="Settings · Light" width="280" />
+  <img src="docs/screenshots/readme-settings-dark.png" alt="Settings · Dark" width="280" />
+  <img src="docs/screenshots/readme-settings-midnight.png" alt="Settings · Midnight" width="280" />
+</p>
+<p align="center">
+  <sub>Light · Dark · Midnight</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-slate.png" alt="Settings · Slate" width="280" />
+  <img src="docs/screenshots/readme-settings-forest.png" alt="Settings · Forest" width="280" />
+  <img src="docs/screenshots/readme-settings-ocean.png" alt="Settings · Ocean" width="280" />
+</p>
+<p align="center">
+  <sub>Slate · Forest · Ocean</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-contrast.png" alt="Settings · High contrast" width="280" />
+  <img src="docs/screenshots/readme-settings-graphite.png" alt="Settings · Graphite" width="280" />
+  <img src="docs/screenshots/readme-settings-meadow.png" alt="Settings · Meadow" width="280" />
+</p>
+<p align="center">
+  <sub>High contrast · Graphite · Meadow</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-fog.png" alt="Settings · Fog" width="280" />
+  <img src="docs/screenshots/readme-settings-ember.png" alt="Settings · Ember" width="280" />
+  <img src="docs/screenshots/readme-settings-volt.png" alt="Settings · Volt" width="280" />
+</p>
+<p align="center">
+  <sub>Fog · Ember · Volt</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-copper.png" alt="Settings · Copper" width="280" />
+  <img src="docs/screenshots/readme-settings-aurora.png" alt="Settings · Aurora" width="280" />
+  <img src="docs/screenshots/readme-settings-sunset.png" alt="Settings · Sunset" width="280" />
+</p>
+<p align="center">
+  <sub>Copper · Aurora · Sunset</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-prism.png" alt="Settings · Prism" width="280" />
+  <img src="docs/screenshots/readme-settings-flare.png" alt="Settings · Flare" width="280" />
+  <img src="docs/screenshots/readme-settings-citrus.png" alt="Settings · Citrus" width="280" />
+</p>
+<p align="center">
+  <sub>Prism · Flare · Citrus</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-candy.png" alt="Settings · Candy" width="280" />
+</p>
+<p align="center">
+  <sub>Candy</sub>
+</p>
+
+</details>
+
+<p align="center">
+  <img src="docs/screenshots/readme-settings-ai-dark.png" alt="Settings AI providers tab" width="720" />
+  &nbsp;
+  <img src="docs/screenshots/readme-settings-simulator-dark.png" alt="Settings Simulator tab" width="720" />
+</p>
+
+<p align="center">
+  <sub>AI providers · Simulator</sub>
+</p>
 
 ### Simulator
 
@@ -146,6 +465,26 @@ From Editor, **Simulator** boots the WASM preview. Use **Open interactive sim** 
 
 <p align="center">
   <img src="docs/screenshots/readme-sim.png" alt="Run in simulator modal with WASM preview stage" width="760" />
+</p>
+
+<p align="center">
+  <sub>Simulator · Dark</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-sim-dark.png" alt="Simulator · Dark" width="280" />
+  <img src="docs/screenshots/readme-sim-light.png" alt="Simulator · Light" width="280" />
+  <img src="docs/screenshots/readme-sim-midnight.png" alt="Simulator · Midnight" width="280" />
+</p>
+<p align="center">
+  <sub>Dark · Light · Midnight</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme-sim-volt.png" alt="Simulator · Volt" width="280" />
+</p>
+<p align="center">
+  <sub>Volt</sub>
 </p>
 
 ## What you get
@@ -178,8 +517,10 @@ Refresh README screenshots (optional):
 
 ```bash
 npm run dev   # in one terminal
-E2E_BASE_URL=http://127.0.0.1:3000 npx tsx scripts/capture-readme-screenshots.ts
+E2E_BASE_URL=http://127.0.0.1:3000 npm run capture:readme
 ```
+
+Captures every primary surface (Home, Studio, Templates, Editor, Settings) in all 19 themes, plus Insert / Simulator overlays.
 
 ## Using the web UI
 
