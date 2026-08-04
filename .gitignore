@@ -16,6 +16,24 @@ data/
 dist-output/
 generated/
 
+# SQLite / local DBs (default chats live under data/; catch alternate WIDGET_GEN_DATA_DIR)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Private keys / cert material (never commit)
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+*-key.pem
+*.pkcs8
+tauri.key
+tauri.key.pub
+
 # EdgeTX WASM radio preview (manifest.json tracked; run npm run sync-wasm)
 apps/web/public/sim/*.wasm
 

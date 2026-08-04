@@ -90,7 +90,7 @@ Warnings do not block download; errors do. Download returns **HTTP 422** when in
 
 - **Preview tab:** EdgeTX WASM framebuffer (cropped to `@simulate` zone) via `SimFrameCanvas` + `paintSimFrame.ts`. **Open interactive sim** button below the preview opens the full `@edgetx/simulator-ui` overlay (touch/keys/sticks).
 - Mock telemetry: `apps/web/src/lib/mockTelemetry.ts` (shared with CRSF bridge in sim-preview)
-- Optional API auth: `GENERATOR_API_SECRET` (see `.env.example`)
+- API auth: loopback is open without a secret; set `GENERATOR_API_SECRET` for non-localhost (see `.env.example` / `SECURITY.md`)
 - AI providers: Cursor (default), Anthropic, OpenAI, Gemini — Preferences → AI or env `CURSOR_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` (request headers `x-ai-provider` + provider key header)
 - Radio sim firmware: auto-downloaded by `scripts/ensure-edgetx-wasm.mjs` on postinstall and `npm run dev` → `apps/web/public/sim/`. Manual refresh: `npm run sync-wasm`. Set `SKIP_WASM_SYNC=1` to skip fetch (e.g. CI without sim).
 - API routes reach the generator only through `apps/web/src/server/generatorFacade.ts`.
@@ -112,11 +112,13 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 ## Security
 
 - Never commit `.env`, API keys, or secrets
-- `GENERATOR_API_SECRET` optional for non-localhost API use
+- Without `GENERATOR_API_SECRET`, non-loopback API requests are rejected (override with `GENERATOR_ALLOW_UNAUTHENTICATED=1` for intentional LAN demos only). With the secret set, same-origin browser UI calls are allowed; external clients need `Authorization: Bearer` or `x-generator-secret`.
+- Never put long-lived server AI keys on a public host without `GENERATOR_API_SECRET`. Prefer Settings → AI browser keys.
 - Cursor local agent sandbox is **on by default** for web/dev; set `CURSOR_SANDBOX_ENABLED=0` only when debugging needs broader FS access (see `.env.example`). Packaged desktop sets `CURSOR_SANDBOX_ENABLED=0` automatically (Windows sandbox requires WSL2).
 - Sanitize widget names via `packages/generator/src/paths.ts` (no path traversal)
 - Do not expose absolute filesystem paths in SSE responses
 - Desktop Tauri file I/O uses dialog-owned commands or the app-data directory — never free-path writes from the webview
+- Default WASM mirror is overrideable via `EDGETX_WASM_BASE` (see `SECURITY.md`)
 
 ## What not to edit
 

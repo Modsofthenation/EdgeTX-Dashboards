@@ -1,6 +1,8 @@
 # Documentation
 
 - [Quick start](../README.md#quick-start)
+- [Contributing](../CONTRIBUTING.md)
+- [Security policy](../SECURITY.md)
 - Architecture
   - [Domain overview](./architecture/overview.md)
 - Reference
