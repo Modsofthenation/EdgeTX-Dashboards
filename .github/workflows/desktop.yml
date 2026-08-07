@@ -245,15 +245,18 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Desktop ${{ github.ref_name }}
-          prerelease: false
+          # alpha / beta / rc tags stay prerelease; plain desktop-vX.Y.Z is stable.
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           generate_release_notes: true
           body: |
-            Stable desktop build for pilots (`${{ github.ref_name }}`).
+            Desktop build (`${{ github.ref_name }}`).
 
             Platforms: Windows (NSIS/MSI), macOS (DMG arm64 + x64), Linux (deb).
 
             Installers include the Tauri shell, a Next.js standalone sidecar, and a portable Node binary.
             Override the embedded Node with **EDGETX_NODE_PATH** if needed.
+
+            Unsigned alpha/pilot builds may trigger OS Gatekeeper / SmartScreen warnings.
 
             Commit: ${{ github.sha }}
 

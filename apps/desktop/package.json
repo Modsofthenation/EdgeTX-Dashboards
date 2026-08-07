@@ -2,7 +2,7 @@
   "name": "@widget-gen/desktop",
   "private": true,
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Tauri 2 desktop shell for EdgeTX Dashboards",
   "type": "module",
   "scripts": {

@@ -54,14 +54,21 @@ Outputs (from each green run):
 - **GitHub Release (nightly)** — prerelease tag `desktop-nightly` (optional; enabled by default on manual runs via the `publish_nightly` input)
 - **GitHub Release (stable)** — non-prerelease when a `desktop-v*` tag is pushed (e.g. `desktop-v1.2.0`)
 
-### Cutting a stable desktop release
+### Cutting a tagged desktop release
 
 ```bash
+# Stable
 git tag desktop-v1.2.0
 git push origin desktop-v1.2.0
+
+# Alpha / beta / rc (GitHub Release is marked prerelease)
+git tag desktop-v0.1.0-alpha.1
+git push origin desktop-v0.1.0-alpha.1
 ```
 
-That triggers the same matrix build as a manual run, then the `publish-release` job attaches installers to a normal (non-prerelease) GitHub Release named after the tag. Prefer these tagged builds when giving pilots a durable installer; use a manual run (or `desktop-nightly`) for occasional smoke builds.
+That triggers the same matrix build as a manual run, then the `publish-release` job attaches installers to a GitHub Release named after the tag. Tags containing `alpha`, `beta`, or `rc` are published as **prereleases**; plain `desktop-vX.Y.Z` tags are full releases. Prefer tagged builds when giving pilots a durable installer; use a manual run (or `desktop-nightly`) for occasional smoke builds.
+
+Keep `apps/desktop` versions in sync before tagging: `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
 
 ## On the radio tonight
 
