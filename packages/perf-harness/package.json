@@ -1,7 +1,8 @@
 {
   "name": "@widget-gen/perf-harness",
-  "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": {

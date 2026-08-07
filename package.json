@@ -1,6 +1,16 @@
 {
   "name": "widget-generator-edgetx",
   "private": true,
+  "description": "Generate validated EdgeTX Lua dashboards for color LCD radios from plain language",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Modsofthenation/Widget-generator-EdgeTX.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Modsofthenation/Widget-generator-EdgeTX/issues"
+  },
+  "homepage": "https://github.com/Modsofthenation/Widget-generator-EdgeTX#readme",
   "workspaces": [
     "apps/*",
     "packages/*"

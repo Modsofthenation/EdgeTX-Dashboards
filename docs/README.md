@@ -1,6 +1,10 @@
 # Documentation
 
 - [Quick start](../README.md#quick-start)
+- [Contributing](../CONTRIBUTING.md)
+- [Code of Conduct](../CODE_OF_CONDUCT.md)
+- [Security policy](../SECURITY.md)
+- [Third-party notices](../NOTICE.md)
 - Architecture
   - [Domain overview](./architecture/overview.md)
 - Reference

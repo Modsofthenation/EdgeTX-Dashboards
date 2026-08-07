@@ -1,7 +1,8 @@
 {
   "name": "@widget-gen/web",
-  "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
     "dev:clean": "npm run clean && next dev",
