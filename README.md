@@ -630,8 +630,8 @@ More detail: [docs/README.md](docs/README.md) · [workspace layout](docs/referen
 ## Security & contributing
 
 - Local / desktop on localhost is the supported default. See [SECURITY.md](SECURITY.md) before hosting on the public internet.
-- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
+- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). EdgeTX simulator firmware is GPLv2 — see [NOTICE.md](NOTICE.md).

@@ -47,6 +47,10 @@ See [AGENTS.md](./AGENTS.md) and [docs/README.md](./docs/README.md) for deeper l
 
 Read [SECURITY.md](./SECURITY.md) before changing API auth, file writes under `generated/`, or WASM download URLs. Never commit `.env`, API keys, or chat databases.
 
+## Code of Conduct
+
+Please follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
+
 ## License
 
-By contributing, you agree your changes are licensed under the MIT License in [LICENSE](./LICENSE).
+By contributing, you agree your changes are licensed under the MIT License in [LICENSE](./LICENSE). Third-party notices (including EdgeTX GPLv2 firmware) are in [NOTICE.md](./NOTICE.md).

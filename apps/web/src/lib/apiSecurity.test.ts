@@ -115,6 +115,37 @@ describe("isLoopbackRequest / isSameOriginBrowserRequest", () => {
     );
   });
 
+  it("rejects spoofed loopback X-Forwarded-For on a public host", () => {
+    delete process.env.GENERATOR_API_SECRET;
+    delete process.env.GENERATOR_ALLOW_UNAUTHENTICATED;
+    const req = new Request("https://example.com/api/generate", {
+      headers: { "x-forwarded-for": "127.0.0.1" },
+    });
+    assert.equal(isLoopbackRequest(req), false);
+    assert.equal(checkApiAuth(req)?.status, 401);
+  });
+
+  it("rejects spoofed loopback X-Real-Ip on a public host", () => {
+    delete process.env.GENERATOR_API_SECRET;
+    delete process.env.GENERATOR_ALLOW_UNAUTHENTICATED;
+    const req = new Request("https://dashboards.example/api/chats", {
+      headers: { "x-real-ip": "::1" },
+    });
+    assert.equal(isLoopbackRequest(req), false);
+    assert.equal(checkApiAuth(req)?.status, 401);
+  });
+
+  it("rejects localhost Host when any forwarded-IP header is present", () => {
+    assert.equal(
+      isLoopbackRequest(
+        new Request("http://localhost/api/generate", {
+          headers: { "x-forwarded-for": "127.0.0.1" },
+        }),
+      ),
+      false,
+    );
+  });
+
   it("detects same-origin via Sec-Fetch-Site", () => {
     assert.equal(
       isSameOriginBrowserRequest(

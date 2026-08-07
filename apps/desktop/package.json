@@ -1,9 +1,10 @@
 {
   "name": "@widget-gen/desktop",
-  "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "license": "MIT",
+  "version": "0.1.0",
   "description": "Tauri 2 desktop shell for EdgeTX Dashboards",
+  "type": "module",
   "scripts": {
     "prepare:standalone": "node ./scripts/prepare-standalone.mjs",
     "fetch:node": "node ./scripts/fetch-bundled-node.mjs",

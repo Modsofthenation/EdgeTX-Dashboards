@@ -112,8 +112,9 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 ## Security
 
 - Never commit `.env`, API keys, or secrets
+- Never trust client `X-Forwarded-For` / `X-Real-Ip` for loopback auth bypass (spoofable on public hosts)
 - Without `GENERATOR_API_SECRET`, non-loopback API requests are rejected (override with `GENERATOR_ALLOW_UNAUTHENTICATED=1` for intentional LAN demos only). With the secret set, same-origin browser UI calls are allowed; external clients need `Authorization: Bearer` or `x-generator-secret`.
-- Never put long-lived server AI keys on a public host without `GENERATOR_API_SECRET`. Prefer Settings → AI browser keys.
+- Never put long-lived server AI keys on a public host without `GENERATOR_API_SECRET`. Prefer Settings → AI browser keys. Same-origin UI on a shared host can still spend those keys.
 - Cursor local agent sandbox is **on by default** for web/dev; set `CURSOR_SANDBOX_ENABLED=0` only when debugging needs broader FS access (see `.env.example`). Packaged desktop sets `CURSOR_SANDBOX_ENABLED=0` automatically (Windows sandbox requires WSL2).
 - Sanitize widget names via `packages/generator/src/paths.ts` (no path traversal)
 - Do not expose absolute filesystem paths in SSE responses
@@ -126,9 +127,9 @@ Built-in Cursor skills under `~/.cursor/skills-cursor/` apply globally.
 - Do not commit `generated/`, `dist-output/`, or `.agents/`
 - Do not add `require()` or filesystem access to generated Lua
 
-## Cursor Cloud specific instructions
+## Cursor Cloud (optional agent environment)
 
-Environment is refreshed by the startup update script `npm install` (its `postinstall` patches `@edgetx/simulator-ui` and downloads the EdgeTX WASM firmware into `apps/web/public/sim/`). No extra setup is needed. Non-obvious caveats:
+These notes apply when developing inside a **Cursor Cloud** agent VM. Local `npm run dev` does not need them. Environment is refreshed by the startup update script `npm install` (its `postinstall` patches `@edgetx/simulator-ui` and downloads the EdgeTX WASM firmware into `apps/web/public/sim/`). No extra setup is needed. Non-obvious caveats:
 
 - **`CURSOR_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` gate AI generation** (provider selected in Preferences → AI). Without a key for the selected provider, `npm run dev` still boots at `http://localhost:3000` and the editor, `/api/validate`, layout preview, and EdgeTX WASM simulator all work; only `/api/generate` and `/api/refine` are blocked. Add the matching secret to exercise the chat generation flow.
 - **The `/editor` canvas paints a layout overlay** (static Lua interpreter) for hit-testing and drag/resize. For radios with WASM firmware (TX15 etc.), **radio preview** is on by default and shows real EdgeTX pixels under that overlay. Use **Simulator** for the full interactive radio UI. A dark LCD is normal (`lcd.clear(BLACK)`); an empty board means no draw records yet.

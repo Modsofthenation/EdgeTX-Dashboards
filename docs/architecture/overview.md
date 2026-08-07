@@ -1,6 +1,6 @@
 # Dashboard Generator — domain context
 
-EdgeTX **Lua widgets** run on radio transmitters (e.g. RadioMaster TX15) and draw telemetry on the main screen. This monorepo generates those widgets from natural-language prompts via a Cursor cloud agent.
+EdgeTX **Lua widgets** run on radio transmitters (e.g. RadioMaster TX15) and draw telemetry on the main screen. This monorepo generates those widgets from natural-language prompts via an AI coding agent (Cursor SDK by default; other providers are supported).
 
 ## Packages
 

@@ -28,33 +28,28 @@ function secretsEqual(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-/** True for loopback Host / client IP (local `npm run dev`, desktop, e2e). */
+/**
+ * True for bare loopback listeners (local `npm run dev`, desktop, e2e).
+ *
+ * Never trust `X-Forwarded-For` / `X-Real-Ip` for allow — clients can spoof
+ * `127.0.0.1` against a public host. Any forwarded-IP header means we are
+ * behind a proxy (or under spoof attempt): require `GENERATOR_API_SECRET`
+ * (or `GENERATOR_ALLOW_UNAUTHENTICATED`) instead of treating the request as local.
+ */
 export function isLoopbackRequest(request: Request): boolean {
-  const forwarded = request.headers
-    .get("x-forwarded-for")
-    ?.split(",")[0]
-    ?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  const ip = (forwarded ?? realIp ?? "").toLowerCase();
   if (
-    ip === "127.0.0.1" ||
-    ip === "::1" ||
-    ip === "localhost" ||
-    ip === "::ffff:127.0.0.1"
+    request.headers.get("x-forwarded-for") ||
+    request.headers.get("x-real-ip")
   ) {
-    return true;
+    return false;
   }
 
   try {
     const host = new URL(request.url).hostname.toLowerCase();
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
-      // Public reverse proxies usually set x-forwarded-for / x-real-ip.
-      if (!forwarded && !realIp) return true;
-    }
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
   } catch {
-    /* ignore */
+    return false;
   }
-  return false;
 }
 
 /**

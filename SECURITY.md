@@ -33,6 +33,7 @@ We aim to acknowledge reports within a few days.
 
 ## Known intentional limits
 
-- Chat history APIs are **single-tenant** (no per-user accounts).
+- Chat history APIs are **single-tenant** (no per-user accounts). With `GENERATOR_API_SECRET` set, same-origin browser users of that host can still call generate/chat APIs — do not treat a shared deploy as multi-tenant auth.
 - Rate limits are in-process memory (per Node instance).
-- `/api/health` is unauthenticated and returns coarse runtime metadata for the desktop sidecar.
+- `/api/health` is unauthenticated: loopback returns desktop readiness fields; non-loopback returns only `{ ok, service }`.
+- Default WASM downloads use a project blob mirror. Public clones will hit that URL unless `EDGETX_WASM_BASE` is set (see [NOTICE.md](./NOTICE.md)).

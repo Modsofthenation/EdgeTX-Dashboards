@@ -26,7 +26,8 @@ Radio sim runs **EdgeTX WASM firmware** for color radios with matching LCD sizes
 
 | UI tab | **Radio sim** in `Preview480x320.tsx` |
 
-**Download URL:** `https://ypwfws8ckruh03m1.public.blob.vercel-storage.com/wasm/edgetx-tx15-simulator.wasm`
+**Download URL:** configured via `EDGETX_WASM_BASE` (default project blob mirror under
+`scripts/lib/sync-edgetx-wasm-core.mjs` / `apps/web/public/sim/manifest.json`). See [NOTICE.md](../../NOTICE.md).
 
 **Pinned build:** EdgeTX **2.11** — sha256 `23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5` (5303067 bytes). As of 2026-07-05, the blob host serves the same file for `EDGETX_WASM_VERSION=2.12`; no newer TX15 WASM was available to pin.
 
