@@ -115,7 +115,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          args=(build --bundles "${{ matrix.bundles }}")
+          bundles="${{ matrix.bundles }}"
+          # WiX/MSI only allows numeric semver prereleases (e.g. 0.1.0-1), not
+          # 0.1.0-alpha.1. Ship NSIS alone for alpha/beta/rc tags.
+          if [[ "${{ matrix.os_name }}" == "windows-x64" ]] && \
+             [[ "${{ github.ref_name }}" =~ (alpha|beta|rc) ]]; then
+            bundles="nsis"
+            echo "Prerelease tag: using Windows bundles=$bundles (MSI skipped)"
+          fi
+          args=(build --bundles "$bundles")
           if [ -n "${{ matrix.rust_target }}" ]; then
             args+=(--target "${{ matrix.rust_target }}")
           fi

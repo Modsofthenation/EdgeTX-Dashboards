@@ -70,6 +70,8 @@ That triggers the same matrix build as a manual run, then the `publish-release` 
 
 Keep `apps/desktop` versions in sync before tagging: `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
 
+**Windows note:** WiX/MSI requires numeric-only semver prereleases (e.g. `0.1.0-1`). Tags containing `alpha` / `beta` / `rc` therefore ship **NSIS only** on Windows; stable `desktop-vX.Y.Z` builds still produce NSIS + MSI.
+
 ## On the radio tonight
 
 1. Open the **desktop app**.
