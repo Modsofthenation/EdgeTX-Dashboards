@@ -1,0 +1,177 @@
+{
+  "protocol": "rotorflight",
+  "label": "Rotorflight (CRSF/ELRS)",
+  "setupNotes": [
+    "Enable rf2bg as a Special Function with Repeat set to On for custom CRSF/ELRS telemetry.",
+    "Delete all sensors, select Discover new, then power on the flight controller.",
+    "Rotorflight Tools scripts (rf2.lua) are separate from dashboard widgets.",
+    "For adjustment teller: set crsf_flight_mode_reuse = ADJFUNC in Rotorflight CLI and save.",
+    "Rotorflight custom sensors (HSpd/Hspd, EscT/Tesc, Vbec, Vcel, Tspd, Gov, Vbat) require rf2bg custom CRSF — discover after the FC is powered.",
+    "Model images for the model panel must live in /IMAGES/ and match the RF Configurator model name exactly (including capitalization)."
+  ],
+  "sensors": [
+    {
+      "name": "1RSS",
+      "unit": "dB",
+      "category": "link",
+      "description": "Uplink RSSI antenna 1"
+    },
+    {
+      "name": "RQLY",
+      "unit": "%",
+      "category": "link",
+      "description": "Uplink link quality (aliases: RQly, LQ)"
+    },
+    {
+      "name": "RFMD",
+      "unit": "",
+      "category": "link",
+      "description": "Uplink packet rate"
+    },
+    {
+      "name": "TPWR",
+      "unit": "mW",
+      "category": "link",
+      "description": "Uplink transmit power"
+    },
+    {
+      "name": "RxBt",
+      "unit": "V",
+      "category": "battery",
+      "description": "Receiver / pack voltage (CRSF)"
+    },
+    {
+      "name": "Vbat",
+      "unit": "V",
+      "category": "battery",
+      "description": "Flight pack voltage (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "Vcel",
+      "unit": "V",
+      "category": "battery",
+      "description": "Per-cell voltage (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "Vbec",
+      "unit": "V",
+      "category": "battery",
+      "description": "BEC voltage (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "Cel#",
+      "unit": "",
+      "category": "battery",
+      "description": "Detected cell count (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "Curr",
+      "unit": "A",
+      "category": "battery",
+      "description": "Current draw"
+    },
+    {
+      "name": "Capa",
+      "unit": "mAh",
+      "category": "battery",
+      "description": "Consumed capacity"
+    },
+    {
+      "name": "Bat%",
+      "unit": "%",
+      "category": "battery",
+      "description": "Battery remaining / Smart Fuel charge level"
+    },
+    {
+      "name": "Alt",
+      "unit": "m",
+      "category": "gps",
+      "description": "Baro/GPS altitude"
+    },
+    {
+      "name": "GSpd",
+      "unit": "km/h",
+      "category": "gps",
+      "description": "GPS ground speed"
+    },
+    {
+      "name": "Sats",
+      "unit": "",
+      "category": "gps",
+      "description": "GPS satellite count"
+    },
+    {
+      "name": "FM",
+      "unit": "",
+      "category": "flight",
+      "description": "Flight mode"
+    },
+    {
+      "name": "Gov",
+      "unit": "",
+      "category": "flight",
+      "description": "Governor state enum (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "BAT#",
+      "unit": "",
+      "category": "flight",
+      "description": "Active battery profile index (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "RPM",
+      "unit": "rpm",
+      "category": "motor",
+      "description": "Motor/head RPM",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "HSpd",
+      "unit": "rpm",
+      "category": "motor",
+      "description": "Headspeed (alias discovered as Hspd on some radios)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "Tspd",
+      "unit": "rpm",
+      "category": "motor",
+      "description": "Tail rotor RPM (Rotorflight custom CRSF)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "EscT",
+      "unit": "C",
+      "category": "motor",
+      "description": "ESC temperature (alias: Tesc)",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "MotT",
+      "unit": "C",
+      "category": "motor",
+      "description": "Motor temperature",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "AdjF",
+      "unit": "",
+      "category": "flight",
+      "description": "Adjustment function",
+      "requiresCustomCrsf": true
+    },
+    {
+      "name": "AdjV",
+      "unit": "",
+      "category": "flight",
+      "description": "Adjustment value",
+      "requiresCustomCrsf": true
+    }
+  ]
+}

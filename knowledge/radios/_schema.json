@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RadioProfile",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "lcdW",
+    "lcdH",
+    "touch",
+    "maxOptions",
+    "edgeTxMin"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "lcdW": { "type": "integer", "minimum": 1 },
+    "lcdH": { "type": "integer", "minimum": 1 },
+    "touch": { "type": "boolean" },
+    "maxOptions": { "type": "integer", "minimum": 1 },
+    "edgeTxMin": { "type": "string" },
+    "layoutProfile": { "type": "string" },
+    "notes": { "type": "string" }
+  }
+}

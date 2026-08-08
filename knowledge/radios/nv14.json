@@ -1,0 +1,12 @@
+{
+  "$schema": "./_schema.json",
+  "id": "nv14",
+  "name": "Flysky NV14 / EL18",
+  "lcdW": 320,
+  "lcdH": 480,
+  "touch": true,
+  "maxOptions": 10,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "nv14",
+  "notes": "320×480 portrait color LCD (c320x480 SD pack)."
+}

@@ -1,0 +1,20 @@
+{
+  "radioId": "compact128",
+  "lcdW": 128,
+  "lcdH": 64,
+  "defaultSimulate": {
+    "layout": "Layout1x1",
+    "zone": 0
+  },
+  "layouts": {
+    "Layout1x1": {
+      "zones": [{ "x": 0, "y": 0, "w": 128, "h": 64 }]
+    },
+    "Layout1x2": {
+      "zones": [
+        { "x": 0, "y": 0, "w": 128, "h": 30 },
+        { "x": 0, "y": 34, "w": 128, "h": 30 }
+      ]
+    }
+  }
+}

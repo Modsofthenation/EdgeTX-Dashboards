@@ -1,0 +1,12 @@
+{
+  "$schema": "./_schema.json",
+  "id": "t20",
+  "name": "Jumper T20",
+  "lcdW": 128,
+  "lcdH": 64,
+  "touch": false,
+  "maxOptions": 6,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "compact128",
+  "notes": "128×64 monochrome LCD (bw128x64 SD pack)."
+}

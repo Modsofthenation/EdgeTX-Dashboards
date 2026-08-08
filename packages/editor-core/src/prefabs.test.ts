@@ -1,0 +1,353 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  BETAFLIGHT_QUAD_PREFABS,
+  DENSE_CRSF_LAYOUT_ORDER,
+  FREESTYLE_LAYOUT_ORDER,
+  getPrefabSection,
+  insertPrefabSection,
+  insertPrefabSections,
+  listPrefabCatalog,
+  listPrefabSections,
+  listPrefabSpans,
+  MINIMAL_QUAD_LAYOUT_ORDER,
+  prefabIdForSourceLine,
+  ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+  ROTORFLIGHT_HELI_PREFABS,
+  WHOOP_LAYOUT_ORDER,
+} from "./prefabs/index.ts";
+import { interpretDocument } from "./luaDocument.ts";
+import { listSrcBindings, remapSrcSensor } from "./telemetryBinding.ts";
+import { validateWidgetLua, loadTelemetryCatalog } from "@widget-gen/generator";
+import { getLayoutTemplateBoardSource } from "./templateBoards.ts";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(__dirname, "..", "..", "..");
+
+const MINIMAL_SHELL = `---@type WidgetScript
+---@simulate Layout1x1 zone=0
+local name = "RfTest1"
+local options = {}
+local function cacheSource(sensorName)
+  local idx = getSourceIndex(sensorName)
+  if idx and idx > 0 then return idx end
+  return nil
+end
+local function telem(id)
+  if id then return getValue(id) end
+  return 0
+end
+local function create(zone, opts)
+  return { zone = zone, options = opts, src = {} }
+end
+local function refresh(widget)
+  lcd.clear(BLACK)
+end
+return {
+  name = name,
+  options = options,
+  create = create,
+  refresh = refresh,
+}
+`;
+
+describe("Rotorflight heli prefabs", () => {
+  it("registers electric + nitro TX15 sections", () => {
+    assert.equal(ROTORFLIGHT_HELI_PREFABS.length, 8);
+    assert.deepEqual(
+      listPrefabSections({ protocol: "rotorflight" }).map((p) => p.id),
+      [
+        ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+        "rf-nitro-pack-tiles",
+        "rf-nitro-rx-bar",
+      ],
+    );
+    assert.ok(
+      listPrefabSections({ protocol: "rotorflight" }).every(
+        (p) => p.family === "rotorflight-heli",
+      ),
+    );
+  });
+
+  it("exposes catalog entries with telemetry notes", () => {
+    const catalog = listPrefabCatalog({ protocol: "rotorflight" });
+    assert.ok(catalog.every((c) => c.telemetryNotes.length > 0));
+    const hero = catalog.find((c) => c.id === "rf-headspeed-hero");
+    assert.ok(hero);
+    assert.ok(hero!.requiredSensors.includes("HSpd"));
+  });
+
+  for (const id of ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER) {
+    it(`inserts ${id} with lcd draws and sensor cache`, () => {
+      const prefab = getPrefabSection(id)!;
+      const result = insertPrefabSection(MINIMAL_SHELL, id);
+      assert.ok(result);
+      assert.ok(result!.insertedDrawCount > 0);
+      for (const [key, sensor] of Object.entries(prefab.createSrcBindings)) {
+        assert.match(
+          result!.source,
+          new RegExp(`${key}\\s*=\\s*cacheSource\\("${sensor}"`),
+        );
+      }
+      for (const line of prefab.refreshLines) {
+        if (line.startsWith("lcd.")) {
+          assert.ok(
+            result!.source.includes(line),
+            `missing draw line: ${line}`,
+          );
+        }
+      }
+      const records = interpretDocument(result!.source);
+      assert.ok(
+        records.some((r) => r.kind === "filledRect" || r.kind === "text"),
+        "expected interpretable draw records",
+      );
+    });
+  }
+
+  it("assembles full layout without losing helpers", () => {
+    const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
+      ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+    ]);
+    assert.deepEqual(inserted, [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER]);
+    assert.equal(
+      (source.match(/function cacheSource/g) || []).length,
+      1,
+      "cacheSource should not be duplicated",
+    );
+    assert.equal((source.match(/function telem/g) || []).length, 1);
+  });
+
+  it("validates programmatically assembled full Rotorflight heli board", () => {
+    const { source } = insertPrefabSections(MINIMAL_SHELL, [
+      ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+    ]);
+    const sensors = loadTelemetryCatalog("rotorflight").sensors.map(
+      (s) => s.name,
+    );
+    const result = validateWidgetLua(source, {
+      knownSensors: sensors,
+      strictTelemetry: true,
+      layoutArchetype: "heli-rotorflight",
+      userPrompt: "Rotorflight heli headspeed ESC temperature battery board",
+      strictIntent: true,
+    });
+    const errors = result.issues.filter((i) => i.severity === "error");
+    assert.equal(errors.length, 0, errors.map((e) => e.message).join("; "));
+    assert.equal(result.valid, true);
+  });
+
+  it("validates gold example against rotorflight catalog", () => {
+    const example = readFileSync(
+      join(repoRoot, "examples", "tx15-rotorflight-sections.lua"),
+      "utf8",
+    );
+    const sensors = loadTelemetryCatalog("rotorflight").sensors.map(
+      (s) => s.name,
+    );
+    const result = validateWidgetLua(example, {
+      knownSensors: sensors,
+      strictTelemetry: true,
+      layoutArchetype: "heli-rotorflight",
+      userPrompt: "Rotorflight heli headspeed ESC temperature battery board",
+      strictIntent: true,
+    });
+    const errors = result.issues.filter((i) => i.severity === "error");
+    assert.equal(errors.length, 0, errors.map((e) => e.message).join("; "));
+    assert.equal(result.valid, true);
+  });
+
+  it("required sensors exist in rotorflight catalog", () => {
+    const known = new Set(
+      loadTelemetryCatalog("rotorflight").sensors.map((s) => s.name),
+    );
+    for (const prefab of ROTORFLIGHT_HELI_PREFABS) {
+      for (const sensor of [
+        ...prefab.requiredSensors,
+        ...prefab.optionalSensors,
+        ...Object.values(prefab.createSrcBindings),
+      ]) {
+        assert.ok(
+          known.has(sensor),
+          `${prefab.id} references unknown sensor ${sensor}`,
+        );
+      }
+    }
+  });
+
+  it("tags inserted sections with prefab ids and supports sensor remap", () => {
+    const { source } = insertPrefabSections(MINIMAL_SHELL, [
+      "rf-headspeed-hero",
+      "rf-motor-tiles",
+    ]);
+    assert.match(source, /--\s*prefab:rf-headspeed-hero/);
+    assert.match(source, /--\s*prefab:rf-motor-tiles/);
+    const spans = listPrefabSpans(source);
+    assert.equal(spans.length, 2);
+    assert.equal(spans[0]!.prefabId, "rf-headspeed-hero");
+
+    const records = interpretDocument(source);
+    const heroText = records.find(
+      (r) => r.kind === "text" && r.text?.includes("HEADSPEED"),
+    );
+    assert.ok(heroText?.sourceLine);
+    assert.equal(
+      prefabIdForSourceLine(source, heroText!.sourceLine),
+      "rf-headspeed-hero",
+    );
+
+    const remapped = remapSrcSensor(source, "hspd", "RPM");
+    assert.match(remapped, /hspd\s*=\s*cacheSource\("RPM"\)/);
+    const bindings = listSrcBindings(remapped);
+    assert.equal(bindings.find((b) => b.key === "hspd")?.sensor, "RPM");
+    assert.equal(bindings.find((b) => b.key === "curr")?.sensor, "Curr");
+  });
+
+  it("inserts full Rotorflight heli board in canonical order", () => {
+    const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
+      ...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER,
+    ]);
+    assert.deepEqual(inserted, [...ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER]);
+    for (const id of ROTORFLIGHT_ELECTRIC_LAYOUT_ORDER) {
+      assert.match(source, new RegExp(`--\\s*prefab:${id}`));
+    }
+  });
+});
+
+describe("Betaflight / CRSF quad prefabs", () => {
+  it("registers whoop/freestyle/dense sections for betaflight and generic-crsf", () => {
+    assert.ok(BETAFLIGHT_QUAD_PREFABS.length >= 12);
+    const bfIds = listPrefabSections({ protocol: "betaflight" }).map(
+      (p) => p.id,
+    );
+    assert.ok(bfIds.includes("quad-armed-banner"));
+    assert.ok(bfIds.includes("quad-metric-grid"));
+    assert.ok(
+      listPrefabSections({ protocol: "betaflight" }).every(
+        (p) => p.family === "betaflight-quad",
+      ),
+    );
+    const crsfIds = listPrefabSections({ protocol: "generic-crsf" }).map(
+      (p) => p.id,
+    );
+    assert.ok(crsfIds.includes("quad-topbar"));
+    assert.ok(
+      !crsfIds.includes("quad-armed-banner"),
+      "armed banner stays betaflight-only",
+    );
+  });
+
+  it("exposes catalog entries without person or repo branding", () => {
+    const catalog = listPrefabCatalog({ protocol: "betaflight" });
+    assert.ok(catalog.length > 0);
+    const blob = JSON.stringify(catalog).toLowerCase();
+    for (const banned of [
+      "edgedeck",
+      "fpvdash",
+      "ultidash",
+      "rf2-dash",
+      "shmuely",
+      "nige",
+      "github.com",
+    ]) {
+      assert.ok(!blob.includes(banned), `catalog must not mention ${banned}`);
+    }
+  });
+
+  for (const id of WHOOP_LAYOUT_ORDER) {
+    it(`inserts ${id} with lcd draws and sensor cache`, () => {
+      const prefab = getPrefabSection(id)!;
+      const result = insertPrefabSection(MINIMAL_SHELL, id);
+      assert.ok(result);
+      assert.ok(result!.insertedDrawCount > 0);
+      for (const [key, sensor] of Object.entries(prefab.createSrcBindings)) {
+        assert.match(
+          result!.source,
+          new RegExp(`${key}\\s*=\\s*cacheSource\\("${sensor}"`),
+        );
+      }
+      const records = interpretDocument(result!.source);
+      assert.ok(
+        records.some((r) => r.kind === "filledRect" || r.kind === "text"),
+        "expected interpretable draw records",
+      );
+    });
+  }
+
+  it("assembles whoop / freestyle / minimal / dense boards", () => {
+    for (const [label, order] of [
+      ["whoop", WHOOP_LAYOUT_ORDER],
+      ["freestyle", FREESTYLE_LAYOUT_ORDER],
+      ["minimal", MINIMAL_QUAD_LAYOUT_ORDER],
+      ["dense", DENSE_CRSF_LAYOUT_ORDER],
+    ] as const) {
+      const { source, inserted } = insertPrefabSections(MINIMAL_SHELL, [
+        ...order,
+      ]);
+      assert.deepEqual(inserted, [...order], label);
+      assert.equal((source.match(/function cacheSource/g) || []).length, 1);
+      for (const id of order) {
+        assert.match(source, new RegExp(`--\\s*prefab:${id}`));
+      }
+      const records = interpretDocument(source);
+      assert.ok(
+        records.length >= 8,
+        `${label} expected rich draw list, got ${records.length}`,
+      );
+    }
+  });
+
+  it("validates assembled whoop board against betaflight catalog", () => {
+    const { source } = insertPrefabSections(MINIMAL_SHELL, [
+      ...WHOOP_LAYOUT_ORDER,
+    ]);
+    const sensors = loadTelemetryCatalog("betaflight").sensors.map(
+      (s) => s.name,
+    );
+    const result = validateWidgetLua(source, {
+      knownSensors: sensors,
+      strictTelemetry: true,
+      layoutArchetype: "quad-overview",
+      userPrompt: "tiny whoop armed banner voltage link pitch roll",
+      strictIntent: false,
+    });
+    const errors = result.issues.filter((i) => i.severity === "error");
+    assert.equal(errors.length, 0, errors.map((e) => e.message).join("; "));
+    assert.equal(result.valid, true);
+  });
+
+  it("required sensors exist in betaflight catalog", () => {
+    const known = new Set(
+      loadTelemetryCatalog("betaflight").sensors.map((s) => s.name),
+    );
+    for (const prefab of BETAFLIGHT_QUAD_PREFABS) {
+      for (const sensor of [
+        ...prefab.requiredSensors,
+        ...prefab.optionalSensors,
+        ...Object.values(prefab.createSrcBindings),
+      ]) {
+        assert.ok(
+          known.has(sensor),
+          `${prefab.id} references unknown sensor ${sensor}`,
+        );
+      }
+    }
+  });
+
+  it("gallery template boards resolve to prefab-assembled Lua", () => {
+    for (const id of [
+      "whoop",
+      "freestyle-quad",
+      "minimal-quad",
+      "dense-crsf",
+    ] as const) {
+      const source = getLayoutTemplateBoardSource(id);
+      assert.match(source, /--\s*prefab:quad-/);
+      const records = interpretDocument(source);
+      assert.ok(records.length >= 8, `${id} too sparse: ${records.length}`);
+    }
+  });
+});

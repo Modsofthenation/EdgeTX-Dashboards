@@ -1,0 +1,11 @@
+{
+  "$schema": "./_schema.json",
+  "id": "x12",
+  "name": "FrSky Horus X12S",
+  "lcdW": 480,
+  "lcdH": 272,
+  "touch": false,
+  "maxOptions": 10,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "color272"
+}

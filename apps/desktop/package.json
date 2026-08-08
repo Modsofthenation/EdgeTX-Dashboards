@@ -1,0 +1,20 @@
+{
+  "name": "@widget-gen/desktop",
+  "private": true,
+  "license": "MIT",
+  "version": "0.1.0-alpha.1",
+  "description": "Tauri 2 desktop shell for EdgeTX Dashboards",
+  "type": "module",
+  "scripts": {
+    "prepare:standalone": "node ./scripts/prepare-standalone.mjs",
+    "fetch:node": "node ./scripts/fetch-bundled-node.mjs",
+    "verify:standalone": "node ./scripts/verify-bundled-standalone.mjs",
+    "smoke:standalone": "node ./scripts/smoke-standalone-generate.mjs",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

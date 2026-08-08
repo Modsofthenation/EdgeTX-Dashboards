@@ -1,0 +1,144 @@
+.root {
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 12px;
+  padding: 1rem 1.1rem 1.15rem;
+  background: var(--surface, #fff);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.rootEmbedded {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.lead {
+  margin: 0.35rem 0 0.85rem;
+  color: var(--text-secondary, #57606a);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.checklist {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  min-width: 0;
+}
+
+.checklist li {
+  min-width: 0;
+}
+
+.checklist label {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.checklist code {
+  font-size: 0.8em;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.verifyTitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  align-items: center;
+}
+
+.primary,
+.secondary {
+  border-radius: 8px;
+  border: 1px solid var(--border, #d0d7de);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.primary {
+  background: var(--accent, #1f6feb);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+
+.secondary {
+  background: transparent;
+}
+
+.hint,
+.path,
+.status,
+.done {
+  margin: 0.55rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #57606a);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.done {
+  color: var(--success, #1a7f37);
+  font-weight: 600;
+}
+
+.companionStatus {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border, #d0d7de);
+  min-width: 0;
+}
+
+.companionStatusTitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #57606a);
+}
+
+.companionList {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #57606a);
+  display: grid;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.rfNote {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #57606a);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}

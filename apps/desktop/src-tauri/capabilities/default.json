@@ -1,0 +1,33 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default desktop capabilities for the Next.js sidecar / dev server webview",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["http://localhost:*/*", "http://127.0.0.1:*/*"]
+  },
+  "permissions": [
+    "core:default",
+    "core:webview:allow-set-webview-focus",
+    "core:webview:allow-webview-position",
+    "core:webview:allow-webview-size",
+    "shell:allow-open",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    "allow-install-widget-to-sd",
+    "allow-save-text-with-dialog",
+    "allow-save-bytes-with-dialog",
+    "allow-open-text-with-dialog",
+    "allow-write-text-file",
+    "allow-write-bytes-file",
+    "allow-read-text-file",
+    "allow-write-app-data-project",
+    "allow-list-app-data-projects",
+    "allow-read-app-data-project",
+    "allow-delete-app-data-project"
+  ]
+}

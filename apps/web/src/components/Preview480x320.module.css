@@ -1,0 +1,761 @@
+.panel {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.panelCompact {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  width: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.compactTabRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.compactTabs {
+  display: flex;
+  gap: 0;
+  padding: 2px;
+  width: fit-content;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.copyBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.copyBtn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.copyBtn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.copyBtnCopied {
+  color: var(--success);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.headerTabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 3px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.tab,
+.tabActive {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.375rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+}
+
+.tabActive {
+  color: var(--text);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-sm);
+}
+
+.frameWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.frameWrapCompact {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+.deviceCompact {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: linear-gradient(180deg, #1a1d26 0%, #0f1118 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.frameCompact {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.screenCompact {
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.simFrameContainer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.simFrameContainerFill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.simActionsRow {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.simPreviewRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 8rem;
+}
+
+.simPreviewFill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  background: #0b0d12;
+}
+
+.simPreviewFill .simFrameContainerFill {
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 45%,
+    #151922 0%,
+    #0b0d12 70%
+  );
+}
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.device {
+  width: 100%;
+  max-width: 500px;
+  padding: 1rem 1rem 1.25rem;
+  background: linear-gradient(180deg, #1a1d26 0%, #0f1118 100%);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-strong);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.deviceLabel {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.screen {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.footer {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 0.25rem 0.625rem;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--success);
+}
+
+.liveBadge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--warning);
+  text-align: center;
+  max-width: 480px;
+  padding: 0.625rem 1rem;
+  background: rgba(251, 191, 36, 0.08);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1.5rem;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.02) 2px,
+    rgba(255, 255, 255, 0.02) 4px
+  );
+}
+
+.placeholderIcon {
+  font-size: 2rem;
+  opacity: 0.25;
+}
+
+.region {
+  position: absolute;
+  border: 1px dashed var(--accent-bright);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.region span {
+  padding: 2px 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+}
+
+.sourceCompact {
+  composes: appScrollbar from global;
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+}
+
+.source {
+  composes: appScrollbar from global;
+  margin: 0;
+  max-height: 340px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+}
+
+.radioSimScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.radioSimScreen canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.radioSimExpand {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.radioSimScreen:hover .radioSimExpand,
+.radioSimExpand:focus-visible {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.radioSimFullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  background: rgba(6, 8, 12, 0.96);
+  backdrop-filter: blur(8px);
+}
+
+.radioSimFullscreenBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(960px, 100%);
+  gap: 1rem;
+}
+
+.radioSimFullscreenMeta {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.radioSimFullscreenClose {
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text);
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.radioSimFullscreenClose:hover {
+  border-color: var(--border-strong);
+}
+
+.radioSimFullscreenScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(960px, 100%);
+  min-height: 0;
+  background: #000;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.radioSimFullscreenScreen canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.radioSimFullscreenHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.radioSimInlineRunning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.radioSimInlineStatus {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.radioSimInlineOpen {
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.radioSimInlineOpen:hover {
+  border-color: var(--border-strong);
+}
+
+.radioSimInteractive {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1rem 1rem;
+  background: radial-gradient(
+    ellipse 120% 80% at 50% 20%,
+    #2a3142 0%,
+    #12151c 55%,
+    #08090d 100%
+  );
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.radioSimInteractiveBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1400px, 100%);
+  gap: 1rem;
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+}
+
+.radioSimInteractiveBody {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(1400px, 100%);
+  min-height: 0;
+  overflow: auto;
+  padding: 0.25rem 0 0.75rem;
+}
+
+/* Brighter sim theme scoped to the stage — overrides @edgetx/simulator-ui dark :root vars */
+.radioSimInteractiveStage {
+  --sim-bg: #252b38;
+  --sim-card: #3a4256;
+  --sim-card-border: #525d73;
+  --sim-surface: #323948;
+  --sim-border: #525d73;
+  --sim-border-light: #6b7589;
+  --sim-text: #c8d0e0;
+  --sim-text-dim: #9aa3b5;
+  --sim-text-dimmer: #7a8499;
+  --sim-text-bright: #eef1f6;
+  --sim-accent: #5eb0ff;
+  --sim-accent-dim: rgba(94, 176, 255, 0.18);
+  --sim-success: #34d399;
+  --sim-danger: #f87171;
+
+  width: 100%;
+  max-width: min(1280px, 100%);
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1.25rem 1.15rem;
+  background: linear-gradient(165deg, #454f65 0%, #353d50 45%, #2a3142 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 28px 56px rgba(0, 0, 0, 0.55),
+    0 0 100px rgba(94, 176, 255, 0.1);
+}
+
+.radioSimMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.radioSimRetry {
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text, #e8edf7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.radioSimRetry:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.radioSimRetry:focus-visible {
+  outline: 2px solid var(--accent, #5eb0ff);
+  outline-offset: 2px;
+}
+
+.radioSimUpdating {
+  position: absolute;
+  left: 50%;
+  bottom: 0.65rem;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(12, 16, 24, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.radioSimBrand {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--on-accent);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
+  box-shadow: 0 0 20px var(--accent-glow);
+  margin-bottom: 0.35rem;
+}
+
+.parserOnlyBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--warning);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.parserCanvasHost {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+}
+
+.parserCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.parseWarn {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--warning);
+  text-align: center;
+  max-width: 480px;
+  line-height: 1.35;
+}
+
+.radioSimProgress {
+  width: min(240px, 80%);
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.radioSimProgressBar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.hintMuted {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 480px;
+}
+
+.previewDisclaimer {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 520px;
+  line-height: 1.45;
+}
+
+.previewDisclaimerLink {
+  border: none;
+  padding: 0;
+  background: none;
+  color: var(--accent-bright);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.previewDisclaimerLink:hover {
+  color: var(--text);
+}
+
+.radioSimLiveTag {
+  color: var(--success);
+}

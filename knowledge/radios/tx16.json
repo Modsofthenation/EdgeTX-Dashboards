@@ -1,0 +1,12 @@
+{
+  "$schema": "./_schema.json",
+  "id": "tx16",
+  "name": "RadioMaster TX16S / MKII",
+  "lcdW": 480,
+  "lcdH": 272,
+  "touch": false,
+  "maxOptions": 10,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "color272",
+  "notes": "480×272 color LCD. Same layout class as Horus and Jumper color radios."
+}

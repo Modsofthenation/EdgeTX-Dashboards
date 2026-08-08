@@ -1,0 +1,310 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.brandCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  line-height: 1.2;
+}
+
+.logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--on-accent);
+  background: var(--accent);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.subtitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.subtitleItem {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitleItem:first-child {
+  flex: 1 1 8rem;
+  max-width: 14rem;
+}
+
+.subtitleItem:last-child {
+  flex: 0 1 auto;
+  max-width: 10rem;
+}
+
+.subtitleSep {
+  flex-shrink: 0;
+  opacity: 0.72;
+  line-height: 1;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.streaming {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.prefsBtn,
+.newChatBtn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.prefsBtn:hover,
+.newChatBtn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.aiBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.aiBannerCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.aiBannerCopy strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.aiBannerCopy code {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+
+.aiBannerBtn {
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.aiBannerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.aiBannerBtnSecondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.aiBannerBtnSecondary:hover {
+  background: var(--surface-hover);
+}
+
+.aiBannerBtn:hover {
+  background: color-mix(in srgb, var(--accent) 26%, var(--surface));
+}
+
+.newChatBtn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.chatColumn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  contain: layout paint;
+  isolation: isolate;
+}
+
+@media (max-width: 960px) {
+  .shell {
+    border: none;
+    max-width: none;
+  }
+
+  .body {
+    flex-direction: column;
+    position: relative;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  /* Sticky bottom-sheet artifact so preview isn't buried above the fold */
+  .body > :last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    order: 3;
+    max-height: min(42vh, 320px);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .chatColumn {
+    order: 2;
+    flex: 1 1 auto;
+    padding-bottom: 0.5rem;
+    min-height: 12rem;
+  }
+
+  .body > :first-child {
+    order: 1;
+  }
+
+  .aiBanner {
+    padding: 0.55rem 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .aiBannerCopy {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 0.875rem;
+  }
+
+  .prefsBtn,
+  .newChatBtn,
+  .aiBannerBtn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .body > :last-child {
+    max-height: min(38vh, 280px);
+  }
+
+  .aiBannerCopy span {
+    display: none;
+  }
+}

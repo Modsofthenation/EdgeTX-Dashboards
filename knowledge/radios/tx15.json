@@ -1,0 +1,11 @@
+{
+  "$schema": "./_schema.json",
+  "id": "tx15",
+  "name": "RadioMaster TX15",
+  "lcdW": 480,
+  "lcdH": 320,
+  "touch": true,
+  "maxOptions": 10,
+  "edgeTxMin": "2.11.0",
+  "notes": "480x320 color LCD with touch. Full-screen dashboards use LCD_W x LCD_H. Different aspect ratio from TX16S (480x272)."
+}

@@ -1,0 +1,349 @@
+.composer {
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+  padding: 0.875rem 1.25rem 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.625rem;
+}
+
+.settingsToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.settingsToggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.settingsChevron {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.refineHint {
+  flex-basis: 100%;
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.selectWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.selectLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.select {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.8125rem;
+}
+
+.metaChip {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.protocolChip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--accent-glow);
+}
+
+.inputArea {
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+.inputShell {
+  position: relative;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-solid);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+}
+
+.inputShell:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.inputShellDragging {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.dropOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: inherit;
+  background: var(--bg-elevated);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.dropOverlayIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent-bright);
+}
+
+.dropOverlayText {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.attachmentStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding: 0.75rem 0.75rem 0;
+}
+
+.attachment {
+  position: relative;
+  width: 4.75rem;
+  flex-shrink: 0;
+}
+
+.attachmentThumb {
+  width: 4.75rem;
+  height: 4.75rem;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+}
+
+.attachmentMeta {
+  margin-top: 0.3rem;
+}
+
+.attachmentName {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachmentRemove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--on-accent);
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity var(--transition),
+    transform var(--transition),
+    background var(--transition);
+}
+
+.attachment:hover .attachmentRemove,
+.attachmentRemove:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.attachmentRemove:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.92);
+  border-color: transparent;
+}
+
+.attachmentRemove:disabled {
+  cursor: not-allowed;
+}
+
+.attachError {
+  margin: 0.45rem 0.75rem 0;
+  font-size: 0.75rem;
+  color: var(--error);
+}
+
+.fileInput {
+  display: none;
+}
+
+.inputRow {
+  display: flex;
+  gap: 0.35rem;
+  align-items: flex-end;
+  padding: 0.5rem;
+}
+
+.iconBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.125rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.iconBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.input {
+  composes: appScrollbar from global;
+  flex: 1;
+  resize: none;
+  min-height: 2.5rem;
+  max-height: 9rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 0.55rem 0.35rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.sendBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.125rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--muted);
+}
+
+.sendBtnActive {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.sendBtn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.sendSpinner {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--on-accent);
+  animation: sendSpin 0.7s linear infinite;
+}
+
+@keyframes sendSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hint {
+  margin: 0.45rem 0.75rem 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .composer {
+    padding: 0.65rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .metaChip {
+    margin-left: 0;
+  }
+
+  .attachmentRemove {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

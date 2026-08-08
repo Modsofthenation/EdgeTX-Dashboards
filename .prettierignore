@@ -1,0 +1,12 @@
+apps/web/.next
+apps/web/public
+dist
+dist-output
+generated
+node_modules
+package-lock.json
+stubs
+*.tsbuildinfo
+apps/desktop/src-tauri/gen
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/Cargo.lock

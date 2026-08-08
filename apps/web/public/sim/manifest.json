@@ -1,0 +1,189 @@
+{
+  "defaultVersion": "2.11.0",
+  "defaultRadio": "tx15",
+  "source": "https://ypwfws8ckruh03m1.public.blob.vercel-storage.com/wasm",
+  "syncedAt": "2026-08-02T02:33:12.084Z",
+  "versions": {
+    "2.11.0": {
+      "label": "2.11",
+      "wasm": "edgetx-tx15-2-11-simulator.wasm",
+      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
+      "size": 5303067,
+      "display": {
+        "w": 480,
+        "h": 320,
+        "depth": 16
+      }
+    },
+    "2.12.0": {
+      "label": "2.12",
+      "wasm": "edgetx-tx15-2-12-simulator.wasm",
+      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
+      "size": 5303067,
+      "display": {
+        "w": 480,
+        "h": 320,
+        "depth": 16
+      },
+      "aliasOf": "2.11.0"
+    }
+  },
+  "radios": {
+    "tx15": {
+      "name": "RadioMaster TX15",
+      "flavour": "tx15",
+      "wasm": "edgetx-tx15-simulator.wasm",
+      "sha256": "23d2e9060decc891e8518adf822d893fcb8333624ece8c8fa7629795176065a5",
+      "size": 5303067,
+      "display": {
+        "w": 480,
+        "h": 320,
+        "depth": 16
+      }
+    },
+    "tx16": {
+      "name": "RadioMaster TX16S",
+      "flavour": "tx16s",
+      "wasm": "edgetx-tx16s-simulator.wasm",
+      "sha256": "d3d572d5fbdbbe215d699b39dc95a0ac14c5f910b2356c6088536794f2037f81",
+      "size": 5251641,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "t16": {
+      "name": "Jumper T16",
+      "flavour": "t16",
+      "wasm": "edgetx-t16-simulator.wasm",
+      "sha256": "5688614dd7c8ef084c563bb8b35e8842a6583f16b3cf94eea91222aa19e1be0a",
+      "size": 5250368,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "t18": {
+      "name": "Jumper T18",
+      "flavour": "t18",
+      "wasm": "edgetx-t18-simulator.wasm",
+      "sha256": "3c29e1dadbf6c5019afd339c3423ac19805185fead7b5edb67edf112fba2c2b2",
+      "size": 5251215,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "x10": {
+      "name": "FrSky Horus X10",
+      "flavour": "x10",
+      "wasm": "edgetx-x10-simulator.wasm",
+      "sha256": "936bdab1231d04738866c13077e2194c4bc72e7437ac3d7c9b8b68fe33282504",
+      "size": 5270404,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "x12": {
+      "name": "FrSky Horus X12S",
+      "flavour": "x12s",
+      "wasm": "edgetx-x12s-simulator.wasm",
+      "sha256": "bcae9792c3830e5965897a3d271506cd0d79f9c5cacc79380567bb7f95823e99",
+      "size": 5268978,
+      "display": {
+        "w": 480,
+        "h": 272,
+        "depth": 16
+      }
+    },
+    "nv14": {
+      "name": "Flysky NV14 / EL18",
+      "flavour": "nv14",
+      "wasm": "edgetx-nv14-simulator.wasm",
+      "sha256": "2d07a589daf021b70f5d1a1d7ae185196848af4d32e9a41c02a099e6c98382d8",
+      "size": 5166893,
+      "display": {
+        "w": 320,
+        "h": 480,
+        "depth": 16
+      }
+    },
+    "boxer": {
+      "name": "RadioMaster Boxer",
+      "flavour": "boxer",
+      "wasm": "edgetx-boxer-simulator.wasm",
+      "sha256": "47afb452c9e41225d02cdeda6eca05740ad0e0cda845c1b716e84b881980037b",
+      "size": 1462575,
+      "display": {
+        "w": 128,
+        "h": 64,
+        "depth": 1
+      }
+    },
+    "mt12": {
+      "name": "RadioMaster MT12",
+      "flavour": "mt12",
+      "wasm": "edgetx-mt12-simulator.wasm",
+      "sha256": "daddac5cf9a17f378423237fae474bca71a9ca5763535157cc9b0da0302dc13d",
+      "size": 1457670,
+      "display": {
+        "w": 128,
+        "h": 64,
+        "depth": 1
+      }
+    },
+    "zorro": {
+      "name": "RadioMaster Zorro",
+      "flavour": "zorro",
+      "wasm": "edgetx-zorro-simulator.wasm",
+      "sha256": "d9ef68690f309da1a727138eacfe1ce90c4db0c4707f4e4855943893e07b5bad",
+      "size": 1446685,
+      "display": {
+        "w": 128,
+        "h": 64,
+        "depth": 1
+      }
+    },
+    "tx12": {
+      "name": "RadioMaster TX12 MKII",
+      "flavour": "tx12mk2",
+      "wasm": "edgetx-tx12mk2-simulator.wasm",
+      "sha256": "34fbcc3119c026358b60e6636bd3aee68c363f2b19d6968953583163fabec1ac",
+      "size": 1446635,
+      "display": {
+        "w": 128,
+        "h": 64,
+        "depth": 1
+      }
+    },
+    "t20": {
+      "name": "Jumper T20",
+      "flavour": "t20",
+      "wasm": "edgetx-t20-simulator.wasm",
+      "sha256": "2c2561656334194134b733aece0ac5ff7fb459d25f9bea68fd185c1a2c5cdf4d",
+      "size": 1428188,
+      "display": {
+        "w": 128,
+        "h": 64,
+        "depth": 1
+      }
+    },
+    "x7": {
+      "name": "FrSky Taranis X7 / X7S",
+      "flavour": "x7access",
+      "wasm": "edgetx-x7access-simulator.wasm",
+      "sha256": "99179838aa7b5713bb14a74661c18381f5d0bce945b7cced609110de98d60d31",
+      "size": 1451912,
+      "display": {
+        "w": 128,
+        "h": 64,
+        "depth": 1
+      }
+    }
+  }
+}

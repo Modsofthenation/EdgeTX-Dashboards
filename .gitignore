@@ -1,0 +1,122 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs (monorepo)
+*.tsbuildinfo
+.turbo/
+build/
+dist/
+.next/
+out/
+
+# Generated widget artifacts (local agent output)
+data/
+dist-output/
+generated/
+
+# SQLite / local DBs (default chats live under data/; catch alternate WIDGET_GEN_DATA_DIR)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Private keys / cert material (never commit)
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+*-key.pem
+*.pkcs8
+tauri.key
+tauri.key.pub
+
+# EdgeTX WASM radio preview (manifest.json tracked; run npm run sync-wasm)
+apps/web/public/sim/*.wasm
+
+# Environment & secrets (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Agent skills (reinstall with: npx skills add mattpocock/skills)
+.agents/
+
+# Cursor local artifacts (keep .cursor/rules/ tracked)
+.cursor/plans/
+
+# Matt Pocock skills scratch / local issue tracker
+.scratch/
+
+# Test & coverage
+coverage/
+.nyc_output/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.auth/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / OS
+.DS_Store
+Desktop.ini
+Thumbs.db
+ehthumbs.db
+.idea/
+*.swp
+*.swo
+*~
+
+# Vercel / deploy caches
+.vercel/
+
+# Archives produced during packaging (widget zips land in dist-output/)
+*.src.rock
+*.tar.gz
+*.zip
+
+# Compiled Lua (if testing locally)
+luac.out
+
+# Native / binary artifacts (Lua C extensions, etc.)
+*.a
+*.app
+*.def
+*.dll
+*.dylib
+*.elf
+*.exe
+*.exp
+*.gch
+*.hex
+*.i*86
+*.ko
+*.la
+*.lib
+*.lo
+*.o
+*.obj
+*.os
+*.out
+*.pch
+*.so
+*.so.*
+*.x86_64
+
+# Tauri
+apps/desktop/src-tauri/target/
+apps/desktop/fallback/
+apps/desktop/resources/standalone/*
+!apps/desktop/resources/standalone/README.md
+apps/desktop/resources/node/*
+!apps/desktop/resources/node/README.md
+apps/desktop/resources/.node-tmp/

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "EdgeTX Dashboards",
+  "version": "0.1.0-alpha.1",
+  "identifier": "com.edgetx.dashboards",
+  "build": {
+    "beforeDevCommand": "cd ../.. && SKIP_WASM_SYNC=1 npm run dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "node ./scripts/prepare-standalone.mjs",
+    "frontendDist": "./fallback"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "EdgeTX Dashboards",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../resources/standalone/": "standalone/",
+      "../resources/node/": "node/"
+    },
+    "category": "DeveloperTool",
+    "shortDescription": "Generate and edit EdgeTX Lua dashboards",
+    "longDescription": "Desktop shell for EdgeTX Dashboards — Tauri 2 window plus a local Next.js standalone sidecar."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "./_schema.json",
+  "id": "x20",
+  "name": "FrSky Tandem X20 / X20R",
+  "lcdW": 480,
+  "lcdH": 272,
+  "touch": true,
+  "maxOptions": 10,
+  "edgeTxMin": "2.10.0",
+  "layoutProfile": "color272"
+}

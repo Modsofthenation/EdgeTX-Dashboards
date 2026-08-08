@@ -1,0 +1,254 @@
+.wrap {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.28s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.wrap.transitioning {
+  will-change: width;
+}
+
+.left {
+  width: 17.5rem;
+  border-right: 1px solid var(--border);
+}
+
+.right {
+  width: min(22rem, 32vw);
+  border-left: 1px solid var(--border);
+  contain: layout paint;
+  isolation: isolate;
+}
+
+.collapsed.left,
+.collapsed.right {
+  width: 2.75rem;
+}
+
+/* Tablet: keep a usable chat column between the asides */
+@media (max-width: 1200px) and (min-width: 961px) {
+  .left {
+    width: 15.5rem;
+  }
+
+  .right {
+    width: min(18rem, 30vw);
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 961px) {
+  .left {
+    width: 14.5rem;
+  }
+
+  .right {
+    width: min(16.5rem, 28vw);
+  }
+}
+
+.inner {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.2s ease 0.04s;
+}
+
+.innerReady {
+  opacity: 1;
+}
+
+.collapsed .inner {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.skeleton {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  opacity: 1;
+}
+
+.skeletonBar {
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.04) 0%,
+    rgba(15, 23, 42, 0.08) 50%,
+    rgba(15, 23, 42, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: panelSkeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonBlock {
+  flex: 1;
+  min-height: 8rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.03) 0%,
+    rgba(15, 23, 42, 0.07) 50%,
+    rgba(15, 23, 42, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: panelSkeletonShimmer 1.4s ease-in-out infinite;
+  animation-delay: 0.12s;
+}
+
+.skeletonBlockShort {
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.04);
+}
+
+@keyframes panelSkeletonShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.rail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 0.35rem;
+  border: none;
+  background: var(--bg-elevated);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.rail:hover {
+  color: var(--text);
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.railLabel {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+
+.headerToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.headerToggle:hover {
+  color: var(--text);
+  background: rgba(15, 23, 42, 0.06);
+  border-color: var(--border);
+}
+
+.headerToggleRight svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap {
+    transition: none;
+  }
+
+  .inner {
+    transition: none;
+  }
+
+  .skeletonBar,
+  .skeletonBlock {
+    animation: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .wrap {
+    width: 100% !important;
+    height: auto;
+    max-height: min(42vh, 320px);
+    border-right: none !important;
+    border-left: none !important;
+    border-bottom: none;
+    border-top: 1px solid var(--border);
+    transition: max-height 0.28s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .wrap.transitioning {
+    will-change: max-height;
+  }
+
+  .collapsed {
+    max-height: 2.75rem;
+  }
+
+  .collapsed .inner {
+    display: none;
+  }
+
+  .rail {
+    flex-direction: row;
+    justify-content: center;
+    padding: 0.5rem;
+  }
+
+  .railLabel {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  .inner {
+    overflow: auto;
+    max-height: calc(min(42vh, 320px) - 0.25rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    max-height: min(36vh, 260px);
+  }
+
+  .inner {
+    max-height: calc(min(36vh, 260px) - 0.25rem);
+  }
+}

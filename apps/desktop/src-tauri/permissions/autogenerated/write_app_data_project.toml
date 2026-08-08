@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-write-app-data-project"
+description = "Enables the write_app_data_project command without any pre-configured scope."
+commands.allow = ["write_app_data_project"]
+
+[[permission]]
+identifier = "deny-write-app-data-project"
+description = "Denies the write_app_data_project command without any pre-configured scope."
+commands.deny = ["write_app_data_project"]

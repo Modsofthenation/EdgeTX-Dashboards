@@ -1,0 +1,332 @@
+{
+  "manifestVersion": 2,
+  "updatedAt": "2026-04-09T11:36:04.210Z",
+  "versions": {
+    "2.3": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "d9d40fa848c7e2dd7a60771b66fe5316068631cf8a8023be1f11deb663310552",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_model.cpp": "8bd51a059a3f5cf8e27a2f1689a9a436f185b98b",
+        "radio/src/lua/api_general.cpp": "5d0d9f8b2fc7f7952a04d3abccb64d7a61cf9d1c",
+        "radio/src/lua/api_lcd.cpp": "a4079387c7d8e3cc8a586df7d26f45eb64206188"
+      }
+    },
+    "2.4": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "ec48d05c42c433b4e8040b519e215a9b9ba82b74c922998261a84638cb6b898f",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_colorlcd.cpp": "cff1374813e7d14a107cce618a33e8d7d37866a1",
+        "radio/src/lua/api_lcd.cpp": "eb53dad93da51df00e8fea0e935dc207b804b732",
+        "radio/src/lua/api_model.cpp": "9737e6704d75c4b2cd24b9c390cd22060fc390ee",
+        "radio/src/lua/api_stdlcd.cpp": "c74315816a566b3bfd1dc0c7a02ad70f7705fb18",
+        "radio/src/lua/api_general.cpp": "9cd4db639450552d98eaf6df2354f591dddb29da"
+      }
+    },
+    "2.5": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "8a11c86b88bf809f5432156e675776ea056cf1e184dfdc8c1cec446029bba33f",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_colorlcd.cpp": "eecfb8eeaa9493bfe7951ff4433ca267a45ae662",
+        "radio/src/lua/api_lcd.cpp": "7630d428ac0c1b46e97a8a5407ae9f218312573b",
+        "radio/src/lua/api_model.cpp": "3d47b5191c10b7666dce0021a42f30081c809c36",
+        "radio/src/lua/api_general.cpp": "e76e37326c602475d4674177cace03cdd0f66f95",
+        "radio/src/lua/api_filesystem.cpp": "a857d81d058c98001e2d0e700b8934899ea971bc",
+        "radio/src/lua/api_stdlcd.cpp": "c74315816a566b3bfd1dc0c7a02ad70f7705fb18"
+      }
+    },
+    "2.6": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "33271910ef640fcff4c9e6e1e2d831df6acc4ed8dc388d9bd2b371c0ca76e6ab",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_lcd.cpp": "d1a1188772c2784ce1e3b38125ca54bb4d8c2f7c",
+        "radio/src/lua/api_stdlcd.cpp": "7f52aa7424d3cb817083efc178b7601243d7788f",
+        "radio/src/lua/api_colorlcd.cpp": "66fc3e271160ef5b96817bef4eb0631569e4880b",
+        "radio/src/lua/api_general.cpp": "2fa6fc2bba44ab9e6d86b9000cdd4a11055486eb",
+        "radio/src/lua/api_filesystem.cpp": "a857d81d058c98001e2d0e700b8934899ea971bc",
+        "radio/src/lua/api_model.cpp": "07f9f68326bd5b845ded1e617c2c37212d2f8d93"
+      }
+    },
+    "2.7": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "246609dcf2c0fd03842894c91cab13cb8f9d7f66210f46bea733df424d582857",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_colorlcd.cpp": "66fc3e271160ef5b96817bef4eb0631569e4880b",
+        "radio/src/lua/api_stdlcd.cpp": "7f52aa7424d3cb817083efc178b7601243d7788f",
+        "radio/src/lua/api_lcd.cpp": "d1a1188772c2784ce1e3b38125ca54bb4d8c2f7c",
+        "radio/src/lua/api_general.cpp": "a2a049f7ec7d9310aa61eb67c58d41dcfe65d888",
+        "radio/src/lua/api_filesystem.cpp": "a857d81d058c98001e2d0e700b8934899ea971bc",
+        "radio/src/lua/api_model.cpp": "cdbf236d40c3d16eeb66a2fabec7e5287cdc2a65"
+      }
+    },
+    "2.8": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "5cf5f7558dc74d710c842521014c80d50567afd0827d25cbc8acfa5700a30fad",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_stdlcd.cpp": "7f52aa7424d3cb817083efc178b7601243d7788f",
+        "radio/src/lua/api_model.cpp": "a56bea1eb7ca65e14505fd04184b653c7594ad7f",
+        "radio/src/lua/api_lcd.cpp": "d1a1188772c2784ce1e3b38125ca54bb4d8c2f7c",
+        "radio/src/lua/api_general.cpp": "a74045bf373c60675782c212b5a372ec72a389fb",
+        "radio/src/lua/api_colorlcd.cpp": "b853008a55636fdc0b85ccb13c5dff0171ac4a08",
+        "radio/src/lua/api_filesystem.cpp": "a857d81d058c98001e2d0e700b8934899ea971bc"
+      }
+    },
+    "2.9": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "16bdd39c733752ac07b88c80db2202fd7b67e727461e7197a470ecddca83fc07",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_colorlcd.cpp": "b201891133130c277729a6accc4b07b16c036062",
+        "radio/src/lua/api_model.cpp": "c180b217a18a3a1edf8123a345c9496316b088b9",
+        "radio/src/lua/api_filesystem.cpp": "47cf67bd33186039ce49175a40d1debbca1a5605",
+        "radio/src/lua/api_stdlcd.cpp": "19332eb72af5c054435d86c18f7777b9187b7b1e",
+        "radio/src/lua/api_general.cpp": "880e4dd9ec11ce0b505071158b7865354c74a933"
+      }
+    },
+    "2.10": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "54772cbf147d04718874a1ab2d09f6b26f29774a3a6621ba34c91b8b7a707ff8",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_colorlcd.cpp": "7ab9a567e19a6db5476e68319885628e27966329",
+        "radio/src/lua/api_model.cpp": "bcb0d25f026add72f71ba9a7b32f70d9a3b62430",
+        "radio/src/lua/api_stdlcd.cpp": "19332eb72af5c054435d86c18f7777b9187b7b1e",
+        "radio/src/lua/api_filesystem.cpp": "79e9dd62e65ca1f1102c2f9e8ddb5059e0cff28a",
+        "radio/src/lua/api_general.cpp": "caae1aaaf05c9ac437dc97f6684f203f305a351e"
+      }
+    },
+    "2.11": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "6d1637adbe814a1bb82e169e017a284d8081ee2b7690fe091734e5fd52fa7e17",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx.lvgl.d.lua",
+        "bit32.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_colorlcd.cpp": "285de60bc623badaffc1a72b8c72d83410d8eb9e",
+        "radio/src/lua/api_stdlcd.cpp": "6095bca8fd460fbf1e9d38dd1e33ea3ca351eb96",
+        "radio/src/lua/api_model.cpp": "d5f04886bfaf15be5278b66ce76a76ec94869848",
+        "radio/src/lua/api_filesystem.cpp": "da232b5352a8486c94f80399b78f4bf26aca3762",
+        "radio/src/lua/api_general.cpp": "4461e68f66346e815aec494c0297dbbb2985bb43",
+        "lua-api-reference/lvgl-for-lua/api.md": "3d07c3051c1c9cde9dbe0a7bb1cb9fc8c34a00b8",
+        "lua-api-reference/lvgl-for-lua/constants.md": "df14de2d1b3e351422eb78f356ccf1f4a684afca",
+        "lua-api-reference/lvgl-for-lua/lvgl.circle.md": "74e21319e545002b830416a0cc2cdf6499da0b02",
+        "lua-api-reference/lvgl-for-lua/lvgl.textedit.md": "3036c4f475ad94b69d7d2ec61b5f5168cae64541",
+        "lua-api-reference/lvgl-for-lua/lvgl.confirm.md": "6b4e67bb918751afd863822e0a08c0c828726b98",
+        "lua-api-reference/lvgl-for-lua/lvgl.font.md": "fd09a4825e6e1b6f01012e38cb283f0f6f3cff51",
+        "lua-api-reference/lvgl-for-lua/lvgl.getscrollpos.md": "e9171aea33b3ed2e7dea0d3ff57d16f70f8ca808",
+        "lua-api-reference/lvgl-for-lua/lvgl.getcontext.md": "42c3d2742641d445acab301d734316358e456618",
+        "lua-api-reference/lvgl-for-lua/lvgl.page.md": "4cedb53fb515bb454940d4612a000acbc06e86ed",
+        "lua-api-reference/lvgl-for-lua/lvgl.hline.md": "87512e5f78130af2057c4bb6eaecb516a86f9974",
+        "lua-api-reference/lvgl-for-lua/lvgl.arc.md": "370b636e3b84f6ace7bb45ed46ba0320dbcc872a",
+        "lua-api-reference/lvgl-for-lua/lvgl.exitfullscreen.md": "3f83b962fff63a5067d2e55a06830e77e43713ec",
+        "lua-api-reference/lvgl-for-lua/lvgl.setting.md": "0600a4e538cee70043b4e70dce07bd6773c572fd",
+        "lua-api-reference/lvgl-for-lua/lvgl.menu.md": "b5bd11e71eb56049e0d98bbc183ce6c0458ee2a5",
+        "lua-api-reference/lvgl-for-lua/lvgl.rectangle.md": "502db1fbfd2c36850559813b8acac2fb99d9a191",
+        "lua-api-reference/lvgl-for-lua/lvgl.button.md": "0c442e58e8c5a88fff9af0627245d351d8d9ef01",
+        "lua-api-reference/lvgl-for-lua/lvgl.triangle.md": "7603c0ed471c7ebeb6f8489872c7374402875c46",
+        "lua-api-reference/lvgl-for-lua/lvgl.verticalslider.md": "bbf4b342e225a8ea28704a01ae92afa94ef36c00",
+        "lua-api-reference/lvgl-for-lua/lvgl.slider.md": "1bbcdcfd4a46e291a56317d9a85741f50e5e8583",
+        "lua-api-reference/lvgl-for-lua/lvgl.message.md": "115de3dc661dab1581754f18567038793a897ce5",
+        "lua-api-reference/lvgl-for-lua/lvgl.choice.md": "16e2512f24c447535ab3ac900deaed1ea06bac4c",
+        "lua-api-reference/lvgl-for-lua/lvgl.momentarybutton.md": "b039bc7d763808d35f07b94adcc72c5c5600ed5f",
+        "lua-api-reference/lvgl-for-lua/lvgl.align.md": "ee6e53dd6112d792f7d0e8d2d52a3cef1693c985",
+        "lua-api-reference/lvgl-for-lua/lvgl.build.md": "6d2465975d09d36bc75bc4018b0fd2bbff454e6c",
+        "lua-api-reference/lvgl-for-lua/lvgl.image.md": "5da79b9e647da52cd31836fc6f010027ecd0945a",
+        "lua-api-reference/lvgl-for-lua/lvgl.file.md": "f8ff16d2c72a6f8cac020139d79925a319be405a",
+        "lua-api-reference/lvgl-for-lua/lvgl.dialog.md": "1607b7acb7c630b3d863a0595551e78b46aefa32",
+        "lua-api-reference/lvgl-for-lua/lvgl.hide.md": "ad2aebf86439cefa6ed8b04290c4a8d1b605ffa3",
+        "lua-api-reference/lvgl-for-lua/lvgl.isfullscreen.md": "52ca05badd8efb484ad7075d13cd9926f4e1e3b5",
+        "lua-api-reference/lvgl-for-lua/lvgl.source.md": "92c2bc691bc0b7c9ca0c8e51c556c85cef2332a8",
+        "lua-api-reference/lvgl-for-lua/lvgl.line.md": "fd11374c6a42b8e3c1160bbd69374d6fbf8869d8",
+        "lua-api-reference/lvgl-for-lua/lvgl.vline.md": "9407f1e69bf908f60fa238d82521d02f62a099aa",
+        "lua-api-reference/lvgl-for-lua/lvgl.show.md": "a021cf28a47f8fbf4a7931d74991779dd5ce431b",
+        "lua-api-reference/lvgl-for-lua/lvgl.timer.md": "b9ad35896a72417b6499c56903a7a080e6260aba",
+        "lua-api-reference/lvgl-for-lua/lvgl.label.md": "a1f852754a4f8f94cb7f8bc8819641a1b44bdddb",
+        "lua-api-reference/lvgl-for-lua/lvgl.color.md": "77e4ad2aa5702613054f24085f37043a0eae7eae",
+        "lua-api-reference/lvgl-for-lua/lvgl.numberedit.md": "159dec3ad37715c3584e9568ff0b9da0b6ee171d",
+        "lua-api-reference/lvgl-for-lua/lvgl.clear.md": "d880fdca545b32b0e2ba44fafc8954e92be05439",
+        "lua-api-reference/lvgl-for-lua/lvgl.box.md": "29c46d7b8e286742502f430d46ceb463a89558e5",
+        "lua-api-reference/lvgl-for-lua/lvgl.isappmode.md": "77b754ea662842bde39279c6d42d76b2a4883d93",
+        "lua-api-reference/lvgl-for-lua/lvgl.switch.md": "c4c2e4c480bbaa24f276f964cfe034d5dfeee0d4",
+        "lua-api-reference/lvgl-for-lua/lvgl.qrcode.md": "e147c5e1360c7424597ad8a83e2d1098deb8f444",
+        "lua-api-reference/lvgl-for-lua/lvgl.set.md": "c108eaad1e27a8f4744ab4996ca7f814d5033704",
+        "lua-api-reference/lvgl-for-lua/lvgl.toggle.md": "18db04c3f399f951fc445be84200964143e1a909"
+      }
+    },
+    "2.12": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "293ff8e12ba0708c0040705a4b886b8739732ebe4ff43661e4bff8578888f390",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "edgetx.lvgl.d.lua",
+        "bit32.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_filesystem.cpp": "33c85c727750d40020dbc834ace0ba508b0d004a",
+        "radio/src/lua/api_stdlcd.cpp": "7b3d200082589537d5235ff89c79175cf2916d16",
+        "radio/src/lua/api_colorlcd.cpp": "fda476ff4e5bd1cccc2cc55b30176086c6fd2be2",
+        "radio/src/lua/api_general.cpp": "08788d58f0928ca91b6e15879539c0c5c9f7fe4d",
+        "radio/src/lua/api_model.cpp": "82a5a588d5478c2b00184e763e748a1deb3f02a7",
+        "lua-api-reference/lvgl-for-lua/api.md": "ffcec644b17905c4c94ed948f08e64d8e0edcb2f",
+        "lua-api-reference/lvgl-for-lua/constants.md": "fa8b107076a481272ba77cc248be7dde514150c7",
+        "lua-api-reference/lvgl-for-lua/lvgl.font.md": "6773cf6eef354550150076b3bdc07e28ee32b697",
+        "lua-api-reference/lvgl-for-lua/lvgl.arc.md": "aabf75369b0afad2f44cc46293216dafdbb7d7d6",
+        "lua-api-reference/lvgl-for-lua/lvgl.exitfullscreen.md": "e38d29acfb9789c6b0e5a6de1098b15ec180ce4b",
+        "lua-api-reference/lvgl-for-lua/lvgl.line.md": "9eec5edf5614aa55709eff5835fdc24df7dfd255",
+        "lua-api-reference/lvgl-for-lua/lvgl.rectangle.md": "5ce1d784bfafce8a7e272b3917d3c1847fda50d7",
+        "lua-api-reference/lvgl-for-lua/lvgl.timer.md": "61ed6e6f4db0bd6b69f14420a32700b78db0a98e",
+        "lua-api-reference/lvgl-for-lua/lvgl.image.md": "f1e4020924c5e33b57798a7d22d7595376dff8b6",
+        "lua-api-reference/lvgl-for-lua/lvgl.page.md": "f94d8f2e96bd8ea80c26394c07c1bb2879236d9f",
+        "lua-api-reference/lvgl-for-lua/lvgl.choice.md": "a7f262b97778f2f5572a05d34e74620d2bb735fb",
+        "lua-api-reference/lvgl-for-lua/lvgl.getscrollpos.md": "165285e36043562287e3e9802ff2c1893f5ceae2",
+        "lua-api-reference/lvgl-for-lua/lvgl.box.md": "840df0d2afc45e23d6e4711ca036ea3f2427ec72",
+        "lua-api-reference/lvgl-for-lua/lvgl.dialog.md": "d6d21dbd19715d69d8bd5e31a9f86a7ffb6add2d",
+        "lua-api-reference/lvgl-for-lua/lvgl.toggle.md": "9a09d38c04603b0182b65a271823b3c47c0ae0cd",
+        "lua-api-reference/lvgl-for-lua/lvgl.getcontext.md": "b94f2ece48e313c8b78fb3e535bd5697f05c4842",
+        "lua-api-reference/lvgl-for-lua/lvgl.isappmode.md": "f4c16ea86108fb815f36b6086fd3b4253c6639b2",
+        "lua-api-reference/lvgl-for-lua/lvgl.hide.md": "afd44f5df493caefbb160ddc1379b96839685a5d",
+        "lua-api-reference/lvgl-for-lua/lvgl.label.md": "29b0e71fbc385d01f6d2324469b4822c7afcd8c2",
+        "lua-api-reference/lvgl-for-lua/lvgl.set.md": "d307ded204dbbad93efc92973b5a5343dc6488f1",
+        "lua-api-reference/lvgl-for-lua/lvgl.vline.md": "f728e979a7c32a385d27f7f2fe0a7861ac935531",
+        "lua-api-reference/lvgl-for-lua/lvgl.file.md": "c6eb4d7aa5bde0d5d947b84e05e0a90c6432e9d7",
+        "lua-api-reference/lvgl-for-lua/lvgl.qrcode.md": "8c99fb0212cbaca15c8813a6f6a16f201ac549e7",
+        "lua-api-reference/lvgl-for-lua/lvgl.message.md": "31011f1450347c3f0a4d9a0442feb28c9a53bb95",
+        "lua-api-reference/lvgl-for-lua/lvgl.align.md": "9cb2f5fa94deb33cc3887dacbe4a8677f16a2262",
+        "lua-api-reference/lvgl-for-lua/lvgl.hline.md": "9c38bd33c3ee71e921b0ab18b8719006660ee1a3",
+        "lua-api-reference/lvgl-for-lua/lvgl.button.md": "8cdbdb222431344174870c7014f37c242c03cac6",
+        "lua-api-reference/lvgl-for-lua/lvgl.show.md": "0b718112de803309221850fade7e9e8f100e5a32",
+        "lua-api-reference/lvgl-for-lua/lvgl.color.md": "be904a7bc3b6a103ba8a1f1f99d617d22e662b0c",
+        "lua-api-reference/lvgl-for-lua/lvgl.slider.md": "3d79ba70715fab45bb311ae8530af8fafb343ce9",
+        "lua-api-reference/lvgl-for-lua/lvgl.numberedit.md": "f66530312b32d3bacc08710a9a77c3deabef8f76",
+        "lua-api-reference/lvgl-for-lua/lvgl.clear.md": "bd057f13ebf1c983ca900ae0b68c29351cba60bd",
+        "lua-api-reference/lvgl-for-lua/lvgl.switch.md": "6986fb77023a3398fdf936d551d9097ce7363a28",
+        "lua-api-reference/lvgl-for-lua/lvgl.build.md": "5f1acad361026ec24344ffe74f339203fed5551e",
+        "lua-api-reference/lvgl-for-lua/lvgl.source.md": "62aa1fa5c42280716c19a2d7569373041ea2fa6d",
+        "lua-api-reference/lvgl-for-lua/lvgl.verticalslider.md": "145d6e9627497237b873a22d98fec868bf80b398",
+        "lua-api-reference/lvgl-for-lua/lvgl.menu.md": "d06d8d50b5e97a3f6729347c9cd9787cbfd62d79",
+        "lua-api-reference/lvgl-for-lua/lvgl.setting.md": "a06a2f7cdf7511e6fc6d011c1fae5b54461416d9",
+        "lua-api-reference/lvgl-for-lua/lvgl.triangle.md": "6d7efee6dea50d00b04fc00ba056518a04b181b5",
+        "lua-api-reference/lvgl-for-lua/lvgl.confirm.md": "ea7ddc38ed3ecd038d44cdc1ed2284274779d83d",
+        "lua-api-reference/lvgl-for-lua/lvgl.textedit.md": "07e0fd5f7dae55ae8e473cb01ec23f45bc047385",
+        "lua-api-reference/lvgl-for-lua/lvgl.circle.md": "40d3d9d4761cbc994061d8a5d621f68ab9d376be",
+        "lua-api-reference/lvgl-for-lua/lvgl.isfullscreen.md": "c6118d8df8de2a79e66a00e1df994a787b56f37e",
+        "lua-api-reference/lvgl-for-lua/lvgl.momentarybutton.md": "875ed7fb0e56b8ab5c7f9ae96e0c50192449fdd2"
+      }
+    },
+    "main": {
+      "generatedAt": "2026-04-09T11:36:04.210Z",
+      "stubHash": "1fe9af44c0ffae96f7997c0cfa77999dbb860b667b7843a344098e1f02d12c03",
+      "files": [
+        "edgetx.globals.d.lua",
+        "edgetx.lcd.d.lua",
+        "edgetx.model.d.lua",
+        "edgetx.bitmap.d.lua",
+        "edgetx.constants.d.lua",
+        "edgetx.scripts.d.lua",
+        "bit32.d.lua",
+        "edgetx-lua-api.json",
+        "edgetx-script-types.json"
+      ],
+      "sources": {
+        "radio/src/lua/api_filesystem.cpp": "33c85c727750d40020dbc834ace0ba508b0d004a",
+        "radio/src/lua/api_general.cpp": "dddda8746427830704ddaa4c6925b88ff55f1510",
+        "radio/src/lua/api_model.cpp": "8dd674c0e18423ae1a2439e8f6e61fc3929790f5",
+        "radio/src/lua/api_stdlcd.cpp": "7b3d200082589537d5235ff89c79175cf2916d16",
+        "radio/src/lua/api_colorlcd.cpp": "fda476ff4e5bd1cccc2cc55b30176086c6fd2be2"
+      }
+    }
+  }
+}
