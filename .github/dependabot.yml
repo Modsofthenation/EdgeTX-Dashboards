@@ -1,0 +1,51 @@
+# Dependabot version updates for this npm workspaces monorepo + Tauri desktop.
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # Root package-lock.json covers apps/* and packages/* workspaces.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    groups:
+      npm-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: cargo
+    directory: /apps/desktop/src-tauri
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - rust
+    groups:
+      cargo-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
