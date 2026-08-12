@@ -17,7 +17,7 @@
     "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
   },
   "dependencies": {
-    "@cursor/sdk": "^1.0.22",
+    "@cursor/sdk": "^1.0.27",
     "@widget-gen/editor-core": "*",
     "@widget-gen/layout-verify": "*",
     "@widget-gen/shared": "*",
