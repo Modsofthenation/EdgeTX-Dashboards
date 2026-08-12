@@ -40,7 +40,7 @@
     "@widget-gen/layout-verify": "*",
     "@widget-gen/shared": "*",
     "@widget-gen/sim-preview": "*",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.28.0",
