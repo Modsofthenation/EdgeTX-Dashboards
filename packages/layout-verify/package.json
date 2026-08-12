@@ -19,7 +19,7 @@
     "@widget-gen/shared": "*"
   },
   "devDependencies": {
-    "@types/node": "^22.15.0",
+    "@types/node": "^26.2.0",
     "@widget-gen/perf-harness": "*",
     "typescript": "^5.8.3"
   }
