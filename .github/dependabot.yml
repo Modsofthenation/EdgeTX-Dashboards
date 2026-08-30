@@ -1,5 +1,8 @@
 # Dependabot version updates for this npm workspaces monorepo + Tauri desktop.
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+#
+# Do not set `labels` until those labels exist on the repo. Missing labels
+# make Dependabot comment on every PR instead of tagging it.
 version: 2
 updates:
   # Root package-lock.json covers apps/* and packages/* workspaces.
@@ -9,9 +12,6 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - npm
     groups:
       npm-minor-and-patch:
         applies-to: version-updates
@@ -25,9 +25,6 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - github-actions
     groups:
       github-actions:
         applies-to: version-updates
@@ -40,9 +37,6 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - rust
     groups:
       cargo-minor-and-patch:
         applies-to: version-updates
