@@ -207,7 +207,7 @@ mod sidecar {
     let started = Instant::now();
     while started.elapsed() < timeout {
       if let Ok(response) = ureq::get(&url).call() {
-        if (200..300).contains(&response.status()) {
+        if response.status().is_success() {
           return Ok(());
         }
       }
