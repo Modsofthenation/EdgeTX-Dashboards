@@ -5,7 +5,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 import type {
   RadioProfile,
   TelemetryCatalog,
@@ -221,7 +221,7 @@ export async function packageWidget(
 
   await new Promise<void>((resolve, reject) => {
     const output = createWriteStream(zipPath);
-    const archive = archiver("zip", { zlib: { level: 1 } });
+    const archive = new ZipArchive({ zlib: { level: 1 } });
 
     output.on("close", () => resolve());
     archive.on("error", reject);
