@@ -55,7 +55,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.15.0",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@widget-gen/perf-harness": "*",
