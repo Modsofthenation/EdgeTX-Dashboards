@@ -28,9 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     name: desktop-smoke
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -70,7 +70,7 @@ jobs:
     name: ${{ matrix.os_name }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -83,7 +83,7 @@ jobs:
             patchelf \
             xdg-utils
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -177,7 +177,7 @@ jobs:
           test -n "$(ls -A desktop-artifacts)"
 
       - name: Upload platform installers
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: edgetx-dashboards-${{ matrix.os_name }}
           path: desktop-artifacts/
@@ -196,7 +196,7 @@ jobs:
       contents: write
     steps:
       - name: Download all platform artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: edgetx-dashboards-*
           path: release-assets
@@ -239,7 +239,7 @@ jobs:
       contents: write
     steps:
       - name: Download all platform artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: edgetx-dashboards-*
           path: release-assets
