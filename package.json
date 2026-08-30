@@ -50,9 +50,9 @@
     "node": ">=22.13.0"
   },
   "devDependencies": {
-    "@napi-rs/canvas": "^1.0.7",
+    "@napi-rs/canvas": "^1.0.8",
     "@playwright/test": "^1.62.1",
-    "oxlint": "^1.79.0",
+    "oxlint": "^1.80.0",
     "prettier": "^3.9.6"
   }
 }
