@@ -60,6 +60,6 @@
     "@types/react-dom": "^19.2.4",
     "@widget-gen/perf-harness": "*",
     "tsx": "^4.23.12",
-    "typescript": "^5.8.3"
+    "typescript": "^7.0.2"
   }
 }
