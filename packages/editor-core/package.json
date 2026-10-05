@@ -20,7 +20,7 @@
     "@widget-gen/shared": "*"
   },
   "devDependencies": {
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.6.4",
     "@widget-gen/generator": "*",
     "@widget-gen/perf-harness": "*",
     "typescript": "^7.0.2"
